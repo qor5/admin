@@ -8,18 +8,20 @@ import (
 
 	"github.com/sunfmin/reflectutils"
 
-	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/x/v3/i18n"
+
+	"github.com/qor5/admin/v3/publish"
 
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 
-	"github.com/qor5/admin/v3/l10n"
-	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
+
+	"github.com/qor5/admin/v3/l10n"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
 )
 
 func overview(m *ModelBuilder) presets.FieldComponentFunc {
@@ -29,7 +31,6 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 		var (
 			start, end, se string
 			onlineHint     h.HTMLComponent
-			isTemplate     bool
 			ps             string
 			version        string
 			id             uint
@@ -37,9 +38,6 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 		)
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		versionComponent := publish.DefaultVersionComponentFunc(pm)(obj, field, ctx)
-		if b.templateModel != nil {
-			isTemplate = strings.Contains(ctx.R.RequestURI, "/"+b.templateModel.Info().URIName()+"/")
-		}
 		if v, ok := obj.(PrimarySlugInterface); ok {
 			ps = v.PrimarySlug()
 		}
@@ -53,9 +51,6 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 		}
 		if l, ok := obj.(l10n.LocaleInterface); ok {
 			ctx.R.Form.Set(paramLocale, l.EmbedLocale().LocaleCode)
-		}
-		if isTemplate {
-			ctx.R.Form.Set(paramsTpl, "1")
 		}
 
 		previewDevelopUrl := m.PreviewHref(ctx, ps)
@@ -118,7 +113,7 @@ transform-origin: 0 0; transform:scale(0.5);width:200%;height:200%`),
 				).Class("pa-6 w-100 d-flex justify-space-between align-center").Style(`position:absolute;bottom:0;left:0`),
 			).Style(`position:relative;height:320px;width:100%`).Class("border-thin rounded-lg").
 				Attr("@click",
-					web.Plaid().URL(fmt.Sprintf("%s/%s-editors/%v", b.prefix, pm.Info().URIName(), ps)).PushState(true).Go(),
+					web.Plaid().URL(m.editorURLWithSlug(ps)).PushState(true).Go(),
 				),
 			h.Div(
 				h.A(h.Text(previewDevelopUrl)).Href(previewDevelopUrl),

@@ -5,19 +5,18 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
-
+	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
+	"github.com/sunfmin/reflectutils"
+	h "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/publish"
-	"github.com/qor5/web/v3"
-	. "github.com/qor5/x/v3/ui/vuetify"
-	"github.com/sunfmin/reflectutils"
-	h "github.com/theplant/htmlgo"
-	"gorm.io/gorm"
 )
 
 const (
@@ -47,7 +46,6 @@ const (
 	paramModelID         = "modelID"
 	paramModelName       = "modelName"
 	paramMoveDirection   = "moveDirection"
-	paramsTpl            = "tpl"
 	paramsDevice         = "device"
 	paramsDisplayName    = "DisplayName"
 
@@ -92,17 +90,27 @@ func (b *Builder) emptyEdit(ctx *web.EventContext) h.HTMLComponent {
 func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		var (
-			deviceToggler, versionComponent      h.HTMLComponent
+			deviceToggle, versionComponent       h.HTMLComponent
 			editContainerDrawer, navigatorDrawer h.HTMLComponent
 			tabContent                           web.PageResponse
 			pageAppbarContent                    []h.HTMLComponent
 			exitHref                             string
-			readonly                             bool
+			isStag                               bool
 
 			containerDataID = ctx.Param(paramContainerDataID)
 			obj             = m.mb.NewModel()
 			msgr            = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+			title           string
 		)
+
+		if m.tb == nil {
+			title = msgr.PageBuilder
+			exitHref = m.mb.Info().DetailingHref(ctx.Param(presets.ParamID))
+		} else {
+			title = msgr.PageTemplate
+			exitHref = m.mb.Info().ListingHref()
+
+		}
 		if containerDataID != "" {
 			arr := strings.Split(containerDataID, "_")
 			if len(arr) >= 2 {
@@ -116,13 +124,13 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 		} else {
 			editContainerDrawer = b.emptyEdit(ctx)
 		}
-		deviceToggler = b.deviceToggle(ctx)
+		deviceToggle = b.deviceToggle(ctx)
 		if tabContent, err = m.pageContent(ctx, obj); err != nil {
 			return
 		}
 		if p, ok := obj.(publish.StatusInterface); ok {
 			ctx.R.Form.Set(paramStatus, p.EmbedStatus().Status)
-			readonly = p.EmbedStatus().Status == publish.StatusDraft
+			isStag = p.EmbedStatus().Status == publish.StatusOnline || p.EmbedStatus().Status == publish.StatusOffline
 		}
 		afterLeaveEvent := removeVirtualElement() + "vars.emptyIframe = true;" + scrollToContainer(fmt.Sprintf("vars.%s", paramContainerDataID))
 		addOverlay := vx.VXOverlay(m.newContainerContent(ctx)).
@@ -131,7 +139,6 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			Attr("@after-leave", afterLeaveEvent).
 			Attr("v-model", "vars.overlay")
 		versionComponent = publish.DefaultVersionComponentFunc(m.editor, publish.VersionComponentConfig{Top: true, DisableListeners: true})(obj, &presets.FieldContext{ModelInfo: m.editor.Info()}, ctx)
-		exitHref = m.mb.Info().DetailingHref(ctx.Param(presets.ParamID))
 		pageAppbarContent = h.Components(
 			h.Div(
 				h.Div().Style("transform:rotateY(180deg)").Class("mr-4").Children(
@@ -144,9 +151,9 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 						%s`, exitHref, web.GET().URL(exitHref).PushState(true).Go(),
 					)),
 				),
-				VAppBarTitle().Text(msgr.PageBuilder),
+				VAppBarTitle().Text(title),
 			).Class("d-inline-flex align-center"),
-			h.Div(deviceToggler).Class("text-center d-flex justify-space-between mx-6"),
+			h.Div(deviceToggle).Class("text-center d-flex justify-space-between mx-6"),
 			versionComponent,
 			publish.NewListenerModelsDeleted(m.mb, ctx.Param(presets.ParamID)),
 			publish.NewListenerVersionSelected(ctx, m.editor, ctx.Param(presets.ParamID)),
@@ -160,7 +167,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 					pageAppbarContent...,
 				).Class("d-flex align-center  justify-space-between  w-100 px-6").Style("height: 36px"),
 			).Elevation(0).Density(DensityCompact).Height(96).Class("align-center border-b"),
-			h.If(readonly,
+			h.If(!isStag,
 				VNavigationDrawer(
 					web.Portal(navigatorDrawer).Name(pageBuilderLayerContainerPortal),
 				).Location(LocationLeft).
@@ -176,8 +183,9 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 				addOverlay,
 				vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction(ctx)),
 				tabContent.Body.(h.HTMLComponent),
-			).Attr(web.VAssign("vars", "{overlayEl:$}")...),
+			).Attr(web.VAssign("vars", "{overlayEl:$}")...).Class("ma-2"),
 		)
+		r.PageTitle = m.mb.Info().Label()
 		return
 	}
 }
