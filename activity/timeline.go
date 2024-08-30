@@ -42,12 +42,16 @@ func (c *TimelineCompo) CompoID() string {
 	return fmt.Sprintf("TimelineCompo:%s", c.ID)
 }
 
+func (c *TimelineCompo) VarCurrentActive() string {
+	return fmt.Sprintf("__current_active_of_%s__", stateful.MurmurHash3(c.CompoID()))
+}
+
 func (c *TimelineCompo) MustGetEventContext(ctx context.Context) (*web.EventContext, *Messages) {
 	evCtx := web.MustGetEventContext(ctx)
 	return evCtx, i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
 }
 
-func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog, forceTextColor string) h.HTMLComponent {
+func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog) h.HTMLComponent {
 	evCtx, msgr := c.MustGetEventContext(ctx)
 	pmsgr := presets.MustGetMessages(evCtx.R)
 	switch log.Action {
@@ -58,10 +62,10 @@ func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog, forc
 		}
 		return h.Components(
 			h.Div().Attr("v-if", "!xlocals.showEditBox").Class("d-flex flex-column").Children(
-				h.Div(h.Text(msgr.AddedANote)).ClassIf(forceTextColor, forceTextColor != ""),
-				h.Pre(note.Note).Attr("v-pre", true).Style("white-space: pre-wrap").ClassIf(forceTextColor, forceTextColor != ""),
+				h.Div(h.Text(msgr.AddedANote)),
+				h.Pre(note.Note).Attr("v-pre", true).Style("white-space: pre-wrap"),
 				h.Iff(!note.LastEditedAt.IsZero(), func() h.HTMLComponent {
-					return h.Div().Class("text-caption font-italic").Class(lo.If(forceTextColor != "", forceTextColor).Else("text-grey-darken-1")).Children(
+					return h.Div().Class("text-caption font-italic").Class("text-grey-darken-1").Children(
 						h.Text(msgr.LastEditedAt(pmsgr.HumanizeTime(note.LastEditedAt))),
 					)
 				}),
@@ -84,37 +88,41 @@ func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog, forc
 						).Go()).Children(
 						v.VIcon("mdi-check").Size(16),
 					),
-				),
+				).Attr("v-on-mounted", fmt.Sprintf(`({watch}) => {
+					watch(form, (val) => {
+						toplocals.edited = true;
+					})
+				}`)),
 			),
 		)
 	case ActionView:
-		return h.Div(h.Text(msgr.Viewed)).ClassIf(forceTextColor, forceTextColor != "")
+		return h.Div(h.Text(msgr.Viewed))
 	case ActionCreate:
-		return h.Div(h.Text(msgr.Created)).ClassIf(forceTextColor, forceTextColor != "")
+		return h.Div(h.Text(msgr.Created))
 	case ActionEdit:
 		diffs := []Diff{}
 		if err := json.Unmarshal([]byte(log.Detail), &diffs); err != nil {
 			return h.Text(fmt.Sprintf("Failed to unmarshal detail: %v", err))
 		}
-		presetInstalled := c.ab.IsPresetInstalled(c.mb.GetPresetsBuilder())
+		// presetInstalled := c.ab.IsPresetInstalled(c.mb.GetPresetsBuilder())
 		return h.Div().Class("d-flex flex-row align-center ga-2").Children(
-			h.Div(h.Text(msgr.EditedNFields(len(diffs)))).ClassIf(forceTextColor, forceTextColor != ""),
-			h.Iff(presetInstalled, func() h.HTMLComponent {
-				return v.VBtn(msgr.MoreInfo).Class("text-none text-overline d-flex align-center").
-					Variant(v.VariantTonal).Color(v.ColorPrimary).Size(v.SizeXSmall).PrependIcon("mdi-open-in-new").
-					Attr("@click", web.POST().
-						EventFunc(actions.DetailingDrawer).
-						Query(presets.ParamOverlay, actions.Dialog).
-						URL(fmt.Sprintf("%s/activity-logs/%d", c.mb.GetPresetsBuilder().GetURIPrefix(), log.ID)).
-						Query(paramHideDetailTop, true).
-						Go(),
-					)
-			}),
+			h.Div(h.Text(msgr.EditedNFields(len(diffs)))),
+			// h.Iff(presetInstalled, func() h.HTMLComponent {
+			// 	return v.VBtn(msgr.MoreInfo).Class("text-none text-overline d-flex align-center").
+			// 		Variant(v.VariantTonal).Color(v.ColorPrimary).Size(v.SizeXSmall).PrependIcon("mdi-open-in-new").
+			// 		Attr("@click", web.POST().
+			// 			EventFunc(actions.DetailingDrawer).
+			// 			Query(presets.ParamOverlay, actions.Dialog).
+			// 			URL(fmt.Sprintf("%s/activity-logs/%d", c.mb.GetPresetsBuilder().GetURIPrefix(), log.ID)).
+			// 			Query(paramHideDetailTop, true).
+			// 			Go(),
+			// 		)
+			// }),
 		)
 	case ActionDelete:
-		return h.Div(h.Text(msgr.Deleted)).ClassIf(forceTextColor, forceTextColor != "")
+		return h.Div(h.Text(msgr.Deleted))
 	default:
-		return h.Div().Attr("v-pre", true).Text(msgr.PerformAction(getActionLabel(evCtx, log.Action), log.Detail)).ClassIf(forceTextColor, forceTextColor != "")
+		return h.Div().Attr("v-pre", true).Text(msgr.PerformAction(getActionLabel(evCtx, log.Action), log.Detail))
 	}
 }
 
@@ -125,27 +133,37 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 	}
 
 	children := []h.HTMLComponent{
-		h.Div().Class("text-h6 mb-8").Text(msgr.Activities),
 		web.Scope().VSlot("{locals: xlocals, form}").Init("{showEditBox:false}").Children(
-			v.VBtn(msgr.AddNote).Attr("v-if", "!xlocals.showEditBox").Attr(":disabled", "toplocals.editing").
-				Class("text-none mb-4").Variant(v.VariantTonal).Color("grey-darken-3").Size(v.SizeDefault).PrependIcon("mdi-plus").
-				Attr("@click", "xlocals.showEditBox = true; toplocals.editing = true"),
-			h.Div().Attr("v-if", "!!xlocals.showEditBox").Class("d-flex flex-column").Style("position: relative").Children(
-				v.VTextarea().Rows(2).Attr(":row-height", "12").Clearable(false).AutoGrow(true).Label("").Placeholder(msgr.AddNote).Variant(v.VariantOutlined).
-					Color(v.ColorPrimary).Class("text-grey-darken-3 textarea-with-bottom-btns").
-					Attr(web.VField("note", "")...),
-				h.Div().Class("d-flex flex-row ga-2").Style("position: absolute; bottom: 32px; right: 12px").Children(
-					v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(16).
-						Attr("@click", "xlocals.showEditBox = false; toplocals.editing = false").Children(
-						v.VIcon("mdi-close").Size(16),
-					),
-					v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(16).
-						Attr("@click", stateful.PostAction(ctx, c,
-							c.CreateNote, CreateNoteRequest{},
-							stateful.WithAppendFix(`v.request.note = form["note"];`),
-						).Go()).Children(
-						v.VIcon("mdi-check").Size(16),
-					),
+			h.Div().Class("d-flex flex-column ga-4 mb-8").Children(
+				h.Div().Class("d-flex align-center ga-2").Children(
+					h.Div().Class("text-h6").Text(msgr.Activities),
+					v.VSpacer(),
+					v.VBtn(msgr.AddNote).Attr(":disabled", "xlocals.showEditBox || toplocals.editing").
+						Class("text-caption").Variant(v.VariantTonal).Color("grey-darken-3").Size(v.SizeSmall).PrependIcon("mdi-plus").
+						Attr("@click", "xlocals.showEditBox = true; toplocals.editing = true"),
+				),
+				v.VDivider(),
+				h.Div().Attr("v-if", "!!xlocals.showEditBox").Class("d-flex flex-column mb-n6").Style("position: relative").Children(
+					v.VTextarea().Rows(2).Attr(":row-height", "12").Clearable(false).AutoGrow(true).Label("").Placeholder(msgr.AddNote).Variant(v.VariantOutlined).
+						Color(v.ColorPrimary).Class("text-grey-darken-3 textarea-with-bottom-btns").
+						Attr(web.VField("note", "")...),
+					h.Div().Class("d-flex flex-row ga-2").Style("position: absolute; bottom: 32px; right: 12px").Children(
+						v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(16).
+							Attr("@click", "xlocals.showEditBox = false; toplocals.editing = false").Children(
+							v.VIcon("mdi-close").Size(16),
+						),
+						v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(16).
+							Attr("@click", stateful.PostAction(ctx, c,
+								c.CreateNote, CreateNoteRequest{},
+								stateful.WithAppendFix(`v.request.note = form["note"];`),
+							).Go()).Children(
+							v.VIcon("mdi-check").Size(16),
+						),
+					).Attr("v-on-mounted", fmt.Sprintf(`({watch}) => {
+						watch(form, (val) => {
+							toplocals.edited = true;
+						})
+					}`)),
 				),
 			),
 		),
@@ -162,6 +180,9 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get current user")
 	}
+
+	presetInstalled := c.ab.IsPresetInstalled(c.mb.GetPresetsBuilder())
+	varCurrentActive := c.VarCurrentActive()
 	for i, log := range logs {
 		userName := log.User.Name
 		if userName == "" {
@@ -171,52 +192,80 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		if log.User.Avatar == "" {
 			avatarText = strings.ToUpper(string([]rune(userName)[0:1]))
 		}
+		isAccent := true
 		dotColor := v.ColorSuccess
 		if i != 0 {
+			isAccent = false
 			dotColor = "grey-lighten-2"
 		}
+		idStr := fmt.Sprint(log.ID)
 		var child h.HTMLComponent = h.Div().Class("d-flex flex-column ga-1").Children(
 			h.Div().Class("d-flex flex-row align-center ga-2").Children(
 				h.Div().Class("bg-"+dotColor).Style("width: 8px; height: 8px;").Class("rounded-circle"),
-				h.Div(h.Text(pmsgr.HumanizeTime(log.CreatedAt))).Class(lo.If(i != 0, "text-grey").Else("text-grey-darken-1")),
+				h.Div(h.Text(pmsgr.HumanizeTime(log.CreatedAt))).Class(lo.If(isAccent, "text-grey").Else("text-grey-darken-1")),
 			),
 			h.Div().Class("d-flex flex-row ga-2").Children(
 				h.Div().Class("bg-"+dotColor).Class("align-self-stretch").Style("width: 1px; margin: -6px 3.5px -2px 3.5px;"),
-				h.Div().Class("flex-grow-1 d-flex flex-column pb-3").Children(
+				h.Div().Attr(":class", fmt.Sprintf(`{ "bg-grey-lighten-4": isHovering || vars.%s == %q }`, varCurrentActive, idStr)).
+					Class("flex-grow-1 d-flex flex-column pe-1 pb-3 rounded").Style("padding-left: 2px;").Children(
 					h.Div().Class("d-flex flex-row align-center ga-2").Children(
 						v.VAvatar().Class("text-overline font-weight-medium text-primary bg-primary-lighten-2").Size(v.SizeXSmall).Density(v.DensityCompact).Rounded(true).Text(avatarText).Children(
 							h.Iff(log.User.Avatar != "", func() h.HTMLComponent {
 								return v.VImg().Attr("alt", userName).Attr("src", log.User.Avatar)
 							}),
 						),
-						h.Div().Attr("v-pre", true).Text(userName).Class("font-weight-medium").ClassIf("text-grey", i != 0),
+						h.Div().Attr(":class", fmt.Sprintf(`{ "text-grey": !xlocals.isAccent && !isHovering && vars.%s != %q }`, varCurrentActive, idStr)).
+							Class("font-weight-medium flex-grow-1").Children(
+							h.Div().Attr("v-pre", true).Text(userName),
+						),
+						h.Iff(log.Action == ActionEdit && presetInstalled, func() h.HTMLComponent {
+							return v.VIcon("mdi-chevron-right").
+								Attr("v-if", fmt.Sprintf(`isHovering || vars.%s == %q`, varCurrentActive, idStr)).
+								Size(v.SizeSmall).Class("text-grey-darken-4")
+						}),
 					),
 					h.Div().Class("d-flex flex-row align-center ga-2").Children(
 						h.Div().Style("width: 16px; flex-shrink:0"),
-						c.humanContent(ctx, log, lo.If(i != 0, "text-grey").Else("")),
+						h.Div().Attr(":class", fmt.Sprintf(`{ "text-grey": !xlocals.isAccent && !isHovering && vars.%s != %q }`, varCurrentActive, idStr)).
+							Class("flex-grow-1").Children(
+							c.humanContent(ctx, log),
+						),
+					),
+				).AttrIf("@click", web.POST().
+					EventFunc(actions.DetailingDrawer).
+					Query(presets.ParamOverlay, actions.Dialog).
+					URL(fmt.Sprintf("%s/activity-logs", c.mb.GetPresetsBuilder().GetURIPrefix())).
+					Query(presets.ParamID, idStr).
+					Query(paramHideDetailTop, true).
+					Query(presets.ParamVarCurrentActive, c.VarCurrentActive()).
+					Go(), log.Action == ActionEdit && presetInstalled),
+			),
+		)
+
+		if log.Action == ActionNote && log.UserID == user.ID {
+			child = h.Div().Class("d-flex flex-column").Style("position: relative").Children(
+				h.Div().Attr("v-if", "isHovering && !xlocals.showEditBox && !toplocals.editing").Class("d-flex flex-row ga-1").
+					Style("position: absolute; top: 21px; right: 16px").Children(
+					v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(v.SizeXSmall).Icon("mdi-square-edit-outline").
+						Attr("@click", "xlocals.showEditBox = true; toplocals.editing = true"),
+					v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(v.SizeXSmall).Icon("mdi-delete").
+						Attr("@click", fmt.Sprintf(`toplocals.deletingLogID = %q`, idStr)),
+				),
+				child,
+			)
+		}
+
+		hoverable := (log.Action == ActionNote && log.UserID == user.ID) ||
+			(log.Action == ActionEdit && presetInstalled)
+		children = append(children, v.VHover().Disabled(!hoverable).Children(
+			web.Slot().Name("default").Scope("{ isHovering, props }").Children(
+				h.Div().Class("d-flex flex-column").Attr("v-bind", "props").Children(
+					web.Scope().VSlot("{locals: xlocals, form}").Init(fmt.Sprintf(`{ showEditBox: false, isAccent: %t }`, isAccent)).Children(
+						child,
 					),
 				),
 			),
-		)
-		if log.Action == ActionNote {
-			child = web.Scope().VSlot("{locals: xlocals, form}").Init("{showEditBox:false}").Children(
-				v.VHover().Disabled(log.UserID != user.ID).Children(
-					web.Slot().Name("default").Scope("{ isHovering, props }").Children(
-						h.Div().Class("d-flex flex-column").Style("position: relative").Attr("v-bind", "props").Children(
-							h.Div().Attr("v-if", "isHovering && !xlocals.showEditBox && !toplocals.editing").Class("d-flex flex-row ga-1").
-								Style("position: absolute; top: 21px; right: 16px").Children(
-								v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(v.SizeXSmall).Icon("mdi-square-edit-outline").
-									Attr("@click", "xlocals.showEditBox = true; toplocals.editing = true"),
-								v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(v.SizeXSmall).Icon("mdi-delete").
-									Attr("@click", fmt.Sprintf(`toplocals.deletingLogID = %d`, log.ID)),
-							),
-							child,
-						),
-					),
-				),
-			)
-		}
-		children = append(children, child)
+		))
 	}
 
 	if len(logs) == 0 {
@@ -240,27 +289,33 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 			`, stateful.ReloadAction(ctx, c, nil).Go()),
 			presets.NotifModelsDeleted(&ActivityLog{}), stateful.ReloadAction(ctx, c, nil).Go(),
 		),
-		web.Scope().VSlot("{locals: toplocals}").Init(`{ deletingLogID: -1, editing: false }`).Children(
+		web.Scope().VSlot("{locals: toplocals}").Init(`{ deletingLogID: "", editing: false, edited: false }`).Children(
 			h.Div().Class("d-flex flex-column mb-8").Style("text-body-2").
-				Attr("v-on-mounted", fmt.Sprintf(`({watch}) => {
+				Attr("v-on-mounted", fmt.Sprintf(`({watch, watchEffect}) => {
 					watch(() => toplocals.editing, (val) => {
-						vars.%s.%s = val
+						if (!val) {
+							toplocals.edited = false
+						}
 					}, { immediate: true })
-				}`, presets.VarsPresetsDataChanged, varEditing)).
+					watchEffect(() => {
+						vars.%s.%s = toplocals.editing && toplocals.edited
+						vars.%s = toplocals.deletingLogID
+					})
+				}`, presets.VarsPresetsDataChanged, varEditing, varCurrentActive)).
 				Attr("v-on-unmounted", fmt.Sprintf(`() => { delete(vars.%s.%s) }`, presets.VarsPresetsDataChanged, varEditing)).
 				Children(
 					children...,
 				),
 			v.VDialog().MaxWidth("520px").
-				Attr(":model-value", `toplocals.deletingLogID !== -1`).
-				Attr("@update:model-value", `(value) => { toplocals.deletingLogID = value ? toplocals.deletingLogID : -1; }`).Children(
+				Attr(":model-value", `toplocals.deletingLogID !== ""`).
+				Attr("@update:model-value", `(value) => { toplocals.deletingLogID = value ? toplocals.deletingLogID : ""; }`).Children(
 				v.VCard(
 					v.VCardTitle(h.Text(msgr.DeleteNoteDialogTitle)),
 					v.VCardText(h.Text(msgr.DeleteNoteDialogText)),
 					v.VCardActions(
 						v.VSpacer(),
 						v.VBtn(msgr.Cancel).Variant(v.VariantFlat).Size(v.SizeSmall).Class("ml-2").
-							Attr("@click", `toplocals.deletingLogID = -1`),
+							Attr("@click", `toplocals.deletingLogID = ""`),
 						v.VBtn(msgr.Delete).Color(v.ColorError).Variant(v.VariantTonal).Size(v.SizeSmall).
 							Attr("@click", stateful.PostAction(ctx, c,
 								c.DeleteNote, DeleteNoteRequest{},

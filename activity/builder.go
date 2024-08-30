@@ -70,7 +70,7 @@ func New(db *gorm.DB, currentUserFunc func(ctx context.Context) (*User, error)) 
 		currentUserFunc: currentUserFunc,
 		permPolicy: perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).
 			ToDo(presets.PermUpdate, presets.PermDelete, presets.PermCreate).
-			On("*:activity_logs").On("*:activity_logs:*"),
+			On("*:presets:activity_logs").On("*:presets:activity_logs:*"),
 	}
 	ab.logModelInstall = ab.defaultLogModelInstall
 	return ab
