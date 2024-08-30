@@ -353,7 +353,7 @@ func (b *TemplateBuilder) searchComponent(ctx *web.EventContext) h.HTMLComponent
 		HideDetails(true).
 		SingleLine(true).
 		Attr("v-model", "vars.searchMsg").
-		Attr(web.VAssign("vars", fmt.Sprintf(`{searchMsg:"%s"}`, ctx.Param(ParamSearchKeyword)))...).
+		Attr(web.VAssign("vars", fmt.Sprintf(`{searchMsg:%q}`, ctx.Param(ParamSearchKeyword)))...).
 		Attr("@click:clear", `vars.searchMsg="";`+clickEvent).
 		Attr("@keyup.enter", clickEvent).
 		Children(
@@ -396,7 +396,7 @@ func (b *TemplateBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponen
 		h.Div(
 			h.Span(name).Class("text-caption"),
 		).Class("mt-2"),
-	).Class("mb-6").Attr(web.VAssign("form", fmt.Sprintf(`{%s:"%s"}`, ParamTemplateSelectedID, selectID))...)
+	).Class("mb-6").Attr(web.VAssign("form", fmt.Sprintf(`{%s:%q}`, ParamTemplateSelectedID, selectID))...)
 }
 
 type TemplateSelected struct {

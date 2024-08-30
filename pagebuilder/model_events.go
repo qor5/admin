@@ -169,11 +169,11 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 												),
 											),
 										).Name("append"),
-									).Attr(":variant", fmt.Sprintf(` element.hidden &&!isHovering && !element.editShow?"%s":"%s"`, VariantPlain, VariantText)).
+									).Attr(":variant", fmt.Sprintf(` element.hidden &&!isHovering && !element.editShow?%q:%q`, VariantPlain, VariantText)).
 										Attr(":class", fmt.Sprintf(`element.container_data_id==vars.%s && !element.hidden?"bg-%s":""`, paramContainerDataID, ColorPrimaryLighten2)).
 										Attr("v-bind", "props", "@click", clickColumnEvent).
 										Attr(web.VAssign("vars",
-											fmt.Sprintf(`{%s:"%s"}`, paramContainerDataID, ctx.Param(paramContainerDataID)))...),
+											fmt.Sprintf(`{%s:%q}`, paramContainerDataID, ctx.Param(paramContainerDataID)))...),
 								).Name("default").Scope("{ isHovering, props }"),
 							),
 							VDivider(),

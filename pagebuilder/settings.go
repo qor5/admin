@@ -71,12 +71,12 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 			Count(&containerCount)
 		var copyURL string
 		if p, ok := obj.(publish.StatusInterface); ok {
-			copyURL = fmt.Sprintf(`$event.view.window.location.origin+"%s"`, previewDevelopUrl)
+			copyURL = fmt.Sprintf(`$event.view.window.location.origin+%q`, previewDevelopUrl)
 			if p.EmbedStatus().Status == publish.StatusOnline {
 				onlineHint = VAlert(h.Text(msgr.OnlineHit)).
 					Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("mb-2")
 				previewDevelopUrl = b.publisher.FullUrl(p.EmbedStatus().OnlineUrl)
-				copyURL = fmt.Sprintf(`"%s"`, previewDevelopUrl)
+				copyURL = fmt.Sprintf(`%q`, previewDevelopUrl)
 			}
 		}
 		return h.Div(
@@ -118,7 +118,7 @@ transform-origin: 0 0; transform:scale(0.5);width:200%;height:200%`),
 			h.Div(
 				h.A(h.Text(previewDevelopUrl)).Href(previewDevelopUrl),
 				VBtn("").Icon("mdi-content-copy").Color(ColorSecondary).Width(20).Height(20).Variant(VariantText).Size(SizeXSmall).Class("ml-1 fix-btn-icon").
-					Attr("@click", fmt.Sprintf(`$event.view.window.navigator.clipboard.writeText(%s);vars.presetsMessage = { show: true, message: "success", color: "%s"}`, copyURL, ColorSuccess)),
+					Attr("@click", fmt.Sprintf(`$event.view.window.navigator.clipboard.writeText(%s);vars.presetsMessage = { show: true, message: "success", color: %q}`, copyURL, ColorSuccess)),
 			).Class("d-inline-flex align-center py-4"),
 		).Class("my-10")
 	}
@@ -184,7 +184,7 @@ func detailPageEditor(dp *presets.DetailingBuilder, b *Builder) {
 			}
 			msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 			return h.Div(
-				detailingRow(msgr.Title, h.Text(p.Title)).Attr(web.VAssign("vars", fmt.Sprintf(`{pageTitle:"%s"}`, p.Title))...),
+				detailingRow(msgr.Title, h.Text(p.Title)).Attr(web.VAssign("vars", fmt.Sprintf(`{pageTitle:%q}`, p.Title))...),
 				detailingRow(msgr.Slug, h.Text(p.Slug)),
 				detailingRow(msgr.Category, h.Text(category.Path)),
 			)
