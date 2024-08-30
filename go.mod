@@ -26,8 +26,8 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/pquerna/otp v1.4.0
 	github.com/qor/oss v0.0.0-20240729105053-88484a799a79
-	github.com/qor5/web/v3 v3.0.7-0.20240829071227-899763dfb540
-	github.com/qor5/x/v3 v3.0.8-0.20240830030741-7bfd3f19adfc
+	github.com/qor5/web/v3 v3.0.7
+	github.com/qor5/x/v3 v3.0.8
 	github.com/samber/lo v1.47.0
 	github.com/shurcooL/sanitized_anchor_name v1.0.0
 	github.com/spf13/cast v1.6.0
