@@ -454,12 +454,27 @@ func ScopeWithOwner(owner string) string {
 	return fmt.Sprintf(",owner:%s,", owner)
 }
 
+type ctxKeyDB struct{}
+
+func ContextWithDB(ctx context.Context, db *gorm.DB) context.Context {
+	return context.WithValue(ctx, ctxKeyDB{}, db)
+}
+
 func (mb *ModelBuilder) create(
 	ctx context.Context,
 	action string,
 	modelName, modelKeys, modelLink string,
 	detail any,
 ) (*ActivityLog, error) {
+	db, ok := ctx.Value(ctxKeyDB{}).(*gorm.DB)
+	if !ok {
+		db = mb.ab.db
+	} else {
+		if mb.ab.tablePrefix != "" {
+			db = db.Scopes(ScopeWithTablePrefix(mb.ab.tablePrefix)).Session(&gorm.Session{})
+		}
+	}
+
 	user, err := mb.ab.currentUserFunc(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get current user")
@@ -467,13 +482,13 @@ func (mb *ModelBuilder) create(
 
 	if mb.ab.findUsersFunc == nil {
 		user := &ActivityUser{
-			CreatedAt: mb.ab.db.NowFunc(),
+			CreatedAt: db.NowFunc(),
 			ID:        user.ID,
 			Name:      user.Name,
 			Avatar:    user.Avatar,
 		}
-		if mb.ab.db.Where("id = ?", user.ID).Select("*").Omit("created_at").Updates(user).RowsAffected == 0 {
-			if err := mb.ab.db.Create(user).Error; err != nil {
+		if db.Where("id = ?", user.ID).Select("*").Omit("created_at").Updates(user).RowsAffected == 0 {
+			if err := db.Create(user).Error; err != nil {
 				return nil, errors.Wrap(err, "failed to create user")
 			}
 		}
@@ -485,7 +500,7 @@ func (mb *ModelBuilder) create(
 			scope = ScopeWithOwner(user.ID)
 		} else {
 			createdLog := &ActivityLog{}
-			if err := mb.ab.db.Where("model_name = ? AND model_keys = ? AND action = ? ", modelName, modelKeys, ActionCreate).
+			if err := db.Where("model_name = ? AND model_keys = ? AND action = ? ", modelName, modelKeys, ActionCreate).
 				Order("created_at ASC").First(&createdLog).Error; err != nil {
 				if !errors.Is(err, gorm.ErrRecordNotFound) {
 					return nil, errors.Wrap(err, "failed to find created log")
@@ -509,7 +524,7 @@ func (mb *ModelBuilder) create(
 	if mb.presetModel != nil {
 		log.ModelLabel = cmp.Or(mb.presetModel.Info().URIName(), log.ModelLabel)
 	}
-	log.CreatedAt = mb.ab.db.NowFunc()
+	log.CreatedAt = db.NowFunc()
 
 	detailJson, err := json.Marshal(detail)
 	if err != nil {
@@ -520,7 +535,7 @@ func (mb *ModelBuilder) create(
 	if action == ActionLastView {
 		log.Hidden = true
 		r := &ActivityLog{}
-		if err := mb.ab.db.
+		if err := db.
 			Where("user_id = ? AND model_name = ? AND model_keys = ? AND action = ?", user.ID, modelName, modelKeys, action).
 			Assign(log).FirstOrCreate(r).Error; err != nil {
 			return nil, err
@@ -528,9 +543,9 @@ func (mb *ModelBuilder) create(
 		return r, nil
 
 		// Why not use this ? Because log.id is empty although the record is already created, there is no advance fetch of the original id here .
-		// if mb.ab.db.Where("user_id = ? AND model_name = ? AND model_keys = ? AND action = ?", log.UserID, log.ModelName, log.ModelKeys, log.Action).
+		// if db.Where("user_id = ? AND model_name = ? AND model_keys = ? AND action = ?", log.UserID, log.ModelName, log.ModelKeys, log.Action).
 		// 	Select("*").Updates(log).RowsAffected == 0 {
-		// 	if err := mb.ab.db.Create(log).Error; err != nil {
+		// 	if err := db.Create(log).Error; err != nil {
 		// 		return nil, errors.Wrap(err, "failed to create log")
 		// 	}
 		// }
@@ -538,7 +553,7 @@ func (mb *ModelBuilder) create(
 		// Why not use Upsert ?
 		// https://github.com/go-gorm/gorm/issues/6512
 		// https://github.com/jackc/pgx/issues/1234
-		// if err := mb.ab.db.Clauses(clause.OnConflict{
+		// if err := db.Clauses(clause.OnConflict{
 		// 	Columns: []clause.Column{
 		// 		{Name: "model_name"},
 		// 		{Name: "model_keys"},
@@ -554,7 +569,7 @@ func (mb *ModelBuilder) create(
 		// return log, nil
 	}
 
-	if err := mb.ab.db.Create(log).Error; err != nil {
+	if err := db.Create(log).Error; err != nil {
 		return nil, errors.Wrap(err, "failed to create log")
 	}
 

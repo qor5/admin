@@ -464,3 +464,50 @@ func TestMutliModelBuilder(t *testing.T) {
 		}
 	}
 }
+
+func TestContextWithDB(t *testing.T) {
+	{
+		resetDB()
+
+		ab := New(db, testCurrentUser).AutoMigrate()
+		ab.RegisterModel(presets.New().Model(&Page{}))
+
+		ctx := context.Background()
+		{
+			ctx := ContextWithDB(ctx, db)
+			_, err := ab.Log(ctx, "Review", Page{ID: 1, VersionName: "v1", Title: "test"}, nil)
+			require.NoError(t, err)
+		}
+		{
+			// simulate a error to ensure the ContextWithDB is actually used
+			cctx, ccancel := context.WithCancel(ctx)
+			ccancel()
+
+			ctx := ContextWithDB(ctx, db.WithContext(cctx))
+			_, err := ab.Log(ctx, "Review", Page{ID: 1, VersionName: "v1", Title: "test"}, nil)
+			require.ErrorIs(t, err, context.Canceled)
+		}
+	}
+
+	// with table prefix
+	{
+		ab := New(db, testCurrentUser).TablePrefix("cms_").AutoMigrate()
+		ab.RegisterModel(presets.New().Model(&Page{}))
+
+		ctx := context.Background()
+		{
+			ctx := ContextWithDB(ctx, db)
+			_, err := ab.Log(ctx, "Review", Page{ID: 1, VersionName: "v1", Title: "test"}, nil)
+			require.NoError(t, err)
+		}
+		{
+			// simulate a error to ensure the ContextWithDB is actually used
+			cctx, ccancel := context.WithCancel(ctx)
+			ccancel()
+
+			ctx := ContextWithDB(ctx, db.WithContext(cctx))
+			_, err := ab.Log(ctx, "Review", Page{ID: 1, VersionName: "v1", Title: "test"}, nil)
+			require.ErrorIs(t, err, context.Canceled)
+		}
+	}
+}
