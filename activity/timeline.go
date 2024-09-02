@@ -63,7 +63,7 @@ func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog) h.HT
 		return h.Components(
 			h.Div().Attr("v-if", "!xlocals.showEditBox").Class("d-flex flex-column").Children(
 				h.Div(h.Text(msgr.AddedANote)),
-				h.Pre(note.Note).Attr("v-pre", true).Style("white-space: pre-wrap"),
+				h.Pre(note.Note).Attr("v-pre", true).Class("text-body-2").Style("white-space: pre-wrap"),
 				h.Iff(!note.LastEditedAt.IsZero(), func() h.HTMLComponent {
 					return h.Div().Class("text-caption font-italic").Class("text-grey-darken-1").Children(
 						h.Text(msgr.LastEditedAt(pmsgr.HumanizeTime(note.LastEditedAt))),
