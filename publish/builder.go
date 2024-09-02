@@ -19,6 +19,7 @@ import (
 	"github.com/qor5/x/v3/i18n"
 	"github.com/sunfmin/reflectutils"
 	"github.com/theplant/htmlgo"
+	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -152,6 +153,10 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.Model
 			ListingFieldLive:       msgr.HeaderLive,
 		}, nil
 	}))
+	lb.WrapColumns(presets.CustomizeColumnHeader(func(evCtx *web.EventContext, col *presets.Column, th h.MutableAttrHTMLComponent) (h.MutableAttrHTMLComponent, error) {
+		th.SetAttr("style", "min-width: 200px;")
+		return th, nil
+	}, ListingFieldLive))
 
 	slugDecoder := mb.NewModel().(presets.SlugDecoder)
 	uniqueWithoutVersion := func(id string) string {

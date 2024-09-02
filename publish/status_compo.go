@@ -35,10 +35,9 @@ func liveFunc(db *gorm.DB) presets.FieldComponentFunc {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 
 		var (
-			ok            bool
-			err           error
-			modelSchema   *schema.Schema
-			scheduleStart Schedule
+			ok          bool
+			err         error
+			modelSchema *schema.Schema
 		)
 		defer func() {
 			if err != nil {
@@ -66,6 +65,7 @@ func liveFunc(db *gorm.DB) presets.FieldComponentFunc {
 		if !ok {
 			return statusChip(st.EmbedStatus().Status, msgr)
 		}
+		ver, _ := obj.(VersionInterface)
 
 		var (
 			statusFieldName = modelSchema.FieldsByName["Status"].DBName
@@ -73,23 +73,54 @@ func liveFunc(db *gorm.DB) presets.FieldComponentFunc {
 		)
 
 		var toStatus string
+		var tooltip string
 		if st.EmbedStatus().Status != StatusOnline {
-			if sc.EmbedSchedule().ScheduledStartAt != nil {
+			currentStartAt := sc.EmbedSchedule().ScheduledStartAt
+			if currentStartAt != nil {
 				toStatus = StatusOnline
+				if ver != nil {
+					tooltip = msgr.ToStatusOnline(ver.EmbedVersion().VersionName, ScheduleTimeString(currentStartAt))
+				}
 			}
 		} else {
-			err := g().Select(startFieldName).Where(fmt.Sprintf("%s <> ? AND %s > ?", statusFieldName, startFieldName), StatusOnline, nowTime).Order(startFieldName).Limit(1).Scan(&scheduleStart).Error
+			objNextStart := reflect.New(modelSchema.ModelType).Interface()
+			err := g().Where(fmt.Sprintf("%s <> ? AND %s > ?", statusFieldName, startFieldName), StatusOnline, nowTime).
+				Order(startFieldName).Limit(1).Scan(&objNextStart).Error
 			if err != nil {
 				return
 			}
+			scNext := objNextStart.(ScheduleInterface).EmbedSchedule()
+
 			currentEndAt := sc.EmbedSchedule().ScheduledEndAt
-			if scheduleStart.ScheduledStartAt != nil && (currentEndAt == nil || !scheduleStart.ScheduledStartAt.After(*currentEndAt)) {
-				toStatus = "+1"
+			if scNext.ScheduledStartAt != nil && (currentEndAt == nil || !scNext.ScheduledStartAt.After(*currentEndAt)) {
+				toStatus = statusNext
+
+				scNextStartAtFormat := ScheduleTimeString(scNext.ScheduledStartAt)
+				if ver != nil {
+					tooltip = fmt.Sprintf("%s\n%s",
+						msgr.ToStatusOffline(ver.EmbedVersion().VersionName, scNextStartAtFormat),
+						msgr.ToStatusOnline(objNextStart.(VersionInterface).EmbedVersion().VersionName, scNextStartAtFormat),
+					)
+				}
 			} else if currentEndAt != nil && !currentEndAt.Before(nowTime) {
 				toStatus = StatusOffline
+				if ver != nil {
+					tooltip = msgr.ToStatusOffline(ver.EmbedVersion().VersionName, ScheduleTimeString(currentEndAt))
+				}
 			}
 		}
-		return liveChips(st.EmbedStatus().Status, toStatus, msgr)
+		compo := liveChips(st.EmbedStatus().Status, toStatus, msgr)
+		if tooltip != "" {
+			compo = h.Div().Class("d-flex").Children(
+				h.Div().Children(
+					VTooltip().Activator("parent").Location(LocationTop).Children(
+						h.Pre(tooltip).Attr("v-pre", true).Class("text-body-2").Style("white-space: pre-wrap"),
+					),
+					compo,
+				),
+			)
+		}
+		return compo
 	}
 }
 
@@ -104,10 +135,10 @@ func StatusListFunc() presets.FieldComponentFunc {
 	}
 }
 
-func liveChip(status string, isScheduled bool, msgr *Messages) *VChipBuilder {
+func liveChip(status string, isScheduled bool, msgr *Messages, forceMarked bool) *VChipBuilder {
 	label, color := GetStatusLabelColor(status, msgr)
 	chip := VChip(
-		h.If(status == StatusOnline,
+		h.If(status == StatusOnline || forceMarked,
 			VIcon("mdi-radiobox-marked").Size(SizeSmall).Class("mr-1"),
 		),
 		h.Span(label),
@@ -116,18 +147,20 @@ func liveChip(status string, isScheduled bool, msgr *Messages) *VChipBuilder {
 	if !isScheduled {
 		return chip
 	}
-	return chip.Class("rounded-s-lg")
+	return chip
 }
 
 func statusChip(status string, msgr *Messages) *VChipBuilder {
-	return liveChip(status, false, msgr).Class("rounded")
+	return liveChip(status, false, msgr, false).Class("rounded")
 }
+
+const statusNext = "Next"
 
 func liveChips(status string, toStatus string, msgr *Messages) h.HTMLComponent {
 	if toStatus != "" {
 		return h.Components(
-			liveChip(status, true, msgr).Class("rounded-s"),
-			liveChip(toStatus, false, msgr).Class("rounded-e"),
+			liveChip(status, true, msgr, false).Class("rounded-s"),
+			liveChip(toStatus, false, msgr, toStatus == statusNext).Class("rounded-e"),
 		)
 	}
 	return statusChip(status, msgr)
@@ -141,6 +174,8 @@ func GetStatusLabelColor(status string, msgr *Messages) (label, color string) {
 		return msgr.StatusOffline, ColorSecondary
 	case StatusDraft:
 		return msgr.StatusDraft, ColorWarning
+	case statusNext:
+		return msgr.StatusNext, ColorSuccess
 	default:
 		return status, ColorSuccess
 	}

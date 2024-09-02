@@ -354,7 +354,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 						),
 						VCardText().Class("mt-3 pa-3 border-thin rounded").Children(
 							h.Div().Class("d-flex flex-column").Children(
-								h.Pre(note.Note).Attr("v-pre", true).Style("white-space: pre-wrap"),
+								h.Pre(note.Note).Attr("v-pre", true).Class("text-body-2").Style("white-space: pre-wrap"),
 								h.Iff(!note.LastEditedAt.IsZero(), func() h.HTMLComponent {
 									return h.Div().Class("text-caption font-italic").Style("color: #757575").Children(
 										h.Text(msgr.LastEditedAt(pmsgr.HumanizeTime(note.LastEditedAt))),

@@ -6,6 +6,7 @@ type Messages struct {
 	StatusDraft                             string
 	StatusOnline                            string
 	StatusOffline                           string
+	StatusNext                              string
 	Publish                                 string
 	Unpublish                               string
 	Republish                               string
@@ -37,6 +38,8 @@ type Messages struct {
 	NamedVersions                           string
 	RenameVersion                           string
 	DeleteVersionConfirmationTextTemplate   string
+	ToStatusOnlineTemplate                  string
+	ToStatusOfflineTemplate                 string
 
 	FilterTabAllVersions   string
 	FilterTabOnlineVersion string
@@ -60,10 +63,25 @@ func (msgr *Messages) DeleteVersionConfirmationText(versionName string) string {
 		Replace(msgr.DeleteVersionConfirmationTextTemplate)
 }
 
+func (msgr *Messages) ToStatusOnline(versionName string, scheduleTime string) string {
+	return strings.NewReplacer(
+		"{VersionName}", versionName,
+		"{ScheduleTime}", scheduleTime,
+	).Replace(msgr.ToStatusOnlineTemplate)
+}
+
+func (msgr *Messages) ToStatusOffline(versionName string, scheduleTime string) string {
+	return strings.NewReplacer(
+		"{VersionName}", versionName,
+		"{ScheduleTime}", scheduleTime,
+	).Replace(msgr.ToStatusOfflineTemplate)
+}
+
 var Messages_en_US = &Messages{
 	StatusDraft:                             "Draft",
 	StatusOnline:                            "Online",
 	StatusOffline:                           "Offline",
+	StatusNext:                              "Next",
 	Publish:                                 "Publish",
 	Unpublish:                               "Unpublish",
 	Republish:                               "Republish",
@@ -95,6 +113,8 @@ var Messages_en_US = &Messages{
 	NamedVersions:                           "Named versions",
 	RenameVersion:                           "Rename Version",
 	DeleteVersionConfirmationTextTemplate:   "Are you sure you want to delete version {VersionName} ?",
+	ToStatusOnlineTemplate:                  "{VersionName} will be online at {ScheduleTime}",
+	ToStatusOfflineTemplate:                 "{VersionName} will be offline at {ScheduleTime}",
 
 	FilterTabAllVersions:   "All Versions",
 	FilterTabOnlineVersion: "Online Versions",
@@ -117,6 +137,7 @@ var Messages_zh_CN = &Messages{
 	StatusDraft:                             "草稿",
 	StatusOnline:                            "在线",
 	StatusOffline:                           "离线",
+	StatusNext:                              "下一个",
 	Publish:                                 "发布",
 	Unpublish:                               "取消发布",
 	Republish:                               "重新发布",
@@ -148,6 +169,8 @@ var Messages_zh_CN = &Messages{
 	NamedVersions:                           "已命名版本",
 	RenameVersion:                           "命名版本",
 	DeleteVersionConfirmationTextTemplate:   "你确定你要删除此版本 {VersionName} 吗？",
+	ToStatusOnlineTemplate:                  "{VersionName} 将在 {ScheduleTime} 上线",
+	ToStatusOfflineTemplate:                 "{VersionName} 将在 {ScheduleTime} 下线",
 
 	FilterTabAllVersions:   "所有版本",
 	FilterTabOnlineVersion: "在线版本",
@@ -170,6 +193,7 @@ var Messages_ja_JP = &Messages{
 	StatusDraft:                             "下書き",
 	StatusOnline:                            "オンライン",
 	StatusOffline:                           "オフライン",
+	StatusNext:                              "次",
 	Publish:                                 "公開する",
 	Unpublish:                               "非公開",
 	Republish:                               "再公開",
@@ -201,13 +225,15 @@ var Messages_ja_JP = &Messages{
 	NamedVersions:                           "指定バージョン",
 	RenameVersion:                           "バージョン名の変更",
 	DeleteVersionConfirmationTextTemplate:   "本当にバージョン{VersionName}を削除しますか？",
-	Duplicate:                               "コピー",
+	ToStatusOnlineTemplate:                  "{VersionName} は {ScheduleTime} にオンラインになります",
+	ToStatusOfflineTemplate:                 "{VersionName} は {ScheduleTime} にオフラインになります",
 
 	FilterTabAllVersions:   "すべてのバージョン",
 	FilterTabOnlineVersion: "オンラインバージョン",
 	FilterTabNamedVersions: "名前付きバージョン",
 	Rename:                 "名称変更",
 	PageOverView:           "ページ概要",
+	Duplicate:              "コピー",
 
 	HeaderVersion: "バージョン",
 	HeaderStatus:  "ステータス",
