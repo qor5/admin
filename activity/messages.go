@@ -28,6 +28,7 @@ type Messages struct {
 	FilterCreatedAt string
 	FilterUser      string
 	FilterModel     string
+	FilterModelKeys string
 
 	DiffDetail  string
 	DiffAdd     string
@@ -64,6 +65,8 @@ type Messages struct {
 	Cancel                        string
 	Delete                        string
 	NoActivitiesYet               string
+	ViewAll                       string
+	CannotShowMore                string
 
 	HeaderNotes string
 
@@ -118,6 +121,7 @@ var Messages_en_US = &Messages{
 	FilterCreatedAt: "Create Time",
 	FilterUser:      "Creator",
 	FilterModel:     "Model Name",
+	FilterModelKeys: "Model Keys",
 
 	DiffDetail:  "Detail",
 	DiffAdd:     "New",
@@ -154,6 +158,8 @@ var Messages_en_US = &Messages{
 	Cancel:                        "Cancel",
 	Delete:                        "Delete",
 	NoActivitiesYet:               "No activities yet",
+	ViewAll:                       "View All",
+	CannotShowMore:                "Reached the display limit, unable to load more.",
 
 	HeaderNotes: "Notes",
 
@@ -186,6 +192,7 @@ var Messages_zh_CN = &Messages{
 	FilterCreatedAt: "操作时间",
 	FilterUser:      "操作人",
 	FilterModel:     "操作对象",
+	FilterModelKeys: "操作对象主键",
 
 	DiffDetail:  "详情",
 	DiffAdd:     "新加",
@@ -222,6 +229,8 @@ var Messages_zh_CN = &Messages{
 	Cancel:                        "取消",
 	Delete:                        "删除",
 	NoActivitiesYet:               "暂无活动",
+	ViewAll:                       "查看全部",
+	CannotShowMore:                "已达到显示上限，无法加载更多。",
 
 	HeaderNotes: "备注",
 
@@ -254,6 +263,7 @@ var Messages_ja_JP = &Messages{
 	FilterCreatedAt: "作成日時",
 	FilterUser:      "作成者",
 	FilterModel:     "モデル名",
+	FilterModelKeys: "キー",
 
 	DiffDetail:  "詳細",
 	DiffAdd:     "追加",
@@ -290,6 +300,8 @@ var Messages_ja_JP = &Messages{
 	Cancel:                        "キャンセル",
 	Delete:                        "削除",
 	NoActivitiesYet:               "まだアクティビティはありません",
+	ViewAll:                       "全て表示",
+	CannotShowMore:                "表示上限に達しました。これ以上読み込むことができません。",
 
 	HeaderNotes: "ノート",
 

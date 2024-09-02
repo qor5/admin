@@ -104,10 +104,11 @@ func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog) h.HT
 		if err := json.Unmarshal([]byte(log.Detail), &diffs); err != nil {
 			return h.Text(fmt.Sprintf("Failed to unmarshal detail: %v", err))
 		}
-		// presetInstalled := c.ab.IsPresetInstalled(c.mb.GetPresetsBuilder())
+
+		// logModelBuilder := c.ab.GetLogModelBuilder(c.mb.GetPresetsBuilder())
 		return h.Div().Class("d-flex flex-row align-center ga-2").Children(
 			h.Div(h.Text(msgr.EditedNFields(len(diffs)))),
-			// h.Iff(presetInstalled, func() h.HTMLComponent {
+			// h.Iff(logModelBuilder != nil, func() h.HTMLComponent {
 			// 	return v.VBtn(msgr.MoreInfo).Class("text-none text-overline d-flex align-center").
 			// 		Variant(v.VariantTonal).Color(v.ColorPrimary).Size(v.SizeXSmall).PrependIcon("mdi-open-in-new").
 			// 		Attr("@click", web.POST().
@@ -169,7 +170,7 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		),
 	}
 
-	logs, err := c.ab.findLogsForTimeline(ctx, c.ModelName, c.ModelKeys)
+	logs, hasMore, err := c.ab.findLogsForTimeline(ctx, c.ModelName, c.ModelKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +182,7 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		return nil, errors.Wrap(err, "failed to get current user")
 	}
 
-	presetInstalled := c.ab.IsPresetInstalled(c.mb.GetPresetsBuilder())
+	logModelBuilder := c.ab.GetLogModelBuilder(c.mb.GetPresetsBuilder())
 	varCurrentActive := c.VarCurrentActive()
 	for i, log := range logs {
 		userName := log.User.Name
@@ -218,7 +219,7 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 							Class("font-weight-medium flex-grow-1").Children(
 							h.Div().Attr("v-pre", true).Text(userName),
 						),
-						h.Iff(log.Action == ActionEdit && presetInstalled, func() h.HTMLComponent {
+						h.Iff(log.Action == ActionEdit && logModelBuilder != nil, func() h.HTMLComponent {
 							return v.VIcon("mdi-chevron-right").
 								Attr("v-if", fmt.Sprintf(`isHovering || vars.%s == %q`, varCurrentActive, idStr)).
 								Size(v.SizeSmall).Class("text-grey-darken-4")
@@ -238,7 +239,7 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 					Query(presets.ParamID, idStr).
 					Query(paramHideDetailTop, true).
 					Query(presets.ParamVarCurrentActive, c.VarCurrentActive()).
-					Go(), log.Action == ActionEdit && presetInstalled),
+					Go(), log.Action == ActionEdit && logModelBuilder != nil),
 			),
 		)
 
@@ -256,7 +257,7 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		}
 
 		hoverable := (log.Action == ActionNote && log.UserID == user.ID) ||
-			(log.Action == ActionEdit && presetInstalled)
+			(log.Action == ActionEdit && logModelBuilder != nil)
 		children = append(children, v.VHover().Disabled(!hoverable).Children(
 			web.Slot().Name("default").Scope("{ isHovering, props }").Children(
 				h.Div().Class("d-flex flex-column").Attr("v-bind", "props").Children(
@@ -266,6 +267,26 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 				),
 			),
 		))
+	}
+
+	if hasMore {
+		children = append(children,
+			h.Div().Class("d-flex flex-row ga-2").Children(
+				h.Div().Class("bg-grey-lighten-2").Class("align-self-stretch").Style("width: 1px; margin: -6px 3.5px -2px 3.5px;"),
+				h.Iff(logModelBuilder != nil, func() h.HTMLComponent {
+					return v.VBtn(msgr.ViewAll).Variant(v.VariantText).Color(v.ColorPrimary).Size(v.SizeSmall).
+						AppendIcon("mdi-chevron-right").Class("text-caption ms-n2").
+						Attr("@click", web.Plaid().
+							URL(logModelBuilder.Info().ListingHref()).
+							Query("f_model_name", c.ModelName).
+							Query("f_model_keys", c.ModelKeys).
+							Go(),
+						)
+				}).Else(func() h.HTMLComponent {
+					return h.Div().Class("text-caption text-grey").Text(msgr.CannotShowMore)
+				}),
+			),
+		)
 	}
 
 	if len(logs) == 0 {

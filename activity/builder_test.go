@@ -329,9 +329,10 @@ func TestGetActivityLogs(t *testing.T) {
 	}
 
 	page := Page{ID: 1, VersionName: "v1"}
-	logs, err := builder.getActivityLogs(context.Background(), ParseModelName(page), amb.ParseModelKeys(page))
+	logs, hasMore, err := builder.getActivityLogs(context.Background(), ParseModelName(page), amb.ParseModelKeys(page))
 	require.NoError(t, err)
 	require.Len(t, logs, 3)
+	require.False(t, hasMore)
 
 	expectedActions := []string{"Edit", "Edit", "Create"}
 	for i, log := range logs {
