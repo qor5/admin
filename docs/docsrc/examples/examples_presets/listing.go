@@ -90,11 +90,15 @@ func PresetsRowMenuAction(b *presets.Builder, db *gorm.DB) (
 	rmb := cl.RowMenu()
 
 	// if()
-	rmb.RowMenuItem("with-icon").Icon("mdi-close").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
-		return nil
+	rmb.RowMenuItem("with-icon").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
+		return v.VListItem(
+			web.Slot(
+				v.VIcon(""),
+			).Name("prepend"),
+			v.VListItemTitle(h.Text("with-icon")),
+		)
 	})
-
-	rmb.RowMenuItem("without icon").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
+	rmb.RowMenuItem("Delete").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
 		return nil
 	})
 	return
