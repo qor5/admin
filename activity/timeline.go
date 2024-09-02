@@ -202,6 +202,44 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 			dotColor = "grey-lighten-2"
 		}
 		idStr := fmt.Sprint(log.ID)
+
+		hotspot := h.Div().Attr(":class", fmt.Sprintf(`{ "bg-grey-lighten-4": isHovering || vars.%s == %q }`, varCurrentActive, idStr)).
+			Class("flex-grow-1 d-flex flex-column pe-1 pb-3 rounded").Style("padding-left: 2px;").Children(
+			h.Div().Class("d-flex flex-row align-center ga-2").Children(
+				v.VAvatar().Class("text-overline font-weight-medium text-primary bg-primary-lighten-2").Size(v.SizeXSmall).Density(v.DensityCompact).Rounded(true).Text(avatarText).Children(
+					h.Iff(log.User.Avatar != "", func() h.HTMLComponent {
+						return v.VImg().Attr("alt", userName).Attr("src", log.User.Avatar)
+					}),
+				),
+				h.Div().Attr(":class", fmt.Sprintf(`{ "text-grey": !xlocals.isAccent && !isHovering && vars.%s != %q }`, varCurrentActive, idStr)).
+					Class("font-weight-medium flex-grow-1").Children(
+					h.Div().Attr("v-pre", true).Text(userName),
+				),
+				h.Iff(log.Action == ActionEdit && logModelBuilder != nil, func() h.HTMLComponent {
+					return v.VIcon("mdi-chevron-right").
+						Attr("v-if", fmt.Sprintf(`isHovering || vars.%s == %q`, varCurrentActive, idStr)).
+						Size(v.SizeSmall).Class("text-grey-darken-4")
+				}),
+			),
+			h.Div().Class("d-flex flex-row align-center ga-2").Children(
+				h.Div().Style("width: 16px; flex-shrink:0"),
+				h.Div().Attr(":class", fmt.Sprintf(`{ "text-grey": !xlocals.isAccent && !isHovering && vars.%s != %q }`, varCurrentActive, idStr)).
+					Class("flex-grow-1").Children(
+					c.humanContent(ctx, log),
+				),
+			),
+		)
+		if log.Action == ActionEdit && logModelBuilder != nil {
+			hotspot.Attr("@click", web.POST().
+				EventFunc(actions.DetailingDrawer).
+				Query(presets.ParamOverlay, actions.Dialog).
+				URL(logModelBuilder.Info().ListingHref()).
+				Query(presets.ParamID, idStr).
+				Query(paramHideDetailTop, true).
+				Query(presets.ParamVarCurrentActive, c.VarCurrentActive()).
+				Go())
+		}
+
 		var child h.HTMLComponent = h.Div().Class("d-flex flex-column ga-1").Children(
 			h.Div().Class("d-flex flex-row align-center ga-2").Children(
 				h.Div().Class("bg-"+dotColor).Style("width: 8px; height: 8px;").Class("rounded-circle"),
@@ -209,39 +247,7 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 			),
 			h.Div().Class("d-flex flex-row ga-2").Children(
 				h.Div().Class("bg-"+dotColor).Class("align-self-stretch").Style("width: 1px; margin: -6px 3.5px -2px 3.5px;"),
-				h.Div().Attr(":class", fmt.Sprintf(`{ "bg-grey-lighten-4": isHovering || vars.%s == %q }`, varCurrentActive, idStr)).
-					Class("flex-grow-1 d-flex flex-column pe-1 pb-3 rounded").Style("padding-left: 2px;").Children(
-					h.Div().Class("d-flex flex-row align-center ga-2").Children(
-						v.VAvatar().Class("text-overline font-weight-medium text-primary bg-primary-lighten-2").Size(v.SizeXSmall).Density(v.DensityCompact).Rounded(true).Text(avatarText).Children(
-							h.Iff(log.User.Avatar != "", func() h.HTMLComponent {
-								return v.VImg().Attr("alt", userName).Attr("src", log.User.Avatar)
-							}),
-						),
-						h.Div().Attr(":class", fmt.Sprintf(`{ "text-grey": !xlocals.isAccent && !isHovering && vars.%s != %q }`, varCurrentActive, idStr)).
-							Class("font-weight-medium flex-grow-1").Children(
-							h.Div().Attr("v-pre", true).Text(userName),
-						),
-						h.Iff(log.Action == ActionEdit && logModelBuilder != nil, func() h.HTMLComponent {
-							return v.VIcon("mdi-chevron-right").
-								Attr("v-if", fmt.Sprintf(`isHovering || vars.%s == %q`, varCurrentActive, idStr)).
-								Size(v.SizeSmall).Class("text-grey-darken-4")
-						}),
-					),
-					h.Div().Class("d-flex flex-row align-center ga-2").Children(
-						h.Div().Style("width: 16px; flex-shrink:0"),
-						h.Div().Attr(":class", fmt.Sprintf(`{ "text-grey": !xlocals.isAccent && !isHovering && vars.%s != %q }`, varCurrentActive, idStr)).
-							Class("flex-grow-1").Children(
-							c.humanContent(ctx, log),
-						),
-					),
-				).AttrIf("@click", web.POST().
-					EventFunc(actions.DetailingDrawer).
-					Query(presets.ParamOverlay, actions.Dialog).
-					URL(logModelBuilder.Info().ListingHref()).
-					Query(presets.ParamID, idStr).
-					Query(paramHideDetailTop, true).
-					Query(presets.ParamVarCurrentActive, c.VarCurrentActive()).
-					Go(), log.Action == ActionEdit && logModelBuilder != nil),
+				hotspot,
 			),
 		)
 

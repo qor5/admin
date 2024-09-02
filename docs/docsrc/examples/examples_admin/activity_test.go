@@ -68,6 +68,7 @@ func TestActivity(t *testing.T) {
 			Name:  "Activity Model details should have timeline",
 			Debug: true,
 			ReqFunc: func() *http.Request {
+				activityData.TruncatePut(dbr)
 				req := multipartestutils.NewMultipartBuilder().
 					PageURL("/with-activity-products?__execute_event__=presets_DetailingDrawer&id=13").
 					BuildEventFuncRequest()
@@ -76,11 +77,51 @@ func TestActivity(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"WithActivityProduct 13", ">Add Note</v-btn>", "John", "Added a note", "The newest model of the off-legacy Air Jordans is ready to burst onto to the scene.", "John", "Created"},
 		},
 		{
+			Name:  "view all (with admin used)",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				pb := presets.New()
+				activityExample(pb, TestDB, func(mb *presets.ModelBuilder, ab *activity.Builder) {
+					defer pb.Use(ab)
+					ab.MaxCountShowInTimeline(1)
+				})
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				activityData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/with-activity-products?__execute_event__=presets_DetailingDrawer&id=13").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"WithActivityProduct 13", ">Add Note</v-btn>", "John", "Added a note", "The newest model of the off-legacy Air Jordans is ready to burst onto to the scene.", "View All"},
+		},
+		{
+			Name:  "can not show more (without admin used)",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				pb := presets.New()
+				activityExample(pb, TestDB, func(mb *presets.ModelBuilder, ab *activity.Builder) {
+					ab.MaxCountShowInTimeline(1)
+				})
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				activityData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/with-activity-products?__execute_event__=presets_DetailingDrawer&id=13").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"WithActivityProduct 13", ">Add Note</v-btn>", "John", "Added a note", "The newest model of the off-legacy Air Jordans is ready to burst onto to the scene.", "Reached the display limit, unable to load more."},
+		},
+		{
 			Name:  "timeline without non-note logs",
 			Debug: true,
 			HandlerMaker: func() http.Handler {
 				pb := presets.New()
 				activityExample(pb, TestDB, func(mb *presets.ModelBuilder, ab *activity.Builder) {
+					defer pb.Use(ab)
 					ab.FindLogsForTimelineFunc(func(ctx context.Context, db *gorm.DB, modelName, modelKeys string) ([]*activity.ActivityLog, bool, error) {
 						maxCount := 11
 						var logs []*activity.ActivityLog
@@ -115,22 +156,22 @@ func TestActivity(t *testing.T) {
 				req := multipartestutils.NewMultipartBuilder().
 					PageURL("/with-activity-products?__execute_event__=__dispatch_stateful_action__").
 					AddField("__action__", `
-{
-	"compo_type": "*activity.TimelineCompo",
-	"compo": {
-		"id": "with-activity-products:13",
-		"model_name": "WithActivityProduct",
-		"model_keys": "13",
-		"model_link": "/examples/activity-example/with-activity-products/13"
-	},
-	"injector": "__activity:with-activity-products__",
-	"sync_query": false,
-	"method": "CreateNote",
-	"request": {
-		"note": "The iconic all-black look."
-	}
-}	
-`).
+		{
+			"compo_type": "*activity.TimelineCompo",
+			"compo": {
+				"id": "with-activity-products:13",
+				"model_name": "WithActivityProduct",
+				"model_keys": "13",
+				"model_link": "/examples/activity-example/with-activity-products/13"
+			},
+			"injector": "__activity:with-activity-products__",
+			"sync_query": false,
+			"method": "CreateNote",
+			"request": {
+				"note": "The iconic all-black look."
+			}
+		}
+		`).
 					BuildEventFuncRequest()
 				return req
 			},
@@ -144,22 +185,22 @@ func TestActivity(t *testing.T) {
 				req := multipartestutils.NewMultipartBuilder().
 					PageURL("/with-activity-products?__execute_event__=__dispatch_stateful_action__").
 					AddField("__action__", `
-{
-	"compo_type": "*activity.TimelineCompo",
-	"compo": {
-		"id": "with-activity-products:13",
-		"model_name": "WithActivityProduct",
-		"model_keys": "13",
-		"model_link": "/examples/activity-example/with-activity-products/13"
-	},
-	"injector": "__activity:with-activity-products__",
-	"sync_query": false,
-	"method": "CreateNote",
-	"request": {
-		"note": "     "
-	}
-}
-`).
+		{
+			"compo_type": "*activity.TimelineCompo",
+			"compo": {
+				"id": "with-activity-products:13",
+				"model_name": "WithActivityProduct",
+				"model_keys": "13",
+				"model_link": "/examples/activity-example/with-activity-products/13"
+			},
+			"injector": "__activity:with-activity-products__",
+			"sync_query": false,
+			"method": "CreateNote",
+			"request": {
+				"note": "     "
+			}
+		}
+		`).
 					BuildEventFuncRequest()
 				return req
 			},
@@ -173,23 +214,23 @@ func TestActivity(t *testing.T) {
 				req := multipartestutils.NewMultipartBuilder().
 					PageURL("/with-activity-products?__execute_event__=__dispatch_stateful_action__").
 					AddField("__action__", `
-{
-	"compo_type": "*activity.TimelineCompo",
-	"compo": {
-		"id": "with-activity-products:13",
-		"model_name": "WithActivityProduct",
-		"model_keys": "13",
-		"model_link": "/examples/activity-example/with-activity-products/13"
-	},
-	"injector": "__activity:with-activity-products__",
-	"sync_query": false,
-	"method": "UpdateNote",
-	"request": {
-		"log_id": 45,
-		"note": "A updated note"
-	}
-}
-`).
+		{
+			"compo_type": "*activity.TimelineCompo",
+			"compo": {
+				"id": "with-activity-products:13",
+				"model_name": "WithActivityProduct",
+				"model_keys": "13",
+				"model_link": "/examples/activity-example/with-activity-products/13"
+			},
+			"injector": "__activity:with-activity-products__",
+			"sync_query": false,
+			"method": "UpdateNote",
+			"request": {
+				"log_id": 45,
+				"note": "A updated note"
+			}
+		}
+		`).
 					BuildEventFuncRequest()
 				return req
 			},
@@ -215,22 +256,22 @@ func TestActivity(t *testing.T) {
 				req := multipartestutils.NewMultipartBuilder().
 					PageURL("/with-activity-products?__execute_event__=__dispatch_stateful_action__").
 					AddField("__action__", `
-{
-	"compo_type": "*activity.TimelineCompo",
-	"compo": {
-		"id": "with-activity-products:13",
-		"model_name": "WithActivityProduct",
-		"model_keys": "13",
-		"model_link": "/examples/activity-example/with-activity-products/13"
-	},
-	"injector": "__activity:with-activity-products__",
-	"sync_query": false,
-	"method": "DeleteNote",
-	"request": {
-		"log_id": 45
-	}
-}
-`).
+		{
+			"compo_type": "*activity.TimelineCompo",
+			"compo": {
+				"id": "with-activity-products:13",
+				"model_name": "WithActivityProduct",
+				"model_keys": "13",
+				"model_link": "/examples/activity-example/with-activity-products/13"
+			},
+			"injector": "__activity:with-activity-products__",
+			"sync_query": false,
+			"method": "DeleteNote",
+			"request": {
+				"log_id": 45
+			}
+		}
+		`).
 					BuildEventFuncRequest()
 				return req
 			},
