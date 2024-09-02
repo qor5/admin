@@ -131,7 +131,7 @@ func (amb *ModelBuilder) installPresetModelBuilder(mb *presets.ModelBuilder) {
 	})
 
 	pb := mb.GetPresetsBuilder()
-	if !amb.ab.IsPresetInstalled(pb) {
+	if amb.ab.GetLogModelBuilder(pb) == nil {
 		pb.GetI18n().
 			RegisterForModule(language.English, I18nActivityKey, Messages_en_US).
 			RegisterForModule(language.SimplifiedChinese, I18nActivityKey, Messages_zh_CN).

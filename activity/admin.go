@@ -27,7 +27,10 @@ const (
 )
 
 func (ab *Builder) Install(b *presets.Builder) error {
-	if actual, loaded := ab.installedPresets.LoadOrStore(b, true); loaded && actual.(bool) {
+	ab.mu.Lock()
+	defer ab.mu.Unlock()
+	lmb, ok := ab.logModelBuilders[b]
+	if ok && lmb != nil {
 		return errors.Errorf("activity: preset %q already installed", b.GetURIPrefix())
 	}
 
@@ -40,17 +43,24 @@ func (ab *Builder) Install(b *presets.Builder) error {
 		permB.CreatePolicies(ab.permPolicy)
 	}
 
-	mb := b.Model(&ActivityLog{}).MenuIcon("mdi-book-edit")
-	return ab.logModelInstall(b, mb)
+	lmb = b.Model(&ActivityLog{}).MenuIcon("mdi-book-edit")
+	err := ab.logModelInstall(b, lmb)
+	if err != nil {
+		return err
+	}
+
+	ab.logModelBuilders[b] = lmb
+	return err
 }
 
-func (ab *Builder) IsPresetInstalled(pb *presets.Builder) bool {
-	installed := false
-	valInstalled, ok := ab.installedPresets.Load(pb)
-	if ok {
-		installed = valInstalled.(bool)
+func (ab *Builder) GetLogModelBuilder(pb *presets.Builder) *presets.ModelBuilder {
+	ab.mu.RLock()
+	defer ab.mu.RUnlock()
+	val, ok := ab.logModelBuilders[pb]
+	if !ok {
+		return nil
 	}
-	return installed
+	return val
 }
 
 func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelBuilder) error {
@@ -248,6 +258,13 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 				ItemType:     vuetifyx.ItemTypeSelect,
 				SQLCondition: `model_name %s ?`,
 				Options:      modelNameOptions,
+			})
+
+			filterData = append(filterData, &vuetifyx.FilterItem{
+				Key:          "model_keys",
+				Label:        msgr.FilterModelKeys,
+				ItemType:     vuetifyx.ItemTypeString,
+				SQLCondition: `model_keys %s ?`,
 			})
 		}
 		return filterData

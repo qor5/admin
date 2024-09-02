@@ -14,7 +14,9 @@ import (
 )
 
 func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
-	return activityExample(b, db, nil)
+	return activityExample(b, db, func(mb *presets.ModelBuilder, ab *activity.Builder) {
+		b.Use(ab)
+	})
 }
 
 func activityExample(b *presets.Builder, db *gorm.DB, customize func(mb *presets.ModelBuilder, ab *activity.Builder)) http.Handler {
@@ -32,7 +34,6 @@ func activityExample(b *presets.Builder, db *gorm.DB, customize func(mb *presets
 	}).
 		// TablePrefix("cms_"). // multitentant if needed
 		AutoMigrate()
-	defer b.Use(ab)
 
 	// @snippet_end
 
