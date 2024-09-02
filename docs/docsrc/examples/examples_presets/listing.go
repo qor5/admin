@@ -79,6 +79,27 @@ func PresetsKeywordSearchOff(b *presets.Builder, db *gorm.DB) (
 
 // @snippet_begin(PresetsListingCustomizationFieldsSample)
 
+func PresetsRowMenuAction(b *presets.Builder, db *gorm.DB) (
+	mb *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	mb, cl, ce, dp = PresetsHelloWorld(b, db)
+	cl.KeywordSearchOff(true)
+	rmb := cl.RowMenu()
+
+	// if()
+	rmb.RowMenuItem("with-icon").Icon("mdi-close").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
+		return nil
+	})
+
+	rmb.RowMenuItem("without icon").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
+		return nil
+	})
+	return
+}
+
 type Company struct {
 	ID   int
 	Name string
