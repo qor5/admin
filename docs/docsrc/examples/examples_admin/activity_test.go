@@ -81,14 +81,18 @@ func TestActivity(t *testing.T) {
 			HandlerMaker: func() http.Handler {
 				pb := presets.New()
 				activityExample(pb, TestDB, func(mb *presets.ModelBuilder, ab *activity.Builder) {
-					ab.FindLogsForTimelineFunc(func(ctx context.Context, db *gorm.DB, modelName, modelKeys string) ([]*activity.ActivityLog, error) {
+					ab.FindLogsForTimelineFunc(func(ctx context.Context, db *gorm.DB, modelName, modelKeys string) ([]*activity.ActivityLog, bool, error) {
+						maxCount := 11
 						var logs []*activity.ActivityLog
 						err := db.Where("hidden = FALSE AND model_name = ? AND model_keys = ? AND action = ?", modelName, modelKeys, activity.ActionNote).
-							Order("created_at DESC").Find(&logs).Error
+							Order("created_at DESC").Limit(maxCount).Find(&logs).Error
 						if err != nil {
-							return nil, err
+							return nil, false, err
 						}
-						return logs, nil
+						if len(logs) > maxCount {
+							return logs[:maxCount], true, nil
+						}
+						return logs, false, nil
 					})
 				})
 				return pb
