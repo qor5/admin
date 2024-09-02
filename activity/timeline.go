@@ -114,8 +114,10 @@ func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog) h.HT
 			// 		Attr("@click", web.POST().
 			// 			EventFunc(actions.DetailingDrawer).
 			// 			Query(presets.ParamOverlay, actions.Dialog).
-			// 			URL(fmt.Sprintf("%s/activity-logs/%d", c.mb.GetPresetsBuilder().GetURIPrefix(), log.ID)).
+			// 			URL(logModelBuilder.Info().ListingHref()).
+			// 			Query(presets.ParamID, fmt.Sprint(log.ID)).
 			// 			Query(paramHideDetailTop, true).
+			// 			Query(presets.ParamVarCurrentActive, c.VarCurrentActive()).
 			// 			Go(),
 			// 		)
 			// }),
@@ -235,7 +237,7 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 				).AttrIf("@click", web.POST().
 					EventFunc(actions.DetailingDrawer).
 					Query(presets.ParamOverlay, actions.Dialog).
-					URL(fmt.Sprintf("%s/activity-logs", c.mb.GetPresetsBuilder().GetURIPrefix())).
+					URL(logModelBuilder.Info().ListingHref()).
 					Query(presets.ParamID, idStr).
 					Query(paramHideDetailTop, true).
 					Query(presets.ParamVarCurrentActive, c.VarCurrentActive()).
