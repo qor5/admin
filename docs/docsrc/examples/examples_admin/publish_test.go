@@ -4,10 +4,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
+	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/web/v3/multipartestutils"
+	"github.com/stretchr/testify/require"
 	"github.com/theplant/gofixtures"
 )
 
@@ -80,6 +83,143 @@ func TestPublish(t *testing.T) {
 					t.Errorf("version not updated for publish product %#+v", p)
 				}
 			},
+		},
+		{
+			Name:  "Schedule to online",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				var p WithPublishProduct
+				TestDB.Find(&p)
+
+				scheduleStartAt := TestDB.NowFunc().Add(time.Hour)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/with-publish-products?__execute_event__=publish_eventSchedulePublish").
+					Query(presets.ParamID, p.PrimarySlug()).
+					AddField("ScheduledStartAt", publish.ScheduleTimeString(&scheduleStartAt)).
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *multipartestutils.TestEventResponse) {
+				var p WithPublishProduct
+				TestDB.Find(&p)
+				require.True(t, p.ScheduledStartAt.After(TestDB.NowFunc()), "scheduled start at should be in the future")
+			},
+		},
+		{
+			Name:  "List should show tooltip",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return httptest.NewRequest("GET", "/with-publish-products", nil)
+			},
+			ExpectPageBodyContainsInOrder: []string{"will be online at", "Draft", "Online"},
+		},
+		{
+			Name:  "publish",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				var p WithPublishProduct
+				TestDB.Find(&p)
+
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/with-publish-products?__execute_event__=publish_EventPublish").
+					Query(presets.ParamID, p.PrimarySlug()).
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *multipartestutils.TestEventResponse) {
+				var p WithPublishProduct
+				TestDB.Find(&p)
+				require.NotNil(t, p.ActualStartAt)
+			},
+		},
+		{
+			Name:  "List should show tooltip",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return httptest.NewRequest("GET", "/with-publish-products", nil)
+			},
+			ExpectPageBodyContainsInOrder: []string{"Online"},
+			ExpectPageBodyNotContains:     []string{"will be"},
+		},
+		{
+			Name:  "Schedule to offline",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				var p WithPublishProduct
+				TestDB.Find(&p)
+
+				scheduleEndAt := TestDB.NowFunc().Add(time.Hour)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/with-publish-products?__execute_event__=publish_eventSchedulePublish").
+					Query(presets.ParamID, p.PrimarySlug()).
+					AddField("ScheduledEndAt", publish.ScheduleTimeString(&scheduleEndAt)).
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *multipartestutils.TestEventResponse) {
+				var p WithPublishProduct
+				TestDB.Find(&p)
+				require.True(t, p.ScheduledEndAt.After(TestDB.NowFunc()), "scheduled end at should be in the future")
+			},
+		},
+		{
+			Name:  "List should show tooltip",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return httptest.NewRequest("GET", "/with-publish-products", nil)
+			},
+			ExpectPageBodyContainsInOrder: []string{"will be offline at", "Online", "Offline"},
+		},
+		{
+			Name:  "duplicate version",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				var p WithPublishProduct
+				TestDB.Find(&p)
+
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/with-publish-products?__execute_event__=publish_EventDuplicateVersion").
+					Query(presets.ParamID, p.PrimarySlug()).
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *multipartestutils.TestEventResponse) {
+				var ps []WithPublishProduct
+				TestDB.Order("created_at DESC").Find(&ps)
+				require.Len(t, ps, 2)
+				require.Equal(t, publish.StatusDraft, ps[0].Status.Status)
+			},
+		},
+		{
+			Name:  "Schedule another version to online",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				var p WithPublishProduct
+				TestDB.Order("created_at DESC").First(&p)
+
+				scheduleStartAt := TestDB.NowFunc().Add(time.Hour)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/with-publish-products?__execute_event__=publish_eventSchedulePublish").
+					Query(presets.ParamID, p.PrimarySlug()).
+					AddField("ScheduledStartAt", publish.ScheduleTimeString(&scheduleStartAt)).
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *multipartestutils.TestEventResponse) {
+				var ps []WithPublishProduct
+				TestDB.Order("created_at DESC").Find(&ps)
+				require.Len(t, ps, 2)
+				require.Equal(t, publish.StatusDraft, ps[0].Status.Status)
+				require.True(t, ps[0].ScheduledStartAt.After(TestDB.NowFunc()), "scheduled start at should be in the future")
+			},
+		},
+		{
+			Name:  "List should show tooltip",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return httptest.NewRequest("GET", "/with-publish-products", nil)
+			},
+			ExpectPageBodyContainsInOrder: []string{"will be offline at", "will be online at", "Online", "Next"},
 		},
 		{
 			Name:  "Default Right Drawer Width should be 600",

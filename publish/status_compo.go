@@ -79,7 +79,7 @@ func liveFunc(db *gorm.DB) presets.FieldComponentFunc {
 			if currentStartAt != nil {
 				toStatus = StatusOnline
 				if ver != nil {
-					tooltip = msgr.ToStatusOnline(ver.EmbedVersion().VersionName, currentStartAt.Format(timeFormatSchedule))
+					tooltip = msgr.ToStatusOnline(ver.EmbedVersion().VersionName, ScheduleTimeString(currentStartAt))
 				}
 			}
 		} else {
@@ -95,7 +95,7 @@ func liveFunc(db *gorm.DB) presets.FieldComponentFunc {
 			if scNext.ScheduledStartAt != nil && (currentEndAt == nil || !scNext.ScheduledStartAt.After(*currentEndAt)) {
 				toStatus = statusNext
 
-				scNextStartAtFormat := scNext.ScheduledStartAt.Format(timeFormatSchedule)
+				scNextStartAtFormat := ScheduleTimeString(scNext.ScheduledStartAt)
 				if ver != nil {
 					tooltip = fmt.Sprintf("%s\n%s",
 						msgr.ToStatusOffline(ver.EmbedVersion().VersionName, scNextStartAtFormat),
@@ -105,7 +105,7 @@ func liveFunc(db *gorm.DB) presets.FieldComponentFunc {
 			} else if currentEndAt != nil && !currentEndAt.Before(nowTime) {
 				toStatus = StatusOffline
 				if ver != nil {
-					tooltip = msgr.ToStatusOffline(ver.EmbedVersion().VersionName, currentEndAt.Format(timeFormatSchedule))
+					tooltip = msgr.ToStatusOffline(ver.EmbedVersion().VersionName, ScheduleTimeString(currentEndAt))
 				}
 			}
 		}
