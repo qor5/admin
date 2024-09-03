@@ -87,6 +87,8 @@ type Messages struct {
 	ModelLabelPageCategory     string
 	AreWantDeleteContainer     func(v string) string
 	AddPageTemplate            string
+	Name                       string
+	Description                string
 }
 
 var Messages_en_US = &Messages{
@@ -170,6 +172,8 @@ var Messages_en_US = &Messages{
 		return fmt.Sprintf("Are you sure you want to delete %v?", v)
 	},
 	AddPageTemplate: "Add Page Template",
+	Name:            "Name",
+	Description:     "Description",
 }
 
 var Messages_zh_CN = &Messages{
@@ -252,6 +256,8 @@ var Messages_zh_CN = &Messages{
 		return fmt.Sprintf("你确定要删除 %v?", v)
 	},
 	AddPageTemplate: "Add Page Template",
+	Name:            "Name",
+	Description:     "Description",
 }
 
 var Messages_ja_JP = &Messages{
@@ -334,4 +340,6 @@ var Messages_ja_JP = &Messages{
 		return fmt.Sprintf("%v を削除してもよろしいですか?", v)
 	},
 	AddPageTemplate: "Add Page Template",
+	Name:            "Name",
+	Description:     "Description",
 }

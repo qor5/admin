@@ -59,8 +59,8 @@ var pageBuilderTemplateData = gofixtures.Data(gofixtures.Sql(`
 INSERT INTO public.campaign_templates (id, created_at, updated_at, deleted_at, name, description) VALUES (1, '2024-08-28 08:54:01.730555 +00:00', '2024-08-28 08:54:01.730555 +00:00', null, '12312', '123132');
 INSERT INTO public.campaign_product_templates (id, created_at, updated_at, deleted_at, title, "desc") VALUES (1, '2024-08-28 08:54:01.730555 +00:00', '2024-08-28 08:54:01.730555 +00:00', null, '12312', '123132');
 INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, page_model_name, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (1, '2024-06-05 07:20:58.435363 +00:00', '2024-06-05 07:20:58.435363 +00:00', null, 1, '', 'campaign-templates', 'MyContent', 1, 1, false, false, 'MyContent', '', 0);
-INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, page_model_name, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (2, '2024-06-05 07:20:58.435363 +00:00', '2024-06-05 07:20:58.435363 +00:00', null, 1, '', 'campaign-product-templates', 'CampaignContent', 1, 2, false, false, 'CampaignContent', '', 0);
-INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, page_model_name, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (3, '2024-06-05 07:20:58.435363 +00:00', '2024-06-05 07:20:58.435363 +00:00', null, 1, '', 'campaign-templates', 'MyContent', 1, 1, false, false, 'MyContent', '', 0);
+INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, page_model_name, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (2, '2024-06-05 07:20:58.435363 +00:00', '2024-06-05 07:20:58.435363 +00:00', null, 1, '', 'campaign-product-templates', 'MyContent', 1, 2, false, false, 'MyContent', '', 0);
+INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, page_model_name, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (3, '2024-06-05 07:20:58.435363 +00:00', '2024-06-05 07:20:58.435363 +00:00', null, 1, '', 'campaign-templates', 'CampaignContent', 1, 1, false, false, 'CampaignContent', '', 0);
 INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, page_model_name, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (4, '2024-06-05 07:20:58.435363 +00:00', '2024-06-05 07:20:58.435363 +00:00', null, 1, '', 'campaign-product-templates', 'ProductContent', 1, 2, false, false, 'ProductContent', '', 0);
 INSERT INTO public.my_contents (id,text) values (1,'my-contents');
 INSERT INTO public.campaign_contents (id,title,banner) values (1,'campaign-contents','banner');
@@ -69,6 +69,21 @@ INSERT INTO public.page_builder_templates (id, created_at, updated_at, deleted_a
 VALUES (1, '2024-07-22 01:41:13.206348 +00:00', '2024-07-22 01:41:13.206348 +00:00', null, '123', '456',
         'International');
 `, []string{"campaign_templates", "campaign_product_templates", "page_builder_containers", "my_contents", "campaign_contents", "product_contents", "page_builder_templates"}))
+
+var pageBuilderPublicTemplateData = gofixtures.Data(gofixtures.Sql(`
+INSERT INTO public.page_builder_templates (id, created_at, updated_at, deleted_at, name, description, locale_code)
+VALUES (1, '2024-07-22 01:41:13.206348 +00:00', '2024-07-22 01:41:13.206348 +00:00', null, '123', '456','');
+INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, model_name,
+                                            model_id, display_order, shared, hidden, display_name, locale_code,
+                                            localize_from_model_id, page_model_name)
+VALUES (1, '2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', null, 1, '', 'PagesContent', 1, 1,
+        false, false, 'PagesContent', '', 0, 'templates'),
+       (2, '2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', null, 1, '', 'MyContent', 1, 2, false,
+        false, 'MyContent', '', 0, 'templates');
+INSERT INTO public.my_contents (id,text) values (1,'my-contents');
+INSERT INTO public.pages_contents (id,text) values (1,'my-pages-contents');
+
+`, []string{"page_builder_templates", "page_builder_containers", "my_contents", "pages_contents"}))
 
 func forUnpublishCreateFile(filePath string, content string) {
 	var (
@@ -866,6 +881,39 @@ func TestPageBuilderCampaign(t *testing.T) {
 				if len(containers) != 0 {
 					t.Fatalf("wrong number of containers, expected 0, got %d", len(containers))
 					return
+				}
+			},
+		},
+		{
+			Name:  "New Page  Product With Public Template",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderPublicTemplateData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page-products").
+					EventFunc(actions.Update).
+					AddField("Name", "HelloPageProductTemplate").
+					AddField(pagebuilder.ParamTemplateSelectedID, "1").
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var m PageProduct
+				TestDB.Order("id desc").First(&m)
+				if m.Name != "HelloPageProductTemplate" {
+					t.Fatalf("wrong Name , expected `HelloPageProductTemplate`, got %s", m.Name)
+					return
+				}
+				var containers []pagebuilder.Container
+				TestDB.Where("page_model_name = 'page-products'").Find(&containers)
+				if len(containers) != 1 {
+					t.Fatalf("wrong number of containers, expected 1, got %d", len(containers))
+					return
+				}
+				if containers[0].ModelName != "MyContent" {
+					t.Fatalf("wrong modelName, expected MyContent %s", containers[0].ModelName)
+					return
+
 				}
 			},
 		},

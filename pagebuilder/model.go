@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"path"
+	`slices`
 	"strconv"
 	"strings"
 
@@ -610,8 +611,13 @@ func (b *ModelBuilder) copyContainersToAnotherPage(db *gorm.DB, pageID int, page
 	if err != nil {
 		return
 	}
-
+	buildeContainer := b.getContainerBuilders()
 	for _, c := range cons {
+		if !slices.ContainsFunc(buildeContainer, func(builder *ContainerBuilder) bool {
+			return c.ModelName == builder.name
+		}) {
+			continue
+		}
 		newModelID := c.ModelID
 		if !c.Shared {
 			model := b.builder.ContainerByName(c.ModelName).NewModel()
