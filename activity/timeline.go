@@ -288,6 +288,7 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 							URL(logModelBuilder.Info().ListingHref()).
 							Query("f_model_name", c.ModelName).
 							Query("f_model_keys", c.ModelKeys).
+							PushState(true).
 							Go(),
 						)
 				}).Else(func() h.HTMLComponent {
@@ -331,7 +332,10 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 						vars.%s = toplocals.deletingLogID
 					})
 				}`, presets.VarsPresetsDataChanged, varEditing, varCurrentActive)).
-				Attr("v-on-unmounted", fmt.Sprintf(`() => { delete(vars.%s.%s) }`, presets.VarsPresetsDataChanged, varEditing)).
+				Attr("v-on-unmounted", fmt.Sprintf(`() => { 
+					delete(vars.%s.%s)
+					delete(vars.%s)
+				}`, presets.VarsPresetsDataChanged, varEditing, varCurrentActive)).
 				Children(
 					children...,
 				),
