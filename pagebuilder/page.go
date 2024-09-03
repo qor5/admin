@@ -65,19 +65,19 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 				Color(ColorPrimary).Size(SizeSmall).Class("px-1 mx-1").Attr("style", "height:20px")
 		}
 
-		listingHref := pm.Info().ListingHref()
+		// listingHref := pm.Info().ListingHref()
 		return h.Div(
-			VBtn("").Size(SizeXSmall).Icon("mdi-arrow-left").Tile(true).Variant(VariantOutlined).Attr("@click",
-				fmt.Sprintf(`
-					const last = vars.__history.last();
-					if (last && last.url && last.url.startsWith(%q)) {
-						$event.view.window.history.back();
-						return;
-					}
-					%s`, listingHref, web.GET().URL(listingHref).PushState(true).Go(),
-				),
-			),
-			h.H1("{{vars.pageTitle}}").Class("ml-4"),
+			// VBtn("").Size(SizeXSmall).Icon("mdi-arrow-left").Tile(true).Variant(VariantOutlined).Attr("@click",
+			// 	fmt.Sprintf(`
+			// 		const last = vars.__history.last();
+			// 		if (last && last.url && last.url.startsWith(%q)) {
+			// 			$event.view.window.history.back();
+			// 			return;
+			// 		}
+			// 		%s`, listingHref, web.GET().URL(listingHref).PushState(true).Go(),
+			// 	),
+			// ),
+			h.H1("{{vars.pageTitle}}").Class("page-main-title"),
 			versionBadge.Class("mt-2 ml-2"),
 		).Class("d-inline-flex align-center")
 	})

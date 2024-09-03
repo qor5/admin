@@ -319,7 +319,7 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 			presets.NotifModelsDeleted(&ActivityLog{}), stateful.ReloadAction(ctx, c, nil).Go(),
 		),
 		web.Scope().VSlot("{locals: toplocals}").Init(`{ deletingLogID: "", editing: false, edited: false }`).Children(
-			h.Div().Class("d-flex flex-column mb-8").Style("text-body-2").
+			h.Div().Class("activity-timeline-wrap").
 				Attr("v-on-mounted", fmt.Sprintf(`({watch, watchEffect}) => {
 					watch(() => toplocals.editing, (val) => {
 						if (!val) {
