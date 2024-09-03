@@ -229,7 +229,7 @@ func DefaultVersionBar(db *gorm.DB) presets.ObjectComponentFunc {
 		}
 		versionIf := currentObj.(VersionInterface)
 		currentVersionStr := fmt.Sprintf("%s: %s", msgr.OnlineVersion, versionIf.EmbedVersion().VersionName)
-		res.AppendChildren(v.VChip(h.Span(currentVersionStr)).Density(v.DensityCompact).Color(v.ColorSuccess))
+		res.AppendChildren(v.VChip(h.Span(currentVersionStr)).Density(v.DensityProminent).Color(v.ColorSuccess).Size(v.SizeSmall))
 
 		if _, ok := currentObj.(ScheduleInterface); !ok {
 			return res
