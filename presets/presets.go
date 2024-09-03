@@ -877,7 +877,9 @@ func newActiveWatcher(ctx *web.EventContext, varToWatch string) (h.HTMLComponent
 		varCurrentActive, idCurrentActive,
 		varToWatch,
 		varCurrentActive,
-	)), nil
+	)).Attr("v-on-unmounted", fmt.Sprintf(`() => {
+		vars.%s = '';
+	}`, varCurrentActive)), nil
 }
 
 func (b *Builder) rightDrawer(ctx *web.EventContext, r *web.EventResponse, comp h.HTMLComponent, width string) {
@@ -1495,14 +1497,13 @@ func (b *Builder) wrap(m *ModelBuilder, pf web.PageFunc) http.Handler {
 					i18n.LanguageTagFromContext(ctx.R.Context(), language.English).String(),
 					"-", "",
 				)
-				r.Body = 
-				h.Div(
+				r.Body = h.Div(
 					VProgressLinear().
-					Attr(":active", "vars.globalProgressBar.show").
-					Attr(":model-value", "vars.globalProgressBar.value").
-					Attr("style", "position: fixed; z-index: 2000;").
-					Height(2).
-					Color(b.progressBarColor),
+						Attr(":active", "vars.globalProgressBar.show").
+						Attr(":model-value", "vars.globalProgressBar.value").
+						Attr("style", "position: fixed; z-index: 2000;").
+						Height(2).
+						Color(b.progressBarColor),
 					VLocaleProvider().Locale(currentVuetifyLocale).FallbackLocale("en").Children(r.Body),
 				)
 			}
