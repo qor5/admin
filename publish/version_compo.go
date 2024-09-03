@@ -37,17 +37,22 @@ const VersionListDialogURISuffix = "-version-list-dialog"
 
 type VersionComponentConfig struct {
 	// If you want to use custom publish dialog, you can update the portal named PublishCustomDialogPortalName
-	PublishEvent     func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string
-	UnPublishEvent   func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string
-	RePublishEvent   func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string
-	Top              bool
-	DisableListeners bool
+	PublishEvent              func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string
+	UnPublishEvent            func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string
+	RePublishEvent            func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string
+	Top                       bool
+	DisableListeners          bool
+	DisableDataChangeTracking bool
 }
 
 func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionComponentConfig) presets.FieldComponentFunc {
 	var config VersionComponentConfig
 	if len(cfg) > 0 {
 		config = cfg[0]
+	}
+	phraseHasPresetsDataChanged := presets.PhraseHasPresetsDataChanged
+	if config.DisableDataChangeTracking {
+		phraseHasPresetsDataChanged = "false"
 	}
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		var (
@@ -85,7 +90,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 				h.Text(`{{ xlocals.versionName }}`),
 			).Label(true).Variant(v.VariantOutlined).
 				Attr("style", "height:36px;").
-				Attr(":disabled", presets.PhraseHasPresetsDataChanged).
+				Attr(":disabled", phraseHasPresetsDataChanged).
 				On("click", web.Plaid().EventFunc(actions.OpenListingDialog).
 					URL(mb.Info().PresetsPrefix()+"/"+urlSuffix).
 					Query(filterKeySelected, slug).
@@ -105,7 +110,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 			if !DeniedDo(verifier, obj, ctx.R, presets.PermUpdate, PermDuplicate) {
 				div.AppendChildren(v.VBtn(msgr.Duplicate).
 					Height(36).Class("ml-2").Variant(v.VariantOutlined).
-					Attr(":disabled", presets.PhraseHasPresetsDataChanged).
+					Attr(":disabled", phraseHasPresetsDataChanged).
 					Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventDuplicateVersion)))
 			}
 		}
@@ -122,7 +127,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 					}
 					publishBtn = h.Div(
 						v.VBtn(msgr.Publish).
-							Attr(":disabled", presets.PhraseHasPresetsDataChanged).
+							Attr(":disabled", phraseHasPresetsDataChanged).
 							Attr("@click", publishEvent).Class("ml-2").
 							ClassIf("rounded", config.Top).ClassIf("rounded-0 rounded-s", !config.Top).
 							Variant(v.VariantElevated).Color(v.ColorPrimary).Height(36),
@@ -146,13 +151,13 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 					publishBtn = h.Div(
 						h.Iff(unPublishEvent != "", func() h.HTMLComponent {
 							return v.VBtn(msgr.Unpublish).
-								Attr(":disabled", presets.PhraseHasPresetsDataChanged).
+								Attr(":disabled", phraseHasPresetsDataChanged).
 								Attr("@click", unPublishEvent).
 								Class("ml-2").Variant(v.VariantElevated).Color(v.ColorError).Height(36)
 						}),
 						h.Iff(rePublishEvent != "", func() h.HTMLComponent {
 							return v.VBtn(msgr.Republish).
-								Attr(":disabled", presets.PhraseHasPresetsDataChanged).
+								Attr(":disabled", phraseHasPresetsDataChanged).
 								Attr("@click", rePublishEvent).Class("ml-2").
 								ClassIf("rounded", config.Top).ClassIf("rounded-0 rounded-s", !config.Top).
 								Variant(v.VariantElevated).Color(v.ColorPrimary).Height(36)
@@ -182,11 +187,13 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 					scheduleBtn = v.VAutocomplete().PrependInnerIcon("mdi-alarm").Density(v.DensityCompact).
 						Variant(v.FieldVariantSoloFilled).ModelValue(msgr.SchedulePublishTime).
 						BgColor(v.ColorPrimaryLighten2).Readonly(true).
-						Width(500).HideDetails(true).Attr("@click", clickEvent).Class("ml-2 text-caption page-builder-autoCmp")
+						Width(500).HideDetails(true).
+						Attr(":disabled", phraseHasPresetsDataChanged).
+						Attr("@click", clickEvent).Class("ml-2 text-caption page-builder-autoCmp")
 				} else {
 					scheduleBtn = v.VBtn("").Size(v.SizeSmall).Children(v.VIcon("mdi-alarm").Size(v.SizeXLarge)).Rounded("0").Class("rounded-e ml-abs-1").
 						Variant(v.VariantElevated).Color(v.ColorPrimary).Width(36).Height(36).
-						Attr(":disabled", presets.PhraseHasPresetsDataChanged).
+						Attr(":disabled", phraseHasPresetsDataChanged).
 						Attr("@click", clickEvent)
 				}
 				div.AppendChildren(scheduleBtn)

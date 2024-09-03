@@ -21,7 +21,7 @@ type User struct {
 	Avatar string
 }
 
-const DefaultMaxCountShowInTimeline = 5
+const DefaultMaxCountShowInTimeline = 10
 
 // @snippet_begin(ActivityBuilder)
 type Builder struct {
