@@ -1,11 +1,11 @@
 package examples_presets
 
 import (
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"log"
 
-	"database/sql/driver"
 	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
@@ -263,6 +263,13 @@ func PresetsDetailNestedMany(b *presets.Builder, db *gorm.DB) (
 			return columns, nil
 		}
 	})
+	// You can also wrap the table if you need
+	ccmb2.Listing().WrapTable(func(in presets.TableProcessor) presets.TableProcessor {
+		return func(evCtx *web.EventContext, table *vx.DataTableBuilder) (*vx.DataTableBuilder, error) {
+			table.Hover(false)
+			return in(evCtx, table)
+		}
+	})
 
 	dp.Field("CreditCards2").Use(ccmb2)
 	return
@@ -297,7 +304,8 @@ func (creditCard *creditCards) Scan(data interface{}) (err error) {
 func PresetsDetailListSection(b *presets.Builder, db *gorm.DB) (cust *presets.ModelBuilder,
 	cl *presets.ListingBuilder,
 	ce *presets.EditingBuilder,
-	dp *presets.DetailingBuilder) {
+	dp *presets.DetailingBuilder,
+) {
 	err := db.AutoMigrate(&UserCreditCard{})
 	if err != nil {
 		panic(err)

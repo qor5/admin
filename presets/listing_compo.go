@@ -583,6 +583,13 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		dataTable.Column(col.Name).Title(col.Label).CellComponentFunc(c.lb.cellComponentFunc(f))
 	}
 
+	if c.lb.tableProcessor != nil {
+		dataTable, err = c.lb.tableProcessor(evCtx, dataTable)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	var dataTableAdditions h.HTMLComponent
 	if totalCount <= 0 {
 		dataTableAdditions = h.Div().Class("mt-10 text-center grey--text text--darken-2").Children(

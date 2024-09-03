@@ -215,7 +215,8 @@ func cfTime(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLC
 		}).
 		DialogWidth(640).
 		ClearText(msgr.Clear).
-		OkText(msgr.OK)
+		OkText(msgr.OK).
+		Disabled(field.Disabled)
 }
 
 func cfTimeSetter(obj interface{}, field *FieldContext, ctx *web.EventContext) (err error) {
@@ -234,14 +235,14 @@ func cfTextField(obj interface{}, field *FieldContext, ctx *web.EventContext) h.
 	return h.Div(
 		h.Span(field.Label).Class("text-subtitle-2 text-high-emphasis section-filed-label mb-1 d-sm-inline-block"),
 		VTextField().
-		Density(DensityComfortable).
-		Class("section-field").
-		Type("text").
-		Variant(FieldVariantOutlined).
-		BgColor(ColorBackground).
-		Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
-		ErrorMessages(field.Errors...).
-		Disabled(field.Disabled),
+			Density(DensityComfortable).
+			Class("section-field").
+			Type("text").
+			Variant(FieldVariantOutlined).
+			BgColor(ColorBackground).
+			Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
+			ErrorMessages(field.Errors...).
+			Disabled(field.Disabled),
 	).Class("section-field-wrap")
 }
 
