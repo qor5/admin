@@ -30,9 +30,11 @@ const (
 
 type (
 	TemplateBuilder struct {
-		mb      *presets.ModelBuilder
-		model   *ModelBuilder
-		builder *Builder
+		mb                 *presets.ModelBuilder
+		tm                 *presets.ModelBuilder
+		model              *ModelBuilder
+		builder            *Builder
+		useDefaultTemplate bool
 	}
 	TemplateInterface interface {
 		GetName(ctx *web.EventContext) string
@@ -40,23 +42,19 @@ type (
 	}
 )
 
+func (b *Builder) template(mb *presets.ModelBuilder, tm *presets.ModelBuilder) {
+
+	b.templates = append(b.templates, &TemplateBuilder{
+		mb:      mb,
+		tm:      tm,
+		builder: b,
+	})
+}
 func (b *Builder) RegisterModelBuilderTemplate(mb *presets.ModelBuilder, tm *presets.ModelBuilder) *Builder {
 	if !b.templateEnabled {
 		return b
 	}
-	defer b.useAllPlugin(tm)
-	model := b.Model(tm)
-	if _, ok := tm.NewModel().(publish.VersionInterface); ok {
-		panic("error template model")
-	}
-
-	b.configEditor(model)
-	tb := &TemplateBuilder{mb: mb, model: model, builder: b}
-	model.tb = tb
-
-	tb.configModelWithTemplate()
-	tb.configList()
-	tb.registerFunctions()
+	b.template(mb, tm)
 	return b
 }
 
@@ -70,9 +68,25 @@ func (b *Builder) defaultTemplateInstall(pb *presets.Builder, pm *presets.ModelB
 			template.Use(b.ab)
 		}
 	}()
+	template.LabelName(func(evCtx *web.EventContext, singular bool) string {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		if singular {
+			return msgr.ModelLabelTemplate
+		}
+		return msgr.ModelLabelTemplates
+	})
+	template.Editing().Creating("Name", "Description").ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		p := obj.(*Template)
 
-	template.Editing("Name", "Description")
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
+		if p.Name == "" {
+			err.GlobalError(msgr.InvalidNameMsg)
+			return
+		}
+		return
+	})
+	b.templateModel = template
 	b.RegisterModelBuilderTemplate(pm, template)
 
 	return
@@ -139,7 +153,7 @@ func (b *TemplateBuilder) configModelWithTemplate() {
 					if b.builder.l10n == nil {
 						localeCode = ""
 					}
-					if err = b.model.copyContainersToAnotherPage(b.builder.db, tplID, "", localeCode, int(pageID.(uint)), version, localeCode, b.model.name, b.builder.getModelBuilder(b.mb).name); err != nil {
+					if err = b.builder.getModelBuilder(b.mb).copyContainersToAnotherPage(b.builder.db, tplID, "", localeCode, int(pageID.(uint)), version, localeCode, b.model.name, b.builder.getModelBuilder(b.mb).name); err != nil {
 						panic(err)
 					}
 				}
@@ -180,6 +194,7 @@ func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent
 		PageURL:        ctx.R.URL,
 		Keyword:        ctx.Param(ParamSearchKeyword),
 		KeywordColumns: []string{"Name"},
+		OrderBy:        "created_at desc",
 	}
 	searchParams.PerPage = perPage
 	searchParams.Page = page
@@ -286,7 +301,7 @@ func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent
 							).Color(ColorGreyLighten5).Height(cardContentHeight),
 						).Class("pa-0"),
 					),
-					h.If(inDialog, VCardText(h.Text(name)).Class("text-caption")),
+					h.If(inDialog, VCardTitle(h.Text(name)).Class("text-caption")),
 				).Attr("@click", cardClickEvent).Elevation(0),
 			).Cols(cols),
 		)
@@ -434,4 +449,26 @@ func (b *TemplateBuilder) getTemplateNameDescription(obj interface{}, ctx *web.E
 		description = v.(string)
 	}
 	return
+}
+
+func (b *TemplateBuilder) Install() {
+	builder := b.builder
+	tm := b.tm
+	if tm == nil {
+		tm = builder.templateModel
+	}
+	defer builder.useAllPlugin(tm)
+	model := builder.getModelBuilder(tm)
+	if model == nil {
+		model = builder.Model(tm)
+		if _, ok := tm.NewModel().(publish.VersionInterface); ok {
+			panic("error template model")
+		}
+		builder.configEditor(model)
+	}
+	b.model = model
+	model.tb = b
+	b.configModelWithTemplate()
+	b.configList()
+	b.registerFunctions()
 }

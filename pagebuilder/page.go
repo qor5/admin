@@ -40,14 +40,6 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 		}
 		return msgr.ModelLabelPages
 	})
-	lb.WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
-		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		return map[string]string{
-			"ID":    msgr.ListHeaderID,
-			"Title": msgr.ListHeaderTitle,
-			"Path":  msgr.ListHeaderPath,
-		}, nil
-	}))
 	lb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		page := obj.(*Page)
 		category, err := page.GetCategory(db)
@@ -94,6 +86,14 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 	if b.templateEnabled {
 		names = append([]string{PageTemplateSelectionFiled}, names...)
 	}
+	lb.WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		return map[string]string{
+			"ID":    msgr.ListHeaderID,
+			"Title": msgr.ListHeaderTitle,
+			"Path":  msgr.ListHeaderPath,
+		}, nil
+	}))
 	eb := pm.Editing().Creating(names)
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		c := obj.(*Page)
@@ -105,8 +105,10 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
 			vErr = *ve
 		}
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+
 		return VTextField().
-			Label(field.Label).
+			Label(msgr.ListHeaderTitle).
 			Variant(FieldVariantUnderlined).
 			Attr(web.VField(field.Name, field.Value(obj))...).
 			ErrorMessages(vErr.GetFieldErrors("Page.Title")...)
@@ -116,10 +118,11 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
 			vErr = *ve
 		}
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 		return VTextField().
 			Variant(FieldVariantUnderlined).
-			Label(field.Label).
+			Label(msgr.Slug).
 			Attr(web.VField(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"))...).
 			Prefix("/").
 			ErrorMessages(vErr.GetFieldErrors("Page.Slug")...)
