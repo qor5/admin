@@ -86,6 +86,14 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 	if b.templateEnabled {
 		names = append([]string{PageTemplateSelectionFiled}, names...)
 	}
+	lb.WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		return map[string]string{
+			"ID":    msgr.ListHeaderID,
+			"Title": msgr.ListHeaderTitle,
+			"Path":  msgr.ListHeaderPath,
+		}, nil
+	}))
 	eb := pm.Editing().Creating(names)
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		c := obj.(*Page)
