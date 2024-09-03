@@ -138,7 +138,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			Attr("ref", "overlay").
 			Attr("@after-leave", afterLeaveEvent).
 			Attr("v-model", "vars.overlay")
-		versionComponent = publish.DefaultVersionComponentFunc(m.editor, publish.VersionComponentConfig{Top: true, DisableListeners: true})(obj, &presets.FieldContext{ModelInfo: m.editor.Info()}, ctx)
+		versionComponent = publish.DefaultVersionComponentFunc(m.editor, publish.VersionComponentConfig{Top: true, DisableListeners: true, DisableDataChangeTracking: true})(obj, &presets.FieldContext{ModelInfo: m.editor.Info()}, ctx)
 		pageAppbarContent = h.Components(
 			h.Div(
 				h.Div().Style("transform:rotateY(180deg)").Class("mr-4").Children(
