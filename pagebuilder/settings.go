@@ -70,7 +70,7 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 			copyURL = fmt.Sprintf(`$event.view.window.location.origin+%q`, previewDevelopUrl)
 			if p.EmbedStatus().Status == publish.StatusOnline {
 				onlineHint = VAlert(h.Text(msgr.OnlineHit)).
-					Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("mb-2")
+					Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("my-4")
 				previewDevelopUrl = b.publisher.FullUrl(p.EmbedStatus().OnlineUrl)
 				copyURL = fmt.Sprintf(`%q`, previewDevelopUrl)
 			}
