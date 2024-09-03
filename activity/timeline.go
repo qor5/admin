@@ -352,7 +352,7 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 						v.VBtn(msgr.Delete).Color(v.ColorError).Variant(v.VariantTonal).Size(v.SizeSmall).
 							Attr("@click", stateful.PostAction(ctx, c,
 								c.DeleteNote, DeleteNoteRequest{},
-								stateful.WithAppendFix(`v.request.log_id = toplocals.deletingLogID`),
+								stateful.WithAppendFix(`v.request.log_id = parseInt(toplocals.deletingLogID, 10)`),
 							).Go()),
 					),
 				),
