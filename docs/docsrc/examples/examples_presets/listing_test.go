@@ -44,7 +44,7 @@ func TestPresetsRowMenuIcon(t *testing.T) {
 				detailData.TruncatePut(SqlDB)
 				return httptest.NewRequest("GET", "/customers?__execute_event__=__reload__", nil)
 			},
-			ExpectPageBodyContainsInOrder: []string{`\u003cv-list-item-title\u003ewith-icon\u003c/v-list-item-title\u003e`},
+			ExpectPageBodyContainsInOrder: []string{`:icon='\"mdi-close\"'\u003e\u003c/v-icon\u003e\n\u003c/template\u003e\n\n\u003cv-list-item-title\u003ewith-icon\u003c/v-list-item-title\u003e`},
 		},
 	}
 
