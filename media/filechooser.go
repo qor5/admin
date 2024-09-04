@@ -650,8 +650,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 		clickTabEvent += ";" + web.Plaid().PushState(true).MergeQuery(true).ClearMergeQuery([]string{ParamParentID}).Query(paramTab, web.Var("$event")).RunPushState()
 	}
 	for _, f := range files {
-		var fileComp h.HTMLComponent
-		fileComp = fileOrFolderComponent(mb, field, tab, ctx, f, msgr, cfg, initCroppingVars, inMediaLibrary)
+		fileComp := fileOrFolderComponent(mb, field, tab, ctx, f, msgr, cfg, initCroppingVars, inMediaLibrary)
 		col := VCol(fileComp).Attr("style", "flex: 0 0 calc(100% / 5); max-width: calc(100% / 5);")
 		if !f.Folder {
 			hasFiles = true
