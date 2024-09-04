@@ -123,10 +123,10 @@ func TestActivity(t *testing.T) {
 				activityExample(pb, TestDB, func(mb *presets.ModelBuilder, ab *activity.Builder) {
 					defer pb.Use(ab)
 					ab.FindLogsForTimelineFunc(func(ctx context.Context, db *gorm.DB, modelName, modelKeys string) ([]*activity.ActivityLog, bool, error) {
-						maxCount := 11
+						maxCount := 10
 						var logs []*activity.ActivityLog
 						err := db.Where("hidden = FALSE AND model_name = ? AND model_keys = ? AND action = ?", modelName, modelKeys, activity.ActionNote).
-							Order("created_at DESC").Limit(maxCount).Find(&logs).Error
+							Order("created_at DESC").Limit(maxCount + 1).Find(&logs).Error
 						if err != nil {
 							return nil, false, err
 						}
