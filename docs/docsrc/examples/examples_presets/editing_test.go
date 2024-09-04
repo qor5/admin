@@ -57,6 +57,42 @@ func TestPresetsEditingSetter(t *testing.T) {
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"name must not be empty"},
 		},
+		{
+			Name:  "wrap setter",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				companyData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/companies?__execute_event__=presets_Update").
+					AddField("Name", "system").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`You can not use \"system\" as name`},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}
+
+func TestPresetsEditingCustomizationDescription(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsEditingCustomizationDescription(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "new",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=presets_New").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`Customer Name`, `Customer Email`, `Description`, `redactor`},
+		},
 	}
 
 	for _, c := range cases {

@@ -102,3 +102,10 @@ func TestCloneFieldsLayout(t *testing.T) {
 	}
 	require.Equal(t, src, CloneFieldsLayout(src))
 }
+
+func TestHumanizeString(t *testing.T) {
+	assert.Equal(t, "Hello World", humanizeString("HelloWorld"))
+	assert.Equal(t, "Hello World", humanizeString("helloWorld"))
+	assert.Equal(t, "Order Item", humanizeString("OrderItem"))
+	assert.Equal(t, "CNN Name", humanizeString("CNNName"))
+}

@@ -86,37 +86,16 @@ func (b *Builder) defaultTemplateInstall(pb *presets.Builder, pm *presets.ModelB
 		}
 		return
 	})
-	creating.Field("Name").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		return h.Div(
-			h.Span(msgr.Name).Class("text-subtitle-2 text-high-emphasis section-filed-label mb-1 d-sm-inline-block"),
-			VTextField().
-				Density(DensityComfortable).
-				Class("section-field").
-				Type("text").
-				Variant(FieldVariantOutlined).
-				BgColor(ColorBackground).
-				Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
-				ErrorMessages(field.Errors...).
-				Disabled(field.Disabled),
-		).Class("section-field-wrap")
+	wrapper := presets.WrapperFieldLabel(func(evCtx *web.EventContext, obj interface{}, field *presets.FieldContext) (name2label map[string]string, err error) {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		return map[string]string{
+			"Name":        msgr.Name,
+			"Description": msgr.Description,
+		}, nil
 	})
-	creating.Field("Description").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+	creating.Field("Name").LazyWrapComponentFunc(wrapper)
+	creating.Field("Description").LazyWrapComponentFunc(wrapper)
 
-		return h.Div(
-			h.Span(msgr.Description).Class("text-subtitle-2 text-high-emphasis section-filed-label mb-1 d-sm-inline-block"),
-			VTextField().
-				Density(DensityComfortable).
-				Class("section-field").
-				Type("text").
-				Variant(FieldVariantOutlined).
-				BgColor(ColorBackground).
-				Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
-				ErrorMessages(field.Errors...).
-				Disabled(field.Disabled),
-		).Class("section-field-wrap")
-	})
 	b.templateModel = template
 	b.RegisterModelBuilderTemplate(pm, template)
 

@@ -9,7 +9,7 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/stateful"
 	"github.com/qor5/x/v3/perm"
-	. "github.com/qor5/x/v3/ui/vuetify"
+	v "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/samber/lo"
 	h "github.com/theplant/htmlgo"
@@ -114,7 +114,7 @@ func (b *ListingBuilder) PageFunc(pf web.PageFunc) (r *ListingBuilder) {
 	return b
 }
 
-// Deprecated: Use WrapCell instead.
+// CellWrapperFunc Deprecated: Use WrapCell instead.
 func (b *ListingBuilder) CellWrapperFunc(cwf vx.CellWrapperFunc) (r *ListingBuilder) {
 	b.cellWrapperFunc = cwf
 	return b
@@ -173,7 +173,7 @@ func (b *ListingBuilder) WrapSearchFunc(w func(in SearchFunc) SearchFunc) (r *Li
 	return b
 }
 
-// The title must not return empty, and titleCompo can return nil
+// Title The title must not return empty, and titleCompo can return nil
 func (b *ListingBuilder) Title(f func(evCtx *web.EventContext, style ListingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error)) (r *ListingBuilder) {
 	b.titleFunc = f
 	return b
@@ -259,7 +259,7 @@ func (b *ListingBuilder) GetPageFunc() web.PageFunc {
 
 func (b *ListingBuilder) cellComponentFunc(f *FieldBuilder) vx.CellComponentFunc {
 	return func(obj interface{}, fieldName string, ctx *web.EventContext) h.HTMLComponent {
-		return f.compFunc(obj, b.mb.getComponentFuncField(f), ctx)
+		return f.lazyCompFunc()(obj, b.mb.getComponentFuncField(f), ctx)
 	}
 }
 
@@ -301,8 +301,8 @@ func (b *ListingBuilder) defaultPageFunc(evCtx *web.EventContext) (r web.PageRes
 	}
 	evCtx.WithContextValue(ctxActionsComponentTeleportToID, compo.ActionsComponentTeleportToID())
 
-	r.Body = VLayout(
-		VMain(
+	r.Body = v.VLayout(
+		v.VMain(
 			b.mb.p.dc.MustInject(injectorName, stateful.SyncQuery(compo)),
 		),
 	)
@@ -347,18 +347,18 @@ func (b *ListingBuilder) openListingDialog(evCtx *web.EventContext) (r web.Event
 		};
 	}`, compo.CompoID())
 
-	content := VCard().Attr("id", compo.CompoID()).Children(
-		VCardTitle().Class("d-flex align-center h-abs-26 py-6 px-6 content-box").Children(
+	content := v.VCard().Attr("id", compo.CompoID()).Children(
+		v.VCardTitle().Class("d-flex align-center h-abs-26 py-6 px-6 content-box").Children(
 			titleCompo,
-			VSpacer(),
+			v.VSpacer(),
 			h.Div().Id(compo.ActionsComponentTeleportToID()),
-			VBtn("").Elevation(0).Size(SizeXSmall).Icon("mdi-close").Class("ml-2 dialog-close-btn").Attr("@click", CloseListingDialogVarScript),
+			v.VBtn("").Elevation(0).Size(v.SizeXSmall).Icon("mdi-close").Class("ml-2 dialog-close-btn").Attr("@click", CloseListingDialogVarScript),
 		),
-		VCardText().Class("pa-0").Children(
+		v.VCardText().Class("pa-0").Children(
 			b.mb.p.dc.MustInject(injectorName, stateful.ParseQuery(compo)),
 		),
 	)
-	dialog := VDialog(content).Attr("v-model", "vars.presetsListingDialog").Scrollable(true)
+	dialog := v.VDialog(content).Attr("v-model", "vars.presetsListingDialog").Scrollable(true)
 	if b.dialogWidth != "" {
 		dialog.Width(b.dialogWidth)
 	}
@@ -379,15 +379,15 @@ func (b *ListingBuilder) deleteConfirmation(evCtx *web.EventContext) (r web.Even
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: DeleteConfirmPortalName,
 		Body: web.Scope().VSlot("{ locals }").Init(`{deleteConfirmation:true}`).Children(
-			VDialog().MaxWidth("600px").Attr("v-model", "locals.deleteConfirmation").Children(
-				VCard(
-					VCardTitle(
+			v.VDialog().MaxWidth("600px").Attr("v-model", "locals.deleteConfirmation").Children(
+				v.VCard(
+					v.VCardTitle(
 						h.Text(msgr.DeleteConfirmationText),
 					),
-					VCardActions(
-						VSpacer(),
-						VBtn(msgr.Cancel).Variant(VariantFlat).Class("ml-2").Attr("@click", "locals.deleteConfirmation = false"),
-						VBtn(msgr.Delete).Color("primary").Variant(VariantFlat).Theme(ThemeDark).Attr("@click", web.Plaid().
+					v.VCardActions(
+						v.VSpacer(),
+						v.VBtn(msgr.Cancel).Variant(v.VariantFlat).Class("ml-2").Attr("@click", "locals.deleteConfirmation = false"),
+						v.VBtn(msgr.Delete).Color("primary").Variant(v.VariantFlat).Theme(v.ThemeDark).Attr("@click", web.Plaid().
 							EventFunc(actions.DoDelete).
 							Queries(evCtx.Queries()).
 							URL(b.mb.Info().ListingHref()).
