@@ -578,6 +578,16 @@ func (b *FieldsBuilder) Except(patterns ...string) (r *FieldsBuilder) {
 
 	r = b.Clone()
 
+	if len(b.fieldsLayout) == 0 {
+		for _, f := range b.fields {
+			if hasMatched(patterns, f.name) {
+				continue
+			}
+			r.appendFieldAfterClone(b, f.name)
+		}
+		return r
+	}
+
 	fieldsLayout := []any{}
 	for _, iv := range b.fieldsLayout {
 		switch t := iv.(type) {
