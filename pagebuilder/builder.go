@@ -409,7 +409,6 @@ func (b *Builder) configPublish(r *ModelBuilder) {
 }
 
 func (b *Builder) configTemplateAndPage(pb *presets.Builder, r *ModelBuilder) {
-
 	pm := r.mb
 	err := b.pageInstall(pb, pm)
 	if err != nil {

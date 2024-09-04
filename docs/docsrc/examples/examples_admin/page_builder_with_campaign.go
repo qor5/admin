@@ -92,9 +92,11 @@ type (
 func (b *CampaignProductTemplate) GetName(ctx *web.EventContext) string {
 	return b.Title
 }
+
 func (b *CampaignProductTemplate) GetDescription(ctx *web.EventContext) string {
 	return b.Desc
 }
+
 func (p *CampaignTemplate) PrimarySlug() string {
 	return fmt.Sprintf("%v", p.ID)
 }
@@ -108,6 +110,7 @@ func (p *CampaignTemplate) PrimaryColumnValuesBySlug(slug string) map[string]str
 		presets.ParamID: segs[0],
 	}
 }
+
 func (p *CampaignProductTemplate) PrimarySlug() string {
 	return fmt.Sprintf("%v", p.ID)
 }
@@ -301,7 +304,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 			Attr(web.VField(field.FormKey, field.Value(obj))...)
 	})
 
-	//only pages view containers set OnlyPages true
+	// only pages view containers set OnlyPages true
 	pc := pb.RegisterContainer("PagesContent").Group("Navigation").OnlyPages(true).
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			c := obj.(*PagesContent)

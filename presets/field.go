@@ -273,6 +273,30 @@ type NameLabel struct {
 	label string
 }
 
+func CloneFieldsLayout(layout []interface{}) (r []interface{}) {
+	r = make([]interface{}, len(layout))
+	for i, v := range layout {
+		switch t := v.(type) {
+		case string:
+			r[i] = t
+		case []string:
+			r[i] = slices.Clone(t)
+		case *FieldsSection:
+			rows := make([][]string, len(t.Rows))
+			for j, row := range t.Rows {
+				rows[j] = slices.Clone(row)
+			}
+			r[i] = &FieldsSection{
+				Title: t.Title,
+				Rows:  rows,
+			}
+		default:
+			panic("unknown fields layout, must be string/[]string/*FieldsSection")
+		}
+	}
+	return
+}
+
 type FieldsSection struct {
 	Title string
 	Rows  [][]string
@@ -618,11 +642,59 @@ func (b *FieldsBuilder) Except(patterns ...string) (r *FieldsBuilder) {
 
 	r = b.Clone()
 
-	for _, f := range b.fields {
-		if hasMatched(patterns, f.name) {
-			continue
+	if len(b.fieldsLayout) == 0 {
+		for _, f := range b.fields {
+			if hasMatched(patterns, f.name) {
+				continue
+			}
+			r.appendFieldAfterClone(b, f.name)
 		}
-		r.appendFieldAfterClone(b, f.name)
+		return r
+	}
+
+	fieldsLayout := []any{}
+	for _, iv := range b.fieldsLayout {
+		switch t := iv.(type) {
+		case string:
+			if !hasMatched(patterns, t) {
+				fieldsLayout = append(fieldsLayout, t)
+			}
+		case []string:
+			ns := []string{}
+			for _, n := range t {
+				if !hasMatched(patterns, n) {
+					ns = append(ns, n)
+				}
+			}
+			if len(ns) > 0 {
+				fieldsLayout = append(fieldsLayout, ns)
+			}
+		case *FieldsSection:
+			section := &FieldsSection{
+				Title: t.Title,
+				Rows:  [][]string{},
+			}
+			for _, row := range t.Rows {
+				ns := []string{}
+				for _, n := range row {
+					if !hasMatched(patterns, n) {
+						ns = append(ns, n)
+					}
+				}
+				if len(ns) > 0 {
+					section.Rows = append(section.Rows, ns)
+				}
+			}
+			if len(section.Rows) > 0 {
+				fieldsLayout = append(fieldsLayout, section)
+			}
+		default:
+			panic("unknown fields layout, must be string/[]string/*FieldsSection")
+		}
+	}
+	r.fieldsLayout = fieldsLayout
+	for _, fn := range r.getFieldNamesFromLayout() {
+		r.appendFieldAfterClone(b, fn)
 	}
 	return
 }

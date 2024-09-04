@@ -79,9 +79,7 @@ type selectItem struct {
 func fileChooserDialogContent(mb *Builder, field string, ctx *web.EventContext,
 	cfg *media_library.MediaBoxConfig,
 ) h.HTMLComponent {
-	var (
-		msgr = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
-	)
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 	return h.Div(
 		imageDialog(),
 		VSnackbar(h.Text(msgr.DescriptionUpdated)).
@@ -400,7 +398,6 @@ func fileOrFolderComponent(
 		}
 	} else {
 		title, content = fileComponent(mb, field, tab, ctx, f, msgr, cfg, initCroppingVars, &clickCardWithoutMoveEvent, &menus, inMediaLibrary)
-
 	}
 
 	card := VCard(
@@ -572,7 +569,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 		orderByVal = orderByCreatedAtDESC
 		wh = wh.Order("created_at DESC")
 	}
-	var selected_type = ""
+	selected_type := ""
 	switch typeVal {
 	case typeImage:
 		selected_type = media_library.ALLOW_TYPE_IMAGE
@@ -863,10 +860,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 }
 
 func searchComponent(ctx *web.EventContext, field string, cfg *media_library.MediaBoxConfig, inMediaLibrary bool) h.HTMLComponent {
-
-	var (
-		msgr = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
-	)
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 	clickEvent := web.Plaid().
 		EventFunc(ImageSearchEvent).
 		Query(ParamField, field).

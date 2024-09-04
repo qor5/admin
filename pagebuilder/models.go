@@ -208,9 +208,11 @@ type (
 func (t *Template) GetID() uint {
 	return t.ID
 }
+
 func (t *Template) GetName(_ *web.EventContext) string {
 	return t.Name
 }
+
 func (t *Template) GetDescription(_ *web.EventContext) string {
 	return t.Description
 }

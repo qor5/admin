@@ -5,8 +5,9 @@ package mock
 
 import (
 	"context"
-	"github.com/qor5/admin/v3/worker"
 	"sync"
+
+	"github.com/qor5/admin/v3/worker"
 )
 
 // Ensure, that QueueMock does implement worker.Queue.

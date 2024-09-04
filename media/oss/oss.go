@@ -86,7 +86,7 @@ func (o OSS) URL(styles ...string) string {
 	url := o.Base.URL(styles...)
 
 	newurl, err := Storage.GetURL(url)
-	if err != nil || len(newurl) == 0 {
+	if err != nil || newurl == "" {
 		return url
 	}
 
@@ -97,7 +97,7 @@ func (o OSS) String() string {
 	url := o.Base.URL()
 
 	newurl, err := Storage.GetURL(url)
-	if err != nil || len(newurl) == 0 {
+	if err != nil || newurl == "" {
 		return url
 	}
 

@@ -3,13 +3,14 @@ package admin
 import (
 	_ "embed"
 	"fmt"
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/role"
 	"github.com/qor5/x/v3/login"
 	"github.com/qor5/x/v3/sitemap"
 	"gorm.io/gorm"
-	"net/http"
 )
 
 //go:embed assets/favicon.ico
@@ -37,6 +38,7 @@ func TestHandler(db *gorm.DB, u *models.User) http.Handler {
 	mux.Handle("/", m(c.pb))
 	return mux
 }
+
 func TestL18nHandler(db *gorm.DB) http.Handler {
 	mux := http.NewServeMux()
 	c := NewConfig(db)

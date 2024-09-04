@@ -1,11 +1,12 @@
 package examples_admin
 
 import (
-	"github.com/qor5/admin/v3/autocomplete"
-	"github.com/theplant/gofixtures"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/qor5/admin/v3/autocomplete"
+	"github.com/theplant/gofixtures"
 
 	"github.com/qor5/admin/v3/presets"
 	. "github.com/qor5/web/v3/multipartestutils"
