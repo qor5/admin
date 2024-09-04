@@ -227,6 +227,30 @@ type FieldsBuilder struct {
 	fieldsLayout []interface{}
 }
 
+func CloneFieldsLayout(layout []interface{}) (r []interface{}) {
+	r = make([]interface{}, len(layout))
+	for i, v := range layout {
+		switch t := v.(type) {
+		case string:
+			r[i] = t
+		case []string:
+			r[i] = slices.Clone(t)
+		case *FieldsSection:
+			rows := make([][]string, len(t.Rows))
+			for j, row := range t.Rows {
+				rows[j] = slices.Clone(row)
+			}
+			r[i] = &FieldsSection{
+				Title: t.Title,
+				Rows:  rows,
+			}
+		default:
+			panic("unknown fields layout, must be string/[]string/*FieldsSection")
+		}
+	}
+	return
+}
+
 type FieldsSection struct {
 	Title string
 	Rows  [][]string

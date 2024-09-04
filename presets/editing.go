@@ -91,7 +91,7 @@ func (b *EditingBuilder) Creating(vs ...interface{}) (r *EditingBuilder) {
 				vs = append(vs, f.name)
 			}
 		} else {
-			vs = b.fieldsLayout
+			vs = CloneFieldsLayout(b.fieldsLayout)
 		}
 	}
 	if len(vs) == 0 {
