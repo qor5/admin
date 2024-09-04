@@ -73,7 +73,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 		}
 		slug := primarySlugger.PrimarySlug()
 
-		div := h.Div().Class("w-100 d-inline-flex")
+		div := h.Div().Class("tagList-bar-warp")
 		div.AppendChildren(
 			utils.ConfirmDialog(msgr.Areyousure, web.Plaid().EventFunc(web.Var("locals.action")).
 				Query(presets.ParamID, slug).Go(),
