@@ -17,6 +17,8 @@ import (
 	v "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type FieldContext struct {
@@ -58,6 +60,15 @@ func (fc *FieldContext) ContextValue(key interface{}) (r interface{}) {
 		return
 	}
 	return fc.Context.Value(key)
+}
+
+type FieldsBuilder struct {
+	model       interface{}
+	defaults    *FieldDefaults
+	fieldLabels []string
+	fields      []*FieldBuilder
+	// string / []string / *FieldsSection
+	fieldsLayout []interface{}
 }
 
 type FieldBuilder struct {
@@ -262,15 +273,6 @@ type NameLabel struct {
 	label string
 }
 
-type FieldsBuilder struct {
-	model       interface{}
-	defaults    *FieldDefaults
-	fieldLabels []string
-	fields      []*FieldBuilder
-	// string / []string / *FieldsSection
-	fieldsLayout []interface{}
-}
-
 type FieldsSection struct {
 	Title string
 	Rows  [][]string
@@ -415,8 +417,6 @@ func (b *FieldsBuilder) setToObjNilOrDelete(toObj interface{}, formKey string, f
 	if err != nil {
 		panic(err)
 	}
-
-	return
 }
 
 func (b *FieldsBuilder) setWithChildFromObjs(
@@ -518,7 +518,7 @@ func humanizeString(str string) string {
 		}
 		human = append(human, l)
 	}
-	return strings.Title(string(human))
+	return cases.Title(language.Und, cases.NoLower).String(string(human))
 }
 
 func (b *FieldsBuilder) getLabel(field NameLabel) (r string) {
@@ -572,14 +572,10 @@ func (b *FieldsBuilder) getFieldNamesFromLayout() []string {
 		case string:
 			ns = append(ns, t)
 		case []string:
-			for _, n := range t {
-				ns = append(ns, n)
-			}
+			ns = append(ns, t...)
 		case *FieldsSection:
 			for _, row := range t.Rows {
-				for _, n := range row {
-					ns = append(ns, n)
-				}
+				ns = append(ns, row...)
 			}
 		default:
 			panic("unknown fields layout, must be string/[]string/*FieldsSection")

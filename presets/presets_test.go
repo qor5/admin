@@ -86,3 +86,10 @@ func TestLookUpModelBuilder(t *testing.T) {
 	mb3.URIName(mb3.Info().URIName() + "-version-list-dialog")
 	assert.Equal(t, mb3, pb.LookUpModelBuilder(mb3.Info().URIName()))
 }
+
+func TestHumanizeString(t *testing.T) {
+	assert.Equal(t, "Hello World", humanizeString("HelloWorld"))
+	assert.Equal(t, "Hello World", humanizeString("helloWorld"))
+	assert.Equal(t, "Order Item", humanizeString("OrderItem"))
+	assert.Equal(t, "CNN Name", humanizeString("CNNName"))
+}
