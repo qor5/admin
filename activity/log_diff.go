@@ -258,10 +258,10 @@ func (db *DiffBuilder) diffLoop(old, new reflect.Value, prefixField string) erro
 }
 
 func formatFieldByDot(prefix string, suffix string) string {
-	if len(prefix) == 0 {
+	if prefix == "" {
 		return suffix
 	}
-	if len(suffix) == 0 {
+	if suffix == "" {
 		return prefix
 	}
 	return prefix + "." + suffix

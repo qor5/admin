@@ -447,7 +447,7 @@ func defaultTOTPSetupPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFun
 		// Generate key from TOTPSecret
 		var key *otp.Key
 		totpSecret := u.GetTOTPSecret()
-		if len(totpSecret) == 0 {
+		if totpSecret == "" {
 			r.Body = DefaultViewCommon.ErrorBody("need setup totp")
 			return
 		}

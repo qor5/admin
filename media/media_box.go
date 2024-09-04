@@ -161,7 +161,7 @@ func (b *QMediaBoxBuilder) Config(v *media_library.MediaBoxConfig) (r *QMediaBox
 }
 
 func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) {
-	if len(b.fieldName) == 0 {
+	if b.fieldName == "" {
 		panic("FieldName required")
 	}
 	if b.value == nil {
@@ -394,10 +394,10 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 
 		fieldName := fmt.Sprintf("%s.Description", field)
 		value := ctx.Param(fieldName)
-		if len(value) == 0 {
+		if value == "" {
 			value = mediaBox.Description
 		}
-		if !(len(value) == 0 && readonly) {
+		if !(value == "" && readonly) {
 			c.AppendChildren(
 				VRow(
 					VCol(
@@ -513,7 +513,7 @@ func deleteFileField() web.EventFunc {
 
 func stringToCfg(v string) *media_library.MediaBoxConfig {
 	var cfg media_library.MediaBoxConfig
-	if len(v) == 0 {
+	if v == "" {
 		return &cfg
 	}
 	err := json.Unmarshal([]byte(v), &cfg)
