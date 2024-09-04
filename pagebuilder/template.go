@@ -43,13 +43,13 @@ type (
 )
 
 func (b *Builder) template(mb *presets.ModelBuilder, tm *presets.ModelBuilder) {
-
 	b.templates = append(b.templates, &TemplateBuilder{
 		mb:      mb,
 		tm:      tm,
 		builder: b,
 	})
 }
+
 func (b *Builder) RegisterModelBuilderTemplate(mb *presets.ModelBuilder, tm *presets.ModelBuilder) *Builder {
 	if !b.templateEnabled {
 		return b
@@ -148,9 +148,7 @@ func (b *TemplateBuilder) configModelWithTemplate() {
 	filed := creating.GetField(PageTemplateSelectionFiled)
 	if filed != nil && filed.GetCompFunc() == nil {
 		mb.Listing().NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
-			var (
-				msgr = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-			)
+			msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 			return h.Components(
 				web.Portal().Name(TemplateSelectDialogPortalName),
 				VBtn(msgr.New).
@@ -192,17 +190,16 @@ func (b *TemplateBuilder) configModelWithTemplate() {
 			}
 		})
 		filed.ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-
 			return h.Components(
 				web.Listen(NotifTemplateSelected(b.model.mb),
 					web.Plaid().EventFunc(ReloadSelectedTemplateEvent).FieldValue(ParamTemplateSelectedID, web.Var("payload.slug")).Go(),
 				),
 				web.Portal(b.selectedTemplate(ctx)).Name(TemplateSelectedPortalName),
 			)
-
 		})
 	}
 }
+
 func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent {
 	var (
 		err            error
@@ -381,10 +378,7 @@ func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent
 }
 
 func (b *TemplateBuilder) searchComponent(ctx *web.EventContext) h.HTMLComponent {
-
-	var (
-		msgr = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
-	)
+	msgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 	clickEvent := web.Plaid().PushState(true).MergeQuery(true).Query(ParamSearchKeyword, web.Var("vars.searchMsg")).RunPushState() + ";" + web.Plaid().
 		EventFunc(ReloadTemplateContentEvent).
 		Query(presets.ParamOverlay, ctx.Param(presets.ParamOverlay)).
@@ -406,6 +400,7 @@ func (b *TemplateBuilder) searchComponent(ctx *web.EventContext) h.HTMLComponent
 			web.Slot(VIcon("mdi-magnify").Attr("@click", clickEvent)).Name("append-inner"),
 		).MaxWidth(320)
 }
+
 func (b *TemplateBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponent {
 	var (
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)

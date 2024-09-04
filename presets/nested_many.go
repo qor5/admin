@@ -138,7 +138,7 @@ func (b *ListingBuilder) nestedManyComponent(evCtx *web.EventContext,
 	}
 	return web.Scope().VSlot("{ form }").Children(
 		h.Div(
-			h.Div().Class("d-flex align-center section-title-wrap mb-0").Children(		
+			h.Div().Class("d-flex align-center section-title-wrap mb-0").Children(
 				titleCompo,
 				VSpacer(),
 				h.Div().Id(compo.ActionsComponentTeleportToID()),

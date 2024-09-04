@@ -14,9 +14,7 @@ const (
 )
 
 func (b *ModelBuilder) PreviewHref(_ *web.EventContext, ps string) string {
-	var (
-		ur = url.Values{}
-	)
+	ur := url.Values{}
 	ur.Add(presets.ParamID, ps)
 	return b.builder.prefix + "/" + b.mb.Info().URIName() + "/preview" + "?" + ur.Encode()
 }

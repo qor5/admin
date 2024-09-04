@@ -32,7 +32,6 @@ func TestPresetsListingKeywordSearchOff(t *testing.T) {
 }
 
 func TestPresetsRowMenuIcon(t *testing.T) {
-
 	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
 	PresetsRowMenuAction(pb, TestDB)
 	TestDB.AutoMigrate(&CreditCard{})

@@ -2,9 +2,10 @@ package examples
 
 import (
 	"fmt"
-	"github.com/qor5/admin/v3/autocomplete"
 	"net/http"
 	"strings"
+
+	"github.com/qor5/admin/v3/autocomplete"
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"

@@ -88,7 +88,7 @@ func PresetsRowMenuAction(b *presets.Builder, db *gorm.DB) (
 	mb, cl, ce, dp = PresetsHelloWorld(b, db)
 	cl.KeywordSearchOff(true)
 	rmb := cl.RowMenu()
-	
+
 	rmb.RowMenuItem("with-icon").Icon("mdi-close")
 	rmb.RowMenuItem("Delete").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
 		return nil

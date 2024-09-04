@@ -82,6 +82,7 @@ func (mediaBox *MediaBox) URL(styles ...string) string {
 	}
 	return mediaBox.Url
 }
+
 func (mediaBox *MediaBox) URLNoCached(styles ...string) string {
 	i := mediaBox.URL(styles...)
 	if i != "" {
