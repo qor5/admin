@@ -84,16 +84,21 @@ func (b *EditingBuilder) Creating(vs ...interface{}) (r *EditingBuilder) {
 		}
 	}
 
-	b.mb.creating.FieldsBuilder = *b.FieldsBuilder.Clone()
 	r = b.mb.creating
 	if len(vs) == 0 {
-		for _, f := range b.fields {
-			vs = append(vs, f.name)
+		if len(b.fieldsLayout) == 0 {
+			for _, f := range b.fields {
+				vs = append(vs, f.name)
+			}
+		} else {
+			vs = CloneFieldsLayout(b.fieldsLayout)
 		}
 	}
-
-	r.FieldsBuilder = *b.FieldsBuilder.Only(vs...)
-
+	if len(vs) == 0 {
+		r.FieldsBuilder = *b.FieldsBuilder.Clone()
+	} else {
+		r.FieldsBuilder = *b.FieldsBuilder.Only(vs...)
+	}
 	return r
 }
 

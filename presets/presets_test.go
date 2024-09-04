@@ -8,6 +8,7 @@ import (
 
 	"github.com/qor5/web/v3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestIsMenuItemActive(t *testing.T) {
@@ -85,4 +86,19 @@ func TestLookUpModelBuilder(t *testing.T) {
 	})
 	mb3.URIName(mb3.Info().URIName() + "-version-list-dialog")
 	assert.Equal(t, mb3, pb.LookUpModelBuilder(mb3.Info().URIName()))
+}
+
+func TestCloneFieldsLayout(t *testing.T) {
+	src := []any{
+		"foo",
+		[]string{"bar"},
+		&FieldsSection{
+			Title: "title",
+			Rows: [][]string{
+				{"a", "b"},
+				{"c", "d"},
+			},
+		},
+	}
+	require.Equal(t, src, CloneFieldsLayout(src))
 }
