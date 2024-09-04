@@ -1,0 +1,13 @@
+version = 1
+
+[[analyzers]]
+name = "test-coverage"
+
+[[analyzers]]
+name = "go"
+
+  [analyzers.meta]
+  import_root = "github.com/qor5/admin"
+
+[[transformers]]
+name = "gofumpt"
