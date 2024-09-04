@@ -77,7 +77,7 @@ type MediaLibraryStorage struct {
 	Description  string
 }
 
-func (mediaLibraryStorage MediaLibraryStorage) GetSizes() map[string]*base.Size {
+func (mediaLibraryStorage *MediaLibraryStorage) GetSizes() map[string]*base.Size {
 	if len(mediaLibraryStorage.Sizes) == 0 && !(mediaLibraryStorage.GetFileHeader() != nil || mediaLibraryStorage.Crop) {
 		return map[string]*base.Size{}
 	}
@@ -147,7 +147,9 @@ func (mediaLibraryStorage *MediaLibraryStorage) Scan(data interface{}) (err erro
 			}
 		}
 	case string:
-		err = mediaLibraryStorage.Scan([]byte(values))
+		if err = mediaLibraryStorage.Scan([]byte(values)); err != nil {
+			return err
+		}
 	case []string:
 		for _, str := range values {
 			if err = mediaLibraryStorage.Scan(str); err != nil {
@@ -165,7 +167,7 @@ func (mediaLibraryStorage MediaLibraryStorage) Value() (driver.Value, error) {
 	return string(results), err
 }
 
-func (mediaLibraryStorage MediaLibraryStorage) URL(styles ...string) string {
+func (mediaLibraryStorage *MediaLibraryStorage) URL(styles ...string) string {
 	if mediaLibraryStorage.Url != "" && len(styles) > 0 {
 		ext := path.Ext(mediaLibraryStorage.Url)
 		return fmt.Sprintf("%v.%v%v", strings.TrimSuffix(mediaLibraryStorage.Url, ext), styles[0], ext)
