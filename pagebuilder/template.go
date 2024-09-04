@@ -75,16 +75,47 @@ func (b *Builder) defaultTemplateInstall(pb *presets.Builder, pm *presets.ModelB
 		}
 		return msgr.ModelLabelTemplates
 	})
-	template.Editing().Creating("Name", "Description").ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+	creating := template.Editing().Creating("Name", "Description").ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		p := obj.(*Template)
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 		if p.Name == "" {
-			err.GlobalError(msgr.InvalidNameMsg)
+			err.FieldError("Name", msgr.InvalidNameMsg)
 			return
 		}
 		return
+	})
+	creating.Field("Name").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		return h.Div(
+			h.Span(msgr.Name).Class("text-subtitle-2 text-high-emphasis section-filed-label mb-1 d-sm-inline-block"),
+			VTextField().
+				Density(DensityComfortable).
+				Class("section-field").
+				Type("text").
+				Variant(FieldVariantOutlined).
+				BgColor(ColorBackground).
+				Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
+				ErrorMessages(field.Errors...).
+				Disabled(field.Disabled),
+		).Class("section-field-wrap")
+	})
+	creating.Field("Description").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+
+		return h.Div(
+			h.Span(msgr.Description).Class("text-subtitle-2 text-high-emphasis section-filed-label mb-1 d-sm-inline-block"),
+			VTextField().
+				Density(DensityComfortable).
+				Class("section-field").
+				Type("text").
+				Variant(FieldVariantOutlined).
+				BgColor(ColorBackground).
+				Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
+				ErrorMessages(field.Errors...).
+				Disabled(field.Disabled),
+		).Class("section-field-wrap")
 	})
 	b.templateModel = template
 	b.RegisterModelBuilderTemplate(pm, template)
