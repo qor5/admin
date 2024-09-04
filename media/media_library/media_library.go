@@ -112,7 +112,7 @@ func (mediaLibraryStorage *MediaLibraryStorage) Scan(data interface{}) (err erro
 		// cropOptions := mediaLibraryStorage.CropOptions
 		sizeOptions := mediaLibraryStorage.Sizes
 
-		if string(values) != "" {
+		if len(values) != 0 {
 			mediaLibraryStorage.Base.Scan(values)
 			if err = json.Unmarshal(values, mediaLibraryStorage); err == nil {
 				if mediaLibraryStorage.CropOptions == nil {

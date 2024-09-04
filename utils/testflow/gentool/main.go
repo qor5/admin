@@ -60,7 +60,7 @@ func run(sampleFile, patchFile, backupDir, outputFile string) (xerr error) {
 	flowName = flect.Pascalize(flowName)
 
 	// Generate steps for each request-response pair
-	steps := []*Step{}
+	var steps []*Step
 	for i, rr := range rrs {
 		v, err := generateStep(rr)
 		if err != nil {
@@ -116,7 +116,7 @@ func run(sampleFile, patchFile, backupDir, outputFile string) (xerr error) {
 	diffs := dmp.DiffMain(string(original), string(edited), false)
 	patches := dmp.PatchMake(string(original), diffs)
 	pacthed, bs := dmp.PatchApply(patches, output)
-	patcherrs := []string{}
+	var patcherrs []string
 	for idx, b := range bs {
 		if !b {
 			patcherrs = append(patcherrs, fmt.Sprintf("patch failed: %s", patches[idx].String()))
