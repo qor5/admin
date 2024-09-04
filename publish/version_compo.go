@@ -87,20 +87,20 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 		urlSuffix := field.ModelInfo.URIName() + VersionListDialogURISuffix
 		if version, ok = obj.(VersionInterface); ok {
 			versionSwitch = v.VChip(
-				h.Text(`{{ xlocals.versionName }}`),
+				h.Span(`{{ xlocals.versionName }}`).Class("ellipsis"),
 			).Label(true).Variant(v.VariantOutlined).
 				Attr("style", "height:36px;").
+				Color(v.ColorAbsGreyDarken3).
 				Attr(":disabled", phraseHasPresetsDataChanged).
 				On("click", web.Plaid().EventFunc(actions.OpenListingDialog).
 					URL(mb.Info().PresetsPrefix()+"/"+urlSuffix).
 					Query(filterKeySelected, slug).
 					Go()).
-				Class(v.W100)
+				Class(v.W100, "version-select-wrap")
 			if status, ok = obj.(StatusInterface); ok {
-				versionSwitch.AppendChildren(statusChip(status.EmbedStatus().Status, msgr).Class("mx-2"))
+				versionSwitch.AppendChildren(statusChip(status.EmbedStatus().Status, msgr).Class("mx-2 flex-shrink-0"))
 			}
-			versionSwitch.AppendChildren(v.VSpacer())
-			versionSwitch.AppendIcon("mdi-chevron-down")
+			versionSwitch.AppendIcon("mdi-menu-down").Size(16).Color(v.ColorAbsGreyDarken3)
 
 			div.AppendChildren(web.Scope().VSlot(" { locals: xlocals } ").Init(fmt.Sprintf("{versionName: %q}", version.EmbedVersion().VersionName)).Children(
 				versionSwitch,
