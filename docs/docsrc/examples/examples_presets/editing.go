@@ -36,11 +36,21 @@ func PresetsEditingCustomizationDescription(b *presets.Builder, db *gorm.DB) (
 
 	mb, cl, ce, _ = PresetsListingCustomizationBulkActions(b, db)
 
-	ce.Only("Name", "CompanyID", "Description")
+	ce.Only("Name", "Email", "CompanyID", "Description")
 
 	ce.Field("Description").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*Customer).Description).Label(field.Label)
 	})
+
+	// If you just want to specify the label to be displayed
+	wrapper := presets.WrapperFieldLabel(func(evCtx *web.EventContext, obj interface{}, field *presets.FieldContext) (name2label map[string]string, err error) {
+		return map[string]string{
+			"Name":  "Customer Name",
+			"Email": "Customer Email",
+		}, nil
+	})
+	ce.Field("Name").LazyWrapComponentFunc(wrapper)
+	ce.Field("Email").LazyWrapComponentFunc(wrapper)
 	return
 }
 
@@ -206,6 +216,15 @@ func PresetsEditingSetter(b *presets.Builder, db *gorm.DB) (
 			return errors.New("name must not be empty")
 		}
 		return
+	})
+	eb.Field("Name").LazyWrapSetterFunc(func(in presets.FieldSetterFunc) presets.FieldSetterFunc {
+		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+			c := obj.(*Company)
+			if c.Name == "system" {
+				return errors.New(`You can not use "system" as name`)
+			}
+			return in(obj, field, ctx)
+		}
 	})
 
 	return

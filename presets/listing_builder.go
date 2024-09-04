@@ -259,7 +259,7 @@ func (b *ListingBuilder) GetPageFunc() web.PageFunc {
 
 func (b *ListingBuilder) cellComponentFunc(f *FieldBuilder) vx.CellComponentFunc {
 	return func(obj interface{}, fieldName string, ctx *web.EventContext) h.HTMLComponent {
-		return f.compFunc(obj, b.mb.getComponentFuncField(f), ctx)
+		return f.lazyCompFunc()(obj, b.mb.getComponentFuncField(f), ctx)
 	}
 }
 

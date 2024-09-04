@@ -902,7 +902,7 @@ func (b *SectionBuilder) DefaultElementUnmarshal() func(toObj, formObj any, pref
 				continue
 			}
 			keyPath := fmt.Sprintf("%s.%s", prefix, f.name)
-			err := f.setterFunc(toObj, &FieldContext{
+			err := f.lazySetterFunc()(toObj, &FieldContext{
 				ModelInfo: info,
 				FormKey:   keyPath,
 				Name:      f.name,

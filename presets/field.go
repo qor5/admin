@@ -63,7 +63,9 @@ func (fc *FieldContext) ContextValue(key interface{}) (r interface{}) {
 type FieldBuilder struct {
 	NameLabel
 	compFunc            FieldComponentFunc
+	lazyWrapCompFunc    func(in FieldComponentFunc) FieldComponentFunc
 	setterFunc          FieldSetterFunc
+	lazyWrapSetterFunc  func(in FieldSetterFunc) FieldSetterFunc
 	context             context.Context
 	rt                  reflect.Type
 	nestedFieldsBuilder *FieldsBuilder
@@ -109,7 +111,9 @@ func (b *FieldBuilder) Clone() (r *FieldBuilder) {
 	r.name = b.name
 	r.label = b.label
 	r.compFunc = b.compFunc
+	r.lazyWrapCompFunc = b.lazyWrapCompFunc
 	r.setterFunc = b.setterFunc
+	r.lazyWrapSetterFunc = b.lazyWrapSetterFunc
 	r.nestedFieldsBuilder = b.nestedFieldsBuilder
 	r.context = b.context
 	r.rt = b.rt
@@ -125,9 +129,49 @@ func (b *FieldBuilder) ComponentFunc(v FieldComponentFunc) (r *FieldBuilder) {
 	return b
 }
 
+// WrapperFieldLabel a snippet for LazyWrapComponentFunc
+func WrapperFieldLabel(mapper func(evCtx *web.EventContext, obj interface{}, field *FieldContext) (name2label map[string]string, err error)) func(in FieldComponentFunc) FieldComponentFunc {
+	return func(in FieldComponentFunc) FieldComponentFunc {
+		return func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			m, err := mapper(ctx, obj, field)
+			if err != nil {
+				panic(err)
+			}
+			if label, ok := m[field.Name]; ok {
+				field.Label = label
+			}
+			return in(obj, field, ctx)
+		}
+	}
+}
+
+func (b *FieldBuilder) LazyWrapComponentFunc(w func(in FieldComponentFunc) FieldComponentFunc) (r *FieldBuilder) {
+	b.lazyWrapCompFunc = w
+	return b
+}
+
+func (b *FieldBuilder) lazyCompFunc() FieldComponentFunc {
+	if b.lazyWrapCompFunc == nil {
+		return b.compFunc
+	}
+	return b.lazyWrapCompFunc(b.compFunc)
+}
+
 func (b *FieldBuilder) SetterFunc(v FieldSetterFunc) (r *FieldBuilder) {
 	b.setterFunc = v
 	return b
+}
+
+func (b *FieldBuilder) LazyWrapSetterFunc(w func(in FieldSetterFunc) FieldSetterFunc) (r *FieldBuilder) {
+	b.lazyWrapSetterFunc = w
+	return b
+}
+
+func (b *FieldBuilder) lazySetterFunc() FieldSetterFunc {
+	if b.lazyWrapSetterFunc == nil {
+		return b.setterFunc
+	}
+	return b.lazyWrapSetterFunc(b.setterFunc)
 }
 
 func (b *FieldBuilder) WithContextValue(key interface{}, val interface{}) (r *FieldBuilder) {
@@ -325,7 +369,7 @@ func (b *FieldsBuilder) SetObjectFields(fromObj interface{}, toObj interface{}, 
 		if parent != nil && parent.FormKey != "" {
 			keyPath = fmt.Sprintf("%s.%s", parent.FormKey, f.name)
 		}
-		err1 = f.setterFunc(toObj, &FieldContext{
+		err1 = f.lazySetterFunc()(toObj, &FieldContext{
 			ModelInfo: info,
 			FormKey:   keyPath,
 			Name:      f.name,
@@ -717,7 +761,7 @@ func (b *FieldsBuilder) fieldToComponentWithFormValueKey(info *ModelInfo, obj in
 			disabled = info.Verifier().Do(PermCreate).ObjectOn(obj).SnakeOn("f_"+f.name).WithReq(ctx.R).IsAllowed() != nil
 		}
 	}
-	return f.compFunc(obj, &FieldContext{
+	return f.lazyCompFunc()(obj, &FieldContext{
 		ModelInfo:           info,
 		Name:                f.name,
 		FormKey:             contextKeyPath,
