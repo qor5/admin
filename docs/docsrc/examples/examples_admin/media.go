@@ -1,8 +1,9 @@
 package examples_admin
 
 import (
-	"github.com/qor5/admin/v3/media/media_library"
 	"net/http"
+
+	"github.com/qor5/admin/v3/media/media_library"
 
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/media"

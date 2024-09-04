@@ -57,6 +57,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 	configure(pb, b, b.db)
 	return nil
 }
+
 func (b *Builder) WrapSaverFunc(w func(in SaverFunc) SaverFunc) (r *Builder) {
 	b.saverFunc = w(b.saverFunc)
 	return b

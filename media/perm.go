@@ -21,6 +21,7 @@ const (
 func (mb *Builder) uploadIsAllowed(r *http.Request) error {
 	return mb.permVerifier.Do(PermUpload).On("media_libraries").WithReq(r).IsAllowed()
 }
+
 func (mb *Builder) copyIsAllowed(r *http.Request) error {
 	return mb.permVerifier.Do(PermCopy).On("media_libraries").WithReq(r).IsAllowed()
 }
@@ -28,6 +29,7 @@ func (mb *Builder) copyIsAllowed(r *http.Request) error {
 func (mb *Builder) moveToIsAllowed(r *http.Request) error {
 	return mb.permVerifier.Do(PermMovieTo).On("media_libraries").WithReq(r).IsAllowed()
 }
+
 func (mb *Builder) deleteIsAllowed(r *http.Request, obj interface{}) error {
 	if obj == nil {
 		return mb.permVerifier.Do(PermDelete).On("media_libraries").WithReq(r).IsAllowed()

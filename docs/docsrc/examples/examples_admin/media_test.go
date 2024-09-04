@@ -2,6 +2,9 @@ package examples_admin
 
 import (
 	"bytes"
+	"net/http"
+	"testing"
+
 	"github.com/qor/oss/filesystem"
 	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/media/media_library"
@@ -11,8 +14,6 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
-	"net/http"
-	"testing"
 )
 
 var simpleMediaDate = gofixtures.Data(gofixtures.Sql(`

@@ -59,7 +59,7 @@ const (
   <path fill-rule="evenodd" clip-rule="evenodd" d="M9.331 11.64l-1.96 1.031.373-2.183-1.584-1.547 2.191-.316.98-1.986.979 1.986 2.191.316-1.587 1.547.376 2.181-1.958-1.029z" fill="#FFDA2C"/>
   <rect x="0.5" y="0.5" width="23" height="23" rx="11.5" stroke="#EEEEEE"/>
 </svg>`
-JPIcon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+	JPIcon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect x="0.5" y="0.5" width="23" height="23" rx="9.5" stroke="#EEEEEE"/>
   <rect x="1" y="1" width="22" height="22" rx="10.5" stroke="black" stroke-opacity="0.1"/>
   <circle cx="12" cy="12" r="4.333" fill="#F93939"/>

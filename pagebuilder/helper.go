@@ -1,9 +1,10 @@
 package pagebuilder
 
 import (
-	"github.com/qor5/x/v3/i18n"
 	"path"
 	"regexp"
+
+	"github.com/qor5/x/v3/i18n"
 
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/web/v3"

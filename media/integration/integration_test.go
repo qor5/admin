@@ -2,11 +2,12 @@ package integration_test
 
 import (
 	"embed"
-	"github.com/qor5/admin/v3/media"
-	"github.com/qor5/web/v3"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/qor5/admin/v3/media"
+	"github.com/qor5/web/v3"
 
 	"github.com/qor/oss/filesystem"
 	"github.com/qor5/admin/v3/media/base"
@@ -131,6 +132,7 @@ func TestCrop(t *testing.T) {
 		return
 	}
 }
+
 func TestCopy(t *testing.T) {
 	db := setup()
 	f, err := box.ReadFile("testfile.png")
@@ -174,8 +176,8 @@ func TestCopy(t *testing.T) {
 		t.Fatalf("crop file time error  %v :%v", m.CreatedAt, oldCreatedTime)
 		return
 	}
-
 }
+
 func TestUnCachedURL(t *testing.T) {
 	b := media_library.MediaBox{
 		Url: "test.jpg",

@@ -26,8 +26,8 @@ func (b *TemplateBuilder) registerFunctions() {
 	b.model.mb.RegisterEventFunc(ReloadTemplateContentEvent, b.reloadTemplateContent)
 	b.mb.RegisterEventFunc(OpenTemplateDialogEvent, b.openTemplateDialog)
 	b.mb.RegisterEventFunc(ReloadSelectedTemplateEvent, b.reloadSelectedTemplate)
-
 }
+
 func (b *TemplateBuilder) reloadTemplateContent(ctx *web.EventContext) (r web.EventResponse, err error) {
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: PageTemplatePortalName,
@@ -37,9 +37,7 @@ func (b *TemplateBuilder) reloadTemplateContent(ctx *web.EventContext) (r web.Ev
 }
 
 func (b *TemplateBuilder) openTemplateDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
-	var (
-		msgr = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-	)
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: TemplateSelectDialogPortalName,
 		Body: web.Scope(
@@ -60,6 +58,7 @@ func (b *TemplateBuilder) openTemplateDialog(ctx *web.EventContext) (r web.Event
 	r.RunScript = "setTimeout(function(){ vars.pageBuilderSelectTemplateDialog = true }, 100)"
 	return
 }
+
 func (b *TemplateBuilder) reloadSelectedTemplate(ctx *web.EventContext) (r web.EventResponse, err error) {
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: TemplateSelectedPortalName,

@@ -296,9 +296,11 @@ func (m *MemoryFile) Seek(offset int64, whence int) (int64, error) {
 func (m *MemoryFile) ReadAt(p []byte, off int64) (int, error) {
 	return m.reader.ReadAt(p, off)
 }
+
 func (m *MemoryFile) Open() (multipart.File, error) {
 	return m, nil
 }
+
 func NewMemoryFile(filename string, data []byte) *MemoryFile {
 	return &MemoryFile{
 		name:   filename,

@@ -4,8 +4,9 @@
 package mock
 
 import (
-	"github.com/qor5/admin/v3/worker"
 	"sync"
+
+	"github.com/qor5/admin/v3/worker"
 )
 
 // Ensure, that QorJobInterfaceMock does implement worker.QorJobInterface.
@@ -70,8 +71,7 @@ type QorJobInterfaceMock struct {
 			A []interface{}
 		}
 		// GetJobInfo holds details about calls to the GetJobInfo method.
-		GetJobInfo []struct {
-		}
+		GetJobInfo []struct{}
 		// SetProgress holds details about calls to the SetProgress method.
 		SetProgress []struct {
 			// V is the v argument value.
@@ -163,8 +163,7 @@ func (mock *QorJobInterfaceMock) GetJobInfo() (*worker.JobInfo, error) {
 	if mock.GetJobInfoFunc == nil {
 		panic("QorJobInterfaceMock.GetJobInfoFunc: method is nil but QorJobInterface.GetJobInfo was just called")
 	}
-	callInfo := struct {
-	}{}
+	callInfo := struct{}{}
 	mock.lockGetJobInfo.Lock()
 	mock.calls.GetJobInfo = append(mock.calls.GetJobInfo, callInfo)
 	mock.lockGetJobInfo.Unlock()
@@ -175,10 +174,8 @@ func (mock *QorJobInterfaceMock) GetJobInfo() (*worker.JobInfo, error) {
 // Check the length with:
 //
 //	len(mockedQorJobInterface.GetJobInfoCalls())
-func (mock *QorJobInterfaceMock) GetJobInfoCalls() []struct {
-} {
-	var calls []struct {
-	}
+func (mock *QorJobInterfaceMock) GetJobInfoCalls() []struct{} {
+	var calls []struct{}
 	mock.lockGetJobInfo.RLock()
 	calls = mock.calls.GetJobInfo
 	mock.lockGetJobInfo.RUnlock()
