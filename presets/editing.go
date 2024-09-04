@@ -84,12 +84,9 @@ func (b *EditingBuilder) Creating(vs ...interface{}) (r *EditingBuilder) {
 		}
 	}
 
-	b.mb.creating.FieldsBuilder = *b.FieldsBuilder.Clone()
 	r = b.mb.creating
 	if len(vs) == 0 {
-		for _, f := range b.fields {
-			vs = append(vs, f.name)
-		}
+		vs = b.fieldsLayout
 	}
 
 	r.FieldsBuilder = *b.FieldsBuilder.Only(vs...)

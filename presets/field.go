@@ -578,11 +578,49 @@ func (b *FieldsBuilder) Except(patterns ...string) (r *FieldsBuilder) {
 
 	r = b.Clone()
 
-	for _, f := range b.fields {
-		if hasMatched(patterns, f.name) {
-			continue
+	fieldsLayout := []any{}
+	for _, iv := range b.fieldsLayout {
+		switch t := iv.(type) {
+		case string:
+			if !hasMatched(patterns, t) {
+				fieldsLayout = append(fieldsLayout, t)
+			}
+		case []string:
+			ns := []string{}
+			for _, n := range t {
+				if !hasMatched(patterns, n) {
+					ns = append(ns, n)
+				}
+			}
+			if len(ns) > 0 {
+				fieldsLayout = append(fieldsLayout, ns)
+			}
+		case *FieldsSection:
+			section := &FieldsSection{
+				Title: t.Title,
+				Rows:  [][]string{},
+			}
+			for _, row := range t.Rows {
+				ns := []string{}
+				for _, n := range row {
+					if !hasMatched(patterns, n) {
+						ns = append(ns, n)
+					}
+				}
+				if len(ns) > 0 {
+					section.Rows = append(section.Rows, ns)
+				}
+			}
+			if len(section.Rows) > 0 {
+				fieldsLayout = append(fieldsLayout, section)
+			}
+		default:
+			panic("unknown fields layout, must be string/[]string/*FieldsSection")
 		}
-		r.appendFieldAfterClone(b, f.name)
+	}
+	r.fieldsLayout = fieldsLayout
+	for _, fn := range r.getFieldNamesFromLayout() {
+		r.appendFieldAfterClone(b, fn)
 	}
 	return
 }
