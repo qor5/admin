@@ -244,19 +244,7 @@ func renderFileChooserDialogContent(ctx *web.EventContext, r *web.EventResponse,
 	})
 }
 
-func fileComponent(
-	mb *Builder,
-	field string,
-	tab string,
-	ctx *web.EventContext,
-	f *media_library.MediaLibrary,
-	msgr *Messages,
-	cfg *media_library.MediaBoxConfig,
-	initCroppingVars []string,
-	event *string,
-	menus *[]h.HTMLComponent,
-	inMediaLibrary bool,
-) (title h.HTMLComponent, content h.HTMLComponent) {
+func fileComponent(mb *Builder, field string, tab string, ctx *web.EventContext, f *media_library.MediaLibrary, msgr *Messages, cfg *media_library.MediaBoxConfig, initCroppingVars []string, event *string, menus *[]h.HTMLComponent, inMediaLibrary bool) (title, content h.HTMLComponent) {
 	_, needCrop := mergeNewSizes(f, cfg)
 	croppingVar := fileCroppingVarName(f.ID)
 	initCroppingVars = append(initCroppingVars, fmt.Sprintf("%s: false", croppingVar))
@@ -448,13 +436,7 @@ func fileOrFolderComponent(
 	)
 }
 
-func folderComponent(
-	mb *Builder,
-	field string,
-	ctx *web.EventContext,
-	f *media_library.MediaLibrary,
-	msgr *Messages,
-) (title h.HTMLComponent, content h.HTMLComponent) {
+func folderComponent(mb *Builder, field string, ctx *web.EventContext, f *media_library.MediaLibrary, msgr *Messages) (title, content h.HTMLComponent) {
 	var count int64
 	fileNameComp := h.Span(f.File.FileName).Class("text-body-2").Attr("v-tooltip:bottom", h.JSONString(f.File.FileName))
 
