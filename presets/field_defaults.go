@@ -213,7 +213,6 @@ func cfTime(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLC
 			Format:     "24hr",
 			Scrollable: true,
 		}).
-		DialogWidth(640).
 		ClearText(msgr.Clear).
 		OkText(msgr.OK).
 		Disabled(field.Disabled)

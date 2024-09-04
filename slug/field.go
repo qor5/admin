@@ -32,7 +32,8 @@ func New() *Builder {
 func (sb *Builder) Install(b *presets.Builder) error {
 	b.GetI18n().
 		RegisterForModule(language.English, I18nSlugKey, Messages_en_US).
-		RegisterForModule(language.SimplifiedChinese, I18nSlugKey, Messages_zh_CN)
+		RegisterForModule(language.SimplifiedChinese, I18nSlugKey, Messages_zh_CN).
+		RegisterForModule(language.Japanese, I18nSlugKey, Messages_ja_JP)
 	b.GetWebBuilder().RegisterEventFunc(syncEvent, sync)
 	return nil
 }
@@ -66,26 +67,42 @@ func SlugEditingComponentFunc(obj interface{}, field *presets.FieldContext, ctx 
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nSlugKey, Messages_en_US).(*Messages)
 	slugFieldName := field.Name + "WithSlug"
 	slugLabel := field.Label + " Slug"
+	checkedFieldName := checkBoxName(slugFieldName)
 	return VSheet(
 		VTextField().
 			Type("text").
 			Attr(web.VField(field.Name, field.Value(obj))...).
 			Label(field.Label).
-			Attr("v-debounce:input", "300").
-			Attr("@input:debounced", web.Plaid().
-				EventFunc(syncEvent).Query("field_name", field.Name).Query("slug_label", slugLabel).Go()),
+			Attr("v-on-mounted", fmt.Sprintf(`({watch}) => {
+					const _sync = plaid().lodash.debounce(() => {
+						if (!!form[%q]) {
+							%s;
+						}
+					}, 300)
+					watch(() => form[%q], (value) => {
+						_sync()
+					})
+					watch(() => form[%q], (value) => {
+						_sync()
+					})
+				}`,
+				checkedFieldName,
+				web.Plaid().EventFunc(syncEvent).Query("field_name", field.Name).Query("slug_label", slugLabel).Go(),
+				field.Name,
+				checkedFieldName,
+			)),
 
 		VRow(
 			VCol(
-				web.Portal(
+				web.Portal().Name(portalName(slugFieldName)).Children(
 					VTextField().
 						Type("text").
 						Attr(web.VField(slugFieldName, reflectutils.MustGet(obj, slugFieldName).(Slug))...).
-						Label(slugLabel).Name(portalName(slugFieldName)),
+						Label(slugLabel),
 				),
 			).Cols(8),
 			VCol(
-				VCheckbox().Attr(web.VField(checkBoxName(slugFieldName), "")...).Value(true).Label(fmt.Sprintf(msgr.Sync,
+				VCheckbox().Attr(web.VField(checkedFieldName, "")...).Value(true).Label(fmt.Sprintf(msgr.Sync,
 					strings.ToLower(field.Label))),
 			).Cols(4),
 		),

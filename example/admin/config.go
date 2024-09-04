@@ -215,7 +215,8 @@ func NewConfig(db *gorm.DB) Config {
 
 	configMenuOrder(b)
 
-	configPost(b, db, publisher, ab)
+	sb := slug.New()
+	configPost(b, db, publisher, ab, sb)
 
 	roleBuilder := role.New(db).
 		Resources([]*v.DefaultOptionItem{
@@ -345,6 +346,7 @@ func NewConfig(db *gorm.DB) Config {
 	configUser(b, ab, db, publisher, loginSessionBuilder)
 
 	b.Use(
+		sb,
 		mediab,
 		microb,
 		ab,
@@ -567,11 +569,11 @@ func configPost(
 	db *gorm.DB,
 	publisher *publish.Builder,
 	ab *activity.Builder,
+	slugBuilder *slug.Builder,
 ) *presets.ModelBuilder {
 	m := b.Model(&models.Post{})
-	m.Use(slug.New())
 	defer func() {
-		m.Use(publisher, ab)
+		m.Use(slugBuilder, publisher, ab)
 		m.Detailing().SidePanelFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 			return ab.MustGetModelBuilder(m).NewTimelineCompo(ctx, obj, "_side")
 		})
