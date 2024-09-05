@@ -146,6 +146,16 @@ type SectionBuilder struct {
 
 type ObjectBoolFunc func(obj interface{}, ctx *web.EventContext) bool
 
+func (b *SectionBuilder) Tabs(tabName string) *SectionBuilder {
+	tabField := b.father.GetField(tabName)
+	if tabField == nil {
+		panic(fmt.Sprintf("field named %s required", tabName))
+	}
+	tabField.AppendTabs(b.father.Field(b.name))
+	b.father.GetField(b.name).hidden = true
+	return b
+}
+
 func (b *SectionBuilder) ComponentEditBtnFunc(v ObjectBoolFunc) *SectionBuilder {
 	if v == nil {
 		panic("value required")

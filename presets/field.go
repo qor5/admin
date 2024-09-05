@@ -73,6 +73,7 @@ type FieldsBuilder struct {
 
 type FieldBuilder struct {
 	NameLabel
+	hidden              bool
 	compFunc            FieldComponentFunc
 	lazyWrapCompFunc    func(in FieldComponentFunc) FieldComponentFunc
 	setterFunc          FieldSetterFunc
@@ -762,7 +763,9 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 			if _, ok := layoutFM[f.name]; ok {
 				continue
 			}
-			layout = append(layout, f.name)
+			if !f.hidden {
+				layout = append(layout, f.name)
+			}
 		}
 	}
 	for _, iv := range layout {

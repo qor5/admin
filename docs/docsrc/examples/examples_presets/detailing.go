@@ -301,7 +301,7 @@ const PresetsDetailPageCardsPath = "/samples/presets-detail-page-cards"
 
 // @snippet_end
 
-func PresetsDetailFieldTabs(b *presets.Builder, db *gorm.DB) (
+func PresetsDetailTabsField(b *presets.Builder, db *gorm.DB) (
 	cust *presets.ModelBuilder,
 	cl *presets.ListingBuilder,
 	ce *presets.EditingBuilder,

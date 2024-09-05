@@ -57,6 +57,55 @@ func PresetsDetailInlineEditDetails(b *presets.Builder, db *gorm.DB) (
 	return
 }
 
+func PresetsDetailTabsSection(b *presets.Builder, db *gorm.DB) (
+	cust *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	err := db.AutoMigrate(&Customer{}, &CreditCard{}, &Note{})
+	if err != nil {
+		panic(err)
+	}
+	mediaBuilder := media.New(db)
+	b.DataOperator(gorm2op.DataOperator(db)).Use(mediaBuilder)
+
+	cust = b.Model(&Customer{})
+	dp = cust.Detailing("tabs").Drawer(true)
+	dp.Section("name").
+		Editing("Name").
+		EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			custom := obj.(*Customer)
+			return h.Div(
+				v.VTextField().Attr(web.VField("name.Name", custom.Name)...).Label("Name"),
+			)
+		}).ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		custom := obj.(*Customer)
+		return h.Div(
+			h.Text(custom.Name),
+		)
+	})
+
+	dp.Section("email").
+		Editing("Email").
+		EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			custom := obj.(*Customer)
+			return h.Div(
+				v.VTextField().Attr(web.VField("email.Email", custom.Email)...).Label("Email"),
+			)
+		}).ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		custom := obj.(*Customer)
+		return h.Div(
+			h.Text(custom.Email),
+		)
+	})
+
+	dp.Section("name").Tabs("tabs")
+	dp.Section("email").Tabs("tabs")
+
+	return
+}
+
 func PresetsDetailInlineEditFieldSections(b *presets.Builder, db *gorm.DB) (
 	cust *presets.ModelBuilder,
 	cl *presets.ListingBuilder,
