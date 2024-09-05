@@ -35,7 +35,7 @@ func (tb *TabsFieldBuilder) ComponentFunc() FieldComponentFunc {
 		defaultTab := tb.TabName[0]
 		return web.Scope(
 			v.VTabs(
-				//v.VTab(h.Text(msgr.FormTitle)).Value("default"),
+				// v.VTab(h.Text(msgr.FormTitle)).Value("default"),
 				h.Components(tabs...),
 			).Class("v-tabs--fixed-tabs").Attr("v-model", "locals.tab"),
 
