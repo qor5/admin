@@ -9,7 +9,6 @@ import (
 )
 
 func TestLinkageSelectFilterItemRemoteServer(t *testing.T) {
-
 	recorder := httptest.NewRecorder()
 
 	req, err := http.NewRequest("GET", "/", nil)

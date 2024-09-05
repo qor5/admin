@@ -77,6 +77,7 @@ func (b *ModelBuilder) NewModel() (r interface{}) {
 func (b *ModelBuilder) NewModelSlice() (r interface{}) {
 	return reflect.New(reflect.SliceOf(b.modelType)).Interface()
 }
+
 func (b *ModelBuilder) crossOrigin(w http.ResponseWriter) {
 	if !b.p.allowCrossOrigin {
 		return

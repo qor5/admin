@@ -75,10 +75,12 @@ func (b *Builder) Prefix(v string) *Builder {
 	b.prefix = v
 	return b
 }
+
 func (b *Builder) AllowCrossOrigin(v bool) *Builder {
 	b.allowCrossOrigin = v
 	return b
 }
+
 func (b *Builder) Logger(v *zap.Logger) *Builder {
 	b.logger = v
 	return b
@@ -103,6 +105,7 @@ func (b *Builder) initMux(mux Handler) {
 		b.logger.Info(fmt.Sprintf("mounted url: %s\n", path))
 	}
 }
+
 func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if b.handler == nil {
 		mux := http.NewServeMux()

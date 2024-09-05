@@ -60,7 +60,7 @@ func AddPresetExample(mux examples.Muxer, f func(*presets.Builder, *gorm.DB) htt
 
 func AddPresetAutocompleteExample(mux examples.Muxer, f func(*presets.Builder, *autocomplete.Builder, *gorm.DB) http.Handler) {
 	ab := autocomplete.New().Prefix("/examples/api/complete")
-	//mux.Handle("/examples/api/complete", ab)
+	// mux.Handle("/examples/api/complete", ab)
 	path := examples.URLPathByFunc(f)
 	fmt.Println("Examples mounting path:", path)
 	p := presets.New().AssetFunc(AddGA).URIPrefix(path)

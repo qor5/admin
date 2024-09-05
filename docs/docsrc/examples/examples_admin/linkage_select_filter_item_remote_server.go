@@ -11,30 +11,27 @@ import (
 )
 
 type (
-	LinkageSelectFilterItemRemoteServer struct {
-	}
+	LinkageSelectFilterItemRemoteServer struct{}
 )
 
-var (
-	cities = []Item{
-		{ID: "1", Name: "浙江", Level: 1, ParentID: ""},
-		{ID: "2", Name: "江苏", Level: 1, ParentID: ""},
+var cities = []Item{
+	{ID: "1", Name: "浙江", Level: 1, ParentID: ""},
+	{ID: "2", Name: "江苏", Level: 1, ParentID: ""},
 
-		{ID: "3", Name: "杭州", Level: 2, ParentID: "1"},
-		{ID: "4", Name: "宁波", Level: 2, ParentID: "1"},
-		{ID: "5", Name: "南京", Level: 2, ParentID: "2"},
-		{ID: "6", Name: "苏州", Level: 2, ParentID: "2"},
+	{ID: "3", Name: "杭州", Level: 2, ParentID: "1"},
+	{ID: "4", Name: "宁波", Level: 2, ParentID: "1"},
+	{ID: "5", Name: "南京", Level: 2, ParentID: "2"},
+	{ID: "6", Name: "苏州", Level: 2, ParentID: "2"},
 
-		{ID: "7", Name: "拱墅区", Level: 3, ParentID: "3"},
-		{ID: "8", Name: "西湖区", Level: 3, ParentID: "3"},
-		{ID: "9", Name: "镇海区", Level: 3, ParentID: "4"},
-		{ID: "10", Name: "鄞州区", Level: 3, ParentID: "4"},
-		{ID: "11", Name: "鼓楼区", Level: 3, ParentID: "5"},
-		{ID: "12", Name: "玄武区", Level: 3, ParentID: "5"},
-		{ID: "13", Name: "常熟区", Level: 3, ParentID: "6"},
-		{ID: "14", Name: "吴江区", Level: 3, ParentID: "6"},
-	}
-)
+	{ID: "7", Name: "拱墅区", Level: 3, ParentID: "3"},
+	{ID: "8", Name: "西湖区", Level: 3, ParentID: "3"},
+	{ID: "9", Name: "镇海区", Level: 3, ParentID: "4"},
+	{ID: "10", Name: "鄞州区", Level: 3, ParentID: "4"},
+	{ID: "11", Name: "鼓楼区", Level: 3, ParentID: "5"},
+	{ID: "12", Name: "玄武区", Level: 3, ParentID: "5"},
+	{ID: "13", Name: "常熟区", Level: 3, ParentID: "6"},
+	{ID: "14", Name: "吴江区", Level: 3, ParentID: "6"},
+}
 
 type (
 	Item struct {
@@ -70,7 +67,6 @@ func loadAllCity(item *Item, cities []Item) {
 			return
 		}
 	}
-
 }
 
 func checkIsParent(city *Item, parentID string) bool {

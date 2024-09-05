@@ -49,5 +49,4 @@ func SamplesHandler(mux webexamples.Muxer) {
 
 	examples.AddPresetAutocompleteExample(mux, AutoCompleteBasicFilterExample)
 	examples.AddPresetsLinkageSelectFilterItemRemoteExample(mux, LinkageSelectFilterItemRemoteExample)
-
 }
