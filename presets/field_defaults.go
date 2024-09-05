@@ -311,5 +311,4 @@ func (b *FieldDefaults) builtInFieldTypes() {
 	}
 
 	b.Exclude("ID")
-	return
 }
