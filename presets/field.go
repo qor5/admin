@@ -67,10 +67,17 @@ type FieldBuilder struct {
 	context             context.Context
 	rt                  reflect.Type
 	nestedFieldsBuilder *FieldsBuilder
+	tabFieldsBuilders   *TabsFieldBuilder
 	plugins             []FieldPlugin
 }
 
 func (b *FieldsBuilder) appendNewFieldWithName(name string) (r *FieldBuilder) {
+	r = b.NewFieldWithName(name)
+	b.fields = append(b.fields, r)
+	return
+}
+
+func (b *FieldsBuilder) NewFieldWithName(name string) (r *FieldBuilder) {
 	r = &FieldBuilder{}
 
 	if b.model == nil {
@@ -91,7 +98,6 @@ func (b *FieldsBuilder) appendNewFieldWithName(name string) (r *FieldBuilder) {
 	r.name = name
 	// r.ComponentFunc(ft.compFunc).
 	// 	SetterFunc(ft.setterFunc)
-	b.fields = append(b.fields, r)
 	return
 }
 
@@ -111,6 +117,7 @@ func (b *FieldBuilder) Clone() (r *FieldBuilder) {
 	r.compFunc = b.compFunc
 	r.setterFunc = b.setterFunc
 	r.nestedFieldsBuilder = b.nestedFieldsBuilder
+	r.tabFieldsBuilders = b.tabFieldsBuilders
 	r.context = b.context
 	r.rt = b.rt
 	r.plugins = b.plugins
@@ -210,6 +217,15 @@ func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *Field
 			)
 		})
 	}
+	return b
+}
+
+func (b *FieldBuilder) AppendTabs(fb *FieldBuilder) (r *FieldBuilder) {
+	if b.tabFieldsBuilders == nil {
+		b.tabFieldsBuilders = new(TabsFieldBuilder)
+	}
+	b.tabFieldsBuilders.appendTabField(fb.name, fb.compFunc)
+	b.ComponentFunc(b.tabFieldsBuilders.ComponentFunc())
 	return b
 }
 

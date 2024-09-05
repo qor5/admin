@@ -580,3 +580,34 @@ func TestPresetsDetailListSection(t *testing.T) {
 		})
 	}
 }
+
+var customerData = gofixtures.Data(gofixtures.Sql(`
+				insert into customers (id, email,name) values (1, 'xxx@gmail.com','Terry');
+			`, []string{"customers"}))
+
+func TestPresetsDetailTabsField(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsDetailFieldTabs(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "detail tabs field",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				customerData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers").
+					Query("__execute_event__", "presets_DetailingDrawer").
+					Query("id", "1").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Name", "Email", "Name", "Terry", "Email", "xxx@gmail.com"},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}

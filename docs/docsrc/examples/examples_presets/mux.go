@@ -23,6 +23,7 @@ func SamplesHandler(mux examples.Muxer) {
 	addExample(mux, db, PresetsDetailPageTopNotes)
 	addExample(mux, db, PresetsDetailPageDetails)
 	addExample(mux, db, PresetsDetailPageCards)
+	addExample(mux, db, PresetsDetailFieldTabs)
 	addExample(mux, db, PresetsPermissions)
 	addExample(mux, db, PresetsModelBuilderExtensions)
 	addExample(mux, db, PresetsBasicFilter)
