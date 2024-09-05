@@ -362,7 +362,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		h.If(!isAutoSave, VCardActions(actionButtons)),
 	))
 
-	var asideContent h.HTMLComponent = defaultToPage(commonPageConfig{
+	asideContent := defaultToPage(commonPageConfig{
 		formContent: formContent,
 		tabPanels:   b.tabPanels,
 		sidePanel:   b.sidePanel,
