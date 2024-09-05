@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/qor5/admin/v3/autocomplete"
-
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_admin"
-	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_vuetify"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/examples"
 	"github.com/theplant/osenv"
+
+	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_admin"
+	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_vuetify"
 )
 
 var (
@@ -27,9 +26,7 @@ func main() {
 	examples_vuetify.Mux(mux)
 
 	im := &examples.IndexMux{Mux: http.NewServeMux()}
-	ab := autocomplete.New().Prefix("/complete")
-	examples_admin.SamplesHandler(im, ab)
-	mux.Handle("/complete/", ab)
+	examples_admin.SamplesHandler(im)
 	mux.Handle("/examples/",
 		middleware.Logger(
 			middleware.RequestID(

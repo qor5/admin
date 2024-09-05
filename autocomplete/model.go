@@ -70,15 +70,25 @@ func (b *ModelBuilder) JsonHref() string {
 	return fmt.Sprintf("%s/%s", b.p.prefix, b.uriName)
 }
 
-func (mb *ModelBuilder) NewModel() (r interface{}) {
-	return reflect.New(mb.modelType.Elem()).Interface()
+func (b *ModelBuilder) NewModel() (r interface{}) {
+	return reflect.New(b.modelType.Elem()).Interface()
 }
 
-func (mb *ModelBuilder) NewModelSlice() (r interface{}) {
-	return reflect.New(reflect.SliceOf(mb.modelType)).Interface()
+func (b *ModelBuilder) NewModelSlice() (r interface{}) {
+	return reflect.New(reflect.SliceOf(b.modelType)).Interface()
+}
+
+func (b *ModelBuilder) crossOrigin(w http.ResponseWriter) {
+	if !b.p.allowCrossOrigin {
+		return
+	}
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 }
 
 func (b *ModelBuilder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	b.crossOrigin(w)
 	var (
 		db       = b.p.db
 		response = Response{
