@@ -3,22 +3,19 @@ package examples_admin
 import (
 	"net/http"
 
-	"github.com/qor5/admin/v3/autocomplete"
-
 	"github.com/go-chi/chi/v5/middleware"
+	webexamples "github.com/qor5/web/v3/examples"
+
 	"github.com/qor5/admin/v3/docs/docsrc/examples"
 	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_presets"
 	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_vuetify"
-	webexamples "github.com/qor5/web/v3/examples"
 )
 
 func Mux(mux *http.ServeMux) http.Handler {
 	examples_vuetify.Mux(mux)
 
 	im := &webexamples.IndexMux{Mux: http.NewServeMux()}
-	ab := autocomplete.New().Prefix("/complete")
-	SamplesHandler(im, ab)
-	mux.Handle("/complete/", ab)
+	SamplesHandler(im)
 
 	mux.Handle("/examples/",
 		middleware.Logger(
@@ -31,7 +28,7 @@ func Mux(mux *http.ServeMux) http.Handler {
 	return mux
 }
 
-func SamplesHandler(mux webexamples.Muxer, ab *autocomplete.Builder) {
+func SamplesHandler(mux webexamples.Muxer) {
 	examples_vuetify.SamplesHandler(mux)
 	examples_presets.SamplesHandler(mux)
 
@@ -48,6 +45,9 @@ func SamplesHandler(mux webexamples.Muxer, ab *autocomplete.Builder) {
 	examples.AddPresetExample(mux, ProfileExample)
 	examples.AddPresetExample(mux, PageBuilderExample)
 	examples.AddPresetExample(mux, MediaExample)
-	examples.AddPresetAutocompleteExample(mux, ab, AutoCompleteBasicFilterExample)
 	examples.AddPresetExample(mux, SingletonExample)
+
+	examples.AddPresetAutocompleteExample(mux, AutoCompleteBasicFilterExample)
+	examples.AddPresetsLinkageSelectFilterItemRemoteExample(mux, LinkageSelectFilterItemRemoteExample)
+
 }
