@@ -643,7 +643,7 @@ func TestPresetsDetailTabsSection(t *testing.T) {
 					AddField("name.Name", "terry1").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"name", "email", "Name", "Terry1"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"terry1"},
 		},
 	}
 

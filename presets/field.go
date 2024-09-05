@@ -754,7 +754,7 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 			layout = append(layout, f.name)
 		}
 	} else {
-		layout = b.fieldsLayout[:]
+		layout = b.fieldsLayout
 		layoutFM := make(map[string]struct{})
 		for _, fn := range b.getFieldNamesFromLayout() {
 			layoutFM[fn] = struct{}{}
