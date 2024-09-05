@@ -20,8 +20,10 @@ import (
 	"golang.org/x/text/language"
 )
 
-const I18nActivityKey i18n.ModuleKey = "I18nActivityKey"
-const paramHideDetailTop = "hideDetailTop"
+const (
+	I18nActivityKey    i18n.ModuleKey = "I18nActivityKey"
+	paramHideDetailTop                = "hideDetailTop"
+)
 
 func (ab *Builder) Install(b *presets.Builder) error {
 	ab.mu.Lock()
