@@ -176,7 +176,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 				Value: action,
 			})
 		}
-		actions := []string{}
+		var actions []string
 		err := ab.db.Model(&ActivityLog{}).Select("DISTINCT action AS action").Pluck("action", &actions).Error
 		if err != nil {
 			panic(err)

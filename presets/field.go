@@ -669,7 +669,7 @@ func (b *FieldsBuilder) Except(patterns ...string) (r *FieldsBuilder) {
 		return r
 	}
 
-	fieldsLayout := []any{}
+	var fieldsLayout []any
 	for _, iv := range b.fieldsLayout {
 		switch t := iv.(type) {
 		case string:
@@ -677,7 +677,7 @@ func (b *FieldsBuilder) Except(patterns ...string) (r *FieldsBuilder) {
 				fieldsLayout = append(fieldsLayout, t)
 			}
 		case []string:
-			ns := []string{}
+			var ns []string
 			for _, n := range t {
 				if !hasMatched(patterns, n) {
 					ns = append(ns, n)
@@ -692,7 +692,7 @@ func (b *FieldsBuilder) Except(patterns ...string) (r *FieldsBuilder) {
 				Rows:  [][]string{},
 			}
 			for _, row := range t.Rows {
-				ns := []string{}
+				var ns []string
 				for _, n := range row {
 					if !hasMatched(patterns, n) {
 						ns = append(ns, n)
