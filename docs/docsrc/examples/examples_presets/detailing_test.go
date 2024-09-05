@@ -175,7 +175,7 @@ func TestPresetsDetailNestedMany(t *testing.T) {
 						"&id=12").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Felix 1"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Felix 1", ":hover='true'", "95550012", ":hover='false'", "95550012"},
 		},
 	}
 

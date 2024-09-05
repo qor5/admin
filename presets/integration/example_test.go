@@ -110,7 +110,7 @@ func TestExample(t *testing.T) {
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
 				partial := er.UpdatePortals[0].Body
-				if strings.Index(partial, `v-model='form["Number"]' v-assign='[form, {"Number":""}]'`) < 0 {
+				if !strings.Contains(partial, `v-model='form["Number"]' v-assign='[form, {"Number":""}]'`) {
 					t.Error(`v-model='form["Number"]' v-assign='[form, {"Number":""}]'`, partial)
 				}
 				return
@@ -154,7 +154,7 @@ func TestExample(t *testing.T) {
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
 				partial := er.UpdatePortals[0].Body
-				if strings.Index(partial, `v-model='form["OwnerName"]' v-assign='[form, {"OwnerName":""}]'`) < 0 {
+				if !strings.Contains(partial, `v-model='form["OwnerName"]' v-assign='[form, {"OwnerName":""}]'`) {
 					t.Error(`can't find v-model='form["OwnerName"]' v-assign='[form, {"OwnerName":""}]'`, partial)
 				}
 				return
@@ -199,7 +199,7 @@ func TestExample(t *testing.T) {
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
 				partial := er.UpdatePortals[0].Body
-				if strings.Index(partial, `v-model='form["Agree"]' v-assign='[form, {"Agree":""}]'`) < 0 {
+				if !strings.Contains(partial, `v-model='form["Agree"]' v-assign='[form, {"Agree":""}]'`) {
 					t.Error(`can't find v-model='form["Agree"]' v-assign='[form, {"Agree":""}]'`, partial)
 				}
 				return
@@ -240,8 +240,10 @@ func TestExample(t *testing.T) {
 					EventFunc(actions.New).
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Object.values(vars.presetsDataChanged)",
-				"v-dialog", "If you leave before submitting the form, you will lose all the unsaved input."},
+			ExpectPortalUpdate0ContainsInOrder: []string{
+				"Object.values(vars.presetsDataChanged)",
+				"v-dialog", "If you leave before submitting the form, you will lose all the unsaved input.",
+			},
 		},
 		{
 			Name: "Edit Products  Observe Change",
@@ -253,8 +255,10 @@ func TestExample(t *testing.T) {
 					Query("id", "12").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Object.values(vars.presetsDataChanged)",
-				"v-dialog", "If you leave before submitting the form, you will lose all the unsaved input."},
+			ExpectPortalUpdate0ContainsInOrder: []string{
+				"Object.values(vars.presetsDataChanged)",
+				"v-dialog", "If you leave before submitting the form, you will lose all the unsaved input.",
+			},
 		},
 	}
 

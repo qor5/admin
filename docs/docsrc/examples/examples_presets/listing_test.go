@@ -31,6 +31,29 @@ func TestPresetsListingKeywordSearchOff(t *testing.T) {
 	}
 }
 
+func TestPresetsRowMenuIcon(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsRowMenuAction(pb, TestDB)
+	TestDB.AutoMigrate(&CreditCard{})
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "row menu with no icon",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return httptest.NewRequest("GET", "/customers?__execute_event__=__reload__", nil)
+			},
+			ExpectPageBodyContainsInOrder: []string{`:icon='\"mdi-close\"'\u003e\u003c/v-icon\u003e\n\u003c/template\u003e\n\n\u003cv-list-item-title\u003ewith-icon\u003c/v-list-item-title\u003e`},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}
+
 func TestPresetsListingCustomizationFields(t *testing.T) {
 	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
 	PresetsListingCustomizationFields(pb, TestDB)

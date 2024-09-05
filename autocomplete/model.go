@@ -3,11 +3,12 @@ package autocomplete
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/qor5/web/v3"
 	"math"
 	"net/http"
 	"reflect"
 	"strings"
+
+	"github.com/qor5/web/v3"
 )
 
 type (
@@ -54,10 +55,12 @@ func (b *ModelBuilder) UriName(v string) *ModelBuilder {
 	b.uriName = v
 	return b
 }
+
 func (b *ModelBuilder) OrderBy(v string) *ModelBuilder {
 	b.orderBy = v
 	return b
 }
+
 func (b *ModelBuilder) Paging(v bool) *ModelBuilder {
 	b.paging = v
 	return b
@@ -126,5 +129,4 @@ func (b *ModelBuilder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonResponse)
-	return
 }

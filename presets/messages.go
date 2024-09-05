@@ -160,7 +160,7 @@ var Messages_en_US = &Messages{
 	EditingObjectTitleTemplate:   "Editing {modelName} {id}",
 	ListingObjectTitleTemplate:   "Listing {modelName}",
 	DetailingObjectTitleTemplate: "{modelName} {id}",
-	FiltersClear:                 "Clear Filters",
+	FiltersClear:                 "Reset",
 	FiltersAdd:                   "Add Filters",
 	FilterApply:                  "Apply",
 	FilterByTemplate:             "Filter by {filter}",

@@ -13,6 +13,7 @@ func SamplesHandler(mux examples.Muxer) {
 	db := docsexamples.ExampleDB()
 	addExample(mux, db, PresetsHelloWorld)
 	addExample(mux, db, PresetsKeywordSearchOff)
+	addExample(mux, db, PresetsRowMenuAction)
 	addExample(mux, db, PresetsListingCustomizationFields)
 	addExample(mux, db, PresetsListingCustomizationFilters)
 	addExample(mux, db, PresetsListingCustomizationTabs)

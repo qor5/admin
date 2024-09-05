@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"path"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -45,6 +46,7 @@ func (b *ModelBuilder) editorURLWithSlug(ps string) string {
 func (b *ModelBuilder) editorURL() string {
 	return fmt.Sprintf("%s/%s", b.builder.prefix, b.editor.Info().URIName())
 }
+
 func (b *ModelBuilder) getContainerBuilders() (cons []*ContainerBuilder) {
 	pageObjName := utils.GetObjectName(&Page{})
 	for _, builder := range b.builder.containerBuilders {
@@ -208,6 +210,7 @@ func (b *ModelBuilder) pageContent(ctx *web.EventContext, obj interface{}) (r we
 func (b *ModelBuilder) getPrimaryColumnValuesBySlug(ctx *web.EventContext) (pageID int, pageVersion string, locale string) {
 	return b.primaryColumnValuesBySlug(ctx.Param(presets.ParamID))
 }
+
 func (b *ModelBuilder) primaryColumnValuesBySlug(slug string) (pageID int, pageVersion string, locale string) {
 	var (
 		ps map[string]string
@@ -238,7 +241,6 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 	}
 	if pageVersion != "" {
 		g.Where("version = ?", pageVersion)
-
 	}
 	if err = g.First(obj).Error; err != nil {
 		return
@@ -610,8 +612,13 @@ func (b *ModelBuilder) copyContainersToAnotherPage(db *gorm.DB, pageID int, page
 	if err != nil {
 		return
 	}
-
+	buildeContainer := b.getContainerBuilders()
 	for _, c := range cons {
+		if !slices.ContainsFunc(buildeContainer, func(builder *ContainerBuilder) bool {
+			return c.ModelName == builder.name
+		}) {
+			continue
+		}
 		newModelID := c.ModelID
 		if !c.Shared {
 			model := b.builder.ContainerByName(c.ModelName).NewModel()

@@ -371,6 +371,9 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 	}
 	b.configDemoContainer(pb)
 	b.preparePlugins()
+	for _, t := range b.templates {
+		t.Install()
+	}
 	return
 }
 
@@ -406,7 +409,6 @@ func (b *Builder) configPublish(r *ModelBuilder) {
 }
 
 func (b *Builder) configTemplateAndPage(pb *presets.Builder, r *ModelBuilder) {
-
 	pm := r.mb
 	err := b.pageInstall(pb, pm)
 	if err != nil {
@@ -1331,4 +1333,8 @@ func (b *Builder) getModelBuilder(mb *presets.ModelBuilder) *ModelBuilder {
 		}
 	}
 	return nil
+}
+
+func (b *Builder) GetTemplateModel() *presets.ModelBuilder {
+	return b.templateModel
 }

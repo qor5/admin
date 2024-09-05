@@ -1,9 +1,10 @@
 package integration_test
 
 import (
-	"golang.org/x/text/language"
 	"net/http"
 	"testing"
+
+	"golang.org/x/text/language"
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/examples"

@@ -79,9 +79,7 @@ type selectItem struct {
 func fileChooserDialogContent(mb *Builder, field string, ctx *web.EventContext,
 	cfg *media_library.MediaBoxConfig,
 ) h.HTMLComponent {
-	var (
-		msgr = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
-	)
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 	return h.Div(
 		imageDialog(),
 		VSnackbar(h.Text(msgr.DescriptionUpdated)).
@@ -246,19 +244,7 @@ func renderFileChooserDialogContent(ctx *web.EventContext, r *web.EventResponse,
 	})
 }
 
-func fileComponent(
-	mb *Builder,
-	field string,
-	tab string,
-	ctx *web.EventContext,
-	f *media_library.MediaLibrary,
-	msgr *Messages,
-	cfg *media_library.MediaBoxConfig,
-	initCroppingVars []string,
-	event *string,
-	menus *[]h.HTMLComponent,
-	inMediaLibrary bool,
-) (title h.HTMLComponent, content h.HTMLComponent) {
+func fileComponent(mb *Builder, field string, tab string, ctx *web.EventContext, f *media_library.MediaLibrary, msgr *Messages, cfg *media_library.MediaBoxConfig, initCroppingVars []string, event *string, menus *[]h.HTMLComponent, inMediaLibrary bool) (title, content h.HTMLComponent) {
 	_, needCrop := mergeNewSizes(f, cfg)
 	croppingVar := fileCroppingVarName(f.ID)
 	initCroppingVars = append(initCroppingVars, fmt.Sprintf("%s: false", croppingVar))
@@ -400,7 +386,6 @@ func fileOrFolderComponent(
 		}
 	} else {
 		title, content = fileComponent(mb, field, tab, ctx, f, msgr, cfg, initCroppingVars, &clickCardWithoutMoveEvent, &menus, inMediaLibrary)
-
 	}
 
 	card := VCard(
@@ -451,13 +436,7 @@ func fileOrFolderComponent(
 	)
 }
 
-func folderComponent(
-	mb *Builder,
-	field string,
-	ctx *web.EventContext,
-	f *media_library.MediaLibrary,
-	msgr *Messages,
-) (title h.HTMLComponent, content h.HTMLComponent) {
+func folderComponent(mb *Builder, field string, ctx *web.EventContext, f *media_library.MediaLibrary, msgr *Messages) (title, content h.HTMLComponent) {
 	var count int64
 	fileNameComp := h.Span(f.File.FileName).Class("text-body-2").Attr("v-tooltip:bottom", h.JSONString(f.File.FileName))
 
@@ -572,7 +551,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 		orderByVal = orderByCreatedAtDESC
 		wh = wh.Order("created_at DESC")
 	}
-	var selected_type = ""
+	selected_type := ""
 	switch typeVal {
 	case typeImage:
 		selected_type = media_library.ALLOW_TYPE_IMAGE
@@ -671,8 +650,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 		clickTabEvent += ";" + web.Plaid().PushState(true).MergeQuery(true).ClearMergeQuery([]string{ParamParentID}).Query(paramTab, web.Var("$event")).RunPushState()
 	}
 	for _, f := range files {
-		var fileComp h.HTMLComponent
-		fileComp = fileOrFolderComponent(mb, field, tab, ctx, f, msgr, cfg, initCroppingVars, inMediaLibrary)
+		fileComp := fileOrFolderComponent(mb, field, tab, ctx, f, msgr, cfg, initCroppingVars, inMediaLibrary)
 		col := VCol(fileComp).Attr("style", "flex: 0 0 calc(100% / 5); max-width: calc(100% / 5);")
 		if !f.Folder {
 			hasFiles = true
@@ -863,10 +841,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 }
 
 func searchComponent(ctx *web.EventContext, field string, cfg *media_library.MediaBoxConfig, inMediaLibrary bool) h.HTMLComponent {
-
-	var (
-		msgr = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
-	)
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 	clickEvent := web.Plaid().
 		EventFunc(ImageSearchEvent).
 		Query(ParamField, field).

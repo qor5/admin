@@ -98,6 +98,52 @@ func (d *SectionsBuilder) appendNewSection(name string) (r *SectionBuilder) {
 	return
 }
 
+// SectionBuilder is a builder for a section in the detail page.
+// save: 	   fetcher => setter => saver
+// show, edit: fetcher => setter
+type SectionBuilder struct {
+	NameLabel
+	// if the field can switch status to edit and show, switchable must be true
+	saver             SaveFunc
+	setter            SetterFunc
+	validator         ValidateFunc
+	hiddenFuncs       []ObjectComponentFunc
+	componentViewFunc FieldComponentFunc
+	componentEditFunc FieldComponentFunc
+	father            *SectionsBuilder
+
+	isList       bool
+	disableLabel bool
+	// Only when isList is false, the following param will take effect
+	// control Delete button in the show component
+	componentEditBtnFunc ObjectBoolFunc
+	// control Hover in the show component
+	componentHoverFunc ObjectBoolFunc
+
+	// Only when isList is true, the following param will take effect
+	// Disable Delete button in edit element
+	disableElementDeleteBtn bool
+	// Disable Create button in element list
+	disableElementCreateBtn bool
+	// Disable Edit button in show element
+	elementEditBtnFunc ObjectBoolFunc
+	// This is the return value of elementEditBtnFunc
+	elementEditBtn bool
+	// Disable Hover in show element
+	elementHoverFunc ObjectBoolFunc
+	// This is the return value of elementHoverFunc
+	elementHover bool
+	// By default, the title will only be displayed if the list is not empty.
+	// If alwaysShowListLabel is true, the label will show anyway
+	alwaysShowListLabel bool
+	elementViewFunc     FieldComponentFunc
+	elementEditFunc     FieldComponentFunc
+	elementUnmarshaler  func(toObj, formObj any, prefix string, ctx *web.EventContext) error
+
+	editingFB FieldsBuilder
+	viewingFB FieldsBuilder
+}
+
 type ObjectBoolFunc func(obj interface{}, ctx *web.EventContext) bool
 
 func (b *SectionBuilder) ComponentEditBtnFunc(v ObjectBoolFunc) *SectionBuilder {
@@ -165,52 +211,6 @@ func (b *SectionBuilder) WrapElementHoverFunc(w func(in ObjectBoolFunc) ObjectBo
 func (b *SectionBuilder) AlwaysShowListLabel() *SectionBuilder {
 	b.alwaysShowListLabel = true
 	return b
-}
-
-// SectionBuilder
-// save: 	   fetcher => setter => saver
-// show, edit: fetcher => setter
-type SectionBuilder struct {
-	NameLabel
-	// if the field can switch status to edit and show, switchable must be true
-	saver             SaveFunc
-	setter            SetterFunc
-	validator         ValidateFunc
-	hiddenFuncs       []ObjectComponentFunc
-	componentViewFunc FieldComponentFunc
-	componentEditFunc FieldComponentFunc
-	father            *SectionsBuilder
-
-	isList       bool
-	disableLabel bool
-	// Only when isList is false, the following param will take effect
-	// control Delete button in the show component
-	componentEditBtnFunc ObjectBoolFunc
-	// control Hover in the show component
-	componentHoverFunc ObjectBoolFunc
-
-	// Only when isList is true, the following param will take effect
-	// Disable Delete button in edit element
-	disableElementDeleteBtn bool
-	// Disable Create button in element list
-	disableElementCreateBtn bool
-	// Disable Edit button in show element
-	elementEditBtnFunc ObjectBoolFunc
-	// This is the return value of elementEditBtnFunc
-	elementEditBtn bool
-	// Disable Hover in show element
-	elementHoverFunc ObjectBoolFunc
-	// This is the return value of elementHoverFunc
-	elementHover bool
-	// By default, the title will only be displayed if the list is not empty.
-	// If alwaysShowListLabel is true, the label will show anyway
-	alwaysShowListLabel bool
-	elementViewFunc     FieldComponentFunc
-	elementEditFunc     FieldComponentFunc
-	elementUnmarshaler  func(toObj, formObj any, prefix string, ctx *web.EventContext) error
-
-	editingFB FieldsBuilder
-	viewingFB FieldsBuilder
 }
 
 func (b *SectionBuilder) IsList(v interface{}) (r *SectionBuilder) {
@@ -548,7 +548,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 
 func (b *SectionBuilder) DefaultSaveFunc(obj interface{}, id string, ctx *web.EventContext) (err error) {
 	if tf := reflect.TypeOf(obj).Kind(); tf != reflect.Ptr {
-		return errors.New(fmt.Sprintf("model %#+v must be pointer", obj))
+		return fmt.Errorf("model %#+v must be pointer", obj)
 	}
 	formObj := reflect.New(reflect.TypeOf(obj).Elem()).Interface()
 
@@ -869,7 +869,7 @@ func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, ctx *we
 func (b *SectionBuilder) DefaultElementUnmarshal() func(toObj, formObj any, prefix string, ctx *web.EventContext) error {
 	return func(toObj, formObj any, prefix string, ctx *web.EventContext) (err error) {
 		if tf := reflect.TypeOf(toObj).Kind(); tf != reflect.Ptr {
-			return errors.New(fmt.Sprintf("model %#+v must be pointer", toObj))
+			return fmt.Errorf("model %#+v must be pointer", toObj)
 		}
 		oldForm := &multipart.Form{
 			Value: (map[string][]string)(http.Header(ctx.R.MultipartForm.Value).Clone()),
@@ -902,7 +902,7 @@ func (b *SectionBuilder) DefaultElementUnmarshal() func(toObj, formObj any, pref
 				continue
 			}
 			keyPath := fmt.Sprintf("%s.%s", prefix, f.name)
-			err := f.setterFunc(toObj, &FieldContext{
+			err := f.lazySetterFunc()(toObj, &FieldContext{
 				ModelInfo: info,
 				FormKey:   keyPath,
 				Name:      f.name,
@@ -921,7 +921,7 @@ func (b *SectionBuilder) appendElement(obj interface{}) (listLen int, err error)
 		return
 	}
 	if reflect.ValueOf(obj).Kind() != reflect.Ptr {
-		return 0, errors.New(fmt.Sprintf("obj %#+v must be pointer", obj))
+		return 0, fmt.Errorf("obj %#+v must be pointer", obj)
 	}
 	var list any
 	if list, err = reflectutils.Get(obj, b.name); err != nil {
@@ -931,7 +931,7 @@ func (b *SectionBuilder) appendElement(obj interface{}) (listLen int, err error)
 	if list != nil {
 		listValue := reflect.ValueOf(list)
 		if listValue.Kind() != reflect.Slice {
-			err = errors.New(fmt.Sprintf("the kind of list field is %s, not slice", listValue.Kind()))
+			err = fmt.Errorf("the kind of list field is %s, not slice", listValue.Kind())
 			return
 		}
 		listLen = listValue.Len()

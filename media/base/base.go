@@ -74,7 +74,7 @@ func (b *Base) Scan(data interface{}) (err error) {
 			}
 		}
 	case []byte:
-		if string(values) != "" {
+		if len(values) != 0 {
 			if err = json.Unmarshal(values, b); err == nil {
 				var options struct {
 					Crop   bool
@@ -175,10 +175,10 @@ func (b Base) GetURLTemplate(option *Option) (path string) {
 	return
 }
 
-var urlReplacer = regexp.MustCompile("(\\s|\\+)+")
+var urlReplacer = regexp.MustCompile(`(\s|\+)+`)
 
 func getFuncMap(db *gorm.DB, field *schema.Field, filename string) template.FuncMap {
-	hash := func() string { return strings.Replace(time.Now().Format("20060102150405.000000"), ".", "", -1) }
+	hash := func() string { return strings.ReplaceAll(time.Now().Format("20060102150405.000000"), ".", "") }
 	shortHash := func() string { return time.Now().Format("20060102150405") }
 
 	return template.FuncMap{
@@ -296,9 +296,11 @@ func (m *MemoryFile) Seek(offset int64, whence int) (int64, error) {
 func (m *MemoryFile) ReadAt(p []byte, off int64) (int, error) {
 	return m.reader.ReadAt(p, off)
 }
+
 func (m *MemoryFile) Open() (multipart.File, error) {
 	return m, nil
 }
+
 func NewMemoryFile(filename string, data []byte) *MemoryFile {
 	return &MemoryFile{
 		name:   filename,

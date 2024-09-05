@@ -3,11 +3,12 @@ package integration_test
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/qor5/admin/v3/autocomplete"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
 	"testing"
+
+	"github.com/qor5/admin/v3/autocomplete"
 
 	"github.com/theplant/gofixtures"
 	"github.com/theplant/testenv"
@@ -77,7 +78,6 @@ func runTest(t *testing.T, r *http.Request, handler http.Handler) *bytes.Buffer 
 	t.Log(w.Header())
 	t.Log(w.Body.String())
 	return w.Body
-
 }
 
 func TestCategory(t *testing.T) {

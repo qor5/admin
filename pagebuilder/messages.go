@@ -87,6 +87,8 @@ type Messages struct {
 	ModelLabelPageCategory     string
 	AreWantDeleteContainer     func(v string) string
 	AddPageTemplate            string
+	Name                       string
+	Description                string
 }
 
 var Messages_en_US = &Messages{
@@ -170,6 +172,8 @@ var Messages_en_US = &Messages{
 		return fmt.Sprintf("Are you sure you want to delete %v?", v)
 	},
 	AddPageTemplate: "Add Page Template",
+	Name:            "Name",
+	Description:     "Description",
 }
 
 var Messages_zh_CN = &Messages{
@@ -188,8 +192,8 @@ var Messages_zh_CN = &Messages{
 	Unnamed:                        "未命名",
 	NotDescribed:                   "未描述",
 	Blank:                          "空白",
-	BlankPage:                      "Blank Page",
-	AddBlankPage:                   "Add Blank Page",
+	BlankPage:                      "空白页",
+	AddBlankPage:                   "新增空白页",
 	NewPage:                        "新页面",
 	FilterTabAllVersions:           "所有版本",
 	FilterTabOnlineVersion:         "在线版本",
@@ -201,7 +205,7 @@ var Messages_zh_CN = &Messages{
 	Add:                       "新增",
 	AddContainer:              "新增组件",
 	BuildYourPages:            "构建你的页面",
-	BuildYourTemplates:        "Build your templates",
+	BuildYourTemplates:        "构建你的模版",
 	PlaceAnElementFromLibrary: "从你的库从选择一个组件",
 	NewElement:                "新的组件",
 	Title:                     "编辑",
@@ -224,9 +228,10 @@ var Messages_zh_CN = &Messages{
 	Settings:                 "设置",
 	SelectElementMsg:         "选择一个组件，这里会变成设置",
 	StartBuildingMsg:         "开始构建页面",
-	StartBuildingTemplateMsg: "Start building a template",
+	StartBuildingTemplateMsg: "开始构建模版",
 	StartBuildingSubMsg:      "从库中选择组件",
-	PageTemplate:             "Page Template",
+	PageBuilder:              "页面构建",
+	PageTemplate:             "页面模版",
 
 	ListHeaderID:          "ID",
 	ListHeaderTitle:       "标题",
@@ -251,7 +256,9 @@ var Messages_zh_CN = &Messages{
 	AreWantDeleteContainer: func(v string) string {
 		return fmt.Sprintf("你确定要删除 %v?", v)
 	},
-	AddPageTemplate: "Add Page Template",
+	AddPageTemplate: "添加页面模版",
+	Name:            "名称",
+	Description:     "说明",
 }
 
 var Messages_ja_JP = &Messages{
@@ -270,21 +277,22 @@ var Messages_ja_JP = &Messages{
 	Unnamed:                        "名前なし",
 	NotDescribed:                   "説明なし",
 	Blank:                          "空白",
-	BlankPage:                      "Blank Page",
-	AddBlankPage:                   "Add Blank Page",
+	BlankPage:                      "空白ページ",
+	AddBlankPage:                   "空白ページを追加",
 	NewPage:                        "新しいページ",
 	FilterTabAllVersions:           "すべてのバージョン",
 	FilterTabOnlineVersion:         "オンラインバージョン",
 	FilterTabNamedVersions:         "名前付きバージョン",
 	Rename:                         "名前の変更",
 	PageOverView:                   "ページの概要",
-	PageTemplate:                   "Page Template",
+	PageBuilder:                    "ページビルダー",
+	PageTemplate:                   "ページテンプレート",
 
 	Others:                    "その他",
 	Add:                       "追加",
 	AddContainer:              "コンテナの追加",
 	BuildYourPages:            "ページの作成",
-	BuildYourTemplates:        "Build your templates",
+	BuildYourTemplates:        "テンプレートを作成する",
 	PlaceAnElementFromLibrary: "ライブラリからコンテナを配置します。",
 	NewElement:                "新しいコンテナ",
 	Title:                     "タイトル",
@@ -307,7 +315,7 @@ var Messages_ja_JP = &Messages{
 	Settings:                 "設定",
 	SelectElementMsg:         "コンテナを選択後、設定変更してください",
 	StartBuildingMsg:         "ページの構築を開始します",
-	StartBuildingTemplateMsg: "Start building a template",
+	StartBuildingTemplateMsg: "テンプレートの作成を開始する",
 	StartBuildingSubMsg:      "ライブラリからコンテナを参照して選択する",
 
 	ListHeaderID:          "ID",
@@ -333,5 +341,7 @@ var Messages_ja_JP = &Messages{
 	AreWantDeleteContainer: func(v string) string {
 		return fmt.Sprintf("%v を削除してもよろしいですか?", v)
 	},
-	AddPageTemplate: "Add Page Template",
+	AddPageTemplate: "ページテンプレートを追加",
+	Name:            "名前",
+	Description:     "説明",
 }
