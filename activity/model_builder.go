@@ -244,7 +244,7 @@ func (amb *ModelBuilder) installPresetModelBuilder(mb *presets.ModelBuilder) {
 					return
 				}
 				var modelName string
-				modelKeyses := []string{}
+				var modelKeyses []string
 				reflectutils.ForEach(r, func(obj any) {
 					if modelName == "" {
 						modelName = ParseModelName(obj)

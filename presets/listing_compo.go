@@ -418,7 +418,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 	for _, v := range c.lb.orderableFields {
 		orderableFieldMap[v.FieldName] = v.DBColumn
 	}
-	dbOrderBys := []string{}
+	var dbOrderBys []string
 	for _, ob := range orderBys {
 		dbCol, ok := orderableFieldMap[ob.FieldName]
 		if !ok {

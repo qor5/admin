@@ -215,7 +215,7 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 	ed.Field("Roles").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			selectedItems := []DefaultOptionItem{}
-			values := []string{}
+			var values []string
 			u, ok := obj.(*models.User)
 			if ok {
 				var roles []role.Role

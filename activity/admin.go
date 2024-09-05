@@ -13,7 +13,6 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
-	v "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
@@ -21,10 +20,8 @@ import (
 	"golang.org/x/text/language"
 )
 
-const (
-	I18nActivityKey    i18n.ModuleKey = "I18nActivityKey"
-	paramHideDetailTop                = "hideDetailTop"
-)
+const I18nActivityKey i18n.ModuleKey = "I18nActivityKey"
+const paramHideDetailTop = "hideDetailTop"
 
 func (ab *Builder) Install(b *presets.Builder) error {
 	ab.mu.Lock()
@@ -197,7 +194,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		}
 		actionOptions = lo.UniqBy(actionOptions, func(item *vuetifyx.SelectItem) string { return item.Value })
 
-		userIDs := []string{}
+		var userIDs []string
 		err = ab.db.Model(&ActivityLog{}).Select("DISTINCT user_id AS id").Pluck("id", &userIDs).Error
 		if err != nil {
 			panic(err)
@@ -214,7 +211,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			})
 		}
 
-		modelNames := []string{}
+		var modelNames []string
 		err = ab.db.Model(&ActivityLog{}).Select("DISTINCT model_name AS model_name").Pluck("model_name", &modelNames).Error
 		if err != nil {
 			panic(err)
@@ -252,20 +249,21 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			})
 		}
 		if len(modelNameOptions) > 0 {
-			filterData = append(filterData, &vuetifyx.FilterItem{
-				Key:          "model_name",
-				Label:        msgr.FilterModel,
-				ItemType:     vuetifyx.ItemTypeSelect,
-				SQLCondition: `model_name %s ?`,
-				Options:      modelNameOptions,
-			})
-
-			filterData = append(filterData, &vuetifyx.FilterItem{
-				Key:          "model_keys",
-				Label:        msgr.FilterModelKeys,
-				ItemType:     vuetifyx.ItemTypeString,
-				SQLCondition: `model_keys %s ?`,
-			})
+			filterData = append(
+				filterData,
+				&vuetifyx.FilterItem{
+					Key:          "model_name",
+					Label:        msgr.FilterModel,
+					ItemType:     vuetifyx.ItemTypeSelect,
+					SQLCondition: `model_name %s ?`,
+					Options:      modelNameOptions,
+				},
+				&vuetifyx.FilterItem{
+					Key:          "model_keys",
+					Label:        msgr.FilterModelKeys,
+					ItemType:     vuetifyx.ItemTypeString,
+					SQLCondition: `model_keys %s ?`,
+				})
 		}
 		return filterData
 	})
@@ -322,8 +320,8 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 								h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td().Attr("v-pre", true).Text(log.ModelKeys)),
 								h.Iff(log.ModelLink != "", func() h.HTMLComponent {
 									return h.Tr(h.Td(h.Text(msgr.ModelLink)), h.Td(
-										v.VBtn(msgr.MoreInfo).Class("text-none text-overline d-flex align-center").
-											Variant(v.VariantTonal).Color(v.ColorPrimary).Size(v.SizeXSmall).PrependIcon("mdi-open-in-new").
+										VBtn(msgr.MoreInfo).Class("text-none text-overline d-flex align-center").
+											Variant(VariantTonal).Color(ColorPrimary).Size(SizeXSmall).PrependIcon("mdi-open-in-new").
 											Attr("@click", web.POST().
 												EventFunc(actions.DetailingDrawer).
 												Query(presets.ParamOverlay, actions.Dialog).

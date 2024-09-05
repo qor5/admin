@@ -160,7 +160,7 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.Model
 
 	slugDecoder := mb.NewModel().(presets.SlugDecoder)
 	uniqueWithoutVersion := func(id string) string {
-		kvsWithoutVersion := []string{}
+		var kvsWithoutVersion []string
 		for k, v := range slugDecoder.PrimaryColumnValuesBySlug(id) {
 			if k == SlugVersion {
 				continue
@@ -544,7 +544,7 @@ func UploadOrDelete(objs []*PublishAction, storage oss.StorageInterface) (err er
 }
 
 func setPrimaryKeysConditionWithoutVersion(db *gorm.DB, record interface{}, s *schema.Schema) *gorm.DB {
-	querys := []string{}
+	var querys []string
 	args := []interface{}{}
 	for _, p := range s.PrimaryFields {
 		if p.Name == "Version" {
@@ -558,7 +558,7 @@ func setPrimaryKeysConditionWithoutVersion(db *gorm.DB, record interface{}, s *s
 }
 
 func setPrimaryKeysConditionWithoutFields(db *gorm.DB, record interface{}, s *schema.Schema, ignoreFields ...string) *gorm.DB {
-	querys := []string{}
+	var querys []string
 	args := []interface{}{}
 	for _, p := range s.PrimaryFields {
 		if slices.Contains(ignoreFields, p.Name) {

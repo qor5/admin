@@ -34,7 +34,7 @@ func KeysValue(v any, keys []string, sep string) string {
 	if !rv.IsValid() {
 		return ""
 	}
-	vals := []string{}
+	var vals []string
 	for _, key := range keys {
 		rv := rv
 	while:
