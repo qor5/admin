@@ -81,6 +81,16 @@ func TestLinkageSelectFilter(t *testing.T) {
 			ExpectPageBodyContainsInOrder: []string{"拱墅区"},
 			ExpectPageBodyNotContains:     []string{"西湖区"},
 		},
+
+		{
+			Name:  "Index LinkageSelectFilterItemRemote No Selected",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				linkageSelectFilterData.TruncatePut(dbr)
+				return httptest.NewRequest("GET", "/addresses?f_province_city_district=", nil)
+			},
+			ExpectPageBodyNotContains: []string{`"selected":true`},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {

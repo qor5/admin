@@ -7,13 +7,13 @@ import (
 
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/examples"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_presets"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
-	vx "github.com/qor5/x/v3/ui/vuetifyx"
 )
 
 func LinkageSelectFilterItemRemoteExample(b *presets.Builder, mux examples.Muxer, db *gorm.DB) http.Handler {
@@ -66,7 +66,6 @@ func LinkageSelectFilterItemRemoteExample(b *presets.Builder, mux examples.Muxer
 					LinkageSelectRemoteOptions: options,
 					WrapInput:                  wrapInputs,
 				},
-				ValuesAre: []string{},
 			},
 		}
 	})
