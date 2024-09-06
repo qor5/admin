@@ -187,9 +187,8 @@ func ScopeWithTablePrefix(tablePrefix string) func(db *gorm.DB) *gorm.DB {
 		if v, ok := db.Get(dbKeyTablePrefix); ok {
 			if v.(string) != tablePrefix {
 				panic(fmt.Sprintf("table prefix is already set to %s", v))
-			} else {
-				return db
 			}
+			return db
 		}
 
 		if tablePrefix == "" {

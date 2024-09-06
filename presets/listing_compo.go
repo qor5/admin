@@ -642,7 +642,7 @@ func (c *ListingCompo) getColumns(ctx context.Context) (btnConfigure h.HTMLCompo
 		})
 	}
 
-	displayColumns := []*DisplayColumn{}
+	var displayColumns []*DisplayColumn
 	if err := JsonCopy(&displayColumns, c.DisplayColumns); err != nil {
 		return nil, nil, err
 	}

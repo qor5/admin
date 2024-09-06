@@ -114,7 +114,7 @@ func builderFromContext(c context.Context) (b *Builder, ok bool) {
 	return
 }
 
-func (this *MicroSite) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
+func (this *MicroSite) GetPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
 	if len(this.GetFileList()) == 0 {
 		return
 	}
@@ -159,7 +159,7 @@ func (this *MicroSite) GetPublishActions(db *gorm.DB, ctx context.Context, stora
 	return
 }
 
-func (this *MicroSite) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
+func (this *MicroSite) GetUnPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
 	var paths []string
 	for _, v := range this.GetFileList() {
 		paths = append(paths, this.GetPublishedPath(v))

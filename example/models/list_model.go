@@ -44,15 +44,15 @@ func (this *ListModel) PrimaryColumnValuesBySlug(slug string) map[string]string 
 	}
 }
 
-func (this *ListModel) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
-	objs = append(objs, &publish.PublishAction{
+func (this *ListModel) GetPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
+	actions = append(actions, &publish.PublishAction{
 		Url:      this.getPublishUrl(),
 		Content:  this.getPublishContent(),
 		IsDelete: false,
 	})
 
 	if this.Status.Status == publish.StatusOnline && this.OnlineUrl != this.getPublishUrl() {
-		objs = append(objs, &publish.PublishAction{
+		actions = append(actions, &publish.PublishAction{
 			Url:      this.OnlineUrl,
 			IsDelete: true,
 		})
@@ -62,8 +62,8 @@ func (this *ListModel) GetPublishActions(db *gorm.DB, ctx context.Context, stora
 	return
 }
 
-func (this *ListModel) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
-	objs = append(objs, &publish.PublishAction{
+func (this *ListModel) GetUnPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
+	actions = append(actions, &publish.PublishAction{
 		Url:      this.OnlineUrl,
 		IsDelete: true,
 	})

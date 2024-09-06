@@ -18,7 +18,6 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/sunfmin/reflectutils"
-	"github.com/theplant/htmlgo"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
@@ -136,7 +135,7 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.Model
 
 	lb := mb.Listing()
 	lb.WrapSearchFunc(makeSearchFunc(mb, db))
-	lb.RowMenu().RowMenuItem("Delete").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) htmlgo.HTMLComponent {
+	lb.RowMenu().RowMenuItem("Delete").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
 		// DeleteRowMenu should be disabled when using the version interface
 		return nil
 	})
@@ -186,7 +185,7 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.Model
 	eb.Creating().WrapIdCurrentActive(wrapIdCurrentActive)
 	dp.WrapIdCurrentActive(wrapIdCurrentActive)
 	lb.WrapRow(func(in presets.RowProcessor) presets.RowProcessor {
-		return func(evCtx *web.EventContext, row htmlgo.MutableAttrHTMLComponent, id string, obj any) (htmlgo.MutableAttrHTMLComponent, error) {
+		return func(evCtx *web.EventContext, row h.MutableAttrHTMLComponent, id string, obj any) (h.MutableAttrHTMLComponent, error) {
 			unique := uniqueWithoutVersion(id)
 			if unique == "" {
 				return in(evCtx, row, id, obj)
@@ -349,7 +348,7 @@ func (b *Builder) getObjectLiveUrl(db *gorm.DB, ctx context.Context, obj interfa
 	return
 }
 
-func (b *Builder) defaultPublishActions(_ *gorm.DB, ctx context.Context, _ oss.StorageInterface, obj interface{}) (actions []*PublishAction, err error) {
+func (b *Builder) defaultPublishActions(ctx context.Context, _ *gorm.DB, _ oss.StorageInterface, obj interface{}) (actions []*PublishAction, err error) {
 	var (
 		content string
 		p       PublishModelInterface
@@ -387,15 +386,15 @@ func (b *Builder) getPublishActions(ctx context.Context, obj interface{}) (actio
 	)
 	p, ok = obj.(PublishInterface)
 	if ok {
-		return p.GetPublishActions(b.db, ctx, b.storage)
+		return p.GetPublishActions(ctx, b.db, b.storage)
 	}
 	if m, ok = obj.(WrapPublishInterface); ok {
-		return m.WrapPublishActions(b.defaultPublishActions)(b.db, ctx, b.storage, obj)
+		return m.WrapPublishActions(b.defaultPublishActions)(ctx, b.db, b.storage, obj)
 	}
-	return b.defaultPublishActions(b.db, ctx, b.storage, obj)
+	return b.defaultPublishActions(ctx, b.db, b.storage, obj)
 }
 
-func (b *Builder) defaultUnPublishActions(_ *gorm.DB, ctx context.Context, _ oss.StorageInterface, obj interface{}) (actions []*PublishAction, err error) {
+func (b *Builder) defaultUnPublishActions(ctx context.Context, _ *gorm.DB, _ oss.StorageInterface, obj interface{}) (actions []*PublishAction, err error) {
 	if liveUrl := b.getObjectLiveUrl(b.db, ctx, obj); liveUrl != "" {
 		actions = append(actions, &PublishAction{
 			Url:      liveUrl,
@@ -414,16 +413,16 @@ func (b *Builder) getUnPublishActions(ctx context.Context, obj interface{}) (act
 
 	p, ok = obj.(UnPublishInterface)
 	if ok {
-		return p.GetUnPublishActions(b.db, ctx, b.storage)
+		return p.GetUnPublishActions(ctx, b.db, b.storage)
 	}
 	if m, ok = obj.(WrapUnPublishInterface); ok {
-		return m.WrapUnPublishActions(b.defaultUnPublishActions)(b.db, ctx, b.storage, obj)
+		return m.WrapUnPublishActions(b.defaultUnPublishActions)(ctx, b.db, b.storage, obj)
 	}
-	return b.defaultUnPublishActions(b.db, ctx, b.storage, obj)
+	return b.defaultUnPublishActions(ctx, b.db, b.storage, obj)
 }
 
 // 幂等
-func (b *Builder) Publish(record interface{}, ctx context.Context) (err error) {
+func (b *Builder) Publish(ctx context.Context, record interface{}) (err error) {
 	err = utils.Transact(b.db, func(tx *gorm.DB) (err error) {
 		// publish content
 		var objs []*PublishAction
@@ -477,7 +476,7 @@ func (b *Builder) Publish(record interface{}, ctx context.Context) (err error) {
 
 		// publish callback
 		if r, ok := record.(AfterPublishInterface); ok {
-			if err = r.AfterPublish(b.db, b.storage, ctx); err != nil {
+			if err = r.AfterPublish(ctx, b.db, b.storage); err != nil {
 				return
 			}
 		}
@@ -486,7 +485,7 @@ func (b *Builder) Publish(record interface{}, ctx context.Context) (err error) {
 	return
 }
 
-func (b *Builder) UnPublish(record interface{}, ctx context.Context) (err error) {
+func (b *Builder) UnPublish(ctx context.Context, record interface{}) (err error) {
 	err = utils.Transact(b.db, func(tx *gorm.DB) (err error) {
 		// unpublish content
 		var objs []*PublishAction
@@ -518,7 +517,7 @@ func (b *Builder) UnPublish(record interface{}, ctx context.Context) (err error)
 
 		// unpublish callback
 		if r, ok := record.(AfterUnPublishInterface); ok {
-			if err = r.AfterUnPublish(b.db, b.storage, ctx); err != nil {
+			if err = r.AfterUnPublish(ctx, b.db, b.storage); err != nil {
 				return
 			}
 		}
@@ -545,7 +544,7 @@ func UploadOrDelete(objs []*PublishAction, storage oss.StorageInterface) (err er
 
 func setPrimaryKeysConditionWithoutVersion(db *gorm.DB, record interface{}, s *schema.Schema) *gorm.DB {
 	var querys []string
-	args := []interface{}{}
+	var args []interface{}
 	for _, p := range s.PrimaryFields {
 		if p.Name == "Version" {
 			continue
@@ -559,7 +558,7 @@ func setPrimaryKeysConditionWithoutVersion(db *gorm.DB, record interface{}, s *s
 
 func setPrimaryKeysConditionWithoutFields(db *gorm.DB, record interface{}, s *schema.Schema, ignoreFields ...string) *gorm.DB {
 	var querys []string
-	args := []interface{}{}
+	var args []interface{}
 	for _, p := range s.PrimaryFields {
 		if slices.Contains(ignoreFields, p.Name) {
 			continue

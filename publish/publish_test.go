@@ -47,7 +47,7 @@ func (p *Product) getListContent() string {
 	return fmt.Sprintf("list page  %s", p.Code)
 }
 
-func (p *Product) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
+func (p *Product) GetPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
 	objs = append(objs, &publish.PublishAction{
 		Url:      p.getUrl(),
 		Content:  p.getContent(),
@@ -79,7 +79,7 @@ func (p *Product) GetPublishActions(db *gorm.DB, ctx context.Context, storage os
 	return
 }
 
-func (p *Product) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
+func (p *Product) GetUnPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
 	objs = append(objs, &publish.PublishAction{
 		Url:      p.OnlineUrl,
 		IsDelete: true,
@@ -111,7 +111,7 @@ func (p *ProductWithoutVersion) getUrl() string {
 	return fmt.Sprintf("test/product_no_version/%s/index.html", p.Code)
 }
 
-func (p *ProductWithoutVersion) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
+func (p *ProductWithoutVersion) GetPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
 	objs = append(objs, &publish.PublishAction{
 		Url:      p.getUrl(),
 		Content:  p.getContent(),
@@ -129,7 +129,7 @@ func (p *ProductWithoutVersion) GetPublishActions(db *gorm.DB, ctx context.Conte
 	return
 }
 
-func (p *ProductWithoutVersion) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
+func (p *ProductWithoutVersion) GetUnPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
 	objs = append(objs, &publish.PublishAction{
 		Url:      p.OnlineUrl,
 		IsDelete: true,
@@ -250,7 +250,7 @@ func TestPublishVersionContentToS3(t *testing.T) {
 	// publish v1
 	skipListTrueContext := context.WithValue(context.Background(), "skip_list", true)
 	skipListFalseContext := context.WithValue(context.Background(), "skip_list", false)
-	if err := p.Publish(&productV1, skipListTrueContext); err != nil {
+	if err := p.Publish(skipListTrueContext, &productV1); err != nil {
 		t.Error(err)
 	}
 	assertUpdateStatus(t, db, &productV1, publish.StatusOnline, productV1.getUrl())
@@ -258,7 +258,7 @@ func TestPublishVersionContentToS3(t *testing.T) {
 	// assertUploadFile(t, productV1.getListContent(), productV1.getListUrl(), storage)
 
 	// publish v2
-	if err := p.Publish(&productV2, skipListFalseContext); err != nil {
+	if err := p.Publish(skipListFalseContext, &productV2); err != nil {
 		t.Error(err)
 	}
 	assertUpdateStatus(t, db, &productV2, publish.StatusOnline, productV2.getUrl())
@@ -270,7 +270,7 @@ func TestPublishVersionContentToS3(t *testing.T) {
 	assertUpdateStatus(t, db, &productV1, publish.StatusOffline, productV1.getUrl())
 
 	// unpublish v2
-	if err := p.UnPublish(&productV2, skipListFalseContext); err != nil {
+	if err := p.UnPublish(skipListFalseContext, &productV2); err != nil {
 		t.Error(err)
 	}
 	assertUpdateStatus(t, db, &productV2, publish.StatusOffline, productV2.getUrl())
@@ -310,8 +310,8 @@ func TestPublishList(t *testing.T) {
 	publisher := publish.New(db, storage)
 	listPublisher := publish.NewListPublishBuilder(db, storage)
 
-	publisher.Publish(&productV1, context.Background())
-	publisher.Publish(&productV3, context.Background())
+	publisher.Publish(context.Background(), &productV1)
+	publisher.Publish(context.Background(), &productV3)
 	if err := listPublisher.Run(ProductWithoutVersion{}); err != nil {
 		panic(err)
 	}
@@ -325,7 +325,7 @@ get: %v
 `, expected, storage.Objects["/product_without_version/list/1.html"])))
 	}
 
-	publisher.Publish(&productV2, context.Background())
+	publisher.Publish(context.Background(), &productV2)
 	if err := listPublisher.Run(ProductWithoutVersion{}); err != nil {
 		panic(err)
 	}
@@ -338,7 +338,7 @@ get: %v
 `, expected, storage.Objects["/product_without_version/list/1.html"])))
 	}
 
-	publisher.UnPublish(&productV2, context.Background())
+	publisher.UnPublish(context.Background(), &productV2)
 	if err := listPublisher.Run(ProductWithoutVersion{}); err != nil {
 		panic(err)
 	}
@@ -351,7 +351,7 @@ get: %v
 `, expected, storage.Objects["/product_without_version/list/1.html"])))
 	}
 
-	publisher.UnPublish(&productV3, context.Background())
+	publisher.UnPublish(context.Background(), &productV3)
 	if err := listPublisher.Run(ProductWithoutVersion{}); err != nil {
 		panic(err)
 	}
@@ -382,7 +382,7 @@ func TestSchedulePublish(t *testing.T) {
 	db.Clauses(clause.OnConflict{UpdateAll: true}).Create(&productV1)
 
 	publisher := publish.New(db, storage)
-	publisher.Publish(&productV1, context.Background())
+	publisher.Publish(context.Background(), &productV1)
 
 	var expected string
 	expected = "11"
@@ -444,7 +444,7 @@ func TestPublishContentWithoutVersionToS3(t *testing.T) {
 
 	p := publish.New(db, storage)
 	// publish product1
-	if err := p.Publish(&product1, ctx); err != nil {
+	if err := p.Publish(ctx, &product1); err != nil {
 		t.Error(err)
 	}
 	assertNoVersionUpdateStatus(t, db, &product1, publish.StatusOnline, product1.getUrl())
@@ -454,7 +454,7 @@ func TestPublishContentWithoutVersionToS3(t *testing.T) {
 	product1Clone.Code = "0002"
 
 	// publish product1 again
-	if err := p.Publish(&product1Clone, ctx); err != nil {
+	if err := p.Publish(ctx, &product1Clone); err != nil {
 		t.Error(err)
 	}
 	assertNoVersionUpdateStatus(t, db, &product1Clone, publish.StatusOnline, product1Clone.getUrl())
@@ -464,7 +464,7 @@ func TestPublishContentWithoutVersionToS3(t *testing.T) {
 	// if delete product1 old file
 	assertContentDeleted(t, product1.getUrl(), storage)
 	// unpublish product1
-	if err := p.UnPublish(&product1Clone, ctx); err != nil {
+	if err := p.UnPublish(ctx, &product1Clone); err != nil {
 		t.Error(err)
 	}
 	assertNoVersionUpdateStatus(t, db, &product1Clone, publish.StatusOffline, product1Clone.getUrl())

@@ -63,7 +63,7 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 				}
 			}
 			record := needUnpublishReflectValues.Index(i).Interface()
-			if err2 := b.publisher.UnPublish(record, reqCtx); err2 != nil {
+			if err2 := b.publisher.UnPublish(reqCtx, record); err2 != nil {
 				log.Printf("error: %s\n", err2)
 				err = multierror.Append(err, err2).ErrorOrNil()
 			}
@@ -79,7 +79,7 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 		needPublishReflectValues := reflect.ValueOf(tempRecords)
 		for i := 0; i < needPublishReflectValues.Len(); i++ {
 			record := needPublishReflectValues.Index(i).Interface()
-			if err2 := b.publisher.Publish(record, reqCtx); err2 != nil {
+			if err2 := b.publisher.Publish(reqCtx, record); err2 != nil {
 				log.Printf("error: %s\n", err2)
 				err = multierror.Append(err, err2).ErrorOrNil()
 			}
@@ -88,7 +88,7 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 
 	{
 		for _, record := range unpublishAfterPublishRecords {
-			if err2 := b.publisher.UnPublish(record, reqCtx); err2 != nil {
+			if err2 := b.publisher.UnPublish(reqCtx, record); err2 != nil {
 				log.Printf("error: %s\n", err2)
 				err = multierror.Append(err, err2).ErrorOrNil()
 			}
