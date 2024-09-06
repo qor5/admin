@@ -135,9 +135,9 @@ func (b *Campaign) PublishUrl(db *gorm.DB, ctx context.Context, storage oss.Stor
 }
 
 func (b *Campaign) WrapPublishActions(in publish.PublishActionsFunc) publish.PublishActionsFunc {
-	return func(db *gorm.DB, ctx context.Context, storage oss.StorageInterface, obj any) (actions []*publish.PublishAction, err error) {
+	return func(ctx context.Context, db *gorm.DB, storage oss.StorageInterface, obj any) (actions []*publish.PublishAction, err error) {
 		// default actions
-		if actions, err = in(db, ctx, storage, obj); err != nil {
+		if actions, err = in(ctx, db, storage, obj); err != nil {
 			return
 		}
 		actions = append(actions, &publish.PublishAction{
