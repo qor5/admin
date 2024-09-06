@@ -136,11 +136,11 @@ func (p *ProductWithoutVersion) GetUnPublishActions(ctx context.Context, db *gor
 	return
 }
 
-func (p *ProductWithoutVersion) GetListUrl(pageNumber string) string {
+func (p ProductWithoutVersion) GetListUrl(pageNumber string) string {
 	return fmt.Sprintf("/product_without_version/list/%v.html", pageNumber)
 }
 
-func (p *ProductWithoutVersion) GetListContent(db *gorm.DB, onePageItems *publish.OnePageItems) string {
+func (p ProductWithoutVersion) GetListContent(db *gorm.DB, onePageItems *publish.OnePageItems) string {
 	pageNumber := onePageItems.PageNumber
 	var result string
 	for _, item := range onePageItems.Items {
@@ -151,7 +151,7 @@ func (p *ProductWithoutVersion) GetListContent(db *gorm.DB, onePageItems *publis
 	return result
 }
 
-func (p *ProductWithoutVersion) Sort(array []interface{}) {
+func (p ProductWithoutVersion) Sort(array []interface{}) {
 	var temp []*ProductWithoutVersion
 	sliceutils.Unwrap(array, &temp)
 	sort.Sort(SliceProductWithoutVersion(temp))
