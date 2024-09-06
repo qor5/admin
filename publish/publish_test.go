@@ -48,7 +48,7 @@ func (p *Product) getListContent() string {
 }
 
 func (p *Product) GetPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
-	objs = append(objs, &publish.PublishAction{
+	actions = append(actions, &publish.PublishAction{
 		Url:      p.getUrl(),
 		Content:  p.getContent(),
 		IsDelete: false,
@@ -62,7 +62,7 @@ func (p *Product) GetPublishActions(ctx context.Context, db *gorm.DB, storage os
 	}
 
 	if liveRecord.OnlineUrl != p.OnlineUrl {
-		objs = append(objs, &publish.PublishAction{
+		actions = append(actions, &publish.PublishAction{
 			Url:      liveRecord.getUrl(),
 			IsDelete: true,
 		})
@@ -71,7 +71,7 @@ func (p *Product) GetPublishActions(ctx context.Context, db *gorm.DB, storage os
 	if val, ok := ctx.Value("skip_list").(bool); ok && val {
 		return
 	}
-	objs = append(objs, &publish.PublishAction{
+	actions = append(actions, &publish.PublishAction{
 		Url:      p.getListUrl(),
 		Content:  p.getListContent(),
 		IsDelete: false,
@@ -80,14 +80,14 @@ func (p *Product) GetPublishActions(ctx context.Context, db *gorm.DB, storage os
 }
 
 func (p *Product) GetUnPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
-	objs = append(objs, &publish.PublishAction{
+	actions = append(actions, &publish.PublishAction{
 		Url:      p.OnlineUrl,
 		IsDelete: true,
 	})
 	if val, ok := ctx.Value("skip_list").(bool); ok && val {
 		return
 	}
-	objs = append(objs, &publish.PublishAction{
+	actions = append(actions, &publish.PublishAction{
 		Url:      p.getListUrl(),
 		IsDelete: true,
 	})
@@ -112,14 +112,14 @@ func (p *ProductWithoutVersion) getUrl() string {
 }
 
 func (p *ProductWithoutVersion) GetPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
-	objs = append(objs, &publish.PublishAction{
+	actions = append(actions, &publish.PublishAction{
 		Url:      p.getUrl(),
 		Content:  p.getContent(),
 		IsDelete: false,
 	})
 
 	if p.Status.Status == publish.StatusOnline && p.OnlineUrl != p.getUrl() {
-		objs = append(objs, &publish.PublishAction{
+		actions = append(actions, &publish.PublishAction{
 			Url:      p.OnlineUrl,
 			IsDelete: true,
 		})
@@ -130,7 +130,7 @@ func (p *ProductWithoutVersion) GetPublishActions(ctx context.Context, db *gorm.
 }
 
 func (p *ProductWithoutVersion) GetUnPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
-	objs = append(objs, &publish.PublishAction{
+	actions = append(actions, &publish.PublishAction{
 		Url:      p.OnlineUrl,
 		IsDelete: true,
 	})
