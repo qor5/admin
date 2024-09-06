@@ -21,8 +21,9 @@ import (
 )
 
 const (
-	I18nActivityKey    i18n.ModuleKey = "I18nActivityKey"
-	paramHideDetailTop                = "hideDetailTop"
+	I18nActivityKey i18n.ModuleKey = "I18nActivityKey"
+
+	paramHideDetailTop = "hideDetailTop"
 )
 
 func (ab *Builder) Install(b *presets.Builder) error {

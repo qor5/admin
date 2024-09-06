@@ -742,7 +742,7 @@ func (c *ListingCompo) actionDialogContentPortalName() string {
 }
 
 func (c *ListingCompo) closeActionDialog() string {
-	return fmt.Sprintf("locals.dialog = false;")
+	return "locals.dialog = false;"
 }
 
 func (c *ListingCompo) dialog(r *web.EventResponse, comp h.HTMLComponent, width string) {

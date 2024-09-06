@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/markbates/goth/providers/github"
 	"github.com/markbates/goth/providers/google"
@@ -102,6 +103,14 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.Handle("/", lb.Middleware()(r))
+	server := &http.Server{
+		Addr:              ":9500",
+		ReadHeaderTimeout: 5 * time.Second,
+		Handler:           mux,
+	}
 	log.Println("serving at http://localhost:9500")
-	log.Fatal(http.ListenAndServe(":9500", mux))
+	err := server.ListenAndServe()
+	if err != nil {
+		panic(err)
+	}
 }

@@ -86,12 +86,10 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 		}
 	}
 
-	{
-		for _, record := range unpublishAfterPublishRecords {
-			if err2 := b.publisher.UnPublish(reqCtx, record); err2 != nil {
-				log.Printf("error: %s\n", err2)
-				err = multierror.Append(err, err2).ErrorOrNil()
-			}
+	for _, record := range unpublishAfterPublishRecords {
+		if err2 := b.publisher.UnPublish(reqCtx, record); err2 != nil {
+			log.Printf("error: %s\n", err2)
+			err = multierror.Append(err, err2).ErrorOrNil()
 		}
 	}
 	return

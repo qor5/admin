@@ -331,7 +331,7 @@ func (b *Builder) getPublishContent(ctx context.Context, obj interface{}) (r str
 	return
 }
 
-func (b *Builder) getObjectLiveUrl(db *gorm.DB, ctx context.Context, obj interface{}) (url string) {
+func (b *Builder) getObjectLiveUrl(ctx context.Context, db *gorm.DB, obj interface{}) (url string) {
 	builder := ctx.Value(utils.GetObjectName(obj))
 	mb, ok := builder.(PreviewBuilderInterface)
 	if !ok {
@@ -368,7 +368,7 @@ func (b *Builder) defaultPublishActions(ctx context.Context, _ *gorm.DB, _ oss.S
 			Content:  content,
 			IsDelete: false,
 		})
-		if liveUrl := b.getObjectLiveUrl(b.db, ctx, obj); liveUrl != "" && liveUrl != publishUrl {
+		if liveUrl := b.getObjectLiveUrl(ctx, b.db, obj); liveUrl != "" && liveUrl != publishUrl {
 			actions = append(actions, &PublishAction{
 				Url:      liveUrl,
 				IsDelete: true,
@@ -395,7 +395,7 @@ func (b *Builder) getPublishActions(ctx context.Context, obj interface{}) (actio
 }
 
 func (b *Builder) defaultUnPublishActions(ctx context.Context, _ *gorm.DB, _ oss.StorageInterface, obj interface{}) (actions []*PublishAction, err error) {
-	if liveUrl := b.getObjectLiveUrl(b.db, ctx, obj); liveUrl != "" {
+	if liveUrl := b.getObjectLiveUrl(ctx, b.db, obj); liveUrl != "" {
 		actions = append(actions, &PublishAction{
 			Url:      liveUrl,
 			IsDelete: true,
