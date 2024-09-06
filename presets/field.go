@@ -73,6 +73,7 @@ type FieldsBuilder struct {
 
 type FieldBuilder struct {
 	NameLabel
+	hidden              bool
 	compFunc            FieldComponentFunc
 	lazyWrapCompFunc    func(in FieldComponentFunc) FieldComponentFunc
 	setterFunc          FieldSetterFunc
@@ -80,10 +81,17 @@ type FieldBuilder struct {
 	context             context.Context
 	rt                  reflect.Type
 	nestedFieldsBuilder *FieldsBuilder
+	tabFieldsBuilders   *TabsFieldBuilder
 	plugins             []FieldPlugin
 }
 
 func (b *FieldsBuilder) appendNewFieldWithName(name string) (r *FieldBuilder) {
+	r = b.NewFieldWithName(name)
+	b.fields = append(b.fields, r)
+	return
+}
+
+func (b *FieldsBuilder) NewFieldWithName(name string) (r *FieldBuilder) {
 	r = &FieldBuilder{}
 
 	if b.model == nil {
@@ -104,7 +112,6 @@ func (b *FieldsBuilder) appendNewFieldWithName(name string) (r *FieldBuilder) {
 	r.name = name
 	// r.ComponentFunc(ft.compFunc).
 	// 	SetterFunc(ft.setterFunc)
-	b.fields = append(b.fields, r)
 	return
 }
 
@@ -126,6 +133,7 @@ func (b *FieldBuilder) Clone() (r *FieldBuilder) {
 	r.setterFunc = b.setterFunc
 	r.lazyWrapSetterFunc = b.lazyWrapSetterFunc
 	r.nestedFieldsBuilder = b.nestedFieldsBuilder
+	r.tabFieldsBuilders = b.tabFieldsBuilders
 	r.context = b.context
 	r.rt = b.rt
 	r.plugins = b.plugins
@@ -265,6 +273,15 @@ func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *Field
 			)
 		})
 	}
+	return b
+}
+
+func (b *FieldBuilder) AppendTabs(fb *FieldBuilder) (r *FieldBuilder) {
+	if b.tabFieldsBuilders == nil {
+		b.tabFieldsBuilders = new(TabsFieldBuilder)
+	}
+	b.tabFieldsBuilders.appendTabField(fb.name, fb.compFunc)
+	b.ComponentFunc(b.tabFieldsBuilders.ComponentFunc())
 	return b
 }
 
@@ -652,7 +669,7 @@ func (b *FieldsBuilder) Except(patterns ...string) (r *FieldsBuilder) {
 		return r
 	}
 
-	fieldsLayout := []any{}
+	var fieldsLayout []any
 	for _, iv := range b.fieldsLayout {
 		switch t := iv.(type) {
 		case string:
@@ -660,7 +677,7 @@ func (b *FieldsBuilder) Except(patterns ...string) (r *FieldsBuilder) {
 				fieldsLayout = append(fieldsLayout, t)
 			}
 		case []string:
-			ns := []string{}
+			var ns []string
 			for _, n := range t {
 				if !hasMatched(patterns, n) {
 					ns = append(ns, n)
@@ -675,7 +692,7 @@ func (b *FieldsBuilder) Except(patterns ...string) (r *FieldsBuilder) {
 				Rows:  [][]string{},
 			}
 			for _, row := range t.Rows {
-				ns := []string{}
+				var ns []string
 				for _, n := range row {
 					if !hasMatched(patterns, n) {
 						ns = append(ns, n)
@@ -737,7 +754,7 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 			layout = append(layout, f.name)
 		}
 	} else {
-		layout = b.fieldsLayout[:]
+		layout = b.fieldsLayout
 		layoutFM := make(map[string]struct{})
 		for _, fn := range b.getFieldNamesFromLayout() {
 			layoutFM[fn] = struct{}{}
@@ -746,7 +763,9 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 			if _, ok := layoutFM[f.name]; ok {
 				continue
 			}
-			layout = append(layout, f.name)
+			if !f.hidden {
+				layout = append(layout, f.name)
+			}
 		}
 	}
 	for _, iv := range layout {

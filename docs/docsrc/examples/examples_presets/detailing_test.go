@@ -580,3 +580,76 @@ func TestPresetsDetailListSection(t *testing.T) {
 		})
 	}
 }
+
+var customerData = gofixtures.Data(gofixtures.Sql(`
+				insert into customers (id, email,name) values (1, 'xxx@gmail.com','Terry');
+			`, []string{"customers"}))
+
+func TestPresetsDetailTabsField(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsDetailTabsField(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "detail tabs field",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				customerData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers").
+					Query("__execute_event__", "presets_DetailingDrawer").
+					Query("id", "1").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Name", "Email", "Name", "Terry", "Email", "xxx@gmail.com"},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}
+
+func TestPresetsDetailTabsSection(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsDetailTabsSection(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "detail tabs section display",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				customerData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers").
+					Query("__execute_event__", "presets_DetailingDrawer").
+					Query("id", "1").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"name", "email", `<v-tabs-window-item :value='"name"'>`, "Terry", `<v-tabs-window-item :value='"email"'>`, "xxx@gmail.com"},
+		},
+		{
+			Name:  "detail tabs section save",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				customerData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers").
+					Query("__execute_event__", "presets_Detailing_Field_Save").
+					Query("id", "1").
+					Query("section", "name").
+					AddField("name.Name", "terry1").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"terry1"},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}

@@ -418,7 +418,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 	for _, v := range c.lb.orderableFields {
 		orderableFieldMap[v.FieldName] = v.DBColumn
 	}
-	dbOrderBys := []string{}
+	var dbOrderBys []string
 	for _, ob := range orderBys {
 		dbCol, ok := orderableFieldMap[ob.FieldName]
 		if !ok {
@@ -642,7 +642,7 @@ func (c *ListingCompo) getColumns(ctx context.Context) (btnConfigure h.HTMLCompo
 		})
 	}
 
-	displayColumns := []*DisplayColumn{}
+	var displayColumns []*DisplayColumn
 	if err := JsonCopy(&displayColumns, c.DisplayColumns); err != nil {
 		return nil, nil, err
 	}
@@ -742,7 +742,7 @@ func (c *ListingCompo) actionDialogContentPortalName() string {
 }
 
 func (c *ListingCompo) closeActionDialog() string {
-	return fmt.Sprintf("locals.dialog = false;")
+	return "locals.dialog = false;"
 }
 
 func (c *ListingCompo) dialog(r *web.EventResponse, comp h.HTMLComponent, width string) {

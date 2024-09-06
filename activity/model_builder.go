@@ -244,7 +244,7 @@ func (amb *ModelBuilder) installPresetModelBuilder(mb *presets.ModelBuilder) {
 					return
 				}
 				var modelName string
-				modelKeyses := []string{}
+				var modelKeyses []string
 				reflectutils.ForEach(r, func(obj any) {
 					if modelName == "" {
 						modelName = ParseModelName(obj)
@@ -469,10 +469,8 @@ func (mb *ModelBuilder) create(
 	db, ok := ctx.Value(ctxKeyDB{}).(*gorm.DB)
 	if !ok {
 		db = mb.ab.db
-	} else {
-		if mb.ab.tablePrefix != "" {
-			db = db.Scopes(ScopeWithTablePrefix(mb.ab.tablePrefix)).Session(&gorm.Session{})
-		}
+	} else if mb.ab.tablePrefix != "" {
+		db = db.Scopes(ScopeWithTablePrefix(mb.ab.tablePrefix)).Session(&gorm.Session{})
 	}
 
 	user, err := mb.ab.currentUserFunc(ctx)

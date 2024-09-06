@@ -62,7 +62,6 @@ func (this MicroSite) GetUnixKey() string {
 
 func (this *MicroSite) SetUnixKey() {
 	this.UnixKey = strconv.FormatInt(time.Now().UnixMilli(), 10)
-	return
 }
 
 func (this MicroSite) GetPublishedPath(fileName string) string {
@@ -88,7 +87,6 @@ func (this *MicroSite) SetFilesList(filesList []string) {
 		return
 	}
 	this.FilesList = string(list)
-	return
 }
 
 func (this *MicroSite) GetPackage() FileSystem {
@@ -98,7 +96,6 @@ func (this *MicroSite) GetPackage() FileSystem {
 func (this *MicroSite) SetPackage(fileName, url string) {
 	this.Package.FileName = fileName
 	this.Package.Url = url
-	return
 }
 
 type contextKeyType int
@@ -114,7 +111,7 @@ func builderFromContext(c context.Context) (b *Builder, ok bool) {
 	return
 }
 
-func (this *MicroSite) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
+func (this *MicroSite) GetPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
 	if len(this.GetFileList()) == 0 {
 		return
 	}
@@ -159,7 +156,7 @@ func (this *MicroSite) GetPublishActions(db *gorm.DB, ctx context.Context, stora
 	return
 }
 
-func (this *MicroSite) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
+func (this *MicroSite) GetUnPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
 	var paths []string
 	for _, v := range this.GetFileList() {
 		paths = append(paths, this.GetPublishedPath(v))
@@ -194,7 +191,6 @@ func (this *MicroSite) UnArchiveAndPublish(getPath func(string) string, fileName
 		if err != nil {
 			return
 		}
-		defer rc.Close()
 
 		filesList = append(filesList, f.NameInArchive)
 
@@ -214,7 +210,7 @@ func (this *MicroSite) UnArchiveAndPublish(getPath func(string) string, fileName
 			}
 		}()
 
-		return
+		return rc.Close()
 	})
 	wg.Wait()
 	err = multierror.Append(err, putError).ErrorOrNil()

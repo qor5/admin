@@ -300,3 +300,30 @@ func PresetsDetailPageCards(b *presets.Builder, db *gorm.DB) (
 const PresetsDetailPageCardsPath = "/samples/presets-detail-page-cards"
 
 // @snippet_end
+
+func PresetsDetailTabsField(b *presets.Builder, db *gorm.DB) (
+	cust *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	cust, cl, ce, dp = PresetsHelloWorld(b, db)
+
+	dp = cust.RightDrawerWidth("800").Detailing("tab").Drawer(true)
+
+	dp.Only("Name", "Email", "tab")
+	emailField := dp.NewFieldWithName("Email").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		customer := obj.(*Customer)
+		text := fmt.Sprintf("This is Email Tabs, Email: %s", customer.Email)
+		return h.Text(text)
+	})
+	nameField := dp.NewFieldWithName("Name").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		customer := obj.(*Customer)
+		text := fmt.Sprintf("This is Name Tabs, Email: %s", customer.Name)
+		return h.Text(text)
+	})
+	dp.Field("tab").
+		AppendTabs(nameField).
+		AppendTabs(emailField)
+	return
+}

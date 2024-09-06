@@ -37,11 +37,11 @@ func (c *Category) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	}
 }
 
-func (c *Category) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
+func (c *Category) GetPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
 	return
 }
 
-func (c *Category) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
+func (c *Category) GetUnPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
 	return
 }
 
