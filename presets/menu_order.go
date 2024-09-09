@@ -2,9 +2,14 @@ package presets
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
+	. "github.com/qor5/x/v3/ui/vuetify"
+	h "github.com/theplant/htmlgo"
 )
 
 type MenuOrderBuilder struct {
@@ -52,18 +57,162 @@ func (b *MenuOrderBuilder) Append(items ...interface{}) {
 	}
 }
 
-func (b *MenuOrderBuilder) check(item string) (*ModelBuilder, bool) {
+func (b *MenuOrderBuilder) check(ctx *web.EventContext, item string) (*ModelBuilder, bool) {
 	if b.modelMap == nil {
 		b.modelMap = make(map[string]*ModelBuilder)
 		for _, m := range b.p.models {
 			b.modelMap[m.uriName] = m
 		}
 	}
-	if m, ok := b.modelMap[item]; ok {
-		return m, true
+	m, ok := b.modelMap[item]
+	if !ok {
+		m, ok = b.modelMap[inflection.Plural(strcase.ToKebab(item))]
 	}
-	if m, ok := b.modelMap[inflection.Plural(strcase.ToKebab(item))]; ok {
-		return m, true
+	if !ok {
+		return nil, false
 	}
-	return nil, false
+	disabled := m.notInMenu || (m.Info().Verifier().Do(PermList).WithReq(ctx.R).IsAllowed() != nil)
+	if disabled {
+		return m, false
+	}
+	return m, true
+}
+
+func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
+	b.modelMap = make(map[string]*ModelBuilder)
+	for _, m := range b.p.models {
+		b.modelMap[m.uriName] = m
+	}
+	var (
+		activeMenuItem string
+		selection      string
+	)
+	inOrderMap := make(map[string]struct{})
+	var menus []h.HTMLComponent
+	for _, om := range b.order {
+		switch v := om.(type) {
+		case *MenuGroupBuilder:
+			if b.p.verifier.Do(PermList).SnakeOn("mg_"+v.name).WithReq(ctx.R).IsAllowed() != nil {
+				continue
+			}
+			groupIcon := v.icon
+			if groupIcon == "" {
+				groupIcon = defaultMenuIcon(v.name)
+			}
+			subMenus := []h.HTMLComponent{
+				h.Template(
+					VListItem(
+						web.Slot(
+							VIcon(groupIcon),
+						).Name("prepend"),
+						VListItemTitle().Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", menuFontWeight)),
+						// VListItemTitle(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, v.name))).
+					).Attr("v-bind", "props").
+						Title(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)).
+						Class("rounded-lg"),
+					// Value(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)),
+				).Attr("v-slot:activator", "{ props }"),
+			}
+			subCount := 0
+			for _, subOm := range v.subMenuItems {
+				m, ok := b.check(ctx, subOm)
+				if m != nil {
+					m.menuGroupName = v.name
+				}
+				if !ok {
+					continue
+				}
+
+				menuItem, err := m.menuItem(ctx, true)
+				if err != nil {
+					panic(err)
+				}
+				subMenus = append(subMenus, menuItem)
+				subCount++
+				inOrderMap[m.uriName] = struct{}{}
+				if b.isMenuItemActive(ctx, m) {
+					// activeMenuItem = m.label
+					activeMenuItem = v.name
+					selection = m.label
+				}
+			}
+			if subCount == 0 {
+				continue
+			}
+
+			menus = append(menus,
+				VListGroup(subMenus...).Value(v.name),
+			)
+		case string:
+			m, ok := b.check(ctx, v)
+			if !ok {
+				continue
+			}
+
+			menuItem, err := m.menuItem(ctx, false)
+			if err != nil {
+				panic(err)
+			}
+			menus = append(menus, menuItem)
+			inOrderMap[m.uriName] = struct{}{}
+
+			if b.isMenuItemActive(ctx, m) {
+				selection = m.label
+			}
+		}
+	}
+
+	for _, m := range b.p.models {
+		_, ok := b.check(ctx, m.uriName)
+		if !ok {
+			continue
+		}
+
+		if b.isMenuItemActive(ctx, m) {
+			selection = m.label
+		}
+		menuItem, err := m.menuItem(ctx, false)
+		if err != nil {
+			panic(err)
+		}
+		menus = append(menus, menuItem)
+	}
+
+	r = h.Div(
+		web.Scope(
+			VList(menus...).
+				OpenStrategy("single").
+				Class("primary--text").
+				Density(DensityCompact).
+				Attr("v-model:opened", "locals.menuOpened").
+				Attr("v-model:selected", "locals.selection").
+				Attr("color", "transparent"),
+			// .Attr("v-model:selected", h.JSONString([]string{"Pages"})),
+		).VSlot("{ locals }").Init(
+			fmt.Sprintf(`{ menuOpened:  [%q]}`, activeMenuItem),
+			fmt.Sprintf(`{ selection:  [%q]}`, selection),
+		))
+	return
+}
+
+func (b *MenuOrderBuilder) isMenuItemActive(ctx *web.EventContext, m *ModelBuilder) bool {
+	href := m.Info().ListingHref()
+	if m.link != "" {
+		href = m.link
+	}
+	path := strings.TrimSuffix(ctx.R.URL.Path, "/")
+	if path == "" && href == "/" {
+		return true
+	}
+	if path == href {
+		return true
+	}
+	if href == b.p.prefix {
+		return false
+	}
+	if href != "/" && strings.HasPrefix(path, href) {
+		return true
+	}
+
+	return false
 }
