@@ -523,8 +523,8 @@ func imageDialog() h.HTMLComponent {
 }
 
 func (mb *Builder) findData(field string, ctx *web.EventContext,
-	cfg *media_library.MediaBoxConfig, files *[]*media_library.MediaLibrary) (currentPageInt, pagesCount int, err error) {
-
+	cfg *media_library.MediaBoxConfig, files *[]*media_library.MediaLibrary,
+) (currentPageInt, pagesCount int, err error) {
 	var (
 		db = mb.db
 		wh = db.Model(&media_library.MediaLibrary{})
@@ -615,8 +615,8 @@ func (mb *Builder) findData(field string, ctx *web.EventContext,
 }
 
 func (mb *Builder) mediaLibraryTopOperations(clickTabEvent, field string, ctx *web.EventContext,
-	cfg *media_library.MediaBoxConfig) h.HTMLComponent {
-
+	cfg *media_library.MediaBoxConfig,
+) h.HTMLComponent {
 	var (
 		msgr           = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 		inMediaLibrary = strings.Contains(ctx.R.RequestURI, "/"+MediaLibraryURIName)
@@ -728,8 +728,8 @@ func (mb *Builder) mediaLibraryTopOperations(clickTabEvent, field string, ctx *w
 }
 
 func (mb *Builder) mediaLibraryBottomOperations(field string, ctx *web.EventContext,
-	cfg *media_library.MediaBoxConfig, hasFiles bool, pagesCount, currentPageInt int) h.HTMLComponent {
-
+	cfg *media_library.MediaBoxConfig, hasFiles bool, pagesCount, currentPageInt int,
+) h.HTMLComponent {
 	var (
 		msgr = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 
