@@ -1256,7 +1256,7 @@ message: ""}}`)...)
 }
 
 func (b *Builder) InjectAssets(ctx *web.EventContext) {
-	ctx.Injector.HeadHTML(strings.Replace(`
+	ctx.Injector.HeadHTML(strings.ReplaceAll(`
 			<link rel="stylesheet" href="{{prefix}}/vuetify/assets/index.css" async>
 			<script src='{{prefix}}/assets/vue.js'></script>
 			<style>
@@ -1283,7 +1283,7 @@ func (b *Builder) InjectAssets(ctx *web.EventContext) {
 					background-color: inherit!important;
 				}
 			</style>
-		`, "{{prefix}}", b.prefix, -1))
+		`, "{{prefix}}", b.prefix))
 
 	b.InjectExtraAssets(ctx)
 
