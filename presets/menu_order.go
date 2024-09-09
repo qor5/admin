@@ -57,7 +57,7 @@ func (b *MenuOrderBuilder) Append(items ...interface{}) {
 	}
 }
 
-func (b *MenuOrderBuilder) check(ctx *web.EventContext, item string) (*ModelBuilder, bool) {
+func (b *MenuOrderBuilder) check(item string, ctx *web.EventContext) (*ModelBuilder, bool) {
 	if b.modelMap == nil {
 		b.modelMap = make(map[string]*ModelBuilder)
 		for _, m := range b.p.models {
@@ -115,23 +115,17 @@ func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent
 			}
 			subCount := 0
 			for _, subOm := range v.subMenuItems {
-				m, ok := b.check(ctx, subOm)
+				m, menuItem := b.menuItem(subOm, ctx)
 				if m != nil {
 					m.menuGroupName = v.name
 				}
-				if !ok {
+				if menuItem == nil {
 					continue
-				}
-
-				menuItem, err := m.menuItem(ctx, true)
-				if err != nil {
-					panic(err)
 				}
 				subMenus = append(subMenus, menuItem)
 				subCount++
 				inOrderMap[m.uriName] = struct{}{}
-				if b.isMenuItemActive(ctx, m) {
-					// activeMenuItem = m.label
+				if b.isMenuItemActive(m, ctx) {
 					activeMenuItem = v.name
 					selection = m.label
 				}
@@ -144,31 +138,26 @@ func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent
 				VListGroup(subMenus...).Value(v.name),
 			)
 		case string:
-			m, ok := b.check(ctx, v)
-			if !ok {
+			m, menuItem := b.menuItem(v, ctx)
+			if menuItem == nil {
 				continue
-			}
-
-			menuItem, err := m.menuItem(ctx, false)
-			if err != nil {
-				panic(err)
 			}
 			menus = append(menus, menuItem)
 			inOrderMap[m.uriName] = struct{}{}
 
-			if b.isMenuItemActive(ctx, m) {
+			if b.isMenuItemActive(m, ctx) {
 				selection = m.label
 			}
 		}
 	}
 
 	for _, m := range b.p.models {
-		_, ok := b.check(ctx, m.uriName)
+		_, ok := b.check(m.uriName, ctx)
 		if !ok {
 			continue
 		}
 
-		if b.isMenuItemActive(ctx, m) {
+		if b.isMenuItemActive(m, ctx) {
 			selection = m.label
 		}
 		menuItem, err := m.menuItem(ctx, false)
@@ -195,7 +184,20 @@ func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent
 	return
 }
 
-func (b *MenuOrderBuilder) isMenuItemActive(ctx *web.EventContext, m *ModelBuilder) bool {
+func (b *MenuOrderBuilder) menuItem(name string, ctx *web.EventContext) (*ModelBuilder, h.HTMLComponent) {
+	m, ok := b.check(name, ctx)
+	if !ok {
+		return m, nil
+	}
+
+	menuItem, err := m.menuItem(ctx, false)
+	if err != nil {
+		panic(err)
+	}
+	return m, menuItem
+}
+
+func (b *MenuOrderBuilder) isMenuItemActive(m *ModelBuilder, ctx *web.EventContext) bool {
 	href := m.Info().ListingHref()
 	if m.link != "" {
 		href = m.link

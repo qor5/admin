@@ -57,8 +57,8 @@ func TestIsMenuItemActive(t *testing.T) {
 
 	for i, io := range toIO {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			if b.menuOrder.isMenuItemActive(io.ctx, io.m) != io.excepted {
-				t.Errorf("isMenuItemActive() = %v, excepted %v", b.menuOrder.isMenuItemActive(io.ctx, io.m), io.excepted)
+			if b.menuOrder.isMenuItemActive(io.m, io.ctx) != io.excepted {
+				t.Errorf("isMenuItemActive() = %v, excepted %v", b.menuOrder.isMenuItemActive(io.m, io.ctx), io.excepted)
 			}
 		})
 	}
