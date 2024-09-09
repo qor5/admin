@@ -44,6 +44,7 @@ func (b *Builder) CurrentUserID(v UserIDFunc) *Builder {
 	b.currentUserID = v
 	return b
 }
+
 func (b *Builder) AllowTypes(v ...string) *Builder {
 	b.allowTypes = append(b.allowTypes, v...)
 	return b
@@ -71,6 +72,7 @@ func (b *Builder) WrapSaverFunc(w func(in SaverFunc) SaverFunc) (r *Builder) {
 	b.saverFunc = w(b.saverFunc)
 	return b
 }
+
 func (b *Builder) checkAllowType(v string) bool {
 	if len(b.allowTypes) == 0 {
 		return true

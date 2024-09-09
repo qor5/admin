@@ -107,7 +107,6 @@ type uploadFiles struct {
 
 func uploadFile(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-
 		var (
 			field    = ctx.Param(ParamField)
 			cfg      = stringToCfg(ctx.Param(ParamCfg))
