@@ -1120,6 +1120,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 		} else {
 			ctx.WithContextValue(CtxPageTitleComponent, nil)
 		}
+		afterTitleComponent, haveAfterTitleComponent := GetComponentFromContext(ctx, ctxDetailingAfterTitleComponent)
 		actionsComponentTeleportToID := GetActionsComponentTeleportToID(ctx)
 		pageTitleComp = h.Div(
 			VAppBarNavIcon().
@@ -1128,6 +1129,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				Attr("v-if", "!vars.navDrawer").
 				On("click.stop", "vars.navDrawer = !vars.navDrawer"),
 			innerPageTitleCompo,
+			h.If(haveAfterTitleComponent, afterTitleComponent),
 			h.Iff(actionsComponentTeleportToID != "", func() h.HTMLComponent {
 				return h.Components(
 					VSpacer(),
