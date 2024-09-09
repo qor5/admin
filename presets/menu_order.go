@@ -92,7 +92,7 @@ func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent
 	var menus []h.HTMLComponent
 	for _, om := range b.order {
 		if v, ok := om.(string); ok {
-			m, menuItem := b.menuItem(v, ctx)
+			m, menuItem := b.menuItem(v, false, ctx)
 			if menuItem == nil {
 				continue
 			}
@@ -129,7 +129,7 @@ func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent
 		}
 		subCount := 0
 		for _, subOm := range v.subMenuItems {
-			m, menuItem := b.menuItem(subOm, ctx)
+			m, menuItem := b.menuItem(subOm, true, ctx)
 			if m != nil {
 				m.menuGroupName = v.name
 			}
@@ -154,7 +154,7 @@ func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent
 	}
 
 	for _, m := range b.p.models {
-		m, menuItem := b.menuItem(m.uriName, ctx)
+		m, menuItem := b.menuItem(m.uriName, false, ctx)
 		if menuItem == nil {
 			continue
 		}
@@ -181,13 +181,13 @@ func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent
 	return
 }
 
-func (b *MenuOrderBuilder) menuItem(name string, ctx *web.EventContext) (*ModelBuilder, h.HTMLComponent) {
+func (b *MenuOrderBuilder) menuItem(name string, isSub bool, ctx *web.EventContext) (*ModelBuilder, h.HTMLComponent) {
 	m, ok := b.check(name, ctx)
 	if !ok {
 		return m, nil
 	}
 
-	menuItem, err := m.menuItem(ctx, false)
+	menuItem, err := m.menuItem(ctx, isSub)
 	if err != nil {
 		panic(err)
 	}
