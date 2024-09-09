@@ -23,6 +23,9 @@ func WrapperAutoSync(config func(obj interface{}, field *FieldContext, ctx *web.
 	return func(in FieldComponentFunc) FieldComponentFunc {
 		return func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			compo := in(obj, field, ctx)
+			if field.Disabled {
+				return compo
+			}
 
 			cfg := config(obj, field, ctx)
 			if cfg == nil {
@@ -32,21 +35,23 @@ func WrapperAutoSync(config func(obj interface{}, field *FieldContext, ctx *web.
 			checkedFormKey := fmt.Sprintf("%s__AutoSync__", field.FormKey)
 			return h.Div().Class("d-flex align-center ga-2").Children(
 				h.Div().Class("flex-grow-1").Children(compo),
-				h.Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf(`({watch}) => {
+				h.Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf(`({watch,window}) => {
 							if (form[%q] === undefined) {
 								form[%q] = %t;
 							}
-							const _sync = () => {
-								if (!!form[%q]) {
-									form[%q] = %s;
+							window.setTimeout(() => {
+								const _sync = () => {
+									if (!!form[%q]) {
+										form[%q] = %s;
+									}
 								}
-							}
-							watch(() => form[%q], (value) => {
-								_sync()
-							}, { immediate: true })
-							watch(() => form[%q], (value) => {
-								_sync()
-							})
+								watch(() => form[%q], (value) => {
+									_sync()
+								}, { immediate: true })
+								watch(() => form[%q], (value) => {
+									_sync()
+								})
+							}, 10)
 						}`,
 					checkedFormKey,
 					checkedFormKey, cfg.InitialChecked,
