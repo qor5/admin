@@ -473,11 +473,9 @@ func (m *ModelBuilder) DefaultMenuItem(
 		// fontWeight := subMenuFontWeight
 		if isSub {
 			// menuIcon = ""
-		} else {
+		} else if menuIcon == "" {
 			// fontWeight = menuFontWeight
-			if menuIcon == "" {
-				menuIcon = defaultMenuIcon(m.label)
-			}
+			menuIcon = defaultMenuIcon(m.label)
 		}
 		href := m.Info().ListingHref()
 		if m.link != "" {
@@ -682,8 +680,8 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 				Attr("color", "transparent"),
 			// .Attr("v-model:selected", h.JSONString([]string{"Pages"})),
 		).VSlot("{ locals }").Init(
-			fmt.Sprintf(`{ menuOpened:  ["%s"]}`, activeMenuItem),
-			fmt.Sprintf(`{ selection:  ["%s"]}`, selection),
+			fmt.Sprintf(`{ menuOpened:  [%q]}`, activeMenuItem),
+			fmt.Sprintf(`{ selection:  [%q]}`, selection),
 		))
 	return
 }
@@ -925,10 +923,7 @@ func (b *Builder) rightDrawer(ctx *web.EventContext, r *web.EventResponse, comp 
 	r.RunScript = fmt.Sprintf(`setTimeout(function(){ vars.presetsRightDrawer = true,vars.confirmDrawerLeave=false,vars.%s = {} }, 100)`, VarsPresetsDataChanged)
 }
 
-func (b *Builder) contentDrawer(ctx *web.EventContext, r *web.EventResponse, comp h.HTMLComponent, width string) {
-	if width == "" {
-		width = b.rightDrawerWidth
-	}
+func (b *Builder) contentDrawer(ctx *web.EventContext, r *web.EventResponse, comp h.HTMLComponent, _ string) {
 	portalName := ctx.Param(ParamPortalName)
 	p := RightDrawerContentPortalName
 	if portalName != "" {
@@ -1249,7 +1244,7 @@ func (b *Builder) PlainLayout(in web.PageFunc) (out web.PageFunc) {
 					Location(LocationTop),
 			).Attr("v-if", "vars.presetsMessage"),
 			VMain(
-				innerPr.Body.(h.HTMLComponent),
+				innerPr.Body,
 			),
 		).
 			Attr("id", "vt-app").
@@ -1292,9 +1287,9 @@ func (b *Builder) InjectAssets(ctx *web.EventContext) {
 
 	b.InjectExtraAssets(ctx)
 
-	ctx.Injector.TailHTML(strings.Replace(`
+	ctx.Injector.TailHTML(strings.ReplaceAll(`
 			<script src='{{prefix}}/assets/main.js'></script>
-			`, "{{prefix}}", b.prefix, -1))
+			`, "{{prefix}}", b.prefix))
 
 	if b.assetFunc != nil {
 		b.assetFunc(ctx)
@@ -1309,11 +1304,11 @@ func (b *Builder) InjectExtraAssets(ctx *web.EventContext) {
 		}
 
 		if strings.HasSuffix(ea.path, "css") {
-			ctx.Injector.HeadHTML(fmt.Sprintf("<link rel=\"stylesheet\" href=\"%s\">", b.extraFullPath(ea)))
+			ctx.Injector.HeadHTML(fmt.Sprintf("<link rel=\"stylesheet\" href=%q>", b.extraFullPath(ea)))
 			continue
 		}
 
-		ctx.Injector.HeadHTML(fmt.Sprintf("<script src=\"%s\"></script>", b.extraFullPath(ea)))
+		ctx.Injector.HeadHTML(fmt.Sprintf("<script src=%q></script>", b.extraFullPath(ea)))
 	}
 }
 
@@ -1561,7 +1556,7 @@ func redirectSlashes(next http.Handler) http.Handler {
 				path = path[:len(path)-1]
 			}
 			redirectURL := fmt.Sprintf("//%s%s", r.Host, path)
-			http.Redirect(w, r, redirectURL, 301)
+			http.Redirect(w, r, redirectURL, http.StatusMovedPermanently)
 			return
 		}
 		next.ServeHTTP(w, r)
