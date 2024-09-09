@@ -820,7 +820,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 	}
 
 	wh = wh.Limit(perPage).Offset((currentPageInt - 1) * perPage)
-	if err = wh.Find(files).Error; err != nil {
+	if err = wh.Find(&files).Error; err != nil {
 		panic(err)
 	}
 
