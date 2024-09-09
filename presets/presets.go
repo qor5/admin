@@ -60,7 +60,7 @@ type Builder struct {
 	extraAssets                           []*extraAsset
 	assetFunc                             AssetFunc
 	menuGroups                            MenuGroups
-	menuOrder                             []interface{}
+	menuOrder                             *MenuOrderBuilder
 	wrapHandlers                          map[string]func(in http.Handler) (out http.Handler)
 	plugins                               []Plugin
 	notFoundHandler                       http.Handler
@@ -110,6 +110,7 @@ func New() *Builder {
 		},
 		wrapHandlers: make(map[string]func(in http.Handler) (out http.Handler)),
 	}
+	b.menuOrder = newMenuOrderBuilder(b)
 	b.GetWebBuilder().RegisterEventFunc(OpenConfirmDialog, b.openConfirmDialog)
 	b.layoutFunc = b.defaultLayout
 	b.detailLayoutFunc = b.defaultLayout
@@ -352,28 +353,10 @@ func modelNames(ms []*ModelBuilder) (r []string) {
 
 func (b *Builder) MenuGroup(name string) *MenuGroupBuilder {
 	mgb := b.menuGroups.MenuGroup(name)
-	if !b.isMenuGroupInOrder(mgb) {
-		b.menuOrder = append(b.menuOrder, mgb)
+	if !b.menuOrder.isMenuGroupInOrder(mgb) {
+		b.menuOrder.Append(mgb)
 	}
 	return mgb
-}
-
-func (b *Builder) isMenuGroupInOrder(mgb *MenuGroupBuilder) bool {
-	for _, v := range b.menuOrder {
-		if v == mgb {
-			return true
-		}
-	}
-	return false
-}
-
-func (b *Builder) removeMenuGroupInOrder(mgb *MenuGroupBuilder) {
-	for i, om := range b.menuOrder {
-		if om == mgb {
-			b.menuOrder = append(b.menuOrder[:i], b.menuOrder[i+1:]...)
-			break
-		}
-	}
 }
 
 // item can be Slug name, model name, *MenuGroupBuilder
@@ -390,19 +373,7 @@ func (b *Builder) removeMenuGroupInOrder(mgb *MenuGroupBuilder) {
 //
 // )
 func (b *Builder) MenuOrder(items ...interface{}) {
-	for _, item := range items {
-		switch v := item.(type) {
-		case string:
-			b.menuOrder = append(b.menuOrder, v)
-		case *MenuGroupBuilder:
-			if b.isMenuGroupInOrder(v) {
-				b.removeMenuGroupInOrder(v)
-			}
-			b.menuOrder = append(b.menuOrder, v)
-		default:
-			panic(fmt.Sprintf("unknown menu order item type: %T\n", item))
-		}
-	}
+	b.menuOrder.Append(items...)
 }
 
 type defaultMenuIconRE struct {
@@ -543,22 +514,17 @@ func (b *Builder) isMenuItemActive(ctx *web.EventContext, m *ModelBuilder) bool 
 }
 
 func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
-	mMap := make(map[string]*ModelBuilder)
-	for _, m := range b.models {
-		mMap[m.uriName] = m
-	}
 	var (
 		activeMenuItem string
 		selection      string
 	)
 	inOrderMap := make(map[string]struct{})
 	var menus []h.HTMLComponent
-	for _, om := range b.menuOrder {
+	for _, om := range b.menuOrder.order {
 		switch v := om.(type) {
 		case *MenuGroupBuilder:
-			disabled := false
 			if b.verifier.Do(PermList).SnakeOn("mg_"+v.name).WithReq(ctx.R).IsAllowed() != nil {
-				disabled = true
+				continue
 			}
 			groupIcon := v.icon
 			if groupIcon == "" {
@@ -580,20 +546,17 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 			}
 			subCount := 0
 			for _, subOm := range v.subMenuItems {
-				m, ok := mMap[subOm]
+				m, ok := b.menuOrder.check(subOm)
 				if !ok {
-					m = mMap[inflection.Plural(strcase.ToKebab(subOm))]
-				}
-				if m == nil {
 					continue
 				}
 				m.menuGroupName = v.name
-				if m.notInMenu {
+
+				disabled := m.notInMenu || (m.Info().Verifier().Do(PermList).WithReq(ctx.R).IsAllowed() != nil)
+				if disabled {
 					continue
 				}
-				if m.Info().Verifier().Do(PermList).WithReq(ctx.R).IsAllowed() != nil {
-					continue
-				}
+
 				menuItem, err := m.menuItem(ctx, true)
 				if err != nil {
 					panic(err)
@@ -610,28 +573,20 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 			if subCount == 0 {
 				continue
 			}
-			if disabled {
-				continue
-			}
 
 			menus = append(menus,
 				VListGroup(subMenus...).Value(v.name),
 			)
 		case string:
-			m, ok := mMap[v]
+			m, ok := b.menuOrder.check(v)
 			if !ok {
-				m = mMap[inflection.Plural(strcase.ToKebab(v))]
-			}
-			if m == nil {
 				continue
 			}
-			if m.Info().Verifier().Do(PermList).WithReq(ctx.R).IsAllowed() != nil {
+			disabled := m.notInMenu || (m.Info().Verifier().Do(PermList).WithReq(ctx.R).IsAllowed() != nil)
+			if disabled {
 				continue
 			}
 
-			if m.notInMenu {
-				continue
-			}
 			menuItem, err := m.menuItem(ctx, false)
 			if err != nil {
 				panic(err)
@@ -651,11 +606,8 @@ func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 			continue
 		}
 
-		if m.Info().Verifier().Do(PermList).WithReq(ctx.R).IsAllowed() != nil {
-			continue
-		}
-
-		if m.notInMenu {
+		disabled := m.notInMenu || (m.Info().Verifier().Do(PermList).WithReq(ctx.R).IsAllowed() != nil)
+		if disabled {
 			continue
 		}
 
