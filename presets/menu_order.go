@@ -2,6 +2,7 @@ package presets
 
 import (
 	"fmt"
+
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 )
