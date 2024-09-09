@@ -522,9 +522,9 @@ func imageDialog() h.HTMLComponent {
 	).MaxWidth(658).Attr("v-model", "vars.imagePreview")
 }
 
-func (mb *Builder) findData(field string, ctx *web.EventContext,
-	cfg *media_library.MediaBoxConfig, files *[]*media_library.MediaLibrary,
-) (currentPageInt, pagesCount int, err error) {
+func (mb *Builder) mediaLibraryFilter(field string, ctx *web.EventContext,
+	cfg *media_library.MediaBoxConfig,
+) *gorm.DB {
 	var (
 		db = mb.db
 		wh = db.Model(&media_library.MediaLibrary{})
@@ -575,11 +575,6 @@ func (mb *Builder) findData(field string, ctx *web.EventContext,
 		}
 	}
 
-	currentPageInt, _ = strconv.Atoi(ctx.R.FormValue(currentPageName(field)))
-	if currentPageInt == 0 {
-		currentPageInt = 1
-	}
-
 	if len(cfg.Sizes) > 0 {
 		cfg.AllowType = media_library.ALLOW_TYPE_IMAGE
 	}
@@ -596,22 +591,7 @@ func (mb *Builder) findData(field string, ctx *web.EventContext,
 		wh = wh.Where("file::json->>'FileName' ILIKE ?", fmt.Sprintf("%%%s%%", keyword))
 	}
 
-	var count int64
-
-	if err = wh.Count(&count).Error; err != nil {
-		return
-	}
-	perPage := mb.mediaLibraryPerPage
-	pagesCount = int(count/int64(perPage) + 1)
-	if count%int64(perPage) == 0 {
-		pagesCount--
-	}
-
-	wh = wh.Limit(perPage).Offset((currentPageInt - 1) * perPage)
-	if err = wh.Find(files).Error; err != nil {
-		return
-	}
-	return
+	return wh
 }
 
 func (mb *Builder) mediaLibraryTopOperations(clickTabEvent, field string, ctx *web.EventContext,
@@ -803,16 +783,15 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 	cfg *media_library.MediaBoxConfig,
 ) h.HTMLComponent {
 	var (
-		tab                        = ctx.Param(paramTab)
-		parentID                   = ctx.ParamAsInt(ParamParentID)
-		msgr                       = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
-		inMediaLibrary             = strings.Contains(ctx.R.RequestURI, "/"+MediaLibraryURIName)
-		files                      []*media_library.MediaLibrary
-		bc                         h.HTMLComponent
-		hasFolders                 = false
-		hasFiles                   = false
-		err                        error
-		pagesCount, currentPageInt int
+		tab            = ctx.Param(paramTab)
+		parentID       = ctx.ParamAsInt(ParamParentID)
+		msgr           = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
+		inMediaLibrary = strings.Contains(ctx.R.RequestURI, "/"+MediaLibraryURIName)
+		files          []*media_library.MediaLibrary
+		bc             h.HTMLComponent
+		hasFolders     = false
+		hasFiles       = false
+		err            error
 	)
 	if tab == "" {
 		tab = tabFiles
@@ -823,7 +802,25 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 			items...,
 		))
 	}
-	if currentPageInt, pagesCount, err = mb.findData(field, ctx, cfg, &files); err != nil {
+	wh := mb.mediaLibraryFilter(field, ctx, cfg)
+
+	var count int64
+
+	if err = wh.Count(&count).Error; err != nil {
+		panic(err)
+	}
+	perPage := mb.mediaLibraryPerPage
+	pagesCount := int(count/int64(perPage) + 1)
+	if count%int64(perPage) == 0 {
+		pagesCount--
+	}
+	currentPageInt, _ := strconv.Atoi(ctx.R.FormValue(currentPageName(field)))
+	if currentPageInt == 0 {
+		currentPageInt = 1
+	}
+
+	wh = wh.Limit(perPage).Offset((currentPageInt - 1) * perPage)
+	if err = wh.Find(files).Error; err != nil {
 		panic(err)
 	}
 
