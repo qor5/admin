@@ -154,17 +154,12 @@ func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent
 	}
 
 	for _, m := range b.p.models {
-		_, ok := b.check(m.uriName, ctx)
-		if !ok {
+		m, menuItem := b.menuItem(m.uriName, ctx)
+		if menuItem == nil {
 			continue
 		}
-
 		if b.isMenuItemActive(m, ctx) {
 			selection = m.label
-		}
-		menuItem, err := m.menuItem(ctx, false)
-		if err != nil {
-			panic(err)
 		}
 		menus = append(menus, menuItem)
 	}
