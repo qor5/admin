@@ -109,15 +109,11 @@ func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent
 		if b.p.verifier.Do(PermList).SnakeOn("mg_"+v.name).WithReq(ctx.R).IsAllowed() != nil {
 			continue
 		}
-		groupIcon := v.icon
-		if groupIcon == "" {
-			groupIcon = defaultMenuIcon(v.name)
-		}
 		subMenus := []h.HTMLComponent{
 			h.Template(
 				VListItem(
 					web.Slot(
-						VIcon(groupIcon),
+						VIcon(v.icon),
 					).Name("prepend"),
 					VListItemTitle().Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", menuFontWeight)),
 					// VListItemTitle(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, v.name))).
@@ -156,6 +152,9 @@ func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent
 	for _, m := range b.p.models {
 		m, menuItem := b.menuItem(m.uriName, false, ctx)
 		if menuItem == nil {
+			continue
+		}
+		if _, ok := inOrderMap[m.uriName]; ok {
 			continue
 		}
 		if b.isMenuItemActive(m, ctx) {
