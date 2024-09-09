@@ -13,7 +13,8 @@ import (
 )
 
 type MenuOrderBuilder struct {
-	p     *Builder
+	p *Builder
+	// string or *MenuGroupBuilder
 	order []interface{}
 
 	modelMap map[string]*ModelBuilder
@@ -90,54 +91,7 @@ func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent
 	inOrderMap := make(map[string]struct{})
 	var menus []h.HTMLComponent
 	for _, om := range b.order {
-		switch v := om.(type) {
-		case *MenuGroupBuilder:
-			if b.p.verifier.Do(PermList).SnakeOn("mg_"+v.name).WithReq(ctx.R).IsAllowed() != nil {
-				continue
-			}
-			groupIcon := v.icon
-			if groupIcon == "" {
-				groupIcon = defaultMenuIcon(v.name)
-			}
-			subMenus := []h.HTMLComponent{
-				h.Template(
-					VListItem(
-						web.Slot(
-							VIcon(groupIcon),
-						).Name("prepend"),
-						VListItemTitle().Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", menuFontWeight)),
-						// VListItemTitle(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, v.name))).
-					).Attr("v-bind", "props").
-						Title(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)).
-						Class("rounded-lg"),
-					// Value(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)),
-				).Attr("v-slot:activator", "{ props }"),
-			}
-			subCount := 0
-			for _, subOm := range v.subMenuItems {
-				m, menuItem := b.menuItem(subOm, ctx)
-				if m != nil {
-					m.menuGroupName = v.name
-				}
-				if menuItem == nil {
-					continue
-				}
-				subMenus = append(subMenus, menuItem)
-				subCount++
-				inOrderMap[m.uriName] = struct{}{}
-				if b.isMenuItemActive(m, ctx) {
-					activeMenuItem = v.name
-					selection = m.label
-				}
-			}
-			if subCount == 0 {
-				continue
-			}
-
-			menus = append(menus,
-				VListGroup(subMenus...).Value(v.name),
-			)
-		case string:
+		if v, ok := om.(string); ok {
 			m, menuItem := b.menuItem(v, ctx)
 			if menuItem == nil {
 				continue
@@ -148,7 +102,55 @@ func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent
 			if b.isMenuItemActive(m, ctx) {
 				selection = m.label
 			}
+			continue
 		}
+
+		v := om.(*MenuGroupBuilder)
+		if b.p.verifier.Do(PermList).SnakeOn("mg_"+v.name).WithReq(ctx.R).IsAllowed() != nil {
+			continue
+		}
+		groupIcon := v.icon
+		if groupIcon == "" {
+			groupIcon = defaultMenuIcon(v.name)
+		}
+		subMenus := []h.HTMLComponent{
+			h.Template(
+				VListItem(
+					web.Slot(
+						VIcon(groupIcon),
+					).Name("prepend"),
+					VListItemTitle().Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", menuFontWeight)),
+					// VListItemTitle(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, v.name))).
+				).Attr("v-bind", "props").
+					Title(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)).
+					Class("rounded-lg"),
+				// Value(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)),
+			).Attr("v-slot:activator", "{ props }"),
+		}
+		subCount := 0
+		for _, subOm := range v.subMenuItems {
+			m, menuItem := b.menuItem(subOm, ctx)
+			if m != nil {
+				m.menuGroupName = v.name
+			}
+			if menuItem == nil {
+				continue
+			}
+			subMenus = append(subMenus, menuItem)
+			subCount++
+			inOrderMap[m.uriName] = struct{}{}
+			if b.isMenuItemActive(m, ctx) {
+				activeMenuItem = v.name
+				selection = m.label
+			}
+		}
+		if subCount == 0 {
+			continue
+		}
+
+		menus = append(menus,
+			VListGroup(subMenus...).Value(v.name),
+		)
 	}
 
 	for _, m := range b.p.models {
