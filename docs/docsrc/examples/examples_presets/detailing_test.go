@@ -668,7 +668,7 @@ func TestPresetsDetailAfterTitle(t *testing.T) {
 					PageURL("/customers/1?__execute_event__=__reload__").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"After Title"},
+			ExpectPageBodyContainsInOrder: []string{"After Title"},
 		},
 	}
 
