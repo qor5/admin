@@ -7,17 +7,15 @@ import (
 	"strconv"
 	"strings"
 
-	"gorm.io/gorm"
-
-	"github.com/qor5/admin/v3/media/base"
-	"github.com/qor5/admin/v3/presets"
-
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
 
+	"github.com/qor5/admin/v3/media/base"
 	"github.com/qor5/admin/v3/media/media_library"
+	"github.com/qor5/admin/v3/presets"
 )
 
 const (
@@ -109,10 +107,13 @@ type uploadFiles struct {
 
 func uploadFile(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		field := ctx.Param(ParamField)
-		cfg := stringToCfg(ctx.Param(ParamCfg))
-		parentID := ctx.ParamAsInt(ParamParentID)
 
+		var (
+			field    = ctx.Param(ParamField)
+			cfg      = stringToCfg(ctx.Param(ParamCfg))
+			parentID = ctx.ParamAsInt(ParamParentID)
+			msgr     = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
+		)
 		if err = mb.uploadIsAllowed(ctx.R); err != nil {
 			return
 		}
@@ -128,6 +129,10 @@ func uploadFile(mb *Builder) web.EventFunc {
 				m.SelectedType = media_library.ALLOW_TYPE_VIDEO
 			} else {
 				m.SelectedType = media_library.ALLOW_TYPE_FILE
+			}
+			if !mb.checkAllowType(m.SelectedType) {
+				presets.ShowMessage(&r, msgr.UnSupportFileType, "error")
+				return r, nil
 			}
 			err = m.File.Scan(fh)
 			if err != nil {
@@ -566,12 +571,16 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 		wh = wh.Where("folder = ?", false)
 		if selected_type != "" {
 			wh = wh.Where("selected_type = ?", selected_type)
+		} else if len(mb.allowTypes) > 0 {
+			wh = wh.Where("selected_type in ?", mb.allowTypes)
 		}
 
 	} else {
 		wh = wh.Where("parent_id = ? ", parentID)
 		if selected_type != "" {
 			wh = wh.Where("folder = true or (folder = false and selected_type = ? ) ", selected_type)
+		} else if len(mb.allowTypes) > 0 {
+			wh = wh.Where("folder = true or (folder = false and selected_type in ? ) ", mb.allowTypes)
 		}
 		items := parentFolders(field, ctx, cfg, mb.db, uint(parentID), uint(parentID), nil, inMediaLibrary)
 		bc = VBreadcrumbs(
@@ -696,12 +705,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 						),
 					),
 					h.Div(
-						VSelect().Items([]selectItem{
-							{Text: msgr.All, Value: typeAll},
-							{Text: msgr.Images, Value: typeImage},
-							{Text: msgr.Videos, Value: typeVideo},
-							{Text: msgr.Files, Value: typeFile},
-						}).ItemTitle("Text").ItemValue("Value").
+						VSelect().Items(mb.allowTypeSelectOptions(msgr)).ItemTitle("Text").ItemValue("Value").
 							Attr(web.VField(paramTypeKey, typeVal)...).
 							Attr("@update:model-value",
 								web.Plaid().EventFunc(ImageJumpPageEvent).
