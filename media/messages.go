@@ -37,6 +37,7 @@ type Messages struct {
 	UploadFile        string
 	DeleteObjects     func(v int) string
 	MediaLibrary      string
+	UnSupportFileType string
 }
 
 var Messages_en_US = &Messages{
@@ -75,7 +76,8 @@ var Messages_en_US = &Messages{
 		return fmt.Sprintf(`Are you sure you want to delete %v objects`, v)
 	},
 
-	MediaLibrary: "Media Library",
+	MediaLibrary:      "Media Library",
+	UnSupportFileType: "UnSupport FileType",
 }
 
 var Messages_zh_CN = &Messages{
@@ -113,7 +115,8 @@ var Messages_zh_CN = &Messages{
 	DeleteObjects: func(v int) string {
 		return fmt.Sprintf(`是否删除 %v 个条目`, v)
 	},
-	MediaLibrary: "媒体库",
+	MediaLibrary:      "媒体库",
+	UnSupportFileType: "不支持的文件类型",
 }
 
 var Messages_ja_JP = &Messages{
@@ -151,5 +154,6 @@ var Messages_ja_JP = &Messages{
 	DeleteObjects: func(v int) string {
 		return fmt.Sprintf(`Are you sure you want to delete %v objects`, v)
 	},
-	MediaLibrary: "メディアライブラリ",
+	MediaLibrary:      "メディアライブラリ",
+	UnSupportFileType: "サポートされていないファイル形式",
 }
