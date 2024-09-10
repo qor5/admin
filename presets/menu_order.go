@@ -80,17 +80,22 @@ func (b *MenuOrderBuilder) check(item string, ctx *web.EventContext) (*ModelBuil
 }
 
 func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
+	// Initialize modelMap to store mappings between uriName and ModelBuilder
 	b.modelMap = make(map[string]*ModelBuilder)
 	for _, m := range b.p.models {
 		b.modelMap[m.uriName] = m
 	}
+
 	var (
-		activeMenuItem string
-		selection      string
+		activeMenuItem string // Store the currently active menu item
+		selection      string // Store the currently selected menu item
 	)
-	inOrderMap := make(map[string]struct{})
-	var menus []h.HTMLComponent
+	inOrderMap := make(map[string]struct{}) // Track items already added to the menu
+	var menus []h.HTMLComponent             // Holds the list of generated menu components
+
+	// Iterate through the predefined menu order
 	for _, om := range b.order {
+		// If the item is a string, generate a single menu item
 		if v, ok := om.(string); ok {
 			m, menuItem := b.menuItem(v, false, ctx)
 			if menuItem == nil {
@@ -106,9 +111,12 @@ func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent
 		}
 
 		v := om.(*MenuGroupBuilder)
+		// Check if the current user is allowed to see this menu group
 		if b.p.verifier.Do(PermList).SnakeOn("mg_"+v.name).WithReq(ctx.R).IsAllowed() != nil {
 			continue
 		}
+
+		// Prepare the submenu items within this group
 		subMenus := []h.HTMLComponent{
 			h.Template(
 				VListItem(
@@ -116,14 +124,14 @@ func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent
 						VIcon(v.icon),
 					).Name("prepend"),
 					VListItemTitle().Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", menuFontWeight)),
-					// VListItemTitle(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, v.name))).
 				).Attr("v-bind", "props").
 					Title(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)).
 					Class("rounded-lg"),
-				// Value(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)),
 			).Attr("v-slot:activator", "{ props }"),
 		}
 		subCount := 0
+
+		// Add each submenu item to the group
 		for _, subOm := range v.subMenuItems {
 			m, menuItem := b.menuItem(subOm, true, ctx)
 			if m != nil {
@@ -140,15 +148,19 @@ func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent
 				selection = m.label
 			}
 		}
+
+		// If no submenu items are found, skip this group
 		if subCount == 0 {
 			continue
 		}
 
+		// Append the group with its submenus to the main menu list
 		menus = append(menus,
 			VListGroup(subMenus...).Value(v.name),
 		)
 	}
 
+	// Handle any remaining models that haven't been added in order
 	for _, m := range b.p.models {
 		m, menuItem := b.menuItem(m.uriName, false, ctx)
 		if menuItem == nil {
@@ -163,6 +175,7 @@ func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent
 		menus = append(menus, menuItem)
 	}
 
+	// Create the HTML component that represents the menu
 	r = h.Div(
 		web.Scope(
 			VList(menus...).
@@ -172,7 +185,6 @@ func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent
 				Attr("v-model:opened", "locals.menuOpened").
 				Attr("v-model:selected", "locals.selection").
 				Attr("color", "transparent"),
-			// .Attr("v-model:selected", h.JSONString([]string{"Pages"})),
 		).VSlot("{ locals }").Init(
 			fmt.Sprintf(`{ menuOpened:  [%q]}`, activeMenuItem),
 			fmt.Sprintf(`{ selection:  [%q]}`, selection),
