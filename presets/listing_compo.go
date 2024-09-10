@@ -296,6 +296,8 @@ func (c *ListingCompo) filterSearch(ctx context.Context, fd vx.FilterData) h.HTM
 	ft.Add = msgr.FiltersAdd
 	ft.Apply = msgr.FilterApply
 	ft.Date.To = msgr.FiltersDateTo
+	ft.Date.Clear = msgr.FiltersDateClear
+	ft.Date.OK = msgr.FiltersDateOK
 	ft.Number.And = msgr.FiltersNumberAnd
 	ft.Number.Equals = msgr.FiltersNumberEquals
 	ft.Number.Between = msgr.FiltersNumberBetween

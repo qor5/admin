@@ -41,6 +41,8 @@ type Messages struct {
 	FiltersDateMonths                          string
 	FiltersDateAnd                             string
 	FiltersDateTo                              string
+	FiltersDateClear                           string
+	FiltersDateOK                              string
 	FiltersNumberEquals                        string
 	FiltersNumberBetween                       string
 	FiltersNumberGreaterThan                   string
@@ -175,6 +177,8 @@ var Messages_en_US = &Messages{
 	FiltersDateMonths:            "months",
 	FiltersDateAnd:               "and",
 	FiltersDateTo:                "to",
+	FiltersDateClear:             "Clear",
+	FiltersDateOK:                "OK",
 	FiltersNumberEquals:          "is equal to",
 	FiltersNumberBetween:         "between",
 	FiltersNumberGreaterThan:     "is greater than",
@@ -255,6 +259,8 @@ var Messages_zh_CN = &Messages{
 	FiltersDateMonths:            "月",
 	FiltersDateAnd:               "和",
 	FiltersDateTo:                "至",
+	FiltersDateClear:             "清空",
+	FiltersDateOK:                "确定",
 	FiltersNumberEquals:          "等于",
 	FiltersNumberBetween:         "之间",
 	FiltersNumberGreaterThan:     "大于",
@@ -335,6 +341,8 @@ var Messages_ja_JP = &Messages{
 	FiltersDateMonths:            "ヶ月",
 	FiltersDateAnd:               "と",
 	FiltersDateTo:                "に",
+	FiltersDateClear:             "消去する",
+	FiltersDateOK:                "OK",
 	FiltersNumberEquals:          "と同様",
 	FiltersNumberBetween:         "の間",
 	FiltersNumberGreaterThan:     "より大きい",
