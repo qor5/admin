@@ -73,6 +73,7 @@ func (b *Builder) WrapSaverFunc(w func(in SaverFunc) SaverFunc) (r *Builder) {
 	b.saverFunc = w(b.saverFunc)
 	return b
 }
+
 func (b *Builder) FileAccept(v string) *Builder {
 	b.fileAccept = v
 	return b
