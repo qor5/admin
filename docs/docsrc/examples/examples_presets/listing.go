@@ -6,10 +6,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/qor5/admin/v3/media/media_library"
-	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/actions"
-	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	v "github.com/qor5/x/v3/ui/vuetify"
@@ -17,6 +13,11 @@ import (
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/media/media_library"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/admin/v3/presets/gorm2op"
 )
 
 type Customer struct {
@@ -251,6 +252,7 @@ func PresetsListingCustomizationFilters(b *presets.Builder, db *gorm.DB) (
 				ItemType: vuetifyx.ItemTypeDatetimeRange,
 				// SQLCondition: `cast(strftime('%%s', created_at) as INTEGER) %s ?`,
 				SQLCondition: `created_at %s ?`,
+				DateOptions:  &[]vuetifyx.DateOption{{Label: "StartAt"}, {Label: "EndAt"}},
 			},
 			{
 				Key:      "approved",
@@ -258,6 +260,7 @@ func PresetsListingCustomizationFilters(b *presets.Builder, db *gorm.DB) (
 				ItemType: vuetifyx.ItemTypeDatetimeRange,
 				// SQLCondition: `cast(strftime('%%s', created_at) as INTEGER) %s ?`,
 				SQLCondition: `created_at %s ?`,
+				DateOptions:  &[]vuetifyx.DateOption{{Label: "Approved_Start_At"}, {Label: "Approved_End_At"}},
 			},
 			{
 				Key:          "name",
