@@ -429,7 +429,7 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 	}
 
 	disableEditBtn := b.father.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
-	btn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Edit")).Variant("text").
+	btn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Edit")).Variant(VariantFlat).Size(SizeXSmall).
 		PrependIcon("mdi-pencil-outline").
 		Attr("v-show", fmt.Sprintf("%t&&%t", b.componentEditBtnFunc(obj, ctx), !disableEditBtn)).
 		Attr("@click", web.Plaid().
@@ -451,7 +451,6 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 		content.AppendChildren(
 			h.Div(
 				h.If(!b.disableLabel, h.H2(lb).Class("section-title")),
-				h.Div(btn).Class("section-edit-area"),
 			).Class("section-title-wrap"),
 		)
 	}
@@ -463,10 +462,10 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 				VCard(
 					VCardText(
 						h.Div(
-							// detailFields
+							h.Div(btn).Class("section-edit-area"),
 							h.Div(showComponent).
 								Class("flex-grow-1"),
-						).Class("d-flex justify-space-between"),
+						).Class("section-content"),
 					),
 				).Variant(VariantFlat),
 			).Class("section-body"),
