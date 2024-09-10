@@ -79,7 +79,7 @@ func TestPageBuilder(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				return httptest.NewRequest("GET", "/pages", nil)
 			},
-			ExpectPageBodyContainsInOrder: []string{"12312"},
+			ExpectPageBodyContainsInOrder: []string{"ID", "Title", "Live", "12312"},
 		},
 		{
 			Name:  "New Page Dialog",
