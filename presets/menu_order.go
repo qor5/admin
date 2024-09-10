@@ -79,6 +79,22 @@ func (b *MenuOrderBuilder) check(item string, ctx *web.EventContext) (*ModelBuil
 	return m, true
 }
 
+func renderMenus(activeMenuItem, selection string, menus ...h.HTMLComponent) h.HTMLComponent {
+	return h.Div(
+		web.Scope(
+			VList(menus...).
+				OpenStrategy("single").
+				Class("primary--text").
+				Density(DensityCompact).
+				Attr("v-model:opened", "locals.menuOpened").
+				Attr("v-model:selected", "locals.selection").
+				Attr("color", "transparent"),
+		).VSlot("{ locals }").Init(
+			fmt.Sprintf(`{ menuOpened:  [%q]}`, activeMenuItem),
+			fmt.Sprintf(`{ selection:  [%q]}`, selection),
+		))
+}
+
 func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
 	// Initialize modelMap to store mappings between uriName and ModelBuilder
 	b.modelMap = make(map[string]*ModelBuilder)
@@ -176,20 +192,7 @@ func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent
 	}
 
 	// Create the HTML component that represents the menu
-	r = h.Div(
-		web.Scope(
-			VList(menus...).
-				OpenStrategy("single").
-				Class("primary--text").
-				Density(DensityCompact).
-				Attr("v-model:opened", "locals.menuOpened").
-				Attr("v-model:selected", "locals.selection").
-				Attr("color", "transparent"),
-		).VSlot("{ locals }").Init(
-			fmt.Sprintf(`{ menuOpened:  [%q]}`, activeMenuItem),
-			fmt.Sprintf(`{ selection:  [%q]}`, selection),
-		))
-	return
+	return renderMenus(activeMenuItem, selection, menus...)
 }
 
 func (b *MenuOrderBuilder) menuItem(name string, isSub bool, ctx *web.EventContext) (*ModelBuilder, h.HTMLComponent) {
