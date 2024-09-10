@@ -25,6 +25,7 @@ func SamplesHandler(mux examples.Muxer) {
 	addExample(mux, db, PresetsDetailPageDetails)
 	addExample(mux, db, PresetsDetailPageCards)
 	addExample(mux, db, PresetsDetailTabsField)
+	addExample(mux, db, PresetsDetailAfterTitle)
 	addExample(mux, db, PresetsPermissions)
 	addExample(mux, db, PresetsModelBuilderExtensions)
 	addExample(mux, db, PresetsBasicFilter)
