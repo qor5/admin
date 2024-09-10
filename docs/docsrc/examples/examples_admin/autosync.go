@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/qor5/admin/v3/autosync"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3"
@@ -34,12 +35,12 @@ func autoSyncExample(b *presets.Builder, db *gorm.DB, customize func(mb *presets
 
 	mb := b.Model(&WithSlugProduct{})
 
-	lazyWrapperEditCompoSync := presets.WrapperAutoSync(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) *presets.AutoSyncConfig {
-		return &presets.AutoSyncConfig{
+	lazyWrapperEditCompoSync := autosync.NewLazyWrapComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) *autosync.Config {
+		return &autosync.Config{
 			SyncFromFromKey: strings.TrimSuffix(field.FormKey, "Slug"),
-			InitialChecked:  true,
+			InitialChecked:  autosync.InitialCheckedAuto,
 			CheckboxLabel:   "Auto Sync",
-			SyncCall:        presets.SyncCallSlug,
+			SyncCall:        autosync.SyncCallSlug,
 		}
 	})
 

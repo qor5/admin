@@ -19,6 +19,7 @@ import (
 	"github.com/qor/oss/filesystem"
 	"github.com/qor/oss/s3"
 	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/autosync"
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/l10n"
 	plogin "github.com/qor5/admin/v3/login"
@@ -649,12 +650,12 @@ func configPost(
 		}
 	})
 
-	lazyWrapperEditCompoSync := presets.WrapperAutoSync(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) *presets.AutoSyncConfig {
-		return &presets.AutoSyncConfig{
+	lazyWrapperEditCompoSync := autosync.NewLazyWrapComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) *autosync.Config {
+		return &autosync.Config{
 			SyncFromFromKey: strings.TrimSuffix(field.FormKey, "WithSlug"),
-			InitialChecked:  true,
+			InitialChecked:  autosync.InitialCheckedAuto,
 			CheckboxLabel:   "Auto Sync",
-			SyncCall:        presets.SyncCallSlug,
+			SyncCall:        autosync.SyncCallSlug,
 		}
 	})
 	m.Editing().Field("TitleWithSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)
