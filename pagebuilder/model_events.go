@@ -380,8 +380,8 @@ func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.Event
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr    = presets.MustGetMessages(ctx.R)
 		okAction = web.Plaid().
-				URL(b.editorURL()).
-				EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
+			URL(b.editorURL()).
+			EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
 		portalName = dialogPortalName
 	)
 
@@ -630,7 +630,7 @@ func (b *ModelBuilder) containerPreview(ctx *web.EventContext) (r web.EventRespo
 		if cover == "" {
 			cover = path.Join(b.builder.prefix, b.builder.imagesPrefix, strings.ReplaceAll(containerBuilder.name, " ", "")+".svg")
 		}
-		body = VImg().Src(cover)
+		body = VImg().Src(cover).Width("100%").Height(200)
 	} else {
 		previewContainer, err = b.renderPreviewContainer(ctx, obj, locale, false, true)
 		if err != nil {
