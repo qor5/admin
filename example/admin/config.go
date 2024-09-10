@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -18,6 +19,7 @@ import (
 	"github.com/qor/oss/filesystem"
 	"github.com/qor/oss/s3"
 	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/autosync"
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/l10n"
 	plogin "github.com/qor5/admin/v3/login"
@@ -34,7 +36,6 @@ import (
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/richeditor"
 	"github.com/qor5/admin/v3/role"
-	"github.com/qor5/admin/v3/slug"
 	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/admin/v3/worker"
 	"github.com/qor5/web/v3"
@@ -215,8 +216,7 @@ func NewConfig(db *gorm.DB) Config {
 
 	configMenuOrder(b)
 
-	sb := slug.New()
-	configPost(b, db, publisher, ab, sb)
+	configPost(b, db, publisher, ab)
 
 	roleBuilder := role.New(db).
 		Resources([]*v.DefaultOptionItem{
@@ -346,7 +346,6 @@ func NewConfig(db *gorm.DB) Config {
 	configUser(b, ab, db, publisher, loginSessionBuilder)
 
 	b.Use(
-		sb,
 		mediab,
 		microb,
 		ab,
@@ -569,11 +568,10 @@ func configPost(
 	db *gorm.DB,
 	publisher *publish.Builder,
 	ab *activity.Builder,
-	slugBuilder *slug.Builder,
 ) *presets.ModelBuilder {
 	m := b.Model(&models.Post{})
 	defer func() {
-		m.Use(slugBuilder, publisher, ab)
+		m.Use(publisher, ab)
 		m.Detailing().SidePanelFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 			return ab.MustGetModelBuilder(m).NewTimelineCompo(ctx, obj, "_side")
 		})
@@ -652,8 +650,19 @@ func configPost(
 		}
 	})
 
+	lazyWrapperEditCompoSync := autosync.NewLazyWrapComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) *autosync.Config {
+		return &autosync.Config{
+			SyncFromFromKey: strings.TrimSuffix(field.FormKey, "WithSlug"),
+			InitialChecked:  autosync.InitialCheckedAuto,
+			CheckboxLabel:   "Auto Sync",
+			SyncCall:        autosync.SyncCallSlug,
+		}
+	})
+	m.Editing().Field("TitleWithSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)
+
 	dp := m.Detailing(publish.VersionsPublishBar, "Detail").Drawer(true)
-	sb := dp.Section("Detail").Editing("Title", "HeroImage", "Body", "BodyImage")
+	sb := dp.Section("Detail").Editing("Title", "TitleWithSlug", "HeroImage", "Body", "BodyImage")
+	sb.EditingField("TitleWithSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)
 
 	// TODO: need viewing field setting
 	sb.EditingField("HeroImage").
