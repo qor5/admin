@@ -362,7 +362,7 @@ func (c *ListingCompo) toolbarSearch(ctx context.Context) h.HTMLComponent {
 		}
 		textFieldSearch = wrapper
 	}
-	return VToolbar().Flat(true).Color("surface").AutoHeight(true).Class("pa-2").Children(
+	return VToolbar().Flat(true).Color("surface").AutoHeight(true).Class("pa-2").Class("filter-comp-wrap").Children(
 		textFieldSearch,
 		filterSearch,
 	)
