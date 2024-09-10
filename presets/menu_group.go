@@ -29,7 +29,10 @@ func (g *MenuGroups) MenuGroup(name string) (r *MenuGroupBuilder) {
 			return mg
 		}
 	}
-	r = &MenuGroupBuilder{name: name}
+	r = &MenuGroupBuilder{
+		name: name,
+		icon: defaultMenuIcon(name),
+	}
 	g.menuGroups = append(g.menuGroups, r)
 	return
 }

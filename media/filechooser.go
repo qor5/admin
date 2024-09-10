@@ -1,6 +1,7 @@
 package media
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"mime/multipart"
@@ -529,7 +530,7 @@ func (mb *Builder) mediaLibraryFilter(field string, ctx *web.EventContext,
 		db = mb.db
 		wh = db.Model(&media_library.MediaLibrary{})
 
-		tab        = ctx.Param(paramTab)
+		tab        = cmp.Or(ctx.Param(paramTab), tabFiles)
 		orderByVal = ctx.Param(paramOrderByKey)
 		typeVal    = ctx.Param(paramTypeKey)
 		parentID   = ctx.ParamAsInt(ParamParentID)
@@ -601,14 +602,19 @@ func (mb *Builder) mediaLibraryTopOperations(clickTabEvent, field string, ctx *w
 		msgr           = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 		inMediaLibrary = strings.Contains(ctx.R.RequestURI, "/"+MediaLibraryURIName)
 
-		tab        = ctx.Param(paramTab)
+		tab        = cmp.Or(ctx.Param(paramTab), tabFiles)
 		orderByVal = ctx.Param(paramOrderByKey)
 		typeVal    = ctx.Param(paramTypeKey)
 		parentID   = ctx.ParamAsInt(ParamParentID)
+		fileAccept string
 	)
-	fileAccept := "*/*"
-	if cfg.AllowType == media_library.ALLOW_TYPE_IMAGE {
-		fileAccept = "image/*"
+	if mb.fileAccept != "" {
+		fileAccept = mb.fileAccept
+	} else {
+		fileAccept = "*/*"
+		if cfg.AllowType == media_library.ALLOW_TYPE_IMAGE {
+			fileAccept = "image/*"
+		}
 	}
 	return VRow(
 		h.If(!inMediaLibrary,
@@ -713,7 +719,7 @@ func (mb *Builder) mediaLibraryBottomOperations(field string, ctx *web.EventCont
 	var (
 		msgr = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 
-		tab      = ctx.Param(paramTab)
+		tab      = cmp.Or(ctx.Param(paramTab), tabFiles)
 		parentID = ctx.ParamAsInt(ParamParentID)
 	)
 	return VRow(
@@ -783,7 +789,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 	cfg *media_library.MediaBoxConfig,
 ) h.HTMLComponent {
 	var (
-		tab            = ctx.Param(paramTab)
+		tab            = cmp.Or(ctx.Param(paramTab), tabFiles)
 		parentID       = ctx.ParamAsInt(ParamParentID)
 		msgr           = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 		inMediaLibrary = strings.Contains(ctx.R.RequestURI, "/"+MediaLibraryURIName)
@@ -793,9 +799,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 		hasFiles       = false
 		err            error
 	)
-	if tab == "" {
-		tab = tabFiles
-	}
+
 	if tab == tabFolders {
 		items := parentFolders(field, ctx, cfg, mb.db, uint(parentID), uint(parentID), nil, inMediaLibrary)
 		bc = h.If(len(items) > 0, VBreadcrumbs(

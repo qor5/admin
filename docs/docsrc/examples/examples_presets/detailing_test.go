@@ -653,3 +653,28 @@ func TestPresetsDetailTabsSection(t *testing.T) {
 		})
 	}
 }
+
+func TestPresetsDetailAfterTitle(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsDetailAfterTitle(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "detail without drawer after title",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				customerData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers/1?__execute_event__=__reload__").
+					BuildEventFuncRequest()
+			},
+			ExpectPageBodyContainsInOrder: []string{"After Title"},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}
