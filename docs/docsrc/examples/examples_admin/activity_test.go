@@ -21,31 +21,33 @@ INSERT INTO "public"."with_activity_products" ("id", "created_at", "updated_at",
 ('17', '2024-07-16 03:10:10.242888+00', '2024-07-16 03:10:10.242888+00', NULL, 'Reebok Classic Leather', '10005', '90'),
 ('18', '2024-07-16 03:15:10.242888+00', '2024-07-16 03:15:10.242888+00', NULL, 'Asics Gel Lyte III', '10006', '120'),
 ('19', '2024-07-16 03:20:10.242888+00', '2024-07-16 03:20:10.242888+00', NULL, 'New Balance 574', '10007', '130'),
-('20', '2024-07-16 03:25:10.242888+00', '2024-07-16 03:25:10.242888+00', NULL, 'Converse Chuck Taylor All Star', '10008', '70'),
+('20', '2024-07-16 03:25:10.242888+00', '2024-09-10 09:19:57.192539+00', NULL, 'Converse Chuck Taylor All Star', '10008', '72'),
 ('21', '2024-07-16 03:30:10.242888+00', '2024-07-16 03:30:10.242888+00', NULL, 'Vans Old Skool', '10009', '60'),
-('22', '2024-07-16 03:35:10.242888+00', '2024-07-16 03:35:10.242888+00', NULL, 'Jordan 1 Retro High', '10010', '250'),
+('22', '2024-07-16 03:35:10.242888+00', '2024-09-10 09:19:40.596903+00', NULL, 'Jordan 1 Retro High', '10010', '251'),
 ('23', '2024-07-16 03:40:10.242888+00', '2024-07-16 03:40:10.242888+00', NULL, 'Under Armour Curry 7', '10011', '140');
 
 INSERT INTO "activity_users" ("id", "created_at", "updated_at", "deleted_at", "name", "avatar") VALUES ('1', '2024-07-26 08:03:52.17526+00', '2024-07-30 07:59:17.439158+00', NULL, 'John', 'https://i.pravatar.cc/300');
 
-INSERT INTO "public"."activity_logs" ("id", "created_at", "updated_at", "deleted_at", "user_id", "action", "hidden", "model_name", "model_keys", "model_label", "model_link", "detail", "scope") VALUES 
-('29', '2024-07-16 02:50:10.250739+00', '2024-07-16 02:50:10.251259+00', NULL, '1', 'Create', 'f', 'WithActivityProduct', '13', 'with-activity-products', '/examples/activity-example/with-activity-products/13', 'null', ',ownerID:1,'),
-('45', '2024-07-16 02:56:45.176698+00', '2024-07-16 02:56:45.177268+00', NULL, '1', 'Note', 'f', 'WithActivityProduct', '13', 'with-activity-products', '/examples/activity-example/with-activity-products/13', '{"note":"The newest model of the off-legacy Air Jordans is ready to burst onto to the scene.","last_edited_at":"0001-01-01T00:00:00Z"}', ',ownerID:1,'),
-('44', '2024-07-16 02:56:42.273117+00', '2024-07-16 02:56:42.275043+00', NULL, '1', 'LastView', 't', 'WithActivityProduct', '13', 'with-activity-products', '/examples/activity-example/with-activity-products/13', 'null', ',ownerID:1,'),
+INSERT INTO "public"."activity_logs" ("id", "created_at", "updated_at", "deleted_at", "user_id", "action", "hidden", "model_name", "model_keys", "model_label", "model_link", "detail", "scope") VALUES ('29', '2024-07-16 02:50:10.250739+00', '2024-07-16 02:50:10.251259+00', NULL, '1', 'Create', 'f', 'WithActivityProduct', '13', 'with-activity-products', '/examples/activity-example/with-activity-products/13', 'null', ',ownerID:1,'),
 ('30', '2024-07-16 02:55:10.250739+00', '2024-07-16 02:55:10.251259+00', NULL, '1', 'Create', 'f', 'WithActivityProduct', '14', 'with-activity-products', '/examples/activity-example/with-activity-products/14', 'null', ',ownerID:1,'),
-('43', '2024-07-16 02:56:16.18094+00', '2024-07-16 02:56:16.184033+00', NULL, '1', 'LastView', 't', 'WithActivityProduct', '15', 'with-activity-products', '/examples/activity-example/with-activity-products/15', 'null', ',ownerID:1,'),
 ('31', '2024-07-16 03:00:10.250739+00', '2024-07-16 03:00:10.251259+00', NULL, '1', 'Create', 'f', 'WithActivityProduct', '15', 'with-activity-products', '/examples/activity-example/with-activity-products/15', 'null', ',ownerID:1,'),
 ('32', '2024-07-16 03:05:10.250739+00', '2024-07-16 03:05:10.251259+00', NULL, '1', 'Create', 'f', 'WithActivityProduct', '16', 'with-activity-products', '/examples/activity-example/with-activity-products/16', 'null', ',ownerID:1,'),
 ('33', '2024-07-16 03:10:10.250739+00', '2024-07-16 03:10:10.251259+00', NULL, '1', 'Create', 'f', 'WithActivityProduct', '17', 'with-activity-products', '/examples/activity-example/with-activity-products/17', 'null', ',ownerID:1,'),
 ('34', '2024-07-16 03:15:10.250739+00', '2024-07-16 03:15:10.251259+00', NULL, '1', 'Create', 'f', 'WithActivityProduct', '18', 'with-activity-products', '/examples/activity-example/with-activity-products/18', 'null', ',ownerID:1,'),
 ('35', '2024-07-16 03:20:10.250739+00', '2024-07-16 03:20:10.251259+00', NULL, '1', 'Create', 'f', 'WithActivityProduct', '19', 'with-activity-products', '/examples/activity-example/with-activity-products/19', 'null', ',ownerID:1,'),
-('42', '2024-07-16 02:56:11.064742+00', '2024-07-16 02:56:11.067334+00', NULL, '1', 'LastView', 't', 'WithActivityProduct', '19', 'with-activity-products', '/examples/activity-example/with-activity-products/19', 'null', ',ownerID:1,'),
 ('36', '2024-07-16 03:25:10.250739+00', '2024-07-16 03:25:10.251259+00', NULL, '1', 'Create', 'f', 'WithActivityProduct', '20', 'with-activity-products', '/examples/activity-example/with-activity-products/20', 'null', ',ownerID:1,'),
 ('37', '2024-07-16 03:30:10.250739+00', '2024-07-16 03:30:10.251259+00', NULL, '1', 'Create', 'f', 'WithActivityProduct', '21', 'with-activity-products', '/examples/activity-example/with-activity-products/21', 'null', ',ownerID:1,'),
-('41', '2024-07-16 02:55:56.551122+00', '2024-07-16 02:55:56.55248+00', NULL, '1', 'LastView', 't', 'WithActivityProduct', '22', 'with-activity-products', '/examples/activity-example/with-activity-products/22', 'null', ',ownerID:1,'),
 ('38', '2024-07-16 03:35:10.250739+00', '2024-07-16 03:35:10.251259+00', NULL, '1', 'Create', 'f', 'WithActivityProduct', '22', 'with-activity-products', '/examples/activity-example/with-activity-products/22', 'null', ',ownerID:1,'),
+('39', '2024-07-16 03:40:10.250739+00', '2024-07-16 03:40:10.251259+00', NULL, '1', 'Create', 'f', 'WithActivityProduct', '23', 'with-activity-products', '/examples/activity-example/with-activity-products/23', 'null', ',ownerID:1,'),
 ('40', '2024-07-16 02:55:26.074417+00', '2024-07-16 02:55:26.075726+00', NULL, '1', 'LastView', 't', 'WithActivityProduct', '23', 'with-activity-products', '/examples/activity-example/with-activity-products/23', 'null', ',ownerID:1,'),
-('39', '2024-07-16 03:40:10.250739+00', '2024-07-16 03:40:10.251259+00', NULL, '1', 'Create', 'f', 'WithActivityProduct', '23', 'with-activity-products', '/examples/activity-example/with-activity-products/23', 'null', ',ownerID:1,');
+('41', '2024-09-10 09:19:30.248075+00', '2024-09-10 09:19:30.250049+00', NULL, '1', 'LastView', 't', 'WithActivityProduct', '22', 'with-activity-products', '/examples/activity-example/with-activity-products/22', 'null', ',ownerID:1,'),
+('42', '2024-07-16 02:56:11.064742+00', '2024-07-16 02:56:11.067334+00', NULL, '1', 'LastView', 't', 'WithActivityProduct', '19', 'with-activity-products', '/examples/activity-example/with-activity-products/19', 'null', ',ownerID:1,'),
+('43', '2024-07-16 02:56:16.18094+00', '2024-07-16 02:56:16.184033+00', NULL, '1', 'LastView', 't', 'WithActivityProduct', '15', 'with-activity-products', '/examples/activity-example/with-activity-products/15', 'null', ',ownerID:1,'),
+('44', '2024-07-16 02:56:42.273117+00', '2024-07-16 02:56:42.275043+00', NULL, '1', 'LastView', 't', 'WithActivityProduct', '13', 'with-activity-products', '/examples/activity-example/with-activity-products/13', 'null', ',ownerID:1,'),
+('45', '2024-07-16 02:56:45.176698+00', '2024-07-16 02:56:45.177268+00', NULL, '1', 'Note', 'f', 'WithActivityProduct', '13', 'with-activity-products', '/examples/activity-example/with-activity-products/13', '{"note":"The newest model of the off-legacy Air Jordans is ready to burst onto to the scene.","last_edited_at":"0001-01-01T00:00:00Z"}', ',ownerID:1,'),
+('85', '2024-09-10 09:19:40.602161+00', '2024-09-10 09:19:40.60246+00', NULL, '1', 'Edit', 'f', 'WithActivityProduct', '22', 'with-activity-products', '/examples/activity-example/with-activity-products/22', '[{"Field":"Price","Old":"250","New":"251"}]', ',ownerID:1,'),
+('86', '2024-09-10 09:19:52.521799+00', '2024-09-10 09:19:52.522825+00', NULL, '1', 'LastView', 't', 'WithActivityProduct', '20', 'with-activity-products', '/examples/activity-example/with-activity-products/20', 'null', ',ownerID:1,'),
+('87', '2024-09-10 09:19:57.195723+00', '2024-09-10 09:19:57.195937+00', NULL, '1', 'Edit', 'f', 'WithActivityProduct', '20', 'with-activity-products', '/examples/activity-example/with-activity-products/20', '[{"Field":"Price","Old":"70","New":"72"}]', ',ownerID:1,');
 `, []string{"with_activity_products", "activity_logs", "activity_users"}))
 
 func TestActivity(t *testing.T) {
@@ -348,6 +350,18 @@ func TestActivityAdmin(t *testing.T) {
 				return req
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"WithActivityProduct", "45", "A updated note", "edited at now"},
+		},
+		{
+			Name:  "Activity log detail for edit action",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				// activityData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/activity-logs?__execute_event__=presets_DetailingDrawer&id=87").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"WithActivityProduct", "87", "<td>Price</td>", "<td v-pre>70</td>", "<td v-pre>72</td>"},
 		},
 	}
 
