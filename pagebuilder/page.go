@@ -82,9 +82,9 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 		).Class("d-inline-flex align-center")
 	})
 	// register modelBuilder
-	names := []string{"Title", "CategoryID", "Slug"}
+	names := []interface{}{"Title", "CategoryID", "Slug"}
 	if b.templateEnabled {
-		names = append([]string{PageTemplateSelectionFiled}, names...)
+		names = append([]interface{}{PageTemplateSelectionFiled}, names...)
 	}
 	lb.WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
@@ -94,7 +94,7 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 			"Path":  msgr.ListHeaderPath,
 		}, nil
 	}))
-	eb := pm.Editing().Creating(names)
+	eb := pm.Editing().Creating(names...)
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		c := obj.(*Page)
 		err = pageValidator(ctx, c, db, b.l10n)
