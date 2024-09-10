@@ -606,10 +606,15 @@ func (mb *Builder) mediaLibraryTopOperations(clickTabEvent, field string, ctx *w
 		orderByVal = ctx.Param(paramOrderByKey)
 		typeVal    = ctx.Param(paramTypeKey)
 		parentID   = ctx.ParamAsInt(ParamParentID)
+		fileAccept string
 	)
-	fileAccept := "*/*"
-	if cfg.AllowType == media_library.ALLOW_TYPE_IMAGE {
-		fileAccept = "image/*"
+	if mb.fileAccept != "" {
+		fileAccept = mb.fileAccept
+	} else {
+		fileAccept = "*/*"
+		if cfg.AllowType == media_library.ALLOW_TYPE_IMAGE {
+			fileAccept = "image/*"
+		}
 	}
 	return VRow(
 		h.If(!inMediaLibrary,

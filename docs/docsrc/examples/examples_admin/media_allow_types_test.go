@@ -38,7 +38,7 @@ func TestMediaAllowTypesExample(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPageBodyContainsInOrder: []string{"test_video.mp4", "test_image.png"},
+			ExpectPageBodyContainsInOrder: []string{"image/*,video/*", "test_video.mp4", "test_image.png"},
 			ExpectPageBodyNotContains:     []string{"test_file.text"},
 		},
 		{
