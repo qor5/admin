@@ -60,7 +60,7 @@ func defaultToPage(config commonPageConfig, obj interface{}, ctx *web.EventConte
 						VCol(sidePanel).Attr(":cols", `width>900?4:12`).Attr(":class", `width > 900 ? 'pl-12 pt-23': ''`),
 					),
 				),
-			).Class("pt-0 px-2")
+			).Class("page-content-layout")
 		}
 	}
 	return asideContent
