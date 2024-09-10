@@ -349,7 +349,7 @@ func TestActivityAdmin(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"WithActivityProduct", "45", "A updated note", "edited at now"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Activity Log", "45", "A updated note", "edited at now"},
 		},
 		{
 			Name:  "Activity log detail for edit action",
@@ -361,7 +361,7 @@ func TestActivityAdmin(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"WithActivityProduct", "87", "<td>Price</td>", "<td v-pre>70</td>", "<td v-pre>72</td>"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Activity Log", "87", "<td>Price</td>", "<td v-pre>70</td>", "<td v-pre>72</td>"},
 		},
 	}
 
