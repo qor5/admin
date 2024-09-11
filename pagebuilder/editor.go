@@ -174,6 +174,18 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 					Permanent(true).
 					Width(350),
 				VNavigationDrawer(
+					h.Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf(`({el}) => {
+						el.__handleScroll = (event) => {
+							locals.__pageBuilderRightContentScrollTop = event.target.scrollTop;
+						}
+						el.parentElement.addEventListener('scroll', el.__handleScroll)
+
+						locals.__pageBuilderRightContentKeepScroll = () => {
+							el.parentElement.scrollTop = locals.__pageBuilderRightContentScrollTop;
+						}
+					}`)).Attr("v-on-unmounted", `({el}) => {
+						el.parentElement.removeEventListener('scroll', el.__handleScroll);
+					}`),
 					web.Portal(editContainerDrawer).Name(pageBuilderRightContentPortal),
 				).Location(LocationRight).
 					Permanent(true).
