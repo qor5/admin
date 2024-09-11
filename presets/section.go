@@ -462,7 +462,7 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 				VCard(
 					VCardText(
 						h.Div(
-							h.Div(btn).Class("section-edit-area"),
+							h.Div(btn).Class("section-edit-area top-area"),
 							h.Div(showComponent).
 								Class("flex-grow-1"),
 						).Class("section-content"),
@@ -524,10 +524,6 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 		content.AppendChildren(
 			h.Div(
 				h.H2(lb).Class("section-title"),
-				h.Div(
-					cancelBtn,
-					saveBtn.Class("ml-4"),
-				).Class("section-edit-area"),
 			).Class("section-title-wrap"),
 		)
 	}
@@ -541,6 +537,10 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 							// detailFields
 							h.Div(b.componentEditFunc(obj, field, ctx)).
 								Class("flex-grow-1"),
+							h.Div(
+								cancelBtn,
+								saveBtn.Class("ml-2"),
+							).Class("section-edit-area bottom-area"),
 						).Class("d-flex flex-column"),
 					),
 				).Variant(VariantOutlined),
@@ -642,7 +642,7 @@ func (b *SectionBuilder) listComponent(obj interface{}, ctx *web.EventContext, d
 	}
 
 	lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.father.mb.label, b.label)
-	label := h.Div(h.Span(lb).Style("fontSize:16px; font-weight:500;")).Class("mb-2")
+	label := h.Div(h.H2(lb).Class("section-title")).Class("section-title-wrap")
 	rows := h.Div()
 
 	if b.alwaysShowListLabel && !b.disableLabel {
@@ -749,10 +749,9 @@ func (b *SectionBuilder) FieldPortalName() string {
 }
 
 func (b *SectionBuilder) showElement(obj any, index int, ctx *web.EventContext) h.HTMLComponent {
-	editBtn := VBtn("").Size(SizeXSmall).Variant("text").
-		Rounded("0").
-		Icon("mdi-square-edit-outline").
-		Attr("v-show", fmt.Sprintf("isHovering&&%t", b.elementEditBtn)).
+	editBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Edit")).Variant(VariantFlat).Size(SizeXSmall).
+		PrependIcon("mdi-pencil-outline").
+		Attr("v-show", fmt.Sprintf("%t", b.elementEditBtn)).
 		Attr("@click", web.Plaid().
 			URL(ctx.R.URL.Path).
 			EventFunc(actions.DoEditDetailingListField).
@@ -770,20 +769,18 @@ func (b *SectionBuilder) showElement(obj any, index int, ctx *web.EventContext) 
 	}, ctx)
 
 	return web.Portal(
-		VHover(
 			web.Slot(
 				VCard(
 					VCardText(
 						h.Div(
+							h.Div(editBtn).Class("section-edit-area top-area"),
 							h.Div(content).Class("flex-grow-1 pr-3"),
-							h.Div(editBtn),
-						).Class("d-flex justify-space-between"),
+						).Class("d-flex justify-space-between section-content"),
 					),
-				).Class("mb-2").Hover(b.elementHover).
-					Attr("v-bind", "props").
-					Variant(VariantOutlined),
+				).Class("mb-4 section-body").
+					Variant(VariantFlat).
+					Attr("v-bind", "props"),
 			).Name("default").Scope("{ isHovering, props }"),
-		),
 	).Name(b.ListElementPortalName(index))
 }
 
@@ -838,7 +835,7 @@ func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, ctx *we
 		h.Div(deleteBtn).Class("d-flex pl-3"),
 	).Class("d-flex justify-space-between mb-4")
 
-	cancelBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Cancel")).Size(SizeSmall).Variant(VariantFlat).Color(ColorSecondaryDarken2).
+	cancelBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Cancel")).Size(SizeSmall).Variant(VariantFlat).Color(ColorGreyLighten3).
 		Attr("style", "text-transform: none;").
 		Attr("@click", cancelEvent)
 
@@ -853,7 +850,7 @@ func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, ctx *we
 	if isCreated {
 		saveEvent = showAddBtn + saveEvent
 	}
-	saveBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Save")).Size(SizeSmall).Variant(VariantFlat).Color(ColorSecondaryDarken2).
+	saveBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Save")).PrependIcon("mdi-check").Size(SizeSmall).Variant(VariantFlat).Color(ColorPrimary).
 		Attr("style", "text-transform: none;").
 		Attr("@click", saveEvent)
 
@@ -864,11 +861,11 @@ func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, ctx *we
 				h.Div(
 					cancelBtn,
 					saveBtn.Class("ml-2"),
-				).Class("ms-auto"),
+				).Class("section-edit-area bottom-area"),
 			).Class("d-flex flex-column"),
 		),
 		h.Input("").Type("hidden").Attr(web.VField(b.ListElementIsEditing(index), true)...),
-	).Variant(VariantOutlined).Class("mb-2")
+	).Variant(VariantOutlined).Class("mb-4 section-body")
 
 	return web.Portal(
 		card,
