@@ -926,14 +926,21 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 		if portalName := ctx.Param(presets.ParamPortalName); portalName != pageBuilderRightContentPortal {
 			return nil
 		}
-		return web.Listen(
-			b.mb.NotifRowUpdated(),
-			web.Plaid().
-				URL(b.mb.Info().ListingHref()).
-				EventFunc(actions.Update).
-				Query(presets.ParamID, web.Var("payload.id")).
-				ThenScript(web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).Query(paramStatus, ctx.Param(paramStatus)).MergeQuery(true).Go()).
-				Go(),
+		return h.Components(
+			h.Div().Attr("v-on-mounted", `() => {
+				if (!!locals.__rightContentPortalScrollTo) {
+					locals.__rightContentPortalScrollTo();
+				}
+			}`),
+			web.Listen(
+				b.mb.NotifRowUpdated(),
+				web.Plaid().
+					URL(b.mb.Info().ListingHref()).
+					EventFunc(actions.Update).
+					Query(presets.ParamID, web.Var("payload.id")).
+					ThenScript(web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).Query(paramStatus, ctx.Param(paramStatus)).MergeQuery(true).Go()).
+					Go(),
+			),
 		)
 	})
 	val := reflect.ValueOf(m)
