@@ -131,14 +131,15 @@ func withLocale(builder *Builder, wh *gorm.DB, locale string) *gorm.DB {
 }
 
 func (b *ModelBuilder) addContainerToPage(ctx *web.EventContext, pageID int, containerID, pageVersion, locale, modelName string) (modelID uint, newContainerID string, err error) {
-	model := b.builder.ContainerByName(modelName).NewModel()
+	containerMb := b.builder.ContainerByName(modelName)
+	model := containerMb.NewModel()
 	var dc DemoContainer
 	b.db.Where("model_name = ? AND locale_code = ?", modelName, locale).First(&dc)
 	if dc.ID != 0 && dc.ModelID != 0 {
 		b.db.Where("id = ?", dc.ModelID).First(model)
 		reflectutils.Set(model, "ID", uint(0))
 	}
-	err = b.db.Create(model).Error
+	err = containerMb.Editing().Creating().Saver(model, "", ctx)
 	if err != nil {
 		return
 	}
