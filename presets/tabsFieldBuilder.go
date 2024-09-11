@@ -11,11 +11,31 @@ import (
 
 type TabsFieldBuilder struct {
 	FieldBuilder
+
+	tabsOrderFunc func(obj interface{}, field *FieldContext, ctx *web.EventContext) []string
+
 	TabName           []string
 	TabComponentFuncs []FieldComponentFunc
 }
 
-func (tb *TabsFieldBuilder) appendTabField(tabName string, comp FieldComponentFunc) {
+type TabFieldBuilder struct {
+	TabName           string
+	TabComponentFuncs FieldComponentFunc
+}
+
+func NewTabsFieldBuilder() *TabsFieldBuilder {
+	return &TabsFieldBuilder{}
+}
+
+func (tb *TabsFieldBuilder) TabsOrderFunc(v func(obj interface{}, field *FieldContext, ctx *web.EventContext) []string) *TabsFieldBuilder {
+	if v == nil {
+		panic("value required")
+	}
+	tb.tabsOrderFunc = v
+	return tb
+}
+
+func (tb *TabsFieldBuilder) AppendTabField(tabName string, comp FieldComponentFunc) {
 	tb.TabName = append(tb.TabName, tabName)
 	tb.TabComponentFuncs = append(tb.TabComponentFuncs, comp)
 }
@@ -23,9 +43,29 @@ func (tb *TabsFieldBuilder) appendTabField(tabName string, comp FieldComponentFu
 func (tb *TabsFieldBuilder) ComponentFunc() FieldComponentFunc {
 	return func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		var tabs, contents h.HTMLComponents
-		for _, name := range tb.TabName {
-			tabs = append(tabs, v.VTab(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, name))).Value(name))
+		if tb.tabsOrderFunc == nil {
+			for i, name := range tb.TabName {
+				tabs = append(tabs, v.VTab(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, name))).Value(name))
+				contents = append(contents,
+					v.VTabsWindowItem(
+						tb.TabComponentFuncs[i](obj, field, ctx),
+					).Value(tb.TabName[i]))
+			}
+		} else {
+			tabsOrder := tb.tabsOrderFunc(obj, field, ctx)
+			for _, tab := range tabsOrder {
+				for i, name := range tb.TabName {
+					if name == tab {
+						tabs = append(tabs, v.VTab(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, name))).Value(name))
+						contents = append(contents,
+							v.VTabsWindowItem(
+								tb.TabComponentFuncs[i](obj, field, ctx),
+							).Value(tb.TabName[i]))
+					}
+				}
+			}
 		}
+
 		for i, comp := range tb.TabComponentFuncs {
 			contents = append(contents,
 				v.VTabsWindowItem(

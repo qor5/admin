@@ -280,7 +280,13 @@ func (b *FieldBuilder) AppendTabs(fb *FieldBuilder) (r *FieldBuilder) {
 	if b.tabFieldsBuilders == nil {
 		b.tabFieldsBuilders = new(TabsFieldBuilder)
 	}
-	b.tabFieldsBuilders.appendTabField(fb.name, fb.compFunc)
+	b.tabFieldsBuilders.AppendTabField(fb.name, fb.compFunc)
+	b.ComponentFunc(b.tabFieldsBuilders.ComponentFunc())
+	return b
+}
+
+func (b *FieldBuilder) Tab(fb *TabsFieldBuilder) (r *FieldBuilder) {
+	b.tabFieldsBuilders = fb
 	b.ComponentFunc(b.tabFieldsBuilders.ComponentFunc())
 	return b
 }
