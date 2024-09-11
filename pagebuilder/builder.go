@@ -927,7 +927,7 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 			return nil
 		}
 		return h.Components(
-			h.Div().Attr("v-on-mounted", `() => {
+			h.Div().Style("display:none").Attr("v-on-mounted", `() => {
 				if (!!locals.__pageBuilderRightContentKeepScroll) {
 					locals.__pageBuilderRightContentKeepScroll();
 				}

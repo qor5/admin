@@ -174,7 +174,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 					Permanent(true).
 					Width(350),
 				VNavigationDrawer(
-					h.Div().Attr("v-on-mounted", fmt.Sprintf(`({el}) => {
+					h.Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf(`({el}) => {
 						el.__handleScroll = (event) => {
 							locals.__pageBuilderRightContentScrollTop = event.target.scrollTop;
 						}
