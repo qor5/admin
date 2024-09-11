@@ -928,8 +928,8 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 		}
 		return h.Components(
 			h.Div().Attr("v-on-mounted", `() => {
-				if (!!locals.__pageBuilderRightContentScrollTop) {
-					locals.__pageBuilderRightContentScrollTop();
+				if (!!locals.__pageBuilderRightContentKeepScroll) {
+					locals.__pageBuilderRightContentKeepScroll();
 				}
 			}`),
 			web.Listen(

@@ -176,12 +176,12 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 				VNavigationDrawer(
 					h.Div().Attr("v-on-mounted", fmt.Sprintf(`({el}) => {
 						el.__handleScroll = (event) => {
-							locals.__pageBuilderRightContentScrollTopp = event.target.scrollTop;
+							locals.__pageBuilderRightContentScrollTop = event.target.scrollTop;
 						}
 						el.parentElement.addEventListener('scroll', el.__handleScroll)
 
-						locals.__pageBuilderRightContentScrollTop = () => {
-							el.parentElement.scrollTop = locals.__pageBuilderRightContentScrollTopp;
+						locals.__pageBuilderRightContentKeepScroll = () => {
+							el.parentElement.scrollTop = locals.__pageBuilderRightContentScrollTop;
 						}
 					}`)).Attr("v-on-unmounted", `({el}) => {
 						el.parentElement.removeEventListener('scroll', el.__handleScroll);
