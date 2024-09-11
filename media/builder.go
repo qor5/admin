@@ -101,10 +101,10 @@ func (b *Builder) allowTypeSelectOptions(msgr *Messages) (items []selectItem) {
 				selectItem{Text: msgr.Images, Value: typeImage})
 		case media_library.ALLOW_TYPE_VIDEO:
 			items = append(items,
-				selectItem{Text: msgr.Images, Value: typeVideo})
+				selectItem{Text: msgr.Videos, Value: typeVideo})
 		case media_library.ALLOW_TYPE_FILE:
 			items = append(items,
-				selectItem{Text: msgr.Images, Value: typeFile})
+				selectItem{Text: msgr.Files, Value: typeFile})
 
 		}
 	}
