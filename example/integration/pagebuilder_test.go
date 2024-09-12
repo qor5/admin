@@ -736,9 +736,7 @@ func TestPageBuilder(t *testing.T) {
 				return req
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
-				var (
-					count int64
-				)
+				var count int64
 				TestDB.Model(&pagebuilder.Category{}).Where("id=1 and locale_code='International'").Count(&count)
 				if count != 1 {
 					t.Fatalf("category is Delete ")
@@ -760,9 +758,7 @@ func TestPageBuilder(t *testing.T) {
 				return req
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
-				var (
-					count int64
-				)
+				var count int64
 				TestDB.Model(&pagebuilder.Category{}).Where("id=2 and locale_code='International'").Count(&count)
 				if count != 0 {
 					t.Fatalf("category is  Not Deleted count: %d ", count)
