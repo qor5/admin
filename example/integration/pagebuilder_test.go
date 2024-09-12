@@ -779,7 +779,46 @@ func TestPageBuilder(t *testing.T) {
 			},
 			ExpectPageBodyContainsInOrder: []string{`=== "PageTitle"`},
 		},
+		{
+			Name:  "Container Header Editing",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/headers").
+					EventFunc(actions.Edit).
+					Query(presets.ParamID, "10").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`black`},
+		},
+		{
+			Name:  "Container Header Update",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/headers").
+					EventFunc(actions.Update).
+					Query(presets.ParamID, "10").
+					AddField("Color", "white").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				header := containers.WebHeader{}
+				TestDB.First(&header, 10)
+				if header.Color != "white" {
+					t.Fatalf("container has not updated color")
+					return
+				}
+			},
+		},
 	}
+
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
 			RunCase(t, c, h)
