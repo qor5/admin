@@ -306,20 +306,18 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 	b.DataOperator(gorm2op.DataOperator(db))
 
 	cust = b.Model(&Customer{})
+	// section will use Editing().ValidateFunc() as validateFunc default
+	cust.Editing().ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		customer := obj.(*Customer)
+		if len(customer.Name) > 6 {
+			err.FieldError("name_section.Name", "customer name must no longer than 6")
+		}
+		return
+	})
 	// This should inspect Notes attributes, When it is a list, It should show a standard table in detail page
 	dp = cust.Detailing("name_section", "email_section").Drawer(true)
 	dp.Section("name_section").Label("name must not be empty, no longer than 6").
-		Editing("Name").
-		ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-			customer := obj.(*Customer)
-			if customer.Name == "" {
-				err.GlobalError("customer name must not be empty")
-			}
-			if len(customer.Name) > 6 {
-				err.FieldError("name_section.Name", "customer name must no longer than 6")
-			}
-			return
-		}).EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		Editing("Name").EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		customer := obj.(*Customer)
 		var vErr web.ValidationErrors
 		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
@@ -330,6 +328,19 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 			Density(v.DensityCompact).
 			Attr(web.VField("name_section.Name", customer.Name)...).
 			ErrorMessages(vErr.GetFieldErrors("name_section.Name")...)
+	}).WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		return in
+	}).WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
+		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			customer := obj.(*Customer)
+			if customer.Name == "" {
+				err.GlobalError("customer name must not be empty")
+			}
+			if err.HaveErrors() {
+				return err
+			}
+			return in(obj, ctx)
+		}
 	})
 
 	dp.Section("email_section").
