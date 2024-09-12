@@ -492,7 +492,7 @@ func (b *DetailingBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventRe
 		return r, nil
 	}
 
-	var needSave bool = true
+	var needSave = true
 	if f.validator != nil {
 		if vErr := f.validator(obj, ctx); vErr.GetGlobalError() != "" {
 			ShowMessage(&r, vErr.GetGlobalError(), "warning")
@@ -631,7 +631,7 @@ func (b *DetailingBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Eve
 		return r, nil
 	}
 
-	var needSave bool = true
+	var needSave = true
 	if f.validator != nil {
 		if vErr := f.validator(obj, ctx); vErr.GetGlobalError() != "" {
 			ShowMessage(&r, vErr.GetGlobalError(), "warning")
@@ -708,7 +708,7 @@ func (b *DetailingBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.E
 		return r, nil
 	}
 
-	var needSave bool = true
+	var needSave = true
 	if f.validator != nil {
 		if vErr := f.validator(obj, ctx); vErr.GetGlobalError() != "" {
 			ShowMessage(&r, vErr.GetGlobalError(), "warning")
