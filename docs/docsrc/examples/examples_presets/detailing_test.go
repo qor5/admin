@@ -310,6 +310,30 @@ func TestPresetsDetailSectionValidate(t *testing.T) {
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"customer name must no longer than 6"},
 		},
+		{
+			Name:  "section validate globe err with custom saveFunc",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=presets_Detailing_Field_Save&section=email_section&id=12").
+					AddField("email_section.Email", "").
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{"message: \"customer email must not be empty\""},
+		},
+		{
+			Name:  "section validate field err with custom saveFunc",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=presets_Detailing_Field_Save&section=email_section&id=12").
+					AddField("email_section.Email", "short").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"customer email must longer than 6"},
+		},
 	}
 
 	for _, c := range cases {

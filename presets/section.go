@@ -56,7 +56,6 @@ func (d *SectionsBuilder) appendNewSection(name string) (r *SectionBuilder) {
 			label: name,
 		},
 		validator:         nil,
-		saver:             nil,
 		setter:            nil,
 		componentViewFunc: nil,
 		componentEditFunc: nil,
@@ -87,8 +86,10 @@ func (d *SectionsBuilder) appendNewSection(name string) (r *SectionBuilder) {
 	r.editingFB.defaults = d.mb.writeFields.defaults
 	r.viewingFB.Model(d.mb.model)
 	r.viewingFB.defaults = d.mb.p.detailFieldDefaults
-	r.saver = r.DefaultSaveFunc
-
+	r.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		return r.father.mb.editing.Saver(obj, id, ctx)
+	})
+	r.UnmarshalFunc(r.DefaultUnmarshalFunc)
 	d.sections = append(d.sections, r)
 
 	// d.Field(name).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -103,7 +104,7 @@ func (d *SectionsBuilder) appendNewSection(name string) (r *SectionBuilder) {
 // show, edit: fetcher => setter
 type SectionBuilder struct {
 	NameLabel
-	// if the field can switch status to edit and show, switchable must be true
+	unmarshalFunc     func(ctx *web.EventContext, obj interface{}) error
 	saver             SaveFunc
 	setter            SetterFunc
 	validator         ValidateFunc
@@ -238,7 +239,7 @@ func (b *SectionBuilder) IsList(v interface{}) (r *SectionBuilder) {
 	r = b
 	r.editingFB.Model(v)
 	r.isList = true
-	r.saver = r.DefaultListElementSaveFunc
+	r.UnmarshalFunc(r.DefaultListUnmarshalFunc)
 	r.elementUnmarshaler = r.DefaultElementUnmarshal()
 
 	return
@@ -295,6 +296,19 @@ func (b *SectionBuilder) SaveFunc(v SaveFunc) (r *SectionBuilder) {
 		panic("value required")
 	}
 	b.saver = v
+	return b
+}
+
+func (b *SectionBuilder) WrapSaveFunc(w func(in SaveFunc) SaveFunc) (r *SectionBuilder) {
+	b.saver = w(b.saver)
+	return b
+}
+
+func (b *SectionBuilder) UnmarshalFunc(v func(ctx *web.EventContext, obj interface{}) error) (r *SectionBuilder) {
+	if v == nil {
+		panic("value required")
+	}
+	b.unmarshalFunc = v
 	return b
 }
 
@@ -556,7 +570,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 	)
 }
 
-func (b *SectionBuilder) DefaultSaveFunc(obj interface{}, id string, ctx *web.EventContext) (err error) {
+func (b *SectionBuilder) DefaultUnmarshalFunc(ctx *web.EventContext, obj interface{}) (err error) {
 	if tf := reflect.TypeOf(obj).Kind(); tf != reflect.Ptr {
 		return fmt.Errorf("model %#+v must be pointer", obj)
 	}
@@ -565,26 +579,10 @@ func (b *SectionBuilder) DefaultSaveFunc(obj interface{}, id string, ctx *web.Ev
 	if err = b.DefaultElementUnmarshal()(obj, formObj, b.name, ctx); err != nil {
 		return
 	}
-
-	if b.validator != nil {
-		if vErr := b.validator(obj, ctx); vErr.GetGlobalError() != "" {
-			return errors.New(vErr.GetGlobalError())
-		} else if vErr.HaveErrors() {
-			ctx.Flash = &vErr
-			return
-		}
-	}
-	err = b.father.mb.editing.Saver(obj, id, ctx)
 	return
 }
 
-func (b *SectionBuilder) DefaultListElementSaveFunc(obj interface{}, id string, ctx *web.EventContext) (err error) {
-	// Delete or Add row
-	if ctx.Queries().Get(b.SaveBtnKey()) == "" {
-		err = b.father.mb.editing.Saver(obj, id, ctx)
-		return
-	}
-
+func (b *SectionBuilder) DefaultListUnmarshalFunc(ctx *web.EventContext, obj interface{}) (err error) {
 	var index int64
 	index, err = strconv.ParseInt(ctx.Queries().Get(b.SaveBtnKey()), 10, 64)
 	if err != nil {
@@ -602,17 +600,7 @@ func (b *SectionBuilder) DefaultListElementSaveFunc(obj interface{}, id string, 
 		return
 	}
 	listObj.Index(int(index)).Set(reflect.ValueOf(elementObj))
-
-	if b.validator != nil {
-		if vErr := b.validator(obj, ctx); vErr.GetGlobalError() != "" {
-			return errors.New(vErr.GetGlobalError())
-		} else if vErr.HaveErrors() {
-			ctx.Flash = &vErr
-			return
-		}
-	}
-	err = b.father.mb.editing.Saver(obj, id, ctx)
-	return
+	return nil
 }
 
 func (b *SectionBuilder) listComponent(obj interface{}, ctx *web.EventContext, deletedID, editID, saveID int, unsaved bool) h.HTMLComponent {

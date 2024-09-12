@@ -487,10 +487,28 @@ func (b *DetailingBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventRe
 		return
 	}
 
-	err = f.saver(obj, id, ctx)
-	if err != nil {
+	if err = f.unmarshalFunc(ctx, obj); err != nil {
 		ShowMessage(&r, err.Error(), "warning")
 		return r, nil
+	}
+
+	var needSave bool = true
+	if f.validator != nil {
+		if vErr := f.validator(obj, ctx); vErr.GetGlobalError() != "" {
+			ShowMessage(&r, vErr.GetGlobalError(), "warning")
+			return r, nil
+		} else if vErr.HaveErrors() {
+			ctx.Flash = &vErr
+			needSave = false
+		}
+	}
+
+	if needSave {
+		err = f.saver(obj, id, ctx)
+		if err != nil {
+			ShowMessage(&r, err.Error(), "warning")
+			return r, nil
+		}
 	}
 
 	if _, ok := ctx.Flash.(*web.ValidationErrors); ok {
@@ -608,10 +626,28 @@ func (b *DetailingBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Eve
 		return
 	}
 
-	err = f.saver(obj, ctx.Queries().Get(ParamID), ctx)
-	if err != nil {
+	if err = f.unmarshalFunc(ctx, obj); err != nil {
 		ShowMessage(&r, err.Error(), "warning")
 		return r, nil
+	}
+
+	var needSave bool = true
+	if f.validator != nil {
+		if vErr := f.validator(obj, ctx); vErr.GetGlobalError() != "" {
+			ShowMessage(&r, vErr.GetGlobalError(), "warning")
+			return r, nil
+		} else if vErr.HaveErrors() {
+			ctx.Flash = &vErr
+			needSave = false
+		}
+	}
+
+	if needSave {
+		err = f.saver(obj, ctx.Queries().Get(ParamID), ctx)
+		if err != nil {
+			ShowMessage(&r, err.Error(), "warning")
+			return r, nil
+		}
 	}
 
 	if ctx.ParamAsBool(f.elementUnsavedKey()) {
@@ -672,10 +708,23 @@ func (b *DetailingBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.E
 		return r, nil
 	}
 
-	err = f.saver(obj, ctx.Queries().Get(ParamID), ctx)
-	if err != nil {
-		ShowMessage(&r, err.Error(), "warning")
-		return r, nil
+	var needSave bool = true
+	if f.validator != nil {
+		if vErr := f.validator(obj, ctx); vErr.GetGlobalError() != "" {
+			ShowMessage(&r, vErr.GetGlobalError(), "warning")
+			return r, nil
+		} else if vErr.HaveErrors() {
+			ctx.Flash = &vErr
+			needSave = false
+		}
+	}
+
+	if needSave {
+		err = f.saver(obj, ctx.Queries().Get(ParamID), ctx)
+		if err != nil {
+			ShowMessage(&r, err.Error(), "warning")
+			return r, nil
+		}
 	}
 
 	if unsaved {
