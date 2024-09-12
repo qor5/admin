@@ -90,7 +90,8 @@ func MediaBoxComponentFunc(db *gorm.DB, readonly bool) presets.FieldComponentFun
 			Label(field.Label).
 			Config(cfg).
 			Disabled(field.Disabled).
-			Readonly(readonly)
+			Readonly(readonly).
+			ErrorMessages(field.Errors...)
 	}
 }
 
@@ -114,13 +115,14 @@ func MediaBoxSetterFunc(db *gorm.DB) presets.FieldSetterFunc {
 }
 
 type QMediaBoxBuilder struct {
-	fieldName string
-	label     string
-	value     *media_library.MediaBox
-	config    *media_library.MediaBoxConfig
-	db        *gorm.DB
-	disabled  bool
-	readonly  bool
+	fieldName     string
+	label         string
+	value         *media_library.MediaBox
+	config        *media_library.MediaBoxConfig
+	db            *gorm.DB
+	disabled      bool
+	readonly      bool
+	errorMessages []string
 }
 
 func QMediaBox(db *gorm.DB) (r *QMediaBoxBuilder) {
@@ -160,6 +162,11 @@ func (b *QMediaBoxBuilder) Config(v *media_library.MediaBoxConfig) (r *QMediaBox
 	return b
 }
 
+func (b *QMediaBoxBuilder) ErrorMessages(v ...string) (r *QMediaBoxBuilder) {
+	b.errorMessages = v
+	return b
+}
+
 func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) {
 	if b.fieldName == "" {
 		panic("FieldName required")
@@ -181,6 +188,15 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 				mediaBoxThumbnails(ctx, b.value, b.fieldName, b.config, b.disabled, b.readonly),
 			).Name(mediaBoxThumbnailsPortalName(b.fieldName)),
 			web.Portal().Name(portalName),
+			h.Iff(len(b.errorMessages) > 0, func() h.HTMLComponent {
+				var compos []h.HTMLComponent
+				for _, errMsg := range b.errorMessages {
+					compos = append(compos, h.Div().Attr("v-pre", true).Text(errMsg))
+				}
+				return h.Div().Class("d-flex flex-column ps-4 py-1 ga-1 text-caption").
+					ClassIf("text-error", len(b.errorMessages) > 0 && !b.disabled).
+					ClassIf("text-grey", b.disabled).Children(compos...)
+			}),
 		).Class("pb-4").
 			Rounded(true),
 	).MarshalHTML(c)
