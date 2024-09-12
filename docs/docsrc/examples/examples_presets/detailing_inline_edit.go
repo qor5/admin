@@ -315,7 +315,7 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 		return
 	})
 	// This should inspect Notes attributes, When it is a list, It should show a standard table in detail page
-	dp = cust.Detailing("name_section", "email_section").Drawer(true)
+	dp = cust.Detailing("name_section", "email_section", "CreditCards").Drawer(true)
 	dp.Section("name_section").Label("name must not be empty, no longer than 6").
 		Editing("Name").EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		customer := obj.(*Customer)
@@ -370,6 +370,23 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 		return cust.Editing().Saver(obj, id, ctx)
 	})
 
+	dp.Section("CreditCards").IsList(&CreditCard{}).Editing("Name").
+		ElementEditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			card := obj.(*CreditCard)
+			return vx.VXTextField().VField(fmt.Sprintf("%s.Name", field.FormKey), card.Name)
+		}).
+		ElementShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			card := obj.(*CreditCard)
+			return vx.VXTextField().Text(card.Name)
+		}).ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		customer := obj.(*Customer)
+		for _, card := range customer.CreditCards {
+			if card.Name == "" {
+				err.GlobalError("credit card name must not be empty")
+			}
+		}
+		return
+	})
 	return
 }
 
