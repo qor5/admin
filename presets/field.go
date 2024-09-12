@@ -314,7 +314,7 @@ func CloneFieldsLayout(layout []interface{}) (r []interface{}) {
 				Rows:  rows,
 			}
 		default:
-			panic("unknown tabFields layout, must be string/[]string/*FieldsSection")
+			panic("unknown fields layout, must be string/[]string/*FieldsSection")
 		}
 	}
 	return
@@ -348,7 +348,7 @@ func (b *FieldsBuilder) Unmarshal(toObj interface{}, info *ModelInfo, removeDele
 	}
 
 	fromObj := reflect.New(t.Elem()).Interface()
-	// don't panic for tabFields that set in SetterFunc
+	// don't panic for fields that set in SetterFunc
 	_ = ctx.UnmarshalForm(fromObj)
 	// testingutils.PrintlnJson("Unmarshal fromObj", fromObj)
 
@@ -625,7 +625,7 @@ func (b *FieldsBuilder) getFieldNamesFromLayout() []string {
 				ns = append(ns, row...)
 			}
 		default:
-			panic("unknown tabFields layout, must be string/[]string/*FieldsSection")
+			panic("unknown fields layout, must be string/[]string/*FieldsSection")
 		}
 	}
 	return ns
@@ -712,7 +712,7 @@ func (b *FieldsBuilder) Except(patterns ...string) (r *FieldsBuilder) {
 				fieldsLayout = append(fieldsLayout, section)
 			}
 		default:
-			panic("unknown tabFields layout, must be string/[]string/*FieldsSection")
+			panic("unknown fields layout, must be string/[]string/*FieldsSection")
 		}
 	}
 	r.fieldsLayout = fieldsLayout
@@ -819,7 +819,7 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 				).Class("section-wrap")
 			}
 		default:
-			panic("unknown tabFields layout, must be string/[]string/*FieldsSection")
+			panic("unknown fields layout, must be string/[]string/*FieldsSection")
 		}
 		if comp == nil {
 			continue
