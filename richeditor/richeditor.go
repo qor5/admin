@@ -101,9 +101,7 @@ func (b *RichEditorBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
 				ClassIf("redactor-disable", b.disabled).
 				Children(
 					redactorB,
-					h.Iff(b.disabled, func() h.HTMLComponent {
-						return h.Div().Class("redactor-disable-overlay")
-					}),
+					h.If(b.disabled, h.Div().Class("redactor-disable-overlay")),
 				),
 			h.Div(
 				media.QMediaBox(b.db).FieldName(fmt.Sprintf("%s_richeditor_medialibrary", b.name)).
