@@ -653,3 +653,45 @@ func TestPresetsDetailTabsSection(t *testing.T) {
 		})
 	}
 }
+
+func TestPresetsDetailTabsSectionOrder(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsDetailTabsSectionOrder(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "detail tabs section display",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				customerData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers").
+					Query("__execute_event__", "presets_DetailingDrawer").
+					Query("id", "1").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"email", "name", `<v-tabs-window-item :value='"email"'>`, "xxx@gmail.com", `<v-tabs-window-item :value='"name"'>`, "Terry"},
+		},
+		{
+			Name:  "detail tabs section save",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				customerData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers").
+					Query("__execute_event__", "presets_Detailing_Field_Save").
+					Query("id", "1").
+					Query("section", "name").
+					AddField("name.Name", "terry1").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"terry1"},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}

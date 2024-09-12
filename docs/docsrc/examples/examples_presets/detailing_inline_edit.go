@@ -72,6 +72,10 @@ func PresetsDetailTabsSection(b *presets.Builder, db *gorm.DB) (
 
 	cust = b.Model(&Customer{})
 	dp = cust.Detailing("tabs").Drawer(true)
+
+	tb := presets.NewTabsFieldBuilder()
+	dp.Field("tabs").Tab(tb)
+
 	dp.Section("name").
 		Editing("Name").
 		EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -102,6 +106,64 @@ func PresetsDetailTabsSection(b *presets.Builder, db *gorm.DB) (
 
 	dp.Section("name").Tabs("tabs")
 	dp.Section("email").Tabs("tabs")
+
+	return
+}
+
+func PresetsDetailTabsSectionOrder(b *presets.Builder, db *gorm.DB) (
+	cust *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	err := db.AutoMigrate(&Customer{}, &CreditCard{}, &Note{})
+	if err != nil {
+		panic(err)
+	}
+	mediaBuilder := media.New(db)
+	b.DataOperator(gorm2op.DataOperator(db)).Use(mediaBuilder)
+
+	cust = b.Model(&Customer{})
+	dp = cust.Detailing("tabs").Drawer(true)
+
+	const (
+		nameSection  = "name"
+		emailSection = "email"
+	)
+	tb := presets.NewTabsFieldBuilder().
+		TabsOrderFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) []string {
+			return []string{emailSection, nameSection}
+		})
+	dp.Field("tabs").Tab(tb)
+
+	dp.Section(nameSection).Label("name_label").
+		Editing("Name").
+		EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			custom := obj.(*Customer)
+			key := fmt.Sprintf("%s.Name", nameSection)
+			return h.Div(
+				v.VTextField().Attr(web.VField(key, custom.Name)...).Label("Name"),
+			)
+		}).ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		custom := obj.(*Customer)
+		return h.Div(
+			h.Text(custom.Name),
+		)
+	}).Tabs("tabs")
+
+	dp.Section(emailSection).
+		Editing("Email").
+		EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			custom := obj.(*Customer)
+			return h.Div(
+				v.VTextField().Attr(web.VField("email.Email", custom.Email)...).Label("Email"),
+			)
+		}).ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		custom := obj.(*Customer)
+		return h.Div(
+			h.Text(custom.Email),
+		)
+	}).Tabs("tabs")
 
 	return
 }

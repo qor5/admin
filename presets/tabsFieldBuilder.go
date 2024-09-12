@@ -2,7 +2,7 @@ package presets
 
 import (
 	"fmt"
-
+	"github.com/iancoleman/strcase"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	v "github.com/qor5/x/v3/ui/vuetify"
@@ -14,17 +14,24 @@ type TabsFieldBuilder struct {
 
 	tabsOrderFunc func(obj interface{}, field *FieldContext, ctx *web.EventContext) []string
 
-	TabName           []string
-	TabComponentFuncs []FieldComponentFunc
+	tabFields []*tabFieldBuilder
 }
 
-type TabFieldBuilder struct {
-	TabName           string
-	TabComponentFuncs FieldComponentFunc
+type tabFieldBuilder struct {
+	NameLabel
+	tabComponentFuncs FieldComponentFunc
 }
 
 func NewTabsFieldBuilder() *TabsFieldBuilder {
-	return &TabsFieldBuilder{}
+	r := &TabsFieldBuilder{}
+	r.tabsOrderFunc = func(obj interface{}, field *FieldContext, ctx *web.EventContext) []string {
+		var tabOrder []string
+		for _, v := range r.tabFields {
+			tabOrder = append(tabOrder, v.name)
+		}
+		return tabOrder
+	}
+	return r
 }
 
 func (tb *TabsFieldBuilder) TabsOrderFunc(v func(obj interface{}, field *FieldContext, ctx *web.EventContext) []string) *TabsFieldBuilder {
@@ -35,44 +42,48 @@ func (tb *TabsFieldBuilder) TabsOrderFunc(v func(obj interface{}, field *FieldCo
 	return tb
 }
 
-func (tb *TabsFieldBuilder) AppendTabField(tabName string, comp FieldComponentFunc) {
-	tb.TabName = append(tb.TabName, tabName)
-	tb.TabComponentFuncs = append(tb.TabComponentFuncs, comp)
+func (tb *TabsFieldBuilder) AppendTabField(tabName, tabLabel string, comp FieldComponentFunc) {
+	if tabLabel == "" {
+		tabLabel = tabName
+	}
+	field := &tabFieldBuilder{
+		NameLabel: NameLabel{
+			name:  tabName,
+			label: tabLabel,
+		},
+		tabComponentFuncs: comp,
+	}
+	tb.tabFields = append(tb.tabFields, field)
 }
 
 func (tb *TabsFieldBuilder) ComponentFunc() FieldComponentFunc {
 	return func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		var tabs, contents h.HTMLComponents
-		if tb.tabsOrderFunc == nil {
-			for i, name := range tb.TabName {
-				tabs = append(tabs, v.VTab(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, name))).Value(name))
-				contents = append(contents,
-					v.VTabsWindowItem(
-						tb.TabComponentFuncs[i](obj, field, ctx),
-					).Value(tb.TabName[i]))
-			}
-		} else {
-			tabsOrder := tb.tabsOrderFunc(obj, field, ctx)
-			for _, tab := range tabsOrder {
-				for i, name := range tb.TabName {
-					if name == tab {
-						tabs = append(tabs, v.VTab(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, name))).Value(name))
-						contents = append(contents,
-							v.VTabsWindowItem(
-								tb.TabComponentFuncs[i](obj, field, ctx),
-							).Value(tb.TabName[i]))
+		var (
+			tabs, contents h.HTMLComponents
+			defaultTab     string
+			order          []string
+		)
+		order = tb.tabsOrderFunc(obj, field, ctx)
+		for _, tabName := range order {
+			for _, tab := range tb.tabFields {
+				if tab.name == tabName {
+					tabKey := strcase.ToSnake(tab.name)
+					tabs = append(tabs, v.VTab(
+						h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, tab.label))).Value(tabKey),
+					)
+					contents = append(
+						contents,
+						v.VTabsWindowItem(
+							tab.tabComponentFuncs(obj, field, ctx),
+						).Value(tabKey),
+					)
+					if defaultTab == "" {
+						defaultTab = tabKey
 					}
 				}
 			}
 		}
 
-		for i, comp := range tb.TabComponentFuncs {
-			contents = append(contents,
-				v.VTabsWindowItem(
-					comp(obj, field, ctx),
-				).Value(tb.TabName[i]))
-		}
-		defaultTab := tb.TabName[0]
 		return web.Scope(
 			v.VTabs(
 				// v.VTab(h.Text(msgr.FormTitle)).Value("default"),
