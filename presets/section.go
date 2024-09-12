@@ -89,6 +89,9 @@ func (d *SectionsBuilder) appendNewSection(name string) (r *SectionBuilder) {
 	r.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		return r.father.mb.editing.Saver(obj, id, ctx)
 	})
+	r.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		return r.father.mb.editing.Validator(obj, ctx)
+	})
 	r.UnmarshalFunc(r.DefaultUnmarshalFunc)
 	d.sections = append(d.sections, r)
 
@@ -330,6 +333,11 @@ func (b *SectionBuilder) ValidateFunc(v ValidateFunc) (r *SectionBuilder) {
 		panic("value required")
 	}
 	b.validator = v
+	return b
+}
+
+func (b *SectionBuilder) WrapValidateFunc(w func(in ValidateFunc) ValidateFunc) (r *SectionBuilder) {
+	b.validator = w(b.validator)
 	return b
 }
 
