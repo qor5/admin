@@ -731,6 +731,14 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 
 		return h.Td(h.Text(modelName))
 	})
+	listing.WrapRow(func(in presets.RowProcessor) presets.RowProcessor {
+		return func(evCtx *web.EventContext, row h.MutableAttrHTMLComponent, id string, obj any) (comp h.MutableAttrHTMLComponent, err error) {
+			c := presets.ListingCompoFromEventContext(evCtx)
+			p := obj.(*DemoContainer)
+			row.SetAttr(":class", fmt.Sprintf(`{ %q: vars.%s === %q }`, presets.ListingCompo_CurrentActiveClass, c.VarCurrentActive(), p.ModelName))
+			return in(evCtx, row, id, obj)
+		}
+	})
 	pm.LabelName(func(evCtx *web.EventContext, singular bool) string {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		if singular {
@@ -922,6 +930,16 @@ func (b *Builder) RegisterModelContainer(name string, mb *presets.ModelBuilder) 
 func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 	b.model = m
 	b.mb = b.builder.ps.Model(m)
+	b.mb.Editing().WrapIdCurrentActive(func(in presets.IdCurrentActiveProcessor) presets.IdCurrentActiveProcessor {
+		return func(ctx *web.EventContext, current string) (s string, err error) {
+			s, err = in(ctx, current)
+			if err != nil {
+				return
+			}
+			s = b.name
+			return
+		}
+	})
 	b.mb.Editing().AppendHiddenFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		if portalName := ctx.Param(presets.ParamPortalName); portalName != pageBuilderRightContentPortal {
 			return nil
