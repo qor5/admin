@@ -770,6 +770,19 @@ func TestPageBuilder(t *testing.T) {
 				}
 			},
 		},
+		{
+			Name:  "Demo Containers Listing",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/demo_containers").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{`=== "PageTitle"`},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
