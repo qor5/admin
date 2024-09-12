@@ -38,8 +38,27 @@ func PresetsEditingCustomizationDescription(b *presets.Builder, db *gorm.DB) (
 
 	ce.Only("Name", "Email", "CompanyID", "Description")
 
+	ce.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		customer := obj.(*Customer)
+		if customer.Name == "" {
+			err.FieldError("Name", "name must not be empty")
+		}
+		if customer.Email == "" {
+			err.FieldError("Email", "email must not be empty")
+		}
+		if customer.Description == "" {
+			err.FieldError("Description", "description must not be empty")
+		}
+		return
+	})
+
 	ce.Field("Description").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*Customer).Description).Label(field.Label)
+		return richeditor.RichEditor(db, "Body").
+			Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).
+			Value(obj.(*Customer).Description).
+			Label(field.Label).
+			Disabled(field.Disabled).
+			ErrorMessages(field.Errors...)
 	})
 
 	// If you just want to specify the label to be displayed
