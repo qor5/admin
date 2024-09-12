@@ -1,6 +1,7 @@
 package media
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"mime/multipart"
@@ -522,18 +523,12 @@ func imageDialog() h.HTMLComponent {
 	).MaxWidth(658).Attr("v-model", "vars.imagePreview")
 }
 
-func (mb *Builder) mediaLibraryFilter(field string, ctx *web.EventContext,
+func (mb *Builder) mediaLibraryFilter(tab, selectedType, keyword, orderByVal string, parentID int, ctx *web.EventContext,
 	cfg *media_library.MediaBoxConfig,
 ) *gorm.DB {
 	var (
 		db = mb.db
 		wh = db.Model(&media_library.MediaLibrary{})
-
-		tab        = ctx.Param(paramTab)
-		orderByVal = ctx.Param(paramOrderByKey)
-		typeVal    = ctx.Param(paramTypeKey)
-		parentID   = ctx.ParamAsInt(ParamParentID)
-		keyword    = ctx.Param(searchKeywordName(field))
 	)
 	if mb.searcher != nil {
 		wh = mb.searcher(wh, ctx)
@@ -544,19 +539,7 @@ func (mb *Builder) mediaLibraryFilter(field string, ctx *web.EventContext,
 	case orderByCreatedAt:
 		wh = wh.Order("created_at")
 	default:
-		orderByVal = orderByCreatedAtDESC
 		wh = wh.Order("created_at DESC")
-	}
-	selectedType := ""
-	switch typeVal {
-	case typeImage:
-		selectedType = media_library.ALLOW_TYPE_IMAGE
-	case typeVideo:
-		selectedType = media_library.ALLOW_TYPE_VIDEO
-	case typeFile:
-		selectedType = media_library.ALLOW_TYPE_FILE
-	default:
-		typeVal = typeAll
 	}
 	if tab == tabFiles {
 		wh = wh.Where("folder = ?", false)
@@ -594,21 +577,23 @@ func (mb *Builder) mediaLibraryFilter(field string, ctx *web.EventContext,
 	return wh
 }
 
-func (mb *Builder) mediaLibraryTopOperations(clickTabEvent, field string, ctx *web.EventContext,
+func (mb *Builder) mediaLibraryTopOperations(clickTabEvent, field, tab, typeVal, orderByVal string, parentID int, ctx *web.EventContext,
 	cfg *media_library.MediaBoxConfig,
 ) h.HTMLComponent {
 	var (
 		msgr           = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 		inMediaLibrary = strings.Contains(ctx.R.RequestURI, "/"+MediaLibraryURIName)
 
-		tab        = ctx.Param(paramTab)
-		orderByVal = ctx.Param(paramOrderByKey)
-		typeVal    = ctx.Param(paramTypeKey)
-		parentID   = ctx.ParamAsInt(ParamParentID)
+		fileAccept string
 	)
-	fileAccept := "*/*"
-	if cfg.AllowType == media_library.ALLOW_TYPE_IMAGE {
-		fileAccept = "image/*"
+
+	if mb.fileAccept != "" {
+		fileAccept = mb.fileAccept
+	} else {
+		fileAccept = "*/*"
+		if cfg.AllowType == media_library.ALLOW_TYPE_IMAGE {
+			fileAccept = "image/*"
+		}
 	}
 	return VRow(
 		h.If(!inMediaLibrary,
@@ -713,7 +698,7 @@ func (mb *Builder) mediaLibraryBottomOperations(field string, ctx *web.EventCont
 	var (
 		msgr = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 
-		tab      = ctx.Param(paramTab)
+		tab      = cmp.Or(ctx.Param(paramTab), tabFiles)
 		parentID = ctx.ParamAsInt(ParamParentID)
 	)
 	return VRow(
@@ -783,7 +768,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 	cfg *media_library.MediaBoxConfig,
 ) h.HTMLComponent {
 	var (
-		tab            = ctx.Param(paramTab)
+		tab            = cmp.Or(ctx.Param(paramTab), tabFiles)
 		parentID       = ctx.ParamAsInt(ParamParentID)
 		msgr           = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 		inMediaLibrary = strings.Contains(ctx.R.RequestURI, "/"+MediaLibraryURIName)
@@ -792,17 +777,29 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 		hasFolders     = false
 		hasFiles       = false
 		err            error
+		orderByVal     = cmp.Or(ctx.Param(paramOrderByKey), orderByCreatedAtDESC)
+		keyword        = ctx.Param(searchKeywordName(field))
+		typeVal        = ctx.Param(paramTypeKey)
+		selectedType   string
 	)
-	if tab == "" {
-		tab = tabFiles
+	switch typeVal {
+	case typeImage:
+		selectedType = media_library.ALLOW_TYPE_IMAGE
+	case typeVideo:
+		selectedType = media_library.ALLOW_TYPE_VIDEO
+	case typeFile:
+		selectedType = media_library.ALLOW_TYPE_FILE
+	default:
+		typeVal = typeAll
 	}
+
 	if tab == tabFolders {
 		items := parentFolders(field, ctx, cfg, mb.db, uint(parentID), uint(parentID), nil, inMediaLibrary)
 		bc = h.If(len(items) > 0, VBreadcrumbs(
 			items...,
 		))
 	}
-	wh := mb.mediaLibraryFilter(field, ctx, cfg)
+	wh := mb.mediaLibraryFilter(tab, selectedType, keyword, orderByVal, parentID, ctx, cfg)
 
 	var count int64
 
@@ -872,7 +869,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 		web.Portal().Name(renameDialogPortalName),
 		web.Portal().Name(updateDescriptionDialogPortalName),
 		VContainer(
-			mb.mediaLibraryTopOperations(clickTabEvent, field, ctx, cfg),
+			mb.mediaLibraryTopOperations(clickTabEvent, field, tab, typeVal, orderByVal, parentID, ctx, cfg),
 			VRow(
 				VCol(bc),
 			),

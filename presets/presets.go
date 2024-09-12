@@ -60,7 +60,7 @@ type Builder struct {
 	extraAssets                           []*extraAsset
 	assetFunc                             AssetFunc
 	menuGroups                            MenuGroups
-	menuOrder                             []interface{}
+	menuOrder                             *MenuOrderBuilder
 	wrapHandlers                          map[string]func(in http.Handler) (out http.Handler)
 	plugins                               []Plugin
 	notFoundHandler                       http.Handler
@@ -110,6 +110,7 @@ func New() *Builder {
 		},
 		wrapHandlers: make(map[string]func(in http.Handler) (out http.Handler)),
 	}
+	b.menuOrder = newMenuOrderBuilder(b)
 	b.GetWebBuilder().RegisterEventFunc(OpenConfirmDialog, b.openConfirmDialog)
 	b.layoutFunc = b.defaultLayout
 	b.detailLayoutFunc = b.defaultLayout
@@ -352,28 +353,10 @@ func modelNames(ms []*ModelBuilder) (r []string) {
 
 func (b *Builder) MenuGroup(name string) *MenuGroupBuilder {
 	mgb := b.menuGroups.MenuGroup(name)
-	if !b.isMenuGroupInOrder(mgb) {
-		b.menuOrder = append(b.menuOrder, mgb)
+	if !b.menuOrder.isMenuGroupInOrder(mgb) {
+		b.menuOrder.Append(mgb)
 	}
 	return mgb
-}
-
-func (b *Builder) isMenuGroupInOrder(mgb *MenuGroupBuilder) bool {
-	for _, v := range b.menuOrder {
-		if v == mgb {
-			return true
-		}
-	}
-	return false
-}
-
-func (b *Builder) removeMenuGroupInOrder(mgb *MenuGroupBuilder) {
-	for i, om := range b.menuOrder {
-		if om == mgb {
-			b.menuOrder = append(b.menuOrder[:i], b.menuOrder[i+1:]...)
-			break
-		}
-	}
 }
 
 // item can be Slug name, model name, *MenuGroupBuilder
@@ -390,19 +373,7 @@ func (b *Builder) removeMenuGroupInOrder(mgb *MenuGroupBuilder) {
 //
 // )
 func (b *Builder) MenuOrder(items ...interface{}) {
-	for _, item := range items {
-		switch v := item.(type) {
-		case string:
-			b.menuOrder = append(b.menuOrder, v)
-		case *MenuGroupBuilder:
-			if b.isMenuGroupInOrder(v) {
-				b.removeMenuGroupInOrder(v)
-			}
-			b.menuOrder = append(b.menuOrder, v)
-		default:
-			panic(fmt.Sprintf("unknown menu order item type: %T\n", item))
-		}
-	}
+	b.menuOrder.Append(items...)
 }
 
 type defaultMenuIconRE struct {
@@ -473,11 +444,9 @@ func (m *ModelBuilder) DefaultMenuItem(
 		// fontWeight := subMenuFontWeight
 		if isSub {
 			// menuIcon = ""
-		} else {
+		} else if menuIcon == "" {
 			// fontWeight = menuFontWeight
-			if menuIcon == "" {
-				menuIcon = defaultMenuIcon(m.label)
-			}
+			menuIcon = defaultMenuIcon(m.label)
 		}
 		href := m.Info().ListingHref()
 		if m.link != "" {
@@ -520,172 +489,6 @@ func (m *ModelBuilder) DefaultMenuItem(
 		// }
 		return item, nil
 	}
-}
-
-func (b *Builder) isMenuItemActive(ctx *web.EventContext, m *ModelBuilder) bool {
-	href := m.Info().ListingHref()
-	if m.link != "" {
-		href = m.link
-	}
-	path := strings.TrimSuffix(ctx.R.URL.Path, "/")
-	if path == "" && href == "/" {
-		return true
-	}
-	if path == href {
-		return true
-	}
-	if href == b.prefix {
-		return false
-	}
-	if href != "/" && strings.HasPrefix(path, href) {
-		return true
-	}
-
-	return false
-}
-
-func (b *Builder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
-	mMap := make(map[string]*ModelBuilder)
-	for _, m := range b.models {
-		mMap[m.uriName] = m
-	}
-	var (
-		activeMenuItem string
-		selection      string
-	)
-	inOrderMap := make(map[string]struct{})
-	var menus []h.HTMLComponent
-	for _, om := range b.menuOrder {
-		switch v := om.(type) {
-		case *MenuGroupBuilder:
-			disabled := false
-			if b.verifier.Do(PermList).SnakeOn("mg_"+v.name).WithReq(ctx.R).IsAllowed() != nil {
-				disabled = true
-			}
-			groupIcon := v.icon
-			if groupIcon == "" {
-				groupIcon = defaultMenuIcon(v.name)
-			}
-			subMenus := []h.HTMLComponent{
-				h.Template(
-					VListItem(
-						web.Slot(
-							VIcon(groupIcon),
-						).Name("prepend"),
-						VListItemTitle().Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", menuFontWeight)),
-						// VListItemTitle(h.Text(i18n.T(ctx.R, ModelsI18nModuleKey, v.name))).
-					).Attr("v-bind", "props").
-						Title(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)).
-						Class("rounded-lg"),
-					// Value(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)),
-				).Attr("v-slot:activator", "{ props }"),
-			}
-			subCount := 0
-			for _, subOm := range v.subMenuItems {
-				m, ok := mMap[subOm]
-				if !ok {
-					m = mMap[inflection.Plural(strcase.ToKebab(subOm))]
-				}
-				if m == nil {
-					continue
-				}
-				m.menuGroupName = v.name
-				if m.notInMenu {
-					continue
-				}
-				if m.Info().Verifier().Do(PermList).WithReq(ctx.R).IsAllowed() != nil {
-					continue
-				}
-				menuItem, err := m.menuItem(ctx, true)
-				if err != nil {
-					panic(err)
-				}
-				subMenus = append(subMenus, menuItem)
-				subCount++
-				inOrderMap[m.uriName] = struct{}{}
-				if b.isMenuItemActive(ctx, m) {
-					// activeMenuItem = m.label
-					activeMenuItem = v.name
-					selection = m.label
-				}
-			}
-			if subCount == 0 {
-				continue
-			}
-			if disabled {
-				continue
-			}
-
-			menus = append(menus,
-				VListGroup(subMenus...).Value(v.name),
-			)
-		case string:
-			m, ok := mMap[v]
-			if !ok {
-				m = mMap[inflection.Plural(strcase.ToKebab(v))]
-			}
-			if m == nil {
-				continue
-			}
-			if m.Info().Verifier().Do(PermList).WithReq(ctx.R).IsAllowed() != nil {
-				continue
-			}
-
-			if m.notInMenu {
-				continue
-			}
-			menuItem, err := m.menuItem(ctx, false)
-			if err != nil {
-				panic(err)
-			}
-			menus = append(menus, menuItem)
-			inOrderMap[m.uriName] = struct{}{}
-
-			if b.isMenuItemActive(ctx, m) {
-				selection = m.label
-			}
-		}
-	}
-
-	for _, m := range b.models {
-		_, ok := inOrderMap[m.uriName]
-		if ok {
-			continue
-		}
-
-		if m.Info().Verifier().Do(PermList).WithReq(ctx.R).IsAllowed() != nil {
-			continue
-		}
-
-		if m.notInMenu {
-			continue
-		}
-
-		if b.isMenuItemActive(ctx, m) {
-			selection = m.label
-		}
-		menuItem, err := m.menuItem(ctx, false)
-		if err != nil {
-			panic(err)
-		}
-		menus = append(menus, menuItem)
-	}
-
-	r = h.Div(
-		web.Scope(
-			VList(menus...).
-				OpenStrategy("single").
-				Class("primary--text").
-				Density(DensityCompact).
-				Attr("v-model:opened", "locals.menuOpened").
-				Attr("v-model:selected", "locals.selection").
-				Attr("color", "transparent"),
-			// .Attr("v-model:selected", h.JSONString([]string{"Pages"})),
-		).VSlot("{ locals }").Init(
-			fmt.Sprintf(`{ menuOpened:  ["%s"]}`, activeMenuItem),
-			fmt.Sprintf(`{ selection:  ["%s"]}`, selection),
-		))
-	return
 }
 
 func (b *Builder) RunBrandFunc(ctx *web.EventContext) (r h.HTMLComponent) {
@@ -925,10 +728,7 @@ func (b *Builder) rightDrawer(ctx *web.EventContext, r *web.EventResponse, comp 
 	r.RunScript = fmt.Sprintf(`setTimeout(function(){ vars.presetsRightDrawer = true,vars.confirmDrawerLeave=false,vars.%s = {} }, 100)`, VarsPresetsDataChanged)
 }
 
-func (b *Builder) contentDrawer(ctx *web.EventContext, r *web.EventResponse, comp h.HTMLComponent, width string) {
-	if width == "" {
-		width = b.rightDrawerWidth
-	}
+func (b *Builder) contentDrawer(ctx *web.EventContext, r *web.EventResponse, comp h.HTMLComponent, _ string) {
 	portalName := ctx.Param(ParamPortalName)
 	p := RightDrawerContentPortalName
 	if portalName != "" {
@@ -1062,8 +862,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 		b.InjectAssets(ctx)
 
 		// call CreateMenus before in(ctx) to fill the menuGroupName for modelBuilders first
-		menu := b.CreateMenus(ctx)
-
+		menu := b.menuOrder.CreateMenus(ctx)
 		toolbar := VContainer(
 			VRow(
 				VCol(b.RunBrandFunc(ctx)).Cols(7),
@@ -1120,6 +919,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 		} else {
 			ctx.WithContextValue(CtxPageTitleComponent, nil)
 		}
+		afterTitleComponent, haveAfterTitleComponent := GetComponentFromContext(ctx, ctxDetailingAfterTitleComponent)
 		actionsComponentTeleportToID := GetActionsComponentTeleportToID(ctx)
 		pageTitleComp = h.Div(
 			VAppBarNavIcon().
@@ -1128,6 +928,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				Attr("v-if", "!vars.navDrawer").
 				On("click.stop", "vars.navDrawer = !vars.navDrawer"),
 			innerPageTitleCompo,
+			h.If(haveAfterTitleComponent, afterTitleComponent),
 			h.Iff(actionsComponentTeleportToID != "", func() h.HTMLComponent {
 				return h.Components(
 					VSpacer(),
@@ -1247,7 +1048,7 @@ func (b *Builder) PlainLayout(in web.PageFunc) (out web.PageFunc) {
 					Location(LocationTop),
 			).Attr("v-if", "vars.presetsMessage"),
 			VMain(
-				innerPr.Body.(h.HTMLComponent),
+				innerPr.Body,
 			),
 		).
 			Attr("id", "vt-app").
@@ -1259,7 +1060,7 @@ message: ""}}`)...)
 }
 
 func (b *Builder) InjectAssets(ctx *web.EventContext) {
-	ctx.Injector.HeadHTML(strings.Replace(`
+	ctx.Injector.HeadHTML(strings.ReplaceAll(`
 			<link rel="stylesheet" href="{{prefix}}/vuetify/assets/index.css" async>
 			<script src='{{prefix}}/assets/vue.js'></script>
 			<style>
@@ -1286,13 +1087,13 @@ func (b *Builder) InjectAssets(ctx *web.EventContext) {
 					background-color: inherit!important;
 				}
 			</style>
-		`, "{{prefix}}", b.prefix, -1))
+		`, "{{prefix}}", b.prefix))
 
 	b.InjectExtraAssets(ctx)
 
-	ctx.Injector.TailHTML(strings.Replace(`
+	ctx.Injector.TailHTML(strings.ReplaceAll(`
 			<script src='{{prefix}}/assets/main.js'></script>
-			`, "{{prefix}}", b.prefix, -1))
+			`, "{{prefix}}", b.prefix))
 
 	if b.assetFunc != nil {
 		b.assetFunc(ctx)
@@ -1307,11 +1108,11 @@ func (b *Builder) InjectExtraAssets(ctx *web.EventContext) {
 		}
 
 		if strings.HasSuffix(ea.path, "css") {
-			ctx.Injector.HeadHTML(fmt.Sprintf("<link rel=\"stylesheet\" href=\"%s\">", b.extraFullPath(ea)))
+			ctx.Injector.HeadHTML(fmt.Sprintf("<link rel=\"stylesheet\" href=%q>", b.extraFullPath(ea)))
 			continue
 		}
 
-		ctx.Injector.HeadHTML(fmt.Sprintf("<script src=\"%s\"></script>", b.extraFullPath(ea)))
+		ctx.Injector.HeadHTML(fmt.Sprintf("<script src=%q></script>", b.extraFullPath(ea)))
 	}
 }
 
@@ -1559,7 +1360,7 @@ func redirectSlashes(next http.Handler) http.Handler {
 				path = path[:len(path)-1]
 			}
 			redirectURL := fmt.Sprintf("//%s%s", r.Host, path)
-			http.Redirect(w, r, redirectURL, 301)
+			http.Redirect(w, r, redirectURL, http.StatusMovedPermanently)
 			return
 		}
 		next.ServeHTTP(w, r)

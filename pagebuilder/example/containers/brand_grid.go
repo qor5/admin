@@ -4,14 +4,17 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"strconv"
+	"time"
+
+	"github.com/qor5/web/v3"
+	. "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/web/v3"
-	. "github.com/theplant/htmlgo"
-	"gorm.io/gorm"
 )
 
 type BrandGrid struct {
@@ -56,7 +59,18 @@ func RegisterBrandGridContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 		})
 	mb := vb.Model(&BrandGrid{})
 	eb := mb.Editing("AddTopSpace", "AddBottomSpace", "AnchorID", "Brands")
-
+	eb.Creating().WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			p := obj.(*BrandGrid)
+			if p.AnchorID == "" {
+				p.AnchorID = strconv.Itoa(int(time.Now().Unix()))
+			}
+			if err = in(obj, id, ctx); err != nil {
+				return
+			}
+			return
+		}
+	})
 	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&Brand{}).Only("Image", "Name")
 	fb.Field("Image").WithContextValue(media.MediaBoxConfig, &media_library.MediaBoxConfig{
 		AllowType: "image",

@@ -79,7 +79,7 @@ func TestPageBuilder(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				return httptest.NewRequest("GET", "/pages", nil)
 			},
-			ExpectPageBodyContainsInOrder: []string{"12312"},
+			ExpectPageBodyContainsInOrder: []string{"ID", "Title", "Live", "12312"},
 		},
 		{
 			Name:  "New Page Dialog",
@@ -674,6 +674,37 @@ func TestPageBuilder(t *testing.T) {
 				return req
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{`"Page.CategoryID":1`},
+		},
+
+		{
+			Name:  "Page Builder add container Wrap SaveFunc",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages-editors/10_2024-05-21-v01_International").
+					EventFunc(pagebuilder.AddContainerEvent).
+					Query("modelName", "BrandGrid").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var (
+					container pagebuilder.Container
+					bd        containers.BrandGrid
+				)
+				TestDB.Order("id desc").First(&container)
+				TestDB.Order("id desc").First(&bd)
+				if container.ModelName != "BrandGrid" {
+					t.Fatalf("containers not add")
+					return
+				}
+				if bd.AnchorID == "" {
+					t.Fatalf("wrap container creating error")
+					return
+				}
+			},
 		},
 	}
 	for _, c := range cases {

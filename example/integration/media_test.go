@@ -653,6 +653,25 @@ func TestMedia(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"select_ids:[]", "v-checkbox"},
 			ExpectPageBodyNotContains:          []string{"Save"},
 		},
+
+		{
+			Name:  "MediaLibrary Folder Tab Has Parent Fold",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-library").
+					Query(web.EventFuncIDName, media.OpenFileChooserEvent).
+					Query(media.ParamField, "media").
+					Query(media.ParamParentID, "4").
+					Query("tab", "folders").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"v-breadcrumbs"},
+			ExpectPortalUpdate0NotContains:     []string{"test.mp4", "test_search1.png", "test_search2.png"},
+		},
 	}
 
 	for _, c := range cases {

@@ -8,6 +8,7 @@ name = "go"
 
   [analyzers.meta]
   import_root = "github.com/qor5/admin"
+  cyclomatic_complexity_threshold = "high"
 
 [[transformers]]
 name = "gofumpt"

@@ -11,7 +11,6 @@ import (
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/seo"
-	"github.com/qor5/admin/v3/slug"
 	"gorm.io/gorm"
 )
 
@@ -19,7 +18,7 @@ type Post struct {
 	gorm.Model
 
 	Title         string
-	TitleWithSlug slug.Slug
+	TitleWithSlug string
 	Seo           seo.Setting
 	Body          string
 	HeroImage     media_library.MediaBox `sql:"type:text;"`

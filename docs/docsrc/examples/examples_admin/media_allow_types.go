@@ -12,7 +12,8 @@ import (
 )
 
 func MediaAllowTypesExample(b *presets.Builder, db *gorm.DB) http.Handler {
-	mediaBuilder := media.New(db).AutoMigrate().AllowTypes(media_library.ALLOW_TYPE_IMAGE, media_library.ALLOW_TYPE_VIDEO)
+	mediaBuilder := media.New(db).AutoMigrate().
+		AllowTypes(media_library.ALLOW_TYPE_IMAGE, media_library.ALLOW_TYPE_VIDEO).FileAccept("image/*,video/*")
 	b.DataOperator(gorm2op.DataOperator(db)).Use(mediaBuilder)
 	return b
 }

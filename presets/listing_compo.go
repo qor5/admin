@@ -296,6 +296,8 @@ func (c *ListingCompo) filterSearch(ctx context.Context, fd vx.FilterData) h.HTM
 	ft.Add = msgr.FiltersAdd
 	ft.Apply = msgr.FilterApply
 	ft.Date.To = msgr.FiltersDateTo
+	ft.Date.Clear = msgr.FiltersDateClear
+	ft.Date.OK = msgr.FiltersDateOK
 	ft.Number.And = msgr.FiltersNumberAnd
 	ft.Number.Equals = msgr.FiltersNumberEquals
 	ft.Number.Between = msgr.FiltersNumberBetween
@@ -360,7 +362,7 @@ func (c *ListingCompo) toolbarSearch(ctx context.Context) h.HTMLComponent {
 		}
 		textFieldSearch = wrapper
 	}
-	return VToolbar().Flat(true).Color("surface").AutoHeight(true).Class("pa-2").Children(
+	return VToolbar().Flat(true).Color("surface").AutoHeight(true).Class("pa-2").Class("filter-comp-wrap").Children(
 		textFieldSearch,
 		filterSearch,
 	)

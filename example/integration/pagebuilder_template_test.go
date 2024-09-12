@@ -475,6 +475,50 @@ func TestPageBuilderTemplate(t *testing.T) {
 			},
 			ExpectPageBodyContainsInOrder: []string{"list-contents", "headers"},
 		},
+		{
+			Name:  "Template OpenTemplateDialog",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderTemplateData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages").
+					EventFunc(pagebuilder.OpenTemplateDialogEvent).
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"vars.pageBuilderSelectTemplateDialog"},
+		},
+		{
+			Name:  "Template ReloadSelectedTemplate",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderTemplateData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages").
+					EventFunc(pagebuilder.ReloadSelectedTemplateEvent).
+					Query(pagebuilder.ParamTemplateSelectedID, "1").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"123"},
+		},
+		{
+			Name:  "Template ReloadTemplateContent",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderTemplateData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_templates").
+					EventFunc(pagebuilder.ReloadTemplateContentEvent).
+					Query("keyword", "012").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0NotContains: []string{"123"},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {

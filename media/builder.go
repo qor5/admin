@@ -24,6 +24,7 @@ type (
 		searcher            SearchFunc
 		saverFunc           SaverFunc
 		allowTypes          []string
+		fileAccept          string
 	}
 )
 
@@ -73,6 +74,11 @@ func (b *Builder) WrapSaverFunc(w func(in SaverFunc) SaverFunc) (r *Builder) {
 	return b
 }
 
+func (b *Builder) FileAccept(v string) *Builder {
+	b.fileAccept = v
+	return b
+}
+
 func (b *Builder) checkAllowType(v string) bool {
 	if len(b.allowTypes) == 0 {
 		return true
@@ -95,10 +101,10 @@ func (b *Builder) allowTypeSelectOptions(msgr *Messages) (items []selectItem) {
 				selectItem{Text: msgr.Images, Value: typeImage})
 		case media_library.ALLOW_TYPE_VIDEO:
 			items = append(items,
-				selectItem{Text: msgr.Images, Value: typeVideo})
+				selectItem{Text: msgr.Videos, Value: typeVideo})
 		case media_library.ALLOW_TYPE_FILE:
 			items = append(items,
-				selectItem{Text: msgr.Images, Value: typeFile})
+				selectItem{Text: msgr.Files, Value: typeFile})
 
 		}
 	}

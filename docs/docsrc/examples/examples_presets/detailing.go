@@ -327,3 +327,19 @@ func PresetsDetailTabsField(b *presets.Builder, db *gorm.DB) (
 		AppendTabs(emailField)
 	return
 }
+
+func PresetsDetailAfterTitle(b *presets.Builder, db *gorm.DB) (
+	cust *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	cust, cl, ce, dp = PresetsHelloWorld(b, db)
+
+	dp = cust.Detailing("Name")
+
+	dp.AfterTitleCompFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+		return h.Text("After Title")
+	})
+	return
+}
