@@ -77,6 +77,7 @@ func (b *MenuOrderBuilder) check(item string, ctx *web.EventContext) (*ModelBuil
 	}
 	return m, true
 }
+
 func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) h.HTMLComponent {
 	b.initializeModelMap()
 
