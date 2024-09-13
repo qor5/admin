@@ -8,7 +8,6 @@ import (
 	"github.com/jinzhu/inflection"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
-	. "github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -219,19 +218,6 @@ func (b *MenuOrderBuilder) buildMenuComponent(menus []h.HTMLComponent, menuGroup
 			fmt.Sprintf(`{ selection: [%q] }`, menuItemSelected),
 		),
 	)
-}
-
-func (b *MenuOrderBuilder) menuItem(name string, isSub bool, ctx *web.EventContext) (*ModelBuilder, h.HTMLComponent) {
-	m, ok := b.check(name, ctx)
-	if !ok {
-		return m, nil
-	}
-
-	menuItem, err := m.menuItem(ctx, isSub)
-	if err != nil {
-		panic(err)
-	}
-	return m, menuItem
 }
 
 func (b *MenuOrderBuilder) isMenuItemActive(m *ModelBuilder, ctx *web.EventContext) bool {
