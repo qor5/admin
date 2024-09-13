@@ -458,12 +458,11 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		cond, args, vErr := fd.SetByQueryString(evCtx, c.FilterQuery)
 		if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
 			filterScript = web.RunScript(fmt.Sprintf(`(el)=>{%s}`, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), "error")))
-		} else {
-			searchParams.SQLConditions = append(searchParams.SQLConditions, &SQLCondition{
-				Query: cond,
-				Args:  args,
-			})
 		}
+		searchParams.SQLConditions = append(searchParams.SQLConditions, &SQLCondition{
+			Query: cond,
+			Args:  args,
+		})
 
 	}
 

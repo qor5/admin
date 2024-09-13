@@ -345,3 +345,17 @@ var Messages_ja_JP = &Messages{
 	Name:            "名前",
 	Description:     "説明",
 }
+
+type ModelsI18nModulePage struct {
+	PagesPage string
+}
+
+var ModelsI18nModulePage_EN = ModelsI18nModulePage{
+	PagesPage: "Page",
+}
+var ModelsI18nModulePage_Zh = ModelsI18nModulePage{
+	PagesPage: "Page",
+}
+var ModelsI18nModulePage_JP = ModelsI18nModulePage{
+	PagesPage: "ページ",
+}
