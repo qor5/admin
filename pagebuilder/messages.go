@@ -353,9 +353,11 @@ type ModelsI18nModulePage struct {
 var ModelsI18nModulePage_EN = ModelsI18nModulePage{
 	PagesPage: "Page",
 }
+
 var ModelsI18nModulePage_Zh = ModelsI18nModulePage{
 	PagesPage: "Page",
 }
+
 var ModelsI18nModulePage_JP = ModelsI18nModulePage{
 	PagesPage: "ページ",
 }
