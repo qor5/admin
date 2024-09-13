@@ -63,13 +63,16 @@ func (b *MenuOrderBuilder) Append(items ...interface{}) {
 	}
 }
 
-func (b *MenuOrderBuilder) check(item string, ctx *web.EventContext) (*ModelBuilder, bool) {
+func (b *MenuOrderBuilder) check(item string, groupName string, ctx *web.EventContext) (*ModelBuilder, bool) {
 	m, ok := b.modelMap[item]
 	if !ok {
 		m, ok = b.modelMap[inflection.Plural(strcase.ToKebab(item))]
 	}
 	if !ok {
 		return nil, false
+	}
+	if groupName != "" {
+		m.menuGroupName = groupName
 	}
 	disabled := m.notInMenu || (m.Info().Verifier().Do(PermList).WithReq(ctx.R).IsAllowed() != nil)
 	if disabled {
@@ -137,7 +140,7 @@ func (b *MenuOrderBuilder) buildUnorderedMenus(ctx *web.EventContext, inOrderMap
 }
 
 func (b *MenuOrderBuilder) buildMenuItem(name string, isSub bool, groupName string, ctx *web.EventContext, inOrderMap map[string]menuOrderItem) h.HTMLComponent {
-	m, ok := b.check(name, ctx)
+	m, ok := b.check(name, groupName, ctx)
 	if !ok {
 		return nil
 	}
