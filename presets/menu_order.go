@@ -20,6 +20,11 @@ type MenuOrderBuilder struct {
 	modelMap map[string]*ModelBuilder
 }
 
+type menuOrderItem struct {
+	groupName string
+	model     *ModelBuilder
+}
+
 func newMenuOrderBuilder(b *Builder) *MenuOrderBuilder {
 	return &MenuOrderBuilder{p: b}
 }
@@ -59,12 +64,6 @@ func (b *MenuOrderBuilder) Append(items ...interface{}) {
 }
 
 func (b *MenuOrderBuilder) check(item string, ctx *web.EventContext) (*ModelBuilder, bool) {
-	if b.modelMap == nil {
-		b.modelMap = make(map[string]*ModelBuilder)
-		for _, m := range b.p.models {
-			b.modelMap[m.uriName] = m
-		}
-	}
 	m, ok := b.modelMap[item]
 	if !ok {
 		m, ok = b.modelMap[inflection.Plural(strcase.ToKebab(item))]
@@ -79,58 +78,134 @@ func (b *MenuOrderBuilder) check(item string, ctx *web.EventContext) (*ModelBuil
 	return m, true
 }
 
-func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent) {
-	// Initialize modelMap
+func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) h.HTMLComponent {
+	b.initializeModelMap()
+
+	inOrderMap := make(map[string]menuOrderItem)
+	menus := b.buildOrderedMenus(ctx, inOrderMap)
+	unorderedMenus := b.buildUnorderedMenus(ctx, inOrderMap)
+
+	menus = append(menus, unorderedMenus...)
+
+	activeMenuItem, selection := b.getActiveMenuState(ctx, inOrderMap)
+
+	return b.buildMenuComponent(menus, activeMenuItem, selection)
+}
+
+func (b *MenuOrderBuilder) initializeModelMap() {
 	b.modelMap = make(map[string]*ModelBuilder)
 	for _, m := range b.p.models {
 		b.modelMap[m.uriName] = m
 	}
+}
 
-	var (
-		activeMenuItem string // Store the currently active menu item
-		selection      string // Store the currently selected menu item
-	)
-	inOrderMap := make(map[string]struct{}) // Track items already added to the menu
-	var menus []h.HTMLComponent             // Holds the list of generated menu components
+func (b *MenuOrderBuilder) buildOrderedMenus(ctx *web.EventContext, inOrderMap map[string]menuOrderItem) []h.HTMLComponent {
+	var menus []h.HTMLComponent
 
-	// Handle ordered menu items
 	for _, om := range b.order {
-		// If it's a string, handle as a single menu item
-		if v, ok := om.(string); ok {
-			m, menuItem := b.menuItem(v, false, ctx)
-			if menuItem == nil {
-				continue
+		switch v := om.(type) {
+		case string:
+			menuItem := b.buildMenuItem(v, false, "", ctx, inOrderMap)
+			if menuItem != nil {
+				menus = append(menus, menuItem)
 			}
-			menus = append(menus, menuItem)
-			inOrderMap[m.uriName] = struct{}{}
-			if b.isMenuItemActive(m, ctx) {
-				selection = m.label
+		case *MenuGroupBuilder:
+			menuGroup := b.buildMenuGroup(v, ctx, inOrderMap)
+			if menuGroup != nil {
+				menus = append(menus, menuGroup)
 			}
-			continue
+		default:
+			panic(fmt.Sprintf("unknown menu order item type: %T\n", om))
 		}
-
-		// Handle menu groups
-		b.handleMenuGroup(om.(*MenuGroupBuilder), ctx, &menus, &activeMenuItem, &selection, inOrderMap)
-
 	}
+	return menus
+}
 
-	// Handle unordered models that are not part of the pre-defined order
+func (b *MenuOrderBuilder) buildUnorderedMenus(ctx *web.EventContext, inOrderMap map[string]menuOrderItem) []h.HTMLComponent {
+	var menus []h.HTMLComponent
+
 	for _, m := range b.p.models {
-		m, menuItem := b.menuItem(m.uriName, false, ctx)
-		if menuItem == nil {
+		if _, exists := inOrderMap[m.uriName]; exists {
 			continue
 		}
-		if _, ok := inOrderMap[m.uriName]; ok {
-			continue
+		menuItem := b.buildMenuItem(m.uriName, false, "", ctx, inOrderMap)
+		if menuItem != nil {
+			menus = append(menus, menuItem)
 		}
-		if b.isMenuItemActive(m, ctx) {
-			selection = m.label
-		}
-		menus = append(menus, menuItem)
+	}
+	return menus
+}
+
+func (b *MenuOrderBuilder) buildMenuItem(name string, isSub bool, groupName string, ctx *web.EventContext, inOrderMap map[string]menuOrderItem) h.HTMLComponent {
+	m, ok := b.check(name, ctx)
+	if !ok {
+		return nil
+	}
+	menuItem, err := m.menuItem(ctx, isSub)
+	if err != nil {
+		panic(err)
+	}
+	inOrderMap[m.uriName] = menuOrderItem{
+		groupName: groupName,
+		model:     m,
+	}
+	return menuItem
+}
+
+func (b *MenuOrderBuilder) buildMenuGroup(v *MenuGroupBuilder, ctx *web.EventContext, inOrderMap map[string]menuOrderItem) h.HTMLComponent {
+	if !b.hasPermissionForMenuGroup(v, ctx) {
+		return nil
 	}
 
-	// Create the HTML component for the menu
-	r = h.Div(
+	subMenus := b.buildSubMenus(v, ctx, inOrderMap)
+	if len(subMenus) == 0 {
+		return nil
+	}
+
+	activator := b.buildMenuGroupActivator(v, ctx)
+	return VListGroup(append([]h.HTMLComponent{activator}, subMenus...)...).Value(v.name)
+}
+
+func (b *MenuOrderBuilder) hasPermissionForMenuGroup(v *MenuGroupBuilder, ctx *web.EventContext) bool {
+	return b.p.verifier.Do(PermList).SnakeOn("mg_"+v.name).WithReq(ctx.R).IsAllowed() == nil
+}
+
+func (b *MenuOrderBuilder) buildSubMenus(v *MenuGroupBuilder, ctx *web.EventContext, inOrderMap map[string]menuOrderItem) []h.HTMLComponent {
+	var subMenus []h.HTMLComponent
+	for _, subItem := range v.subMenuItems {
+		menuItem := b.buildMenuItem(subItem, true, v.name, ctx, inOrderMap)
+		if menuItem != nil {
+			subMenus = append(subMenus, menuItem)
+		}
+	}
+	return subMenus
+}
+
+func (b *MenuOrderBuilder) buildMenuGroupActivator(v *MenuGroupBuilder, ctx *web.EventContext) h.HTMLComponent {
+	return h.Template(
+		VListItem(
+			web.Slot(VIcon(v.icon)).Name("prepend"),
+			VListItemTitle().
+				Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s; font-size: 14px;", menuFontWeight)),
+		).
+			Attr("v-bind", "props").
+			Title(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)).
+			Class("rounded-lg"),
+	).Attr("v-slot:activator", "{ props }")
+}
+
+func (b *MenuOrderBuilder) getActiveMenuState(ctx *web.EventContext, inOrderMap map[string]menuOrderItem) (menuGroupSelected string, menuItemSelected string) {
+	for _, v := range inOrderMap {
+		if b.isMenuItemActive(v.model, ctx) {
+			menuGroupSelected = v.groupName
+			menuItemSelected = v.model.label
+		}
+	}
+	return
+}
+
+func (b *MenuOrderBuilder) buildMenuComponent(menus []h.HTMLComponent, menuGroupSelected, menuItemSelected string) h.HTMLComponent {
+	return h.Div(
 		web.Scope(
 			VList(menus...).
 				OpenStrategy("single").
@@ -140,76 +215,10 @@ func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) (r h.HTMLComponent
 				Attr("v-model:selected", "locals.selection").
 				Attr("color", "transparent"),
 		).VSlot("{ locals }").Init(
-			fmt.Sprintf(`{ menuOpened:  [%q]}`, activeMenuItem),
-			fmt.Sprintf(`{ selection:  [%q]}`, selection),
-		))
-	return
-}
-
-func (b *MenuOrderBuilder) handleMenuGroup(
-	v *MenuGroupBuilder,
-	ctx *web.EventContext,
-	menus *[]h.HTMLComponent,
-	activeMenuItem *string,
-	selection *string,
-	inOrderMap map[string]struct{},
-) {
-	// Check if the user has permission to view the menu group
-	if b.p.verifier.Do(PermList).SnakeOn("mg_"+v.name).WithReq(ctx.R).IsAllowed() != nil {
-		return
-	}
-
-	// Create the submenu items
-	subMenus := []h.HTMLComponent{
-		h.Template(
-			VListItem(
-				web.Slot(VIcon(v.icon)).Name("prepend"),
-				VListItemTitle().Attr("style", fmt.Sprintf("white-space: normal; font-weight: %s;font-size: 14px;", menuFontWeight)),
-			).Attr("v-bind", "props").
-				Title(i18n.T(ctx.R, ModelsI18nModuleKey, v.name)).
-				Class("rounded-lg"),
-		).Attr("v-slot:activator", "{ props }"),
-	}
-	subCount := 0
-
-	// Process each submenu item within the group
-	for _, subOm := range v.subMenuItems {
-		m, menuItem := b.menuItem(subOm, true, ctx)
-		if m != nil {
-			m.menuGroupName = v.name
-		}
-		if menuItem == nil {
-			continue
-		}
-		subMenus = append(subMenus, menuItem)
-		subCount++
-		inOrderMap[m.uriName] = struct{}{}
-		if b.isMenuItemActive(m, ctx) {
-			*activeMenuItem = v.name
-			*selection = m.label
-		}
-	}
-
-	// If no submenus were found, skip the group
-	if subCount == 0 {
-		return
-	}
-
-	// Append the group with its submenus to the main menu list
-	*menus = append(*menus, VListGroup(subMenus...).Value(v.name))
-}
-
-func (b *MenuOrderBuilder) menuItem(name string, isSub bool, ctx *web.EventContext) (*ModelBuilder, h.HTMLComponent) {
-	m, ok := b.check(name, ctx)
-	if !ok {
-		return m, nil
-	}
-
-	menuItem, err := m.menuItem(ctx, isSub)
-	if err != nil {
-		panic(err)
-	}
-	return m, menuItem
+			fmt.Sprintf(`{ menuOpened: [%q] }`, menuGroupSelected),
+			fmt.Sprintf(`{ selection: [%q] }`, menuItemSelected),
+		),
+	)
 }
 
 func (b *MenuOrderBuilder) isMenuItemActive(m *ModelBuilder, ctx *web.EventContext) bool {
