@@ -89,11 +89,12 @@ func (d *SectionsBuilder) appendNewSection(name string) (r *SectionBuilder) {
 	r.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		return r.father.mb.editing.Saver(obj, id, ctx)
 	})
-	if r.father.mb.editing.Validator != nil {
-		r.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+	r.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		if r.father.mb.editing.Validator != nil {
 			return r.father.mb.editing.Validator(obj, ctx)
-		})
-	}
+		}
+		return err
+	})
 	r.UnmarshalFunc(r.DefaultUnmarshalFunc)
 	d.sections = append(d.sections, r)
 
