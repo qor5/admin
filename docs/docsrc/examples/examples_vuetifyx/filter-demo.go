@@ -40,7 +40,7 @@ func FilterDemo(ctx *web.EventContext) (pr web.PageResponse, err error) {
 		},
 	})
 
-	fd.SetByQueryString(ctx.R.URL.RawQuery)
+	fd.SetByQueryString(&web.EventContext{}, ctx.R.URL.RawQuery)
 
 	pr.Body = VApp(
 		VMain(

@@ -8,14 +8,16 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/stateful"
+	"github.com/samber/lo"
+	h "github.com/theplant/htmlgo"
+
 	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
-	"github.com/samber/lo"
-	h "github.com/theplant/htmlgo"
+
+	"github.com/qor5/admin/v3/presets/actions"
 )
 
 const (
@@ -348,7 +350,7 @@ func (c *ListingCompo) toolbarSearch(ctx context.Context) h.HTMLComponent {
 	var filterSearch h.HTMLComponent
 	if c.lb.filterDataFunc != nil {
 		fd := c.lb.filterDataFunc(evCtx)
-		fd.SetByQueryString(c.FilterQuery)
+		fd.SetByQueryString(evCtx, c.FilterQuery)
 		filterSearch = c.filterSearch(ctx, fd)
 	}
 
@@ -449,15 +451,19 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		searchParams.PerPage = perPage
 	}
 	searchParams.Page = cmp.Or(c.Page, 1)
-
+	var filterScript h.HTMLComponent
 	var fd vx.FilterData
 	if c.lb.filterDataFunc != nil {
 		fd = c.lb.filterDataFunc(evCtx)
-		cond, args := fd.SetByQueryString(c.FilterQuery)
+		cond, args, vErr := fd.SetByQueryString(evCtx, c.FilterQuery)
+		if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
+			filterScript = web.RunScript(fmt.Sprintf(`(el)=>{%s}`, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), "error")))
+		}
 		searchParams.SQLConditions = append(searchParams.SQLConditions, &SQLCondition{
 			Query: cond,
 			Args:  args,
 		})
+
 	}
 
 	objs, totalCount, err := c.lb.Searcher(c.lb.mb.NewModelSlice(), searchParams, evCtx)
@@ -621,7 +627,11 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 				).ThenScript(ListingCompo_JsScrollToTop).Go()),
 		)
 	}
-	return h.Components(dataTable, dataTableAdditions)
+	return h.Components(
+		filterScript,
+		dataTable,
+		dataTableAdditions,
+	)
 }
 
 type Column struct {
