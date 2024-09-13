@@ -144,9 +144,6 @@ func (b *MenuOrderBuilder) buildMenuItem(name string, isSub bool, groupName stri
 	if !ok {
 		return nil
 	}
-	if isSub {
-		m.menuGroupName = groupName
-	}
 	menuItem, err := m.menuItem(ctx, isSub)
 	if err != nil {
 		panic(err)
