@@ -18,6 +18,7 @@ type TiptapEditorBuilder struct {
 	name            string
 	imageGlueExists bool
 	label           string
+	disabled        bool
 	errorMessages   []string
 }
 
@@ -36,7 +37,7 @@ func (b *TiptapEditorBuilder) Label(v string) (r *TiptapEditorBuilder) {
 	return b
 }
 
-func (b *TiptapEditorBuilder) ErrorMessages(v []string) (r *TiptapEditorBuilder) {
+func (b *TiptapEditorBuilder) ErrorMessages(v ...string) (r *TiptapEditorBuilder) {
 	b.errorMessages = v
 	return b
 }
@@ -47,6 +48,7 @@ func (b *TiptapEditorBuilder) Attr(vs ...any) (r *TiptapEditorBuilder) {
 }
 
 func (b *TiptapEditorBuilder) Disabled(v bool) (r *TiptapEditorBuilder) {
+	b.disabled = v
 	b.editor.Disabled(v)
 	return b
 }
@@ -75,8 +77,14 @@ func (b *TiptapEditorBuilder) Extensions(extensions []*vx.VXTiptapEditorExtensio
 			if imageGlue.Options == nil {
 				imageGlue.Options = map[string]any{}
 			}
-			imageGlue.Options["onClick"] = `({editor, value, window})=> {
-				window.document.getElementById("chooseFile").click();
+
+			fieldName := fmt.Sprintf("%s_tiptapeditor_medialibrary", b.name)
+			imageGlue.Options["onClick"] = fmt.Sprintf(`({editor, value, window})=> {
+				const el = window.document.getElementById(%q);
+				if (!el) {
+					return;
+				}
+				el.click();
 				window.__currentImageGlueCallback = (images) => {
 					if (!Array.isArray(images)) {
 						images = [images]
@@ -93,7 +101,7 @@ func (b *TiptapEditorBuilder) Extensions(extensions []*vx.VXTiptapEditorExtensio
 						}).run()
 					}
 				};
-			}`
+			}`, media.ChooseFileButtonID(fieldName))
 			b.imageGlueExists = true
 		}
 	}
@@ -102,18 +110,12 @@ func (b *TiptapEditorBuilder) Extensions(extensions []*vx.VXTiptapEditorExtensio
 }
 
 func (b *TiptapEditorBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
-	if !b.imageGlueExists {
-		return b.editor.MarshalHTML(ctx)
-	}
-
-	fieldName := fmt.Sprintf("%s_tiptapeditor_medialibrary", b.name)
-
-	r := h.Div().Class("d-flex").Children(
-		h.Label(b.label).Class("v-label theme--light"),
-		b.editor,
+	var mediaBox h.HTMLComponent
+	if b.imageGlueExists {
+		fieldName := fmt.Sprintf("%s_tiptapeditor_medialibrary", b.name)
 		// Body_tiptapeditor_medialibrary.Description: ""
 		// Body_tiptapeditor_medialibrary.Values: "{"ID":1,"Url":"/system/media_libraries/1/file.jpeg","VideoLink":"","FileName":"main-qimg-d2290767bcbc9eb9748ca82934e6855c-lq.jpeg","Description":"","FileSizes":{"@qor_preview":20659,"default":73467,"original":73467},"Width":602,"Height":602}"
-		h.Div().Class("hidden-screen-only").Children(
+		mediaBox = h.Div().Class("hidden-screen-only").Children(
 			media.QMediaBox(b.db).FieldName(fieldName).
 				Value(&media_library.MediaBox{}).Config(&media_library.MediaBoxConfig{
 				AllowType: "image",
@@ -134,7 +136,28 @@ func (b *TiptapEditorBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
 				delete(form[%q]);
 				ignoreFlag = false;
 			}, { immediate: true })
-		}`, fieldName+".Values", fieldName+".Values")),
+		}`, fieldName+".Values", fieldName+".Values"))
+	}
+
+	if len(b.errorMessages) > 0 && !b.disabled {
+		b.editor.Attr("style", "border: 1px solid rgb(var(--v-theme-error));")
+	} else {
+		b.editor.Attr("class", "border-thin")
+	}
+
+	r := h.Div().Class("d-flex flex-column ga-1").Children(
+		h.Label(b.label).Class("v-label theme--light"),
+		b.editor,
+		mediaBox,
+		h.Iff(len(b.errorMessages) > 0, func() h.HTMLComponent {
+			var compos []h.HTMLComponent
+			for _, errMsg := range b.errorMessages {
+				compos = append(compos, h.Div().Attr("v-pre", true).Text(errMsg))
+			}
+			return h.Div().Class("d-flex flex-column ps-4 py-1 ga-1 text-caption").
+				ClassIf("text-error", len(b.errorMessages) > 0 && !b.disabled).
+				ClassIf("text-grey", b.disabled).Children(compos...)
+		}),
 	)
 	return r.MarshalHTML(ctx)
 }

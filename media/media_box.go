@@ -366,6 +366,10 @@ func doDelete(mb *Builder) web.EventFunc {
 	}
 }
 
+func ChooseFileButtonID(field string) string {
+	return fmt.Sprintf("btnChooseFile_%s", field)
+}
+
 func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox, field string, cfg *media_library.MediaBoxConfig, disabled, readonly bool) h.HTMLComponent {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 	c := VContainer().Fluid(true)
@@ -375,7 +379,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 	// button
 	btnRow := VRow(
 		VBtn(msgr.ChooseFile).
-			Attr("id", "chooseFile"). // TODO:
+			Attr("id", ChooseFileButtonID(field)).
 			Variant(VariantTonal).Color(ColorPrimary).Size(SizeXSmall).PrependIcon("mdi-upload-outline").
 			Class("rounded-sm").
 			Attr("style", "text-transform: none;").

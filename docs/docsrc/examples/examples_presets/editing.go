@@ -94,15 +94,17 @@ func PresetsEditingTiptap(b *presets.Builder, db *gorm.DB) (
 	ce.Field("Description").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		// extensions := vx.TiptapSlackLikeExtensions()
 		// extensions = append(extensions,
-		// 	&vx.VXTiptapEditorExtension{Name: "ImageGlue"},
+		// 	&vx.VXTiptapEditorExtension{Name: "ImageGlue"}, // Do not use Image, please use ImageGlue to integrate the media library
 		// 	&vx.VXTiptapEditorExtension{Name: "Video"},
 		// )
 		extensions := tiptap.TiptapExtensions()
-		return tiptap.TiptapEditor(db, "Body").
+		return tiptap.TiptapEditor(db, field.Name).
 			Extensions(extensions).
-			MarkdownTheme("github"). // match tiptap.ThemeGithubCSSComponentsPack
+			MarkdownTheme("github"). // Match tiptap.ThemeGithubCSSComponentsPack
 			Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
-			Disabled(field.Disabled)
+			Label(field.Label).
+			Disabled(field.Disabled).
+			ErrorMessages(field.Errors...)
 	})
 
 	return
