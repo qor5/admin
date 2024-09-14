@@ -306,21 +306,19 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 	b.DataOperator(gorm2op.DataOperator(db))
 
 	cust = b.Model(&Customer{})
-	// This should inspect Notes attributes, When it is a list, It should show a standard table in detail page
-	dp = cust.Detailing("name_section").Drawer(true)
-	dp.Section("name_section").Label("name must not be empty, no longer than 6").
-		Editing("Name").ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+	// section will use Editing().ValidateFunc() as validateFunc default
+	cust.Editing().ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		customer := obj.(*Customer)
-		if customer.Name == "" {
-			err.GlobalError("customer name must not be empty")
-		}
 		if len(customer.Name) > 6 {
 			err.FieldError("name_section.Name", "customer name must no longer than 6")
 		}
 		return
-	}).EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	})
+	// This should inspect Notes attributes, When it is a list, It should show a standard table in detail page
+	dp = cust.Detailing("name_section", "email_section", "CreditCards").Drawer(true)
+	dp.Section("name_section").Label("name must not be empty, no longer than 6").
+		Editing("Name").EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		customer := obj.(*Customer)
-
 		var vErr web.ValidationErrors
 		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
 			vErr = *ve
@@ -330,8 +328,65 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 			Density(v.DensityCompact).
 			Attr(web.VField("name_section.Name", customer.Name)...).
 			ErrorMessages(vErr.GetFieldErrors("name_section.Name")...)
+	}).WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		return in
+	}).WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
+		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			customer := obj.(*Customer)
+			if customer.Name == "" {
+				err.GlobalError("customer name must not be empty")
+			}
+			if err.HaveErrors() {
+				return err
+			}
+			return in(obj, ctx)
+		}
 	})
 
+	dp.Section("email_section").
+		Label("email must not be empty, must longer than 6").
+		Editing("Email").
+		ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			customer := obj.(*Customer)
+			if customer.Email == "" {
+				err.GlobalError("customer email must not be empty")
+			}
+			if len(customer.Email) < 6 {
+				err.FieldError("email_section.Email", "customer email must longer than 6")
+			}
+			return
+		}).EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		customer := obj.(*Customer)
+		var vErr web.ValidationErrors
+		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+			vErr = *ve
+		}
+		return v.VTextField().
+			Variant(v.VariantOutlined).
+			Density(v.DensityCompact).
+			Attr(web.VField("email_section.Email", customer.Name)...).
+			ErrorMessages(vErr.GetFieldErrors("email_section.Email")...)
+	}).SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		return cust.Editing().Saver(obj, id, ctx)
+	})
+
+	dp.Section("CreditCards").IsList(&CreditCard{}).Editing("Name").
+		ElementEditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			card := obj.(*CreditCard)
+			return vx.VXTextField().VField(fmt.Sprintf("%s.Name", field.FormKey), card.Name)
+		}).
+		ElementShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			card := obj.(*CreditCard)
+			return vx.VXTextField().Text(card.Name)
+		}).ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		customer := obj.(*Customer)
+		for _, card := range customer.CreditCards {
+			if card.Name == "" {
+				err.GlobalError("credit card name must not be empty")
+			}
+		}
+		return
+	})
 	return
 }
 
@@ -352,6 +407,7 @@ func PresetsDetailNestedMany(b *presets.Builder, db *gorm.DB) (
 
 	ccmb := mb.NestedMany(&CreditCard{}, "CustomerID")
 	dp.Field("CreditCards").Use(ccmb)
+	ccmb.Detailing("Detail").Drawer(true).Section("Detail").Editing("Name", "Phone")
 
 	ccmb2 := mb.NestedMany(&CreditCard{}, "CustomerID")
 	// force ignore ExpireYearMonth column if you need

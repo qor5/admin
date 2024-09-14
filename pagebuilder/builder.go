@@ -95,6 +95,7 @@ type Builder struct {
 	expendContainers              bool
 	pageEnabled                   bool
 	disabledNormalContainersGroup bool
+	previewOpenNewTab             bool
 	previewContainer              bool
 	templateInstall               presets.ModelInstallFunc
 	pageInstall                   presets.ModelInstallFunc
@@ -286,6 +287,11 @@ func (b *Builder) PreviewContainer(v bool) (r *Builder) {
 
 func (b *Builder) ExpendContainers(v bool) (r *Builder) {
 	b.expendContainers = v
+	return b
+}
+
+func (b *Builder) PreviewOpenNewTab(v bool) (r *Builder) {
+	b.previewOpenNewTab = v
 	return b
 }
 

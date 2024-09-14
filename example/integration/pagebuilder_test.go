@@ -102,6 +102,7 @@ func TestPageBuilder(t *testing.T) {
 			ExpectPageBodyContainsInOrder: []string{
 				`Page`, `SEO`, `Activity`,
 			},
+			ExpectPageBodyNotContains: []string{"_blank"},
 		},
 		{
 			Name:  "Page Builder Detail editor",

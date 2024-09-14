@@ -150,7 +150,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				return httptest.NewRequest("GET", "/campaign-products/1_2024-05-20-v01", nil)
 			},
-			ExpectPageBodyContainsInOrder: []string{"publish_EventPublish", "ProductDetail"},
+			ExpectPageBodyContainsInOrder: []string{"publish_EventPublish", "_blank", "ProductDetail"},
 		},
 		{
 			Name:  "Campaign My Contents",

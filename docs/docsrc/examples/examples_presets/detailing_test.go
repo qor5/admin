@@ -310,6 +310,45 @@ func TestPresetsDetailSectionValidate(t *testing.T) {
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"customer name must no longer than 6"},
 		},
+		{
+			Name:  "section validate globe err with custom saveFunc",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=presets_Detailing_Field_Save&section=email_section&id=12").
+					AddField("email_section.Email", "").
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{"message: \"customer email must not be empty\""},
+		},
+		{
+			Name:  "section validate field err with custom saveFunc",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=presets_Detailing_Field_Save&section=email_section&id=12").
+					AddField("email_section.Email", "short").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"customer email must longer than 6"},
+		},
+		{
+			Name:  "list section validate field err",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=presets_Detailing_List_Field_Save&section=CreditCards&id=12").
+					Query("sectionListSaveBtn_CreditCards", "0").
+					Query("sectionListUnsaved_CreditCards", "false").
+					AddField("CreditCards[0].Name", "").
+					AddField("__Deleted_CreditCards[0].sectionListEditing", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{"credit card name must not be empty"},
+		},
 	}
 
 	for _, c := range cases {

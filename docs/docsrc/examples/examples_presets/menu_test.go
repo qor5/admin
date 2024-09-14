@@ -33,3 +33,29 @@ func TestPresetsCustomizeMenu(t *testing.T) {
 		})
 	}
 }
+
+func TestPresetsCustomizeMenuWithPermission(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsGroupMenuWithPermission(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "allow group item",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				// detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/presets-group-menu-with-permission/videos").
+					BuildEventFuncRequest()
+			},
+			ExpectPageBodyContainsInOrder: []string{"Books", "Media", "Videos"},
+			ExpectPageBodyNotContains:     []string{"Musics"},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}

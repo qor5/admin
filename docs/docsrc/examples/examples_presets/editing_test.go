@@ -156,3 +156,41 @@ func TestPresetsEditingCustomizationDescription(t *testing.T) {
 		})
 	}
 }
+
+func TestPresetsEditingTiptap(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsEditingTiptap(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "new",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=presets_New").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`Customer Name`, `Customer Email`, `Description`, `tiptap`},
+		},
+		{
+			Name:  "do new",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=presets_Update").
+					AddField("Name", "").
+					AddField("Email", "").
+					AddField("CompanyID", "0").
+					AddField("Description", "").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`name must not be empty`, `email must not be empty`, `description must not be empty`},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}
