@@ -13,7 +13,6 @@ import (
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 
-	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/publish"
@@ -174,6 +173,18 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 					Permanent(true).
 					Width(350),
 				VNavigationDrawer(
+					h.Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf(`({el}) => {
+						el.__handleScroll = (event) => {
+							locals.__pageBuilderRightContentScrollTop = event.target.scrollTop;
+						}
+						el.parentElement.addEventListener('scroll', el.__handleScroll)
+
+						locals.__pageBuilderRightContentKeepScroll = () => {
+							el.parentElement.scrollTop = locals.__pageBuilderRightContentScrollTop;
+						}
+					}`)).Attr("v-on-unmounted", `({el}) => {
+						el.parentElement.removeEventListener('scroll', el.__handleScroll);
+					}`),
 					web.Portal(editContainerDrawer).Name(pageBuilderRightContentPortal),
 				).Location(LocationRight).
 					Permanent(true).
@@ -229,157 +240,6 @@ type ContainerSorter struct {
 func (b *Builder) renderNavigator(ctx *web.EventContext, m *ModelBuilder) (r h.HTMLComponent, err error) {
 	if r, err = m.renderContainersSortedList(ctx); err != nil {
 		return
-	}
-	return
-}
-
-func (b *Builder) renderEditContainer(ctx *web.EventContext) (r h.HTMLComponent, err error) {
-	var (
-		modelName     = ctx.R.FormValue(paramModelName)
-		containerName = ctx.R.FormValue(paramContainerName)
-		modelID       = ctx.R.FormValue(paramModelID)
-	)
-	builder := b.ContainerByName(modelName).GetModelBuilder()
-	element := builder.NewModel()
-	if err = b.db.First(element, modelID).Error; err != nil {
-		return
-	}
-	r = web.Scope(
-		VLayout(
-			VMain(
-				h.Div(
-					h.Span(containerName).Class("text-subtitle-1"),
-					h.Div(
-						VBtn("Save").Variant(VariantFlat).Color(ColorSecondary).Size(SizeSmall).Attr("@click", web.Plaid().
-							EventFunc(actions.Update).
-							URL(b.ContainerByName(modelName).mb.Info().ListingHref()).
-							Query(presets.ParamID, modelID).
-							Go()),
-					),
-				).Class("d-flex  pa-6 align-center justify-space-between"),
-				VDivider(),
-				h.Div(
-
-					builder.Editing().ToComponent(builder.Info(), element, ctx),
-				).Class("pa-6"),
-			),
-		),
-	).VSlot("{ form }")
-	return
-}
-
-func (b *Builder) copyContainersToNewPageVersion(db *gorm.DB, pageID int, locale, oldPageVersion, newPageVersion string) (err error) {
-	return b.copyContainersToAnotherPage(db, pageID, oldPageVersion, locale, pageID, newPageVersion, locale)
-}
-
-func (b *Builder) copyContainersToAnotherPage(db *gorm.DB, pageID int, pageVersion, locale string, toPageID int, toPageVersion, toPageLocale string) (err error) {
-	var cons []*Container
-	err = db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ? AND locale_code = ?", pageID, pageVersion, locale).Error
-	if err != nil {
-		return
-	}
-
-	for _, c := range cons {
-		newModelID := c.ModelID
-		if !c.Shared {
-			model := b.ContainerByName(c.ModelName).NewModel()
-			if err = db.First(model, "id = ?", c.ModelID).Error; err != nil {
-				return
-			}
-			if err = reflectutils.Set(model, "ID", uint(0)); err != nil {
-				return
-			}
-			if err = db.Create(model).Error; err != nil {
-				return
-			}
-			newModelID = reflectutils.MustGet(model, "ID").(uint)
-		}
-
-		if err = db.Create(&Container{
-			PageID:       uint(toPageID),
-			PageVersion:  toPageVersion,
-			ModelName:    c.ModelName,
-			DisplayName:  c.DisplayName,
-			ModelID:      newModelID,
-			DisplayOrder: c.DisplayOrder,
-			Shared:       c.Shared,
-			Locale: l10n.Locale{
-				LocaleCode: toPageLocale,
-			},
-		}).Error; err != nil {
-			return
-		}
-	}
-	return
-}
-
-func (b *Builder) localizeContainersToAnotherPage(db *gorm.DB, pageID int, pageVersion, locale string, toPageID int, toPageVersion, toPageLocale string) (err error) {
-	var cons []*Container
-	err = db.Order("display_order ASC").Find(&cons, "page_id = ? AND page_version = ? AND locale_code = ?", pageID, pageVersion, locale).Error
-	if err != nil {
-		return
-	}
-
-	for _, c := range cons {
-		newModelID := c.ModelID
-		newDisplayName := c.DisplayName
-		if !c.Shared {
-			model := b.ContainerByName(c.ModelName).NewModel()
-			if err = db.First(model, "id = ?", c.ModelID).Error; err != nil {
-				return
-			}
-			if err = reflectutils.Set(model, "ID", uint(0)); err != nil {
-				return
-			}
-			if err = db.Create(model).Error; err != nil {
-				return
-			}
-			newModelID = reflectutils.MustGet(model, "ID").(uint)
-		} else {
-			var count int64
-			var sharedCon Container
-			if err = db.Where("model_name = ? AND localize_from_model_id = ? AND locale_code = ? AND shared = ?", c.ModelName, c.ModelID, toPageLocale, true).First(&sharedCon).Count(&count).Error; err != nil && err != gorm.ErrRecordNotFound {
-				return
-			}
-
-			if count == 0 {
-				model := b.ContainerByName(c.ModelName).NewModel()
-				if err = db.First(model, "id = ?", c.ModelID).Error; err != nil {
-					return
-				}
-				if err = reflectutils.Set(model, "ID", uint(0)); err != nil {
-					return
-				}
-				if err = db.Create(model).Error; err != nil {
-					return
-				}
-				newModelID = reflectutils.MustGet(model, "ID").(uint)
-			} else {
-				newModelID = sharedCon.ModelID
-				newDisplayName = sharedCon.DisplayName
-			}
-		}
-
-		var newCon Container
-		err = db.Order("display_order ASC").Find(&newCon, "id = ? AND locale_code = ?", c.ID, toPageLocale).Error
-		if err != nil {
-			return
-		}
-
-		newCon.ID = c.ID
-		newCon.PageID = uint(toPageID)
-		newCon.PageVersion = toPageVersion
-		newCon.ModelName = c.ModelName
-		newCon.DisplayName = newDisplayName
-		newCon.ModelID = newModelID
-		newCon.DisplayOrder = c.DisplayOrder
-		newCon.Shared = c.Shared
-		newCon.LocaleCode = toPageLocale
-		newCon.LocalizeFromModelID = c.ModelID
-
-		if err = db.Save(&newCon).Error; err != nil {
-			return
-		}
 	}
 	return
 }

@@ -310,6 +310,45 @@ func TestPresetsDetailSectionValidate(t *testing.T) {
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"customer name must no longer than 6"},
 		},
+		{
+			Name:  "section validate globe err with custom saveFunc",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=presets_Detailing_Field_Save&section=email_section&id=12").
+					AddField("email_section.Email", "").
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{"message: \"customer email must not be empty\""},
+		},
+		{
+			Name:  "section validate field err with custom saveFunc",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=presets_Detailing_Field_Save&section=email_section&id=12").
+					AddField("email_section.Email", "short").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"customer email must longer than 6"},
+		},
+		{
+			Name:  "list section validate field err",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=presets_Detailing_List_Field_Save&section=CreditCards&id=12").
+					Query("sectionListSaveBtn_CreditCards", "0").
+					Query("sectionListUnsaved_CreditCards", "false").
+					AddField("CreditCards[0].Name", "").
+					AddField("__Deleted_CreditCards[0].sectionListEditing", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{"credit card name must not be empty"},
+		},
 	}
 
 	for _, c := range cases {
@@ -644,6 +683,73 @@ func TestPresetsDetailTabsSection(t *testing.T) {
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"terry1"},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}
+
+func TestPresetsDetailTabsSectionOrder(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsDetailTabsSectionOrder(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "detail tabs section display",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				customerData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers").
+					Query("__execute_event__", "presets_DetailingDrawer").
+					Query("id", "1").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"email", "name", `<v-tabs-window-item :value='"email"'>`, "xxx@gmail.com", `<v-tabs-window-item :value='"name"'>`, "Terry"},
+		},
+		{
+			Name:  "detail tabs section save",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				customerData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers").
+					Query("__execute_event__", "presets_Detailing_Field_Save").
+					Query("id", "1").
+					Query("section", "name").
+					AddField("name.Name", "terry1").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"terry1"},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}
+
+func TestPresetsDetailAfterTitle(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsDetailAfterTitle(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "detail without drawer after title",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				customerData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers/1?__execute_event__=__reload__").
+					BuildEventFuncRequest()
+			},
+			ExpectPageBodyContainsInOrder: []string{"After Title"},
 		},
 	}
 

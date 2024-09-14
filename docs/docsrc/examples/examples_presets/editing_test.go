@@ -4,8 +4,11 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/qor5/admin/v3/media"
+	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
+	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
 )
@@ -92,6 +95,58 @@ func TestPresetsEditingCustomizationDescription(t *testing.T) {
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{`Customer Name`, `Customer Email`, `Description`, `redactor`},
+		},
+		{
+			Name:  "do new",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=presets_Update").
+					AddField("Name", "").
+					AddField("Email", "").
+					AddField("Body", "").
+					AddField("CompanyID", "0").
+					AddField("Description", "").
+					AddField("Body_richeditor_medialibrary.Values", "").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`name must not be empty`, `email must not be empty`, `description must not be empty`},
+		},
+		{
+			Name:  "do new without avatar",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+				mediaBuilder := media.New(TestDB).AutoMigrate()
+				defer pb.Use(mediaBuilder)
+
+				mb, _, _, _ := PresetsEditingCustomizationDescription(pb, TestDB)
+				mb.Editing().Field("Avatar").WithContextValue(media.MediaBoxConfig, &media_library.MediaBoxConfig{})
+				mb.Editing().WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
+					return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+						err = in(obj, ctx)
+						customer := obj.(*Customer)
+						if customer.Avatar.FileName == "" || customer.Avatar.Url == "" {
+							err.FieldError("Avatar", "avatar must not be empty")
+						}
+						return
+					}
+				})
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=presets_Update").
+					AddField("Name", "").
+					AddField("Email", "").
+					AddField("Body", "").
+					AddField("Avatar.Values", "").
+					AddField("CompanyID", "0").
+					AddField("Description", "").
+					AddField("Body_richeditor_medialibrary.Values", "").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`name must not be empty`, `email must not be empty`, `description must not be empty`, `avatar must not be empty`},
 		},
 	}
 

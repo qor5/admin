@@ -278,9 +278,15 @@ func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *Field
 
 func (b *FieldBuilder) AppendTabs(fb *FieldBuilder) (r *FieldBuilder) {
 	if b.tabFieldsBuilders == nil {
-		b.tabFieldsBuilders = new(TabsFieldBuilder)
+		b.tabFieldsBuilders = NewTabsFieldBuilder()
 	}
-	b.tabFieldsBuilders.appendTabField(fb.name, fb.compFunc)
+	b.tabFieldsBuilders.AppendTabField(fb.name, fb.label, fb.compFunc)
+	b.ComponentFunc(b.tabFieldsBuilders.ComponentFunc())
+	return b
+}
+
+func (b *FieldBuilder) Tab(fb *TabsFieldBuilder) (r *FieldBuilder) {
+	b.tabFieldsBuilders = fb
 	b.ComponentFunc(b.tabFieldsBuilders.ComponentFunc())
 	return b
 }

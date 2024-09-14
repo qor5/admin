@@ -12,16 +12,12 @@ import (
 
 	"github.com/qor5/admin/v3/publish"
 
-	h "github.com/theplant/htmlgo"
-	"gorm.io/gorm"
-
 	"github.com/qor5/web/v3"
 	. "github.com/qor5/x/v3/ui/vuetify"
-	vx "github.com/qor5/x/v3/ui/vuetifyx"
+	h "github.com/theplant/htmlgo"
 
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/actions"
 )
 
 func overview(m *ModelBuilder) presets.FieldComponentFunc {
@@ -121,38 +117,6 @@ transform-origin: 0 0; transform:scale(0.5);width:200%;height:200%`),
 					Attr("@click", fmt.Sprintf(`$event.view.window.navigator.clipboard.writeText(%s);vars.presetsMessage = { show: true, message: "success", color: %q}`, copyURL, ColorSuccess)),
 			).Class("d-inline-flex align-center py-4"),
 		).Class("my-10")
-	}
-}
-
-func templateSettings(_ *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc {
-	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		p := obj.(*Template)
-
-		overview := vx.DetailInfo(
-			vx.DetailColumn(
-				vx.DetailField(vx.OptionalText(p.Name)).Label("Title"),
-				vx.DetailField(vx.OptionalText(p.Description)).Label("Description"),
-			),
-		)
-
-		editBtn := VBtn("Edit").Variant(VariantFlat).
-			Attr("@click", web.POST().
-				EventFunc(actions.Edit).
-				Query(presets.ParamOverlay, actions.Dialog).
-				Query(presets.ParamID, p.PrimarySlug()).
-				URL(pm.Info().ListingHref()).Go(),
-			)
-
-		return VContainer(
-			VRow(
-				VCol(
-					vx.Card(overview).HeaderTitle("Overview").
-						Actions(
-							h.If(editBtn != nil, editBtn),
-						).Class("mb-4 rounded-lg").Variant(VariantOutlined),
-				).Cols(8),
-			),
-		)
 	}
 }
 

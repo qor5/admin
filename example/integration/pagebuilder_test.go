@@ -34,7 +34,8 @@ func TestMain(m *testing.M) {
 }
 
 var pageBuilderData = gofixtures.Data(gofixtures.Sql(`
-INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (1, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, '123', '/12', '', 'International');
+INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (1, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'category_123', '/12', '', 'International');
+INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (2, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'category_456', '/45', '', 'International');
 SELECT setval('page_builder_categories_id_seq', 1, true);
 INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code, seo) VALUES (1, '2024-05-17 15:25:39.716658 +00:00', '2024-05-17 15:25:39.716658 +00:00', null, '12312', '/123', 1, 'draft', '', null, null, null, null, '2024-05-18-v01', '2024-05-18-v01', '', 'International', '{"OpenGraphImageFromMediaLibrary":{"ID":0,"Url":"","VideoLink":"","FileName":"","Description":""}}');
 SELECT setval('page_builder_pages_id_seq', 1, true);
@@ -79,7 +80,7 @@ func TestPageBuilder(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				return httptest.NewRequest("GET", "/pages", nil)
 			},
-			ExpectPageBodyContainsInOrder: []string{"12312"},
+			ExpectPageBodyContainsInOrder: []string{"ID", "Title", "Live", "12312"},
 		},
 		{
 			Name:  "New Page Dialog",
@@ -675,7 +676,149 @@ func TestPageBuilder(t *testing.T) {
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{`"Page.CategoryID":1`},
 		},
+
+		{
+			Name:  "Page Builder add container Wrap SaveFunc",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages-editors/10_2024-05-21-v01_International").
+					EventFunc(pagebuilder.AddContainerEvent).
+					Query("modelName", "BrandGrid").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var (
+					container pagebuilder.Container
+					bd        containers.BrandGrid
+				)
+				TestDB.Order("id desc").First(&container)
+				TestDB.Order("id desc").First(&bd)
+				if container.ModelName != "BrandGrid" {
+					t.Fatalf("containers not add")
+					return
+				}
+				if bd.AnchorID == "" {
+					t.Fatalf("wrap container creating error")
+					return
+				}
+			},
+		},
+		{
+			Name:  "Page Category Search",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_categories").
+					Query("keyword", "123").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"category_123"},
+			ExpectPageBodyNotContains:     []string{"category_456"},
+		},
+		{
+			Name:  "Page Category Delete Related Page",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_categories").
+					EventFunc(actions.DoDelete).
+					Query(presets.ParamID, "1_International").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var count int64
+				TestDB.Model(&pagebuilder.Category{}).Where("id=1 and locale_code='International'").Count(&count)
+				if count != 1 {
+					t.Fatalf("category is Delete ")
+					return
+				}
+			},
+		},
+		{
+			Name:  "Page Category Delete no Related Page",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_categories").
+					EventFunc(actions.DoDelete).
+					Query(presets.ParamID, "2_International").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var count int64
+				TestDB.Model(&pagebuilder.Category{}).Where("id=2 and locale_code='International'").Count(&count)
+				if count != 0 {
+					t.Fatalf("category is  Not Deleted count: %d ", count)
+					return
+				}
+			},
+		},
+		{
+			Name:  "Demo Containers Listing",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/demo_containers").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{`=== "PageTitle"`},
+		},
+		{
+			Name:  "Container Header Editing",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/headers").
+					EventFunc(actions.Edit).
+					Query(presets.ParamID, "10").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`black`},
+		},
+		{
+			Name:  "Container Header Update",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/headers").
+					EventFunc(actions.Update).
+					Query(presets.ParamID, "10").
+					AddField("Color", "white").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				header := containers.WebHeader{}
+				TestDB.First(&header, 10)
+				if header.Color != "white" {
+					t.Fatalf("container has not updated color")
+					return
+				}
+			},
+		},
 	}
+
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
 			RunCase(t, c, h)
