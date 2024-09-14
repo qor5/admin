@@ -1,0 +1,955 @@
+@charset "UTF-8";
+/*
+ * @See https://github.com/sindresorhus/github-markdown-css/blob/main/github-markdown.css
+ * @Author: sindresorhus
+ * @Date: 2023-06-12 22:11:14
+ * @Last Modified by: yky
+ * @Last Modified time: 2023-06-12 22:11:14
+ */
+/* stylelint-disable */
+.vuetify-pro-tiptap-editor__content.markdown-theme-github {
+  --color-prettylights-syntax-comment: #6e7781;
+  --color-prettylights-syntax-constant: #0550ae;
+  --color-prettylights-syntax-entity: #8250df;
+  --color-prettylights-syntax-storage-modifier-import: #24292f;
+  --color-prettylights-syntax-entity-tag: #116329;
+  --color-prettylights-syntax-keyword: #cf222e;
+  --color-prettylights-syntax-string: #0a3069;
+  --color-prettylights-syntax-variable: #953800;
+  --color-prettylights-syntax-brackethighlighter-unmatched: #82071e;
+  --color-prettylights-syntax-invalid-illegal-text: #f6f8fa;
+  --color-prettylights-syntax-invalid-illegal-bg: #82071e;
+  --color-prettylights-syntax-carriage-return-text: #f6f8fa;
+  --color-prettylights-syntax-carriage-return-bg: #cf222e;
+  --color-prettylights-syntax-string-regexp: #116329;
+  --color-prettylights-syntax-markup-list: #3b2300;
+  --color-prettylights-syntax-markup-heading: #0550ae;
+  --color-prettylights-syntax-markup-italic: #24292f;
+  --color-prettylights-syntax-markup-bold: #24292f;
+  --color-prettylights-syntax-markup-deleted-text: #82071e;
+  --color-prettylights-syntax-markup-deleted-bg: #ffebe9;
+  --color-prettylights-syntax-markup-inserted-text: #116329;
+  --color-prettylights-syntax-markup-inserted-bg: #dafbe1;
+  --color-prettylights-syntax-markup-changed-text: #953800;
+  --color-prettylights-syntax-markup-changed-bg: #ffd8b5;
+  --color-prettylights-syntax-markup-ignored-text: #eaeef2;
+  --color-prettylights-syntax-markup-ignored-bg: #0550ae;
+  --color-prettylights-syntax-meta-diff-range: #8250df;
+  --color-prettylights-syntax-brackethighlighter-angle: #57606a;
+  --color-prettylights-syntax-sublimelinter-gutter-mark: #8c959f;
+  --color-prettylights-syntax-constant-other-reference-link: #0a3069;
+  --color-fg-default: #24292f;
+  --color-fg-muted: #57606a;
+  --color-fg-subtle: #6e7781;
+  --color-canvas-default: #fff;
+  --color-canvas-subtle: #f6f8fa;
+  --color-border-default: #d0d7de;
+  --color-border-muted: hsl(210deg 18% 87% / 100%);
+  --color-neutral-muted: rgb(175 184 193 / 20%);
+  --color-accent-fg: #0969da;
+  --color-accent-emphasis: #0969da;
+  --color-attention-subtle: #fff8c5;
+  --color-danger-fg: #cf222e;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--color-fg-default);
+  word-wrap: break-word;
+  background-color: var(--color-canvas-default);
+  text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github.__dark {
+  --color-prettylights-syntax-comment: #8b949e;
+  --color-prettylights-syntax-constant: #79c0ff;
+  --color-prettylights-syntax-entity: #d2a8ff;
+  --color-prettylights-syntax-storage-modifier-import: #c9d1d9;
+  --color-prettylights-syntax-entity-tag: #7ee787;
+  --color-prettylights-syntax-keyword: #ff7b72;
+  --color-prettylights-syntax-string: #a5d6ff;
+  --color-prettylights-syntax-variable: #ffa657;
+  --color-prettylights-syntax-brackethighlighter-unmatched: #f85149;
+  --color-prettylights-syntax-invalid-illegal-text: #f0f6fc;
+  --color-prettylights-syntax-invalid-illegal-bg: #8e1519;
+  --color-prettylights-syntax-carriage-return-text: #f0f6fc;
+  --color-prettylights-syntax-carriage-return-bg: #b62324;
+  --color-prettylights-syntax-string-regexp: #7ee787;
+  --color-prettylights-syntax-markup-list: #f2cc60;
+  --color-prettylights-syntax-markup-heading: #1f6feb;
+  --color-prettylights-syntax-markup-italic: #c9d1d9;
+  --color-prettylights-syntax-markup-bold: #c9d1d9;
+  --color-prettylights-syntax-markup-deleted-text: #ffdcd7;
+  --color-prettylights-syntax-markup-deleted-bg: #67060c;
+  --color-prettylights-syntax-markup-inserted-text: #aff5b4;
+  --color-prettylights-syntax-markup-inserted-bg: #033a16;
+  --color-prettylights-syntax-markup-changed-text: #ffdfb6;
+  --color-prettylights-syntax-markup-changed-bg: #5a1e02;
+  --color-prettylights-syntax-markup-ignored-text: #c9d1d9;
+  --color-prettylights-syntax-markup-ignored-bg: #1158c7;
+  --color-prettylights-syntax-meta-diff-range: #d2a8ff;
+  --color-prettylights-syntax-brackethighlighter-angle: #8b949e;
+  --color-prettylights-syntax-sublimelinter-gutter-mark: #484f58;
+  --color-prettylights-syntax-constant-other-reference-link: #a5d6ff;
+  --color-fg-default: #c9d1d9;
+  --color-fg-muted: #8b949e;
+  --color-fg-subtle: #6e7681;
+  --color-canvas-default: #212121;
+  --color-canvas-subtle: #161b22;
+  --color-border-default: #30363d;
+  --color-border-muted: #21262d;
+  --color-neutral-muted: rgb(110 118 129 / 40%);
+  --color-accent-fg: #58a6ff;
+  --color-accent-emphasis: #1f6feb;
+  --color-attention-subtle: rgb(187 128 9 / 15%);
+  --color-danger-fg: #f85149;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github::before {
+  display: table;
+  content: "";
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github::after {
+  display: table;
+  clear: both;
+  content: "";
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .octicon {
+  display: inline-block;
+  vertical-align: text-bottom;
+  fill: currentcolor;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h1:hover .anchor .octicon-link::before,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h2:hover .anchor .octicon-link::before,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h3:hover .anchor .octicon-link::before,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h4:hover .anchor .octicon-link::before,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h5:hover .anchor .octicon-link::before,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h6:hover .anchor .octicon-link::before {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  content: " ";
+  background-color: currentcolor;
+  mask-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' version='1.1' aria-hidden='true'><path fill-rule='evenodd' d='M7.775 3.275a.75.75 0 001.06 1.06l1.25-1.25a2 2 0 112.83 2.83l-2.5 2.5a2 2 0 01-2.83 0 .75.75 0 00-1.06 1.06 3.5 3.5 0 004.95 0l2.5-2.5a3.5 3.5 0 00-4.95-4.95l-1.25 1.25zm-4.69 9.64a2 2 0 010-2.83l2.5-2.5a2 2 0 012.83 0 .75.75 0 001.06-1.06 3.5 3.5 0 00-4.95 0l-2.5 2.5a3.5 3.5 0 004.95 4.95l1.25-1.25a.75.75 0 00-1.06-1.06l-1.25 1.25a2 2 0 01-2.83 0z'></path></svg>");
+  mask-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' version='1.1' aria-hidden='true'><path fill-rule='evenodd' d='M7.775 3.275a.75.75 0 001.06 1.06l1.25-1.25a2 2 0 112.83 2.83l-2.5 2.5a2 2 0 01-2.83 0 .75.75 0 00-1.06 1.06 3.5 3.5 0 004.95 0l2.5-2.5a3.5 3.5 0 00-4.95-4.95l-1.25 1.25zm-4.69 9.64a2 2 0 010-2.83l2.5-2.5a2 2 0 012.83 0 .75.75 0 001.06-1.06 3.5 3.5 0 00-4.95 0l-2.5 2.5a3.5 3.5 0 004.95 4.95l1.25-1.25a.75.75 0 00-1.06-1.06l-1.25 1.25a2 2 0 01-2.83 0z'></path></svg>");
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github details,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github figcaption,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github figure {
+  display: block;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github summary {
+  display: list-item;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github [hidden] {
+  display: none !important;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github a {
+  color: var(--color-accent-fg);
+  text-decoration: none;
+  background-color: transparent;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github abbr[title] {
+  text-decoration: underline dotted;
+  border-bottom: none;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github b,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github strong {
+  font-weight: var(--base-text-weight-semibold, 600);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github dfn {
+  font-style: italic;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h1 {
+  padding-bottom: 0.3em;
+  margin: 0.67em 0;
+  font-size: 2em;
+  font-weight: var(--base-text-weight-semibold, 600);
+  border-bottom: 1px solid var(--color-border-muted);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github mark {
+  color: var(--color-fg-default);
+  background-color: var(--color-attention-subtle);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github small {
+  font-size: 90%;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github sub,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github sup {
+  position: relative;
+  font-size: 75%;
+  line-height: 0;
+  vertical-align: baseline;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github sub {
+  bottom: -0.25em;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github sup {
+  top: -0.5em;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github img {
+  box-sizing: content-box;
+  max-width: 100%;
+  background-color: var(--color-canvas-default);
+  border-style: none;
+  display: inline-block;
+  float: none;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github img[data-display=inline] {
+  padding-right: 12px;
+  padding-left: 12px;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github img[data-display=block] {
+  display: block;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github img[data-display=left] {
+  float: left;
+  padding-right: 12px;
+  padding-left: 0;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github img[data-display=right] {
+  float: right;
+  padding-right: 0;
+  padding-left: 12px;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github code,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github kbd,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github pre,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github samp {
+  font-family: monospace;
+  font-size: 1em;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github figure {
+  margin: 1em 40px;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github hr {
+  box-sizing: content-box;
+  height: 0.25em;
+  padding: 0;
+  margin: 24px 0;
+  overflow: hidden;
+  background: transparent;
+  background-color: var(--color-border-default);
+  border: 0;
+  border-bottom: 1px solid var(--color-border-muted);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github input {
+  margin: 0;
+  overflow: visible;
+  font: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github [type=button],
+.vuetify-pro-tiptap-editor__content.markdown-theme-github [type=reset],
+.vuetify-pro-tiptap-editor__content.markdown-theme-github [type=submit] {
+  appearance: button;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github [type=checkbox],
+.vuetify-pro-tiptap-editor__content.markdown-theme-github [type=radio] {
+  box-sizing: border-box;
+  padding: 0;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github [type=number]::-webkit-inner-spin-button,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github [type=number]::-webkit-outer-spin-button {
+  height: auto;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github [type=search]::-webkit-search-cancel-button,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github [type=search]::-webkit-search-decoration {
+  appearance: none;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ::input-placeholder {
+  color: inherit;
+  opacity: 0.54;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ::-webkit-file-upload-button {
+  font: inherit;
+  appearance: button;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github a:hover {
+  text-decoration: underline;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ::placeholder {
+  color: var(--color-fg-subtle);
+  opacity: 1;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github hr::before {
+  display: table;
+  content: "";
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github hr::after {
+  display: table;
+  clear: both;
+  content: "";
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow: auto;
+  border-spacing: 0;
+  border-collapse: collapse;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github td,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github th {
+  padding: 0;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github details summary {
+  cursor: pointer;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github details:not([open]) > *:not(summary) {
+  display: none !important;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github a:focus,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github [role=button]:focus,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github input[type=radio]:focus,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github input[type=checkbox]:focus {
+  outline: 2px solid var(--color-accent-fg);
+  outline-offset: -2px;
+  box-shadow: none;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github a:focus:not(:focus-visible),
+.vuetify-pro-tiptap-editor__content.markdown-theme-github [role=button]:focus:not(:focus-visible),
+.vuetify-pro-tiptap-editor__content.markdown-theme-github input[type=radio]:focus:not(:focus-visible),
+.vuetify-pro-tiptap-editor__content.markdown-theme-github input[type=checkbox]:focus:not(:focus-visible) {
+  outline: solid 1px transparent;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github a:focus-visible,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github [role=button]:focus-visible,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github input[type=radio]:focus-visible,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github input[type=checkbox]:focus-visible {
+  outline: 2px solid var(--color-accent-fg);
+  outline-offset: -2px;
+  box-shadow: none;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github a:not([class]):focus,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github a:not([class]):focus-visible,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github input[type=radio]:focus,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github input[type=radio]:focus-visible,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github input[type=checkbox]:focus,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github input[type=checkbox]:focus-visible {
+  outline-offset: 0;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github kbd {
+  display: inline-block;
+  padding: 3px 5px;
+  font: 11px ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  line-height: 10px;
+  color: var(--color-fg-default);
+  vertical-align: middle;
+  background-color: var(--color-canvas-subtle);
+  border: solid 1px var(--color-neutral-muted);
+  border-bottom-color: var(--color-neutral-muted);
+  border-radius: 6px;
+  box-shadow: inset 0 -1px 0 var(--color-neutral-muted);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h1,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h2,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h3,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h4,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h5,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h6 {
+  margin-top: 24px;
+  margin-bottom: 16px;
+  font-weight: var(--base-text-weight-semibold, 600);
+  line-height: 1.25;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h2 {
+  padding-bottom: 0.3em;
+  font-size: 1.5em;
+  font-weight: var(--base-text-weight-semibold, 600);
+  border-bottom: 1px solid var(--color-border-muted);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h3 {
+  font-size: 1.25em;
+  font-weight: var(--base-text-weight-semibold, 600);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h4 {
+  font-size: 1em;
+  font-weight: var(--base-text-weight-semibold, 600);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h5 {
+  font-size: 0.875em;
+  font-weight: var(--base-text-weight-semibold, 600);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h6 {
+  font-size: 0.85em;
+  font-weight: var(--base-text-weight-semibold, 600);
+  color: var(--color-fg-muted);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github p {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github p:empty::after {
+  content: " ";
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github blockquote {
+  padding: 0 1em;
+  margin: 0;
+  color: var(--color-fg-muted);
+  border-left: 0.25em solid var(--color-border-default);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ul,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ol {
+  padding-left: 2em;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ol ol,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ul ol {
+  list-style-type: lower-roman;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ul ul ol,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ul ol ol,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ol ul ol,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ol ol ol {
+  list-style-type: lower-alpha;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github dd {
+  margin-left: 0;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github tt,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github code,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github samp {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github pre {
+  margin-top: 0;
+  margin-bottom: 0;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  word-wrap: normal;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .octicon {
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentcolor;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github input::-webkit-outer-spin-button,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github input::-webkit-inner-spin-button {
+  margin: 0;
+  appearance: none;
+  appearance: none;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github > *:first-child {
+  margin-top: 0 !important;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github > *:last-child {
+  margin-bottom: 0 !important;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .absent {
+  color: var(--color-danger-fg);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .anchor {
+  float: left;
+  padding-right: 4px;
+  margin-left: -20px;
+  line-height: 1;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .anchor:focus {
+  outline: none;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github p,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github blockquote,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ul,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ol,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github dl,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github table,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github pre,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github details {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github blockquote > :first-child {
+  margin-top: 0;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github blockquote > :last-child {
+  margin-bottom: 0;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h1 .octicon-link,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h2 .octicon-link,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h3 .octicon-link,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h4 .octicon-link,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h5 .octicon-link,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h6 .octicon-link {
+  color: var(--color-fg-default);
+  vertical-align: middle;
+  visibility: hidden;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h1:hover .anchor,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h2:hover .anchor,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h3:hover .anchor,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h4:hover .anchor,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h5:hover .anchor,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h6:hover .anchor {
+  text-decoration: none;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h1:hover .anchor .octicon-link,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h2:hover .anchor .octicon-link,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h3:hover .anchor .octicon-link,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h4:hover .anchor .octicon-link,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h5:hover .anchor .octicon-link,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h6:hover .anchor .octicon-link {
+  visibility: visible;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h1 tt,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h1 code,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h2 tt,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h2 code,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h3 tt,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h3 code,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h4 tt,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h4 code,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h5 tt,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h5 code,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h6 tt,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github h6 code {
+  padding: 0 0.2em;
+  font-size: inherit;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github summary h1,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github summary h2,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github summary h3,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github summary h4,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github summary h5,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github summary h6 {
+  display: inline-block;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github summary h1 .anchor,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github summary h2 .anchor,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github summary h3 .anchor,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github summary h4 .anchor,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github summary h5 .anchor,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github summary h6 .anchor {
+  margin-left: -40px;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github summary h1,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github summary h2 {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ul.no-list,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ol.no-list {
+  padding: 0;
+  list-style-type: none;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ol[type=a] {
+  list-style-type: lower-alpha;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ol[type=A] {
+  list-style-type: upper-alpha;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ol[type=i] {
+  list-style-type: lower-roman;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ol[type=I] {
+  list-style-type: upper-roman;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ol[type="1"] {
+  list-style-type: decimal;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github div > ol:not([type]) {
+  list-style-type: decimal;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ul ul,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ul ol,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ol ol,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ol ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github li > p {
+  margin-top: 16px;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github li + li {
+  margin-top: 0.25em;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github dl {
+  padding: 0;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: var(--base-text-weight-semibold, 600);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github table th {
+  font-weight: var(--base-text-weight-semibold, 600);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github table th,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github table td {
+  padding: 6px 13px;
+  border: 1px solid var(--color-border-default);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github table tr {
+  background-color: var(--color-canvas-default);
+  border-top: 1px solid var(--color-border-muted);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github table tr:nth-child(2n) {
+  background-color: var(--color-canvas-subtle);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github table img {
+  background-color: transparent;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github img[align=right] {
+  padding-left: 20px;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github img[align=left] {
+  padding-right: 20px;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .emoji {
+  max-width: none;
+  vertical-align: text-top;
+  background-color: transparent;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github span.frame {
+  display: block;
+  overflow: hidden;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github span.frame > span {
+  display: block;
+  float: left;
+  width: auto;
+  padding: 7px;
+  margin: 13px 0 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border-default);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github span.frame span img {
+  display: block;
+  float: left;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github span.frame span span {
+  display: block;
+  padding: 5px 0 0;
+  clear: both;
+  color: var(--color-fg-default);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github span.align-center {
+  display: block;
+  overflow: hidden;
+  clear: both;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github span.align-center > span {
+  display: block;
+  margin: 13px auto 0;
+  overflow: hidden;
+  text-align: center;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github span.align-center span img {
+  margin: 0 auto;
+  text-align: center;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github span.align-right {
+  display: block;
+  overflow: hidden;
+  clear: both;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github span.align-right > span {
+  display: block;
+  margin: 13px 0 0;
+  overflow: hidden;
+  text-align: right;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github span.align-right span img {
+  margin: 0;
+  text-align: right;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github span.float-left {
+  display: block;
+  float: left;
+  margin-right: 13px;
+  overflow: hidden;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github span.float-left span {
+  margin: 13px 0 0;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github span.float-right {
+  display: block;
+  float: right;
+  margin-left: 13px;
+  overflow: hidden;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github span.float-right > span {
+  display: block;
+  margin: 13px auto 0;
+  overflow: hidden;
+  text-align: right;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github code,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github tt {
+  padding: 0.2em 0.4em;
+  margin: 0;
+  font-size: 85%;
+  white-space: break-spaces;
+  background-color: var(--color-neutral-muted);
+  border-radius: 6px;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github code br,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github tt br {
+  display: none;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github del code {
+  text-decoration: inherit;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github samp {
+  font-size: 85%;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github pre code {
+  font-size: 100%;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github pre > code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .highlight {
+  margin-bottom: 16px;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .highlight pre {
+  margin-bottom: 0;
+  word-break: normal;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .highlight pre,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  background-color: var(--color-canvas-subtle);
+  border-radius: 6px;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github pre code,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github pre tt {
+  display: inline;
+  max-width: auto;
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+  line-height: inherit;
+  word-wrap: normal;
+  background-color: transparent;
+  border: 0;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .csv-data td,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .csv-data th {
+  padding: 5px;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1;
+  text-align: left;
+  white-space: nowrap;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .csv-data .blob-num {
+  padding: 10px 8px 9px;
+  text-align: right;
+  background: var(--color-canvas-default);
+  border: 0;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .csv-data tr {
+  border-top: 0;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .csv-data th {
+  font-weight: var(--base-text-weight-semibold, 600);
+  background: var(--color-canvas-subtle);
+  border-top: 0;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github [data-footnote-ref]::before {
+  content: "[";
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github [data-footnote-ref]::after {
+  content: "]";
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .footnotes {
+  font-size: 12px;
+  color: var(--color-fg-muted);
+  border-top: 1px solid var(--color-border-default);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .footnotes ol {
+  padding-left: 16px;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .footnotes ol ul {
+  display: inline-block;
+  padding-left: 16px;
+  margin-top: 16px;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .footnotes li {
+  position: relative;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .footnotes li:target::before {
+  position: absolute;
+  inset: -8px -8px -8px -24px;
+  pointer-events: none;
+  content: "";
+  border: 2px solid var(--color-accent-emphasis);
+  border-radius: 6px;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .footnotes li:target {
+  color: var(--color-fg-default);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .footnotes .data-footnote-backref g-emoji {
+  font-family: monospace;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-c {
+  color: var(--color-prettylights-syntax-comment);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-c1,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-s .pl-v {
+  color: var(--color-prettylights-syntax-constant);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-e,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-en {
+  color: var(--color-prettylights-syntax-entity);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-smi,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-s .pl-s1 {
+  color: var(--color-prettylights-syntax-storage-modifier-import);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-ent {
+  color: var(--color-prettylights-syntax-entity-tag);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-k {
+  color: var(--color-prettylights-syntax-keyword);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-s,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-pds,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-s .pl-pse .pl-s1,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-sr,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-sr .pl-cce,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-sr .pl-sre,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-sr .pl-sra {
+  color: var(--color-prettylights-syntax-string);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-v,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-smw {
+  color: var(--color-prettylights-syntax-variable);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-bu {
+  color: var(--color-prettylights-syntax-brackethighlighter-unmatched);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-ii {
+  color: var(--color-prettylights-syntax-invalid-illegal-text);
+  background-color: var(--color-prettylights-syntax-invalid-illegal-bg);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-c2 {
+  color: var(--color-prettylights-syntax-carriage-return-text);
+  background-color: var(--color-prettylights-syntax-carriage-return-bg);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-sr .pl-cce {
+  font-weight: bold;
+  color: var(--color-prettylights-syntax-string-regexp);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-ml {
+  color: var(--color-prettylights-syntax-markup-list);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-mh,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-mh .pl-en,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-ms {
+  font-weight: bold;
+  color: var(--color-prettylights-syntax-markup-heading);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-mi {
+  font-style: italic;
+  color: var(--color-prettylights-syntax-markup-italic);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-mb {
+  font-weight: bold;
+  color: var(--color-prettylights-syntax-markup-bold);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-md {
+  color: var(--color-prettylights-syntax-markup-deleted-text);
+  background-color: var(--color-prettylights-syntax-markup-deleted-bg);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-mi1 {
+  color: var(--color-prettylights-syntax-markup-inserted-text);
+  background-color: var(--color-prettylights-syntax-markup-inserted-bg);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-mc {
+  color: var(--color-prettylights-syntax-markup-changed-text);
+  background-color: var(--color-prettylights-syntax-markup-changed-bg);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-mi2 {
+  color: var(--color-prettylights-syntax-markup-ignored-text);
+  background-color: var(--color-prettylights-syntax-markup-ignored-bg);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-mdr {
+  font-weight: bold;
+  color: var(--color-prettylights-syntax-meta-diff-range);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-ba {
+  color: var(--color-prettylights-syntax-brackethighlighter-angle);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-sg {
+  color: var(--color-prettylights-syntax-sublimelinter-gutter-mark);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-corl {
+  color: var(--color-prettylights-syntax-constant-other-reference-link);
+  text-decoration: underline;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github g-emoji {
+  display: inline-block;
+  min-width: 1ch;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-size: 1em;
+  font-style: normal !important;
+  font-weight: var(--base-text-weight-normal, 400);
+  line-height: 1;
+  vertical-align: -0.075em;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github g-emoji img {
+  width: 1em;
+  height: 1em;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .task-list-item {
+  list-style-type: none;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .task-list-item label {
+  font-weight: var(--base-text-weight-normal, 400);
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .task-list-item.enabled label {
+  cursor: pointer;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .task-list-item + .task-list-item {
+  margin-top: 4px;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .task-list-item .handle {
+  display: none;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .task-list-item-checkbox {
+  margin: 0 0.2em 0.25em -1.4em;
+  vertical-align: middle;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .contains-task-list:dir(rtl) .task-list-item-checkbox {
+  margin: 0 -1.6em 0.25em 0.2em;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .contains-task-list {
+  position: relative;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .contains-task-list:hover .task-list-item-convert-container,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github .contains-task-list:focus-within .task-list-item-convert-container {
+  display: block;
+  width: auto;
+  height: 24px;
+  overflow: visible;
+  clip: auto;
+}
+.vuetify-pro-tiptap-editor__content.markdown-theme-github::-webkit-calendar-picker-indicator {
+  filter: invert(50%);
+}
+
+/*# sourceMappingURL=github.css.map */

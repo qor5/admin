@@ -19,6 +19,7 @@ func SamplesHandler(mux examples.Muxer) {
 	addExample(mux, db, PresetsListingCustomizationTabs)
 	addExample(mux, db, PresetsListingCustomizationBulkActions)
 	addExample(mux, db, PresetsEditingCustomizationDescription)
+	addExample(mux, db, PresetsEditingTiptap)
 	addExample(mux, db, PresetsEditingCustomizationFileType)
 	addExample(mux, db, PresetsEditingCustomizationValidation)
 	addExample(mux, db, PresetsDetailPageTopNotes)

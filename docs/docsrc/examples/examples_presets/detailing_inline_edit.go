@@ -407,6 +407,7 @@ func PresetsDetailNestedMany(b *presets.Builder, db *gorm.DB) (
 
 	ccmb := mb.NestedMany(&CreditCard{}, "CustomerID")
 	dp.Field("CreditCards").Use(ccmb)
+	ccmb.Detailing("Detail").Drawer(true).Section("Detail").Editing("Name", "Phone")
 
 	ccmb2 := mb.NestedMany(&CreditCard{}, "CustomerID")
 	// force ignore ExpireYearMonth column if you need
