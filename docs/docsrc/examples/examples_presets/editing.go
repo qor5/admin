@@ -7,9 +7,11 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/richeditor"
+	"github.com/qor5/admin/v3/tiptap"
 	"github.com/qor5/web/v3"
 	v "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/sunfmin/reflectutils"
@@ -55,6 +57,37 @@ func PresetsEditingCustomizationDescription(b *presets.Builder, db *gorm.DB) (
 }
 
 // @snippet_end
+
+func PresetsEditingTiptap(b *presets.Builder, db *gorm.DB) (
+	mb *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	mb, cl, ce, dp = PresetsEditingCustomizationDescription(b, db)
+
+	mediaBuilder := media.New(db)
+	defer func() {
+		b.Use(mediaBuilder)
+	}()
+
+	b.ExtraAsset("/tiptap.css", "text/css", tiptap.ThemeGithubCSSComponentsPack())
+	ce.Field("Description").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		// extensions := vx.TiptapSlackLikeExtensions()
+		// extensions = append(extensions,
+		// 	&vx.VXTiptapEditorExtension{Name: "ImageGlue"},
+		// 	&vx.VXTiptapEditorExtension{Name: "Video"},
+		// )
+		extensions := tiptap.TiptapExtensions()
+		return tiptap.TiptapEditor(db, "Body").
+			Extensions(extensions).
+			MarkdownTheme("github"). // match tiptap.ThemeGithubCSSComponentsPack
+			Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
+			Disabled(field.Disabled)
+	})
+
+	return
+}
 
 // @snippet_begin(PresetsEditingCustomizationFileTypeSample)
 

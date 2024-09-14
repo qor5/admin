@@ -359,6 +359,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 	// button
 	btnRow := VRow(
 		VBtn(msgr.ChooseFile).
+			Attr("id", "chooseFile"). // TODO:
 			Variant(VariantTonal).Color(ColorPrimary).Size(SizeXSmall).PrependIcon("mdi-upload-outline").
 			Class("rounded-sm").
 			Attr("style", "text-transform: none;").
