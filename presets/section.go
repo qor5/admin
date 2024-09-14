@@ -833,7 +833,7 @@ func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, ctx *we
 			}, ctx),
 		).Class("flex-grow-1"),
 		h.Div(deleteBtn).Class("d-flex pl-3"),
-	).Class("d-flex justify-space-between mb-4")
+	).Class("d-flex justify-space-between")
 
 	cancelBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Cancel")).Size(SizeSmall).Variant(VariantFlat).Color(ColorGreyLighten3).
 		Attr("style", "text-transform: none;").
