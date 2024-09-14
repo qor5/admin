@@ -75,6 +75,10 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 				copyURL = fmt.Sprintf(`%q`, previewDevelopUrl)
 			}
 		}
+		previewComp := h.A(h.Text(previewDevelopUrl)).Href(previewDevelopUrl)
+		if m.builder.previewOpenNewTab {
+			previewComp.Target("_blank")
+		}
 		return h.Div(
 			onlineHint,
 			versionComponent,
@@ -112,7 +116,7 @@ transform-origin: 0 0; transform:scale(0.5);width:200%;height:200%`),
 					web.Plaid().URL(m.editorURLWithSlug(ps)).PushState(true).Go(),
 				),
 			h.Div(
-				h.A(h.Text(previewDevelopUrl)).Href(previewDevelopUrl),
+				previewComp,
 				VBtn("").Icon("mdi-content-copy").Color(ColorSecondary).Width(20).Height(20).Variant(VariantText).Size(SizeXSmall).Class("ml-1 fix-btn-icon").
 					Attr("@click", fmt.Sprintf(`$event.view.window.navigator.clipboard.writeText(%s);vars.presetsMessage = { show: true, message: "success", color: %q}`, copyURL, ColorSuccess)),
 			).Class("d-inline-flex align-center py-4"),
