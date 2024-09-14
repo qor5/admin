@@ -294,6 +294,7 @@ func (b *Builder) PreviewOpenNewTab(v bool) (r *Builder) {
 	b.previewOpenNewTab = v
 	return b
 }
+
 func (b *Builder) DisabledNormalContainersGroup(v bool) (r *Builder) {
 	b.disabledNormalContainersGroup = v
 	return b
