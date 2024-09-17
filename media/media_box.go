@@ -197,7 +197,7 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 					ClassIf("text-error", len(b.errorMessages) > 0 && !b.disabled).
 					ClassIf("text-grey", b.disabled).Children(compos...)
 			}),
-		).Class("pb-4").
+		).
 			Rounded(true),
 	).MarshalHTML(c)
 }
@@ -213,7 +213,7 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 	}
 	card := VCard(
 		h.If(base.IsImageFormat(f.FileName),
-			VImg().Src(url).Height(150),
+			VImg().Src(url).Cover(true).Height(150),
 		).Else(
 			h.Div(
 				fileThumb(f.FileName),
@@ -372,7 +372,7 @@ func ChooseFileButtonID(field string) string {
 
 func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox, field string, cfg *media_library.MediaBoxConfig, disabled, readonly bool) h.HTMLComponent {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
-	c := VContainer().Fluid(true)
+	c := VContainer().Class("media-box-wrap").Fluid(true)
 	if cfg.BackgroundColor != "" {
 		c.Attr("style", fmt.Sprintf("background-color: %s;", cfg.BackgroundColor))
 	}
