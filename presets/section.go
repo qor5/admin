@@ -768,18 +768,18 @@ func (b *SectionBuilder) showElement(obj any, index int, ctx *web.EventContext) 
 	}, ctx)
 
 	return web.Portal(
-			web.Slot(
-				VCard(
-					VCardText(
-						h.Div(
-							h.Div(editBtn).Class("section-edit-area top-area"),
-							h.Div(content).Class("flex-grow-1 pr-3"),
-						).Class("d-flex justify-space-between section-content"),
-					),
-				).Class("mb-4 section-body").
-					Variant(VariantFlat).
-					Attr("v-bind", "props"),
-			).Name("default").Scope("{ isHovering, props }"),
+		web.Slot(
+			VCard(
+				VCardText(
+					h.Div(
+						h.Div(editBtn).Class("section-edit-area top-area"),
+						h.Div(content).Class("flex-grow-1 pr-3"),
+					).Class("d-flex justify-space-between section-content"),
+				),
+			).Class("mb-4 section-body").
+				Variant(VariantFlat).
+				Attr("v-bind", "props"),
+		).Name("default").Scope("{ isHovering, props }"),
 	).Name(b.ListElementPortalName(index))
 }
 
