@@ -561,7 +561,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 						h.Div(
 							// detailFields
 							h.Div(b.componentEditFunc(obj, field, ctx)).
-								Class("flex-grow-1"),
+								Class("flex-grow-1 pb-6"),
 							h.Div(
 								cancelBtn,
 								saveBtn.Class("ml-2"),
