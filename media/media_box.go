@@ -198,6 +198,7 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 					ClassIf("text-grey", b.disabled).Children(compos...)
 			}),
 		).
+			Class("bg-transparent").
 			Rounded(true),
 	).MarshalHTML(c)
 }
@@ -380,8 +381,8 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 	btnRow := VRow(
 		VBtn(msgr.ChooseFile).
 			Attr("id", ChooseFileButtonID(field)).
-			Variant(VariantTonal).Color(ColorPrimary).Size(SizeXSmall).PrependIcon("mdi-upload-outline").
-			Class("rounded-sm").
+			Variant(VariantTonal).Color(ColorPrimary).Size(SizeSmall).PrependIcon("mdi-tray-arrow-up").
+			Class("rounded img-upload-btn").
 			Attr("style", "text-transform: none;").
 			Attr("@click", web.Plaid().EventFunc(OpenFileChooserEvent).
 				Query(ParamField, field).
@@ -394,8 +395,8 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 		(cfg.SimpleIMGURL && mediaBox != nil && mediaBox.Url != "") {
 		btnRow.AppendChildren(
 			VBtn(msgr.Delete).
-				Variant(VariantTonal).Color(ColorError).Size(SizeXSmall).PrependIcon("mdi-delete-outline").
-				Class("rounded-sm ml-2").
+				Variant(VariantTonal).Color(ColorError).Size(SizeSmall).PrependIcon("mdi-delete-outline").
+				Class("rounded ml-2 img-delete-btn").
 				Attr("style", "text-transform: none").
 				Attr("@click", web.Plaid().
 					EventFunc(deleteFileEvent).
@@ -461,7 +462,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 }
 
 func appendMediaBoxThumb(cfg *media_library.MediaBoxConfig, msgr *Messages, mediaBox *media_library.MediaBox, field string, disabled bool) h.HTMLComponent {
-	row := VRow()
+	row := VRow().Class("mt-n1")
 	if len(cfg.Sizes) == 0 {
 		row.AppendChildren(
 			VCol(

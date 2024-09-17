@@ -692,7 +692,7 @@ func (b *SectionBuilder) listComponent(obj interface{}, ctx *web.EventContext, d
 	disableCreateBtn = disableCreateBtn || (ctx.ParamAsBool(b.elementUnsavedKey()))
 	if !b.disableElementCreateBtn && !disableCreateBtn {
 		addBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "AddRow")).PrependIcon("mdi-plus-circle").Color("primary").Variant(VariantText).
-			Class("mb-2").
+			Class("mb-2 ml-4").
 			Attr("@click", "locals.show=false;"+web.Plaid().
 				URL(ctx.R.URL.Path).
 				EventFunc(actions.DoCreateDetailingListField).
