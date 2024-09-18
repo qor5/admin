@@ -8,11 +8,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
+
+	"github.com/qor5/admin/v3/presets/actions"
 )
 
 type ListEditorBuilder struct {
@@ -97,6 +98,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 							URL(b.fieldContext.ModelInfo.ListingHref()).
 							EventFunc(b.removeListItemRowEvent).
 							Queries(ctx.Queries()).
+							Query(AddRowBtnKey(b.fieldContext.FormKey), "").
 							Query(ParamID, ctx.R.FormValue(ParamID)).
 							Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
 							Query(ParamRemoveRowFormKey, formKey).
@@ -146,6 +148,8 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 				),
 			).Class("pa-0")).Variant(VariantOutlined).Class("mx-0 mt-1 mb-4")
 	}
+	addRowBtnId := fmt.Sprintf("%s_%s", b.fieldContext.FormKey, ctx.R.FormValue(ParamID))
+
 	return h.Div(
 		web.Scope(
 			h.If(!b.fieldContext.Disabled,
@@ -161,6 +165,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 										URL(b.fieldContext.ModelInfo.ListingHref()).
 										EventFunc(b.sortListItemsEvent).
 										Queries(ctx.Queries()).
+										Query(AddRowBtnKey(b.fieldContext.FormKey), "").
 										Query(ParamID, ctx.R.FormValue(ParamID)).
 										Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
 										Query(ParamSortSectionFormKey, b.fieldContext.FormKey).
@@ -175,6 +180,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 										URL(b.fieldContext.ModelInfo.ListingHref()).
 										EventFunc(b.sortListItemsEvent).
 										Queries(ctx.Queries()).
+										Query(AddRowBtnKey(b.fieldContext.FormKey), "").
 										Query(ParamID, ctx.R.FormValue(ParamID)).
 										Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
 										Query(ParamSortSectionFormKey, b.fieldContext.FormKey).
@@ -193,10 +199,12 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 					VBtn(msgr.AddRow).
 						Variant(VariantText).
 						Color("primary").
+						Attr("id", addRowBtnId).
 						Attr("@click", web.Plaid().
 							URL(b.fieldContext.ModelInfo.ListingHref()).
 							EventFunc(b.addListItemRowEvent).
 							Queries(ctx.Queries()).
+							Query(AddRowBtnKey(b.fieldContext.FormKey), addRowBtnId).
 							Query(ParamID, ctx.R.FormValue(ParamID)).
 							Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
 							Query(ParamAddRowFormKey, b.fieldContext.FormKey).
@@ -277,4 +285,8 @@ func sortListItems(mb *ModelBuilder) web.EventFunc {
 		me.UpdateOverlayContent(ctx, &r, obj, "", nil)
 		return
 	}
+}
+
+func AddRowBtnKey(fromKey string) string {
+	return fmt.Sprintf("%sAddRowBtnID", fromKey)
 }
