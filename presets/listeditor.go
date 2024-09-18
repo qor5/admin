@@ -148,9 +148,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 				),
 			).Class("pa-0")).Variant(VariantOutlined).Class("mx-0 mt-1 mb-4")
 	}
-	var (
-		addRowBtnId = fmt.Sprintf("%s_%s", b.fieldContext.FormKey, ctx.R.FormValue(ParamID))
-	)
+	addRowBtnId := fmt.Sprintf("%s_%s", b.fieldContext.FormKey, ctx.R.FormValue(ParamID))
 
 	return h.Div(
 		web.Scope(
@@ -288,6 +286,7 @@ func sortListItems(mb *ModelBuilder) web.EventFunc {
 		return
 	}
 }
+
 func AddRowBtnKey(fromKey string) string {
 	return fmt.Sprintf("%sAddRowBtnID", fromKey)
 }
