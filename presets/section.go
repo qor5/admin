@@ -470,7 +470,7 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 			hiddenComp.AppendChildren(f(obj, ctx))
 		}
 	}
-	content := h.Div().Class("section-wrap with-border-b")
+	content := h.Div().Class("section-wrap with-border-b").ClassIf("can-edit", b.componentEditBtnFunc(obj, ctx) && !disableEditBtn)
 	if b.label != "" {
 		lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.father.mb.label, b.label)
 		content.AppendChildren(
@@ -776,7 +776,7 @@ func (b *SectionBuilder) showElement(obj any, index int, ctx *web.EventContext) 
 						h.Div(content).Class("flex-grow-1 pr-3"),
 					).Class("d-flex justify-space-between section-content"),
 				),
-			).Class("mb-4 section-body").
+			).Class("mb-4 section-body").ClassIf("can-edit", b.elementEditBtn).
 				Variant(VariantFlat).
 				Attr("v-bind", "props"),
 		).Name("default").Scope("{ isHovering, props }"),
