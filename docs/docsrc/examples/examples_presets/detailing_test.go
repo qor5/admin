@@ -403,7 +403,7 @@ func TestPresetsDetailSectionCancel(t *testing.T) {
 					Query("isCancel", "true").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"mdi-square-edit-outline"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"mdi-pencil-outline"},
 			ExpectPortalUpdate0NotContains:     []string{"Save"},
 		},
 		{
