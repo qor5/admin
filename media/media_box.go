@@ -467,7 +467,7 @@ func appendMediaBoxThumb(cfg *media_library.MediaBoxConfig, msgr *Messages, medi
 		row.AppendChildren(
 			VCol(
 				mediaBoxThumb(msgr, cfg, mediaBox, field, base.DefaultSizeKey, disabled),
-			).Cols(6).Sm(4).Class("pl-0"),
+			).Cols(6).Sm(4).Class("pl-0 media-box-thumb"),
 		)
 	} else {
 		var keys []string
