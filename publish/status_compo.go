@@ -143,7 +143,7 @@ func liveChip(status string, isScheduled bool, msgr *Messages, forceMarked bool)
 		),
 		h.Span(label),
 		h.If(isScheduled, VIcon("mdi-menu-right").Size(SizeSmall).Class("ml-1")),
-	).Color(color).Density(DensityCompact).Tile(true).Class("px-1")
+	).Color(color).Density(DensityProminent).Tile(true).Class("px-1")
 	if !isScheduled {
 		return chip
 	}

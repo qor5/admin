@@ -164,7 +164,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			VAppBar(
 				h.Div(
 					pageAppbarContent...,
-				).Class("d-flex align-center  justify-space-between  w-100 px-6").Style("height: 36px"),
+				).Class("page-builder-edit-bar-wrap"),
 			).Elevation(0).Density(DensityCompact).Height(96).Class("align-center border-b"),
 			h.If(!isStag,
 				VNavigationDrawer(

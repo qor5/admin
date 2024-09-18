@@ -73,7 +73,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 		}
 		slug := primarySlugger.PrimarySlug()
 
-		div := h.Div().Class("w-100 d-inline-flex")
+		div := h.Div().Class("tagList-bar-warp")
 		div.AppendChildren(
 			utils.ConfirmDialog(msgr.Areyousure, web.Plaid().EventFunc(web.Var("locals.action")).
 				Query(presets.ParamID, slug).Go(),
@@ -87,20 +87,20 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 		urlSuffix := field.ModelInfo.URIName() + VersionListDialogURISuffix
 		if version, ok = obj.(VersionInterface); ok {
 			versionSwitch = v.VChip(
-				h.Text(`{{ xlocals.versionName }}`),
+				h.Span(`{{ xlocals.versionName }}`).Class("ellipsis"),
 			).Label(true).Variant(v.VariantOutlined).
 				Attr("style", "height:36px;").
+				Color(v.ColorAbsGreyDarken3).
 				Attr(":disabled", phraseHasPresetsDataChanged).
 				On("click", web.Plaid().EventFunc(actions.OpenListingDialog).
 					URL(mb.Info().PresetsPrefix()+"/"+urlSuffix).
 					Query(filterKeySelected, slug).
 					Go()).
-				Class(v.W100)
+				Class(v.W100, "version-select-wrap")
 			if status, ok = obj.(StatusInterface); ok {
-				versionSwitch.AppendChildren(statusChip(status.EmbedStatus().Status, msgr).Class("mx-2"))
+				versionSwitch.AppendChildren(statusChip(status.EmbedStatus().Status, msgr).Class("mx-2 flex-shrink-0"))
 			}
-			versionSwitch.AppendChildren(v.VSpacer())
-			versionSwitch.AppendIcon("mdi-chevron-down")
+			versionSwitch.AppendIcon("mdi-menu-down").Size(16).Color(v.ColorAbsGreyDarken3)
 
 			div.AppendChildren(web.Scope().VSlot(" { locals: xlocals } ").Init(fmt.Sprintf("{versionName: %q}", version.EmbedVersion().VersionName)).Children(
 				versionSwitch,
@@ -229,7 +229,7 @@ func DefaultVersionBar(db *gorm.DB) presets.ObjectComponentFunc {
 		}
 		versionIf := currentObj.(VersionInterface)
 		currentVersionStr := fmt.Sprintf("%s: %s", msgr.OnlineVersion, versionIf.EmbedVersion().VersionName)
-		res.AppendChildren(v.VChip(h.Span(currentVersionStr)).Density(v.DensityCompact).Color(v.ColorSuccess))
+		res.AppendChildren(v.VChip(h.Span(currentVersionStr)).Density(v.DensityProminent).Color(v.ColorSuccess).Size(v.SizeSmall))
 
 		if _, ok := currentObj.(ScheduleInterface); !ok {
 			return res
