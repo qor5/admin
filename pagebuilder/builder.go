@@ -950,12 +950,21 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 		if portalName := ctx.Param(presets.ParamPortalName); portalName != pageBuilderRightContentPortal {
 			return nil
 		}
+		var (
+			fromKey     = ctx.Param(presets.ParamAddRowFormKey)
+			addRowBtnID = ctx.Param(presets.AddRowBtnKey(fromKey))
+		)
 		return h.Components(
-			h.Div().Style("display:none").Attr("v-on-mounted", `() => {
+			h.Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf(`({window}) => {
 				if (!!locals.__pageBuilderRightContentKeepScroll) {
 					locals.__pageBuilderRightContentKeepScroll();
+				}	
+				const addRowBtnID = %q;
+				if(addRowBtnID){
+				const newAddRowBtn = window.document.getElementById(addRowBtnID);
+				newAddRowBtn.scrollIntoView({ behavior: 'smooth', block: 'end' });
 				}
-			}`),
+			}`, addRowBtnID)),
 			web.Listen(
 				b.mb.NotifRowUpdated(),
 				web.Plaid().
