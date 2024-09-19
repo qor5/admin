@@ -305,11 +305,25 @@ func TestPresetsDetailSectionValidate(t *testing.T) {
 				detailData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/customers?__execute_event__=presets_Detailing_Field_Save&section=name_section&id=12").
-					AddField("name_section.Name", "longlonglong name").
+					AddField("name_section.Name", "long name").
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"customer name must no longer than 6"},
 		},
+		{
+			Name:  "section validate field err with globe err",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=presets_Detailing_Field_Save&section=name_section&id=12").
+					AddField("name_section.Name", "long long long long name").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"customer name must no longer than 6"},
+			ExpectRunScriptContainsInOrder:     []string{"customer name must no longer than 20"},
+		},
+
 		{
 			Name:  "section validate globe err with custom saveFunc",
 			Debug: true,
@@ -335,7 +349,7 @@ func TestPresetsDetailSectionValidate(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"customer email must longer than 6"},
 		},
 		{
-			Name:  "list section validate field err",
+			Name:  "list section validate field err with globe err",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				detailData.TruncatePut(SqlDB)
@@ -347,7 +361,8 @@ func TestPresetsDetailSectionValidate(t *testing.T) {
 					AddField("__Deleted_CreditCards[0].sectionListEditing", "true").
 					BuildEventFuncRequest()
 			},
-			ExpectRunScriptContainsInOrder: []string{"credit card name must not be empty"},
+			ExpectRunScriptContainsInOrder:     []string{"credit card name must not be empty"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"credit card 0 name must not be empty"},
 		},
 	}
 

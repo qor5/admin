@@ -493,12 +493,12 @@ func (b *DetailingBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventRe
 	}
 
 	needSave := true
-	if vErr := f.validator(obj, ctx); vErr.GetGlobalError() != "" {
-		ShowMessage(&r, vErr.GetGlobalError(), "warning")
-		return r, nil
-	} else if vErr.HaveErrors() {
+	if vErr := f.validator(obj, ctx); vErr.HaveErrors() {
 		ctx.Flash = &vErr
 		needSave = false
+		if vErr.GetGlobalError() != "" {
+			ShowMessage(&r, vErr.GetGlobalError(), "warning")
+		}
 	}
 
 	if needSave {
@@ -630,12 +630,12 @@ func (b *DetailingBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Eve
 	}
 
 	needSave := true
-	if vErr := f.validator(obj, ctx); vErr.GetGlobalError() != "" {
-		ShowMessage(&r, vErr.GetGlobalError(), "warning")
-		return r, nil
-	} else if vErr.HaveErrors() {
+	if vErr := f.validator(obj, ctx); vErr.HaveErrors() {
 		ctx.Flash = &vErr
 		needSave = false
+		if vErr.GetGlobalError() != "" {
+			ShowMessage(&r, vErr.GetGlobalError(), "warning")
+		}
 	}
 
 	if needSave {
@@ -705,12 +705,12 @@ func (b *DetailingBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.E
 	}
 
 	needSave := true
-	if vErr := f.validator(obj, ctx); vErr.GetGlobalError() != "" {
-		ShowMessage(&r, vErr.GetGlobalError(), "warning")
-		return r, nil
-	} else if vErr.HaveErrors() {
+	if vErr := f.validator(obj, ctx); vErr.HaveErrors() {
 		ctx.Flash = &vErr
 		needSave = false
+		if vErr.GetGlobalError() != "" {
+			ShowMessage(&r, vErr.GetGlobalError(), "warning")
+		}
 	}
 
 	if needSave {
