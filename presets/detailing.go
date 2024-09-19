@@ -252,7 +252,7 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 
 	r.Body = VContainer().Children(
 		notice,
-		h.Div().Class("d-flex flex-column ga-10", strings.Join(layoutClass, ", ")).Children(
+		h.Div().Class("d-flex flex-column", strings.Join(layoutClass, ", ")).Children(
 			actionButtonsCompo,
 			tabsContent,
 		),
