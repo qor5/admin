@@ -101,7 +101,7 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 		err = pageValidator(ctx, c, db, b.l10n)
 		return
 	})
-	titleFiled := eb.Field("Title")
+	titleFiled := eb.GetField("Title")
 	if titleFiled != nil {
 		titleFiled.ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			var vErr web.ValidationErrors
@@ -117,7 +117,7 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 				ErrorMessages(vErr.GetFieldErrors("Page.Title")...)
 		})
 	}
-	slugFiled := eb.Field("Slug")
+	slugFiled := eb.GetField("Slug")
 	if slugFiled != nil {
 		slugFiled.ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			var vErr web.ValidationErrors
@@ -138,7 +138,7 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 			return nil
 		})
 	}
-	categoryIDFiled := eb.Field("CategoryID")
+	categoryIDFiled := eb.GetField("CategoryID")
 	if categoryIDFiled != nil {
 		categoryIDFiled.ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			p := obj.(*Page)
