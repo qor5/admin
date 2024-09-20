@@ -61,7 +61,8 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 		var versionBadge *VChipBuilder
 		if v, ok := obj.(PrimarySlugInterface); ok {
 			ps := v.PrimaryColumnValuesBySlug(v.PrimarySlug())
-			versionBadge = VChip(h.Text(fmt.Sprintf("%d %s", versionCount(b.db, pm.NewModel(), ps["id"], ps["localCode"]), msgr.Versions))).
+
+			versionBadge = VChip(h.Text(fmt.Sprintf("%d %s", versionCount(b.db, pm.NewModel(), ps["id"], ps[l10n.SlugLocaleCode]), msgr.Versions))).
 				Color(ColorPrimary).Size(SizeSmall).Class("px-1 mx-1").Attr("style", "height:20px")
 		}
 
