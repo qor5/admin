@@ -133,8 +133,9 @@ func detailingRow(label string, showComp h.HTMLComponent) (r *h.HTMLTagBuilder) 
 
 func detailPageEditor(dp *presets.DetailingBuilder, b *Builder) {
 	db := b.db
+	fields := b.filterFields([]interface{}{"Title", "Slug", "CategoryID"})
 	dp.Section("Page").
-		Editing("Title", "Slug", "CategoryID").
+		Editing(fields...).
 		ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 			c := obj.(*Page)
 			c.Slug = path.Join("/", c.Slug)
@@ -152,9 +153,9 @@ func detailPageEditor(dp *presets.DetailingBuilder, b *Builder) {
 			}
 			msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 			return h.Div(
-				detailingRow(msgr.Title, h.Text(p.Title)).Attr(web.VAssign("vars", fmt.Sprintf(`{pageTitle:%q}`, p.Title))...),
-				detailingRow(msgr.Slug, h.Text(p.Slug)),
-				detailingRow(msgr.Category, h.Text(category.Path)),
+				h.If(b.expectField("Title"), detailingRow(msgr.Title, h.Text(p.Title)).Attr(web.VAssign("vars", fmt.Sprintf(`{pageTitle:%q}`, p.Title))...)),
+				h.If(b.expectField("Slug"), detailingRow(msgr.Slug, h.Text(p.Slug))),
+				h.If(b.expectField("CategoryID"), detailingRow(msgr.Category, h.Text(category.Path))),
 			)
 		}).EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*Page)
@@ -181,24 +182,25 @@ func detailPageEditor(dp *presets.DetailingBuilder, b *Builder) {
 			complete.Attr(web.VField("Page.CategoryID", "")...)
 		}
 		return h.Components(
-			detailingRow(msgr.Title,
+			h.If(b.expectField("Title"), detailingRow(msgr.Title,
 				VTextField().
 					Variant(VariantOutlined).
 					Density(DensityCompact).
 					Attr(web.VField("Page.Title", p.Title)...).
 					ErrorMessages(vErr.GetFieldErrors("Page.Title")...),
-			),
-			detailingRow(msgr.Slug,
+			)),
+			h.If(b.expectField("Slug"), detailingRow(msgr.Slug,
 				VTextField().
 					Variant(VariantOutlined).
 					Density(DensityCompact).
 					Attr(web.VField("Page.Slug", strings.TrimPrefix(p.Slug, "/"))...).
 					Prefix("/").
 					ErrorMessages(vErr.GetFieldErrors("Page.Slug")...),
-			),
-			detailingRow(msgr.Category,
-				complete,
-			),
+			)),
+			h.If(b.expectField("CategoryID"),
+				detailingRow(msgr.Category,
+					complete,
+				)),
 		)
 	})
 	return

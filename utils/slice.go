@@ -14,3 +14,12 @@ func GroupBySlice[T comparable, Kt comparable](slices []T, f func(T) Kt) (v [][]
 	}
 	return
 }
+
+func Filter[T any](ss []T, compare func(T) bool) (ret []T) {
+	for _, s := range ss {
+		if compare(s) {
+			ret = append(ret, s)
+		}
+	}
+	return
+}

@@ -551,6 +551,31 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ExpectRunScriptContainsInOrder: []string{"title could not be empty"},
 		},
 		{
+			Name:  "Pages Detail Expect Without Category",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderPageData.TruncatePut(dbr)
+				return NewMultipartBuilder().
+					PageURL("/pages/1_2024-05-20-v01").
+					BuildEventFuncRequest()
+			},
+			ExpectPageBodyContainsInOrder: []string{"Title", "Slug"},
+			ExpectPageBodyNotContains:     []string{"Category"},
+		},
+		{
+			Name:  "Pages New Dialog Expect Without Category",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderPageData.TruncatePut(dbr)
+				return NewMultipartBuilder().
+					PageURL("/pages").
+					EventFunc(actions.New).
+					BuildEventFuncRequest()
+			},
+			ExpectPageBodyContainsInOrder: []string{"Title", "Slug"},
+			ExpectPageBodyNotContains:     []string{"Category"},
+		},
+		{
 			Name:  "Pages Detail Save",
 			Debug: true,
 			ReqFunc: func() *http.Request {
