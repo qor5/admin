@@ -61,7 +61,8 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 		var versionBadge *VChipBuilder
 		if v, ok := obj.(PrimarySlugInterface); ok {
 			ps := v.PrimaryColumnValuesBySlug(v.PrimarySlug())
-			versionBadge = VChip(h.Text(fmt.Sprintf("%d %s", versionCount(b.db, pm.NewModel(), ps["id"], ps["localCode"]), msgr.Versions))).
+
+			versionBadge = VChip(h.Text(fmt.Sprintf("%d %s", versionCount(b.db, pm.NewModel(), ps["id"], ps[l10n.SlugLocaleCode]), msgr.Versions))).
 				Color(ColorPrimary).Size(SizeSmall).Class("px-1 mx-1").Attr("style", "height:20px")
 		}
 
@@ -82,7 +83,7 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 		).Class("d-inline-flex align-center")
 	})
 	// register modelBuilder
-	names := []interface{}{"Title", "CategoryID", "Slug"}
+	names := b.filterFields([]interface{}{"Title", "CategoryID", "Slug"})
 	if b.templateEnabled {
 		names = append([]interface{}{PageTemplateSelectionFiled}, names...)
 	}
@@ -100,65 +101,74 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 		err = pageValidator(ctx, c, db, b.l10n)
 		return
 	})
-	eb.Field("Title").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		var vErr web.ValidationErrors
-		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
-			vErr = *ve
-		}
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+	titleFiled := eb.GetField("Title")
+	if titleFiled != nil {
+		titleFiled.ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			var vErr web.ValidationErrors
+			if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+				vErr = *ve
+			}
+			msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
-		return VTextField().
-			Label(msgr.ListHeaderTitle).
-			Variant(FieldVariantUnderlined).
-			Attr(web.VField(field.Name, field.Value(obj))...).
-			ErrorMessages(vErr.GetFieldErrors("Page.Title")...)
-	})
-	eb.Field("Slug").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		var vErr web.ValidationErrors
-		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
-			vErr = *ve
-		}
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+			return VTextField().
+				Label(msgr.ListHeaderTitle).
+				Variant(FieldVariantUnderlined).
+				Attr(web.VField(field.Name, field.Value(obj))...).
+				ErrorMessages(vErr.GetFieldErrors("Page.Title")...)
+		})
+	}
+	slugFiled := eb.GetField("Slug")
+	if slugFiled != nil {
+		slugFiled.ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			var vErr web.ValidationErrors
+			if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+				vErr = *ve
+			}
+			msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
-		return VTextField().
-			Variant(FieldVariantUnderlined).
-			Label(msgr.Slug).
-			Attr(web.VField(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"))...).
-			Prefix("/").
-			ErrorMessages(vErr.GetFieldErrors("Page.Slug")...)
-	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
-		m := obj.(*Page)
-		m.Slug = path.Join("/", m.Slug)
-		return nil
-	})
-	eb.Field("CategoryID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		p := obj.(*Page)
-		categories := []*Category{}
-		locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
-		if err := db.Model(&Category{}).Where("locale_code = ?", locale).Find(&categories).Error; err != nil {
-			panic(err)
-		}
+			return VTextField().
+				Variant(FieldVariantUnderlined).
+				Label(msgr.Slug).
+				Attr(web.VField(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"))...).
+				Prefix("/").
+				ErrorMessages(vErr.GetFieldErrors("Page.Slug")...)
+		}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+			m := obj.(*Page)
+			m.Slug = path.Join("/", m.Slug)
+			return nil
+		})
+	}
+	categoryIDFiled := eb.GetField("CategoryID")
+	if categoryIDFiled != nil {
+		categoryIDFiled.ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			p := obj.(*Page)
+			categories := []*Category{}
+			locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
+			if err := db.Model(&Category{}).Where("locale_code = ?", locale).Find(&categories).Error; err != nil {
+				panic(err)
+			}
 
-		var vErr web.ValidationErrors
-		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
-			vErr = *ve
-		}
+			var vErr web.ValidationErrors
+			if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+				vErr = *ve
+			}
 
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+			msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
-		complete := VAutocomplete().
-			Label(msgr.Category).
-			Variant(FieldVariantUnderlined).
-			Multiple(false).Chips(false).
-			Items(categories).ItemTitle("Path").ItemValue("ID").
-			ErrorMessages(vErr.GetFieldErrors("Page.Category")...)
-		if p.CategoryID > 0 {
-			complete.Attr(web.VField(field.Name, p.CategoryID)...)
-		} else {
-			complete.Attr(web.VField(field.Name, "")...)
-		}
-		return complete
-	})
+			complete := VAutocomplete().
+				Label(msgr.Category).
+				Variant(FieldVariantUnderlined).
+				Multiple(false).Chips(false).
+				Items(categories).ItemTitle("Path").ItemValue("ID").
+				ErrorMessages(vErr.GetFieldErrors("Page.Category")...)
+			if p.CategoryID > 0 {
+				complete.Attr(web.VField(field.Name, p.CategoryID)...)
+			} else {
+				complete.Attr(web.VField(field.Name, "")...)
+			}
+			return complete
+		})
+	}
 
 	detailPageEditor(dp, b)
 

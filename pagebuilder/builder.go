@@ -32,6 +32,7 @@ import (
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/richeditor"
 	"github.com/qor5/admin/v3/seo"
+	"github.com/qor5/admin/v3/utils"
 )
 
 type RenderInput struct {
@@ -101,6 +102,7 @@ type Builder struct {
 	pageInstall                   presets.ModelInstallFunc
 	categoryInstall               presets.ModelInstallFunc
 	devices                       []Device
+	fields                        []string
 }
 
 const (
@@ -494,6 +496,7 @@ func (b *Builder) configDetailLayoutFunc(
 			VSpacer(),
 			publish.DefaultVersionBar(db)(obj, ctx),
 		)
+		title = defaultTitle
 		titleCompo = h.Div(
 			pageAppbarContent...,
 		).Class("d-flex align-center  justify-space-between  w-100")
@@ -950,12 +953,21 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 		if portalName := ctx.Param(presets.ParamPortalName); portalName != pageBuilderRightContentPortal {
 			return nil
 		}
+		var (
+			fromKey     = ctx.Param(presets.ParamAddRowFormKey)
+			addRowBtnID = ctx.Param(presets.AddRowBtnKey(fromKey))
+		)
 		return h.Components(
-			h.Div().Style("display:none").Attr("v-on-mounted", `() => {
+			h.Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf(`({window}) => {
 				if (!!locals.__pageBuilderRightContentKeepScroll) {
 					locals.__pageBuilderRightContentKeepScroll();
+				}	
+				const addRowBtnID = %q;
+				if(addRowBtnID){
+				const newAddRowBtn = window.document.getElementById(addRowBtnID);
+				newAddRowBtn.scrollIntoView({ behavior: 'smooth', block: 'end' });
 				}
-			}`),
+			}`, addRowBtnID)),
 			web.Listen(
 				b.mb.NotifRowUpdated(),
 				web.Plaid().
@@ -1368,4 +1380,25 @@ func (b *Builder) getModelBuilder(mb *presets.ModelBuilder) *ModelBuilder {
 
 func (b *Builder) GetTemplateModel() *presets.ModelBuilder {
 	return b.templateModel
+}
+
+func (b *Builder) Only(vs ...string) *Builder {
+	b.fields = vs
+	return b
+}
+
+func (b *Builder) filterFields(names []interface{}) []interface{} {
+	return utils.Filter(names, func(i interface{}) bool {
+		if len(b.fields) == 0 {
+			return true
+		}
+		return slices.Contains(b.fields, i.(string))
+	})
+}
+
+func (b *Builder) expectField(name string) bool {
+	if len(b.fields) == 0 {
+		return true
+	}
+	return slices.Contains(b.fields, name)
 }
