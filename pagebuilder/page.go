@@ -168,7 +168,6 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 			}
 			return complete
 		})
-
 	}
 
 	detailPageEditor(dp, b)
