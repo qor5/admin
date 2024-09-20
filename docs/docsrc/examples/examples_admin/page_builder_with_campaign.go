@@ -258,6 +258,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 
 	pb := pagebuilder.New(b.GetURIPrefix()+"/page_builder", db).
 		Activity(ab).
+		Only("Title", "Slug").
 		DisabledNormalContainersGroup(true).
 		PreviewOpenNewTab(true).
 		Publisher(puBuilder).

@@ -32,6 +32,7 @@ import (
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/richeditor"
 	"github.com/qor5/admin/v3/seo"
+	"github.com/qor5/admin/v3/utils"
 )
 
 type RenderInput struct {
@@ -101,6 +102,7 @@ type Builder struct {
 	pageInstall                   presets.ModelInstallFunc
 	categoryInstall               presets.ModelInstallFunc
 	devices                       []Device
+	fields                        []string
 }
 
 const (
@@ -1378,4 +1380,25 @@ func (b *Builder) getModelBuilder(mb *presets.ModelBuilder) *ModelBuilder {
 
 func (b *Builder) GetTemplateModel() *presets.ModelBuilder {
 	return b.templateModel
+}
+
+func (b *Builder) Only(vs ...string) *Builder {
+	b.fields = vs
+	return b
+}
+
+func (b *Builder) filterFields(names []interface{}) []interface{} {
+	return utils.Filter(names, func(i interface{}) bool {
+		if len(b.fields) == 0 {
+			return true
+		}
+		return slices.Contains(b.fields, i.(string))
+	})
+}
+
+func (b *Builder) expectField(name string) bool {
+	if len(b.fields) == 0 {
+		return true
+	}
+	return slices.Contains(b.fields, name)
 }
