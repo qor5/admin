@@ -1394,7 +1394,6 @@ func (b *Builder) filterFields(names []interface{}) []interface{} {
 		}
 		return slices.Contains(b.fields, i.(string))
 	})
-
 }
 
 func (b *Builder) expectField(name string) bool {
