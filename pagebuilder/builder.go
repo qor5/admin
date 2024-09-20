@@ -494,6 +494,7 @@ func (b *Builder) configDetailLayoutFunc(
 			VSpacer(),
 			publish.DefaultVersionBar(db)(obj, ctx),
 		)
+		title = defaultTitle
 		titleCompo = h.Div(
 			pageAppbarContent...,
 		).Class("d-flex align-center  justify-space-between  w-100")
