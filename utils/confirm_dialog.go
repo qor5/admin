@@ -37,8 +37,7 @@ func MustGetMessages(r *http.Request) *Messages {
 }
 
 func ConfirmDialog(payload UtilDialogPayloadType) h.HTMLComponent {
-
-	if(payload.Title == "") {
+	if payload.Title == "" {
 		payload.Title = payload.Msgr.ModalTitleConfirm
 	}
 
@@ -55,13 +54,13 @@ func ConfirmDialog(payload UtilDialogPayloadType) h.HTMLComponent {
 func DeleteDialog(msg string, okAction string, msgr *Messages) h.HTMLComponent {
 	return web.Scope(
 		vx.VXDialog().
-		Title(msgr.ModalTitleConfirm).
-		Text(msg).
-		HideClose(true).
-		OkText(msgr.OK).
-		CancelText(msgr.Cancel).
-		Attr("@click:ok", okAction).
-		Attr("v-model", "locals.deleteConfirmation"),
+			Title(msgr.ModalTitleConfirm).
+			Text(msg).
+			HideClose(true).
+			OkText(msgr.OK).
+			CancelText(msgr.Cancel).
+			Attr("@click:ok", okAction).
+			Attr("v-model", "locals.deleteConfirmation"),
 	).VSlot(" { locals }").Init(`{deleteConfirmation: true}`)
 }
 

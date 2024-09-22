@@ -831,14 +831,14 @@ func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse
 	er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
 		Name: portal,
 		Body: web.Scope(
-				vuetifyx.VXDialog().
-					Size(vuetifyx.DialogSizeDefault).
-					Title("Confirm").
-					Text(promptText).
-					CancelText(cancelText).
-					OkText(okText).
-					Attr("@click:ok", fmt.Sprintf("%s; locals.show = false", confirmEvent)).
-					Attr("v-model", "locals.show"),
+			vuetifyx.VXDialog().
+				Size(vuetifyx.DialogSizeDefault).
+				Title("Confirm").
+				Text(promptText).
+				CancelText(cancelText).
+				OkText(okText).
+				Attr("@click:ok", fmt.Sprintf("%s; locals.show = false", confirmEvent)).
+				Attr("v-model", "locals.show"),
 		).VSlot("{ locals }").Init("{show: true}"),
 	})
 
