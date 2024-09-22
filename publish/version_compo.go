@@ -74,10 +74,15 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 		slug := primarySlugger.PrimarySlug()
 
 		div := h.Div().Class("tagList-bar-warp")
+
+		confirmDialogPayload := utils.UtilDialogPayloadType {
+			Text: msgr.Areyousure,
+			OkAction: web.Plaid().EventFunc(web.Var("locals.action")).Query(presets.ParamID, slug).Go(),
+			Msgr: utilsMsgr,
+		}
+
 		div.AppendChildren(
-			utils.ConfirmDialog(msgr.Areyousure, web.Plaid().EventFunc(web.Var("locals.action")).
-				Query(presets.ParamID, slug).Go(),
-				utilsMsgr),
+			utils.ConfirmDialog(confirmDialogPayload),
 		)
 
 		if !config.Top {

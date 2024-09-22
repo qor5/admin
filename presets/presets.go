@@ -830,27 +830,15 @@ func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse
 
 	er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
 		Name: portal,
-		Body: web.Scope(VDialog(
-			VCard(
-				VCardTitle(h.Text(promptText)).Class("pa-6"),
-				VCardActions(
-					VSpacer(),
-					VBtn(cancelText).
-						Size(SizeSmall).
-						Variant(VariantOutlined).
-						Class("ml-2").
-						On("click", "locals.show = false"),
-
-					VBtn(okText).
-						Size(SizeSmall).
-						Color("primary").
-						Variant(VariantFlat).
-						Theme(ThemeLight).
-						Attr("@click", fmt.Sprintf("%s; locals.show = false", confirmEvent)),
-				).Class("pb-6 px-6"),
-			),
-		).MaxWidth("400px").Class("common-dialog").
-			Attr("v-model", "locals.show"),
+		Body: web.Scope(
+				vuetifyx.VXDialog().
+					Size(vuetifyx.DialogSizeDefault).
+					Title("Confirm").
+					Text(promptText).
+					CancelText(cancelText).
+					OkText(okText).
+					Attr("@click:ok", fmt.Sprintf("%s; locals.show = false", confirmEvent)).
+					Attr("v-model", "locals.show"),
 		).VSlot("{ locals }").Init("{show: true}"),
 	})
 
