@@ -7,6 +7,7 @@ import (
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
@@ -341,5 +342,31 @@ func PresetsDetailAfterTitle(b *presets.Builder, db *gorm.DB) (
 	dp.AfterTitleCompFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		return h.Text("After Title")
 	})
+	return
+}
+
+func PresetsUtilsDialog(b *presets.Builder, db *gorm.DB) (
+	cust *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	cust, cl, ce, dp = PresetsHelloWorld(b, db)
+
+	dp = cust.RightDrawerWidth("800").Detailing("tab").Drawer(true)
+
+	dp.Only("Delected Dialog")
+	dp.Field("Delected Dialog").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+
+		dialogPayload := utils.UtilDialogPayloadType{
+			Title: "Confirm",
+			TypeField: "error",
+			ContentEl: h.Div(h.Text("are you sure?")),
+			Msgr: utils.MustGetMessages(ctx.R),
+		}
+		
+		return utils.CustomDialog(dialogPayload)
+	})
+
 	return
 }
