@@ -357,14 +357,13 @@ func PresetsUtilsDialog(b *presets.Builder, db *gorm.DB) (
 
 	dp.Only("Delected Dialog")
 	dp.Field("Delected Dialog").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-
 		dialogPayload := utils.UtilDialogPayloadType{
-			Title: "Confirm",
+			Title:     "Confirm",
 			TypeField: "error",
 			ContentEl: h.Div(h.Text("are you sure?")),
-			Msgr: utils.MustGetMessages(ctx.R),
+			Msgr:      utils.MustGetMessages(ctx.R),
 		}
-		
+
 		return utils.CustomDialog(dialogPayload)
 	})
 

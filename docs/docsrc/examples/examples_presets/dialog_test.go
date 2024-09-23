@@ -10,8 +10,6 @@ import (
 	// "github.com/theplant/gofixtures"
 )
 
-
-
 func TestPresetsUtilsDialog(t *testing.T) {
 	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
 	PresetsUtilsDialog(pb, TestDB)
