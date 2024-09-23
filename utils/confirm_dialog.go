@@ -6,12 +6,24 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
-	. "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 )
 
 const I18nUtilsKey i18n.ModuleKey = "I18nUtilsKey"
+
+type UtilDialogPayloadType struct {
+	Title        string
+	TypeField    vx.VXDialogType
+	Size         vx.VXDialogSize
+	Text         string
+	ContentEl    h.HTMLComponent
+	OkAction     string
+	CancelAction string
+	HideClose    bool
+	Msgr         *Messages
+}
 
 func Install(b *presets.Builder) {
 	b.GetI18n().
@@ -24,81 +36,48 @@ func MustGetMessages(r *http.Request) *Messages {
 	return i18n.MustGetModuleMessages(r, I18nUtilsKey, Messages_en_US).(*Messages)
 }
 
-func ConfirmDialog(msg string, okAction string, msgr *Messages) h.HTMLComponent {
-	return VDialog(
-		VCard(
-			VCardTitle(h.Text(msg)),
-			VCardActions(
-				VSpacer(),
-				VBtn(msgr.Cancel).
-					Variant(VariantFlat).
-					Class("ml-2").
-					On("click", "locals.commonConfirmDialog = false"),
+func ConfirmDialog(payload UtilDialogPayloadType) h.HTMLComponent {
+	if payload.Title == "" {
+		payload.Title = payload.Msgr.ModalTitleConfirm
+	}
 
-				VBtn(msgr.OK).
-					Color("primary").
-					Variant(VariantFlat).
-					Theme(ThemeDark).
-					Attr("@click", okAction),
-			),
-		),
-	).MaxWidth("600px").
+	return vx.VXDialog().
+		Title(payload.Title).
+		Text(payload.Text).
+		HideClose(true).
+		OkText(payload.Msgr.OK).
+		CancelText(payload.Msgr.Cancel).
+		Attr("@click:ok", payload.OkAction).
 		Attr("v-model", "locals.commonConfirmDialog")
 }
 
 func DeleteDialog(msg string, okAction string, msgr *Messages) h.HTMLComponent {
 	return web.Scope(
-		VDialog(
-			VCard(
-				VCardTitle(h.Text(msg)),
-				VCardActions(
-					VSpacer(),
-					VBtn(msgr.Cancel).
-						Variant(VariantFlat).
-						Class("ml-2").
-						On("click", "locals.deleteConfirmation = false"),
-
-					VBtn(msgr.OK).
-						Color("primary").
-						Variant(VariantFlat).
-						Theme(ThemeDark).
-						Attr("@click", okAction),
-				),
-			),
-		).MaxWidth("600px").
+		vx.VXDialog().
+			Title(msgr.ModalTitleConfirm).
+			Text(msg).
+			HideClose(true).
+			OkText(msgr.OK).
+			CancelText(msgr.Cancel).
+			Attr("@click:ok", okAction).
 			Attr("v-model", "locals.deleteConfirmation"),
 	).VSlot(" { locals }").Init(`{deleteConfirmation: true}`)
 }
 
-const CloseCustomDialog = "locals.customConfirmationDialog = false"
-
-func CustomDialog(title h.HTMLComponent, content h.HTMLComponent, okAction string, msgr *Messages) h.HTMLComponent {
-	Vcard := VCard()
-	if title != nil {
-		Vcard.AppendChildren(VCardTitle(title))
+func CustomDialog(payload UtilDialogPayloadType) h.HTMLComponent {
+	if payload.Size == "" {
+		payload.Size = vx.DialogSizeLarge
 	}
-	if content != nil {
-		Vcard.AppendChildren(VCardText(content))
-	}
-	Vcard.AppendChildren(
-		VCardActions(
-			VSpacer(),
-			VBtn(msgr.Cancel).
-				Variant(VariantFlat).
-				Class("ml-2").
-				On("click", CloseCustomDialog),
 
-			VBtn(msgr.OK).
-				Color("primary").
-				Variant(VariantFlat).
-				Theme(ThemeDark).
-				Attr("@click", okAction),
-		),
-	)
 	return web.Scope(
-		VDialog(
-			Vcard,
-		).MaxWidth("600px").
-			Attr("v-model", "locals.customConfirmationDialog"),
+		vx.VXDialog(
+			payload.ContentEl,
+		).Size(payload.Size).
+			Type(payload.TypeField).
+			Title(payload.Title).
+			OkText(payload.Msgr.OK).
+			CancelText(payload.Msgr.Cancel).
+			Attr("v-model", "locals.customConfirmationDialog").
+			Attr("@click:ok", payload.OkAction),
 	).VSlot(" { locals }").Init(`{ customConfirmationDialog: true }`)
 }

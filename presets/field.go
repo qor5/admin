@@ -814,7 +814,7 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 				comp = h.Div(
 					h.Div(titleComp).Class("section-title-wrap"),
 					h.Div(
-						v.VCard(rowsComp...).Variant(v.VariantFlat).Class("mx-0 mt-1 mb-4 px-4 pb-0 pt-4 section-body"),
+						v.VCard(rowsComp...).Variant(v.VariantFlat).Class("mx-0 mt-1  px-4 pb-0 pt-4 section-body"),
 					).Class("section-body border-b"),
 				).Class("section-wrap")
 			}
