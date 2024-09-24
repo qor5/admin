@@ -110,7 +110,7 @@ func NewConfig(db *gorm.DB) Config {
 					return
 				}
 				mb.Listing().WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
-					return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+					return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 						u := getCurrentUser(ctx.R)
 						if rs := u.GetRoles(); !slices.Contains(rs, models.RoleAdmin) {
 							params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
@@ -118,7 +118,7 @@ func NewConfig(db *gorm.DB) Config {
 								Args:  []interface{}{fmt.Sprint(u.ID)},
 							})
 						}
-						return in(model, params, ctx)
+						return in(ctx, params)
 					}
 				})
 				return
@@ -234,11 +234,7 @@ func NewConfig(db *gorm.DB) Config {
 			{Text: "Workers", Value: "*:workers:*"},
 		}).
 		AfterInstall(func(pb *presets.Builder, mb *presets.ModelBuilder) error {
-			mb.Listing().SearchFunc(func(
-				model interface{},
-				params *presets.SearchParams,
-				ctx *web.EventContext,
-			) (r interface{}, totalCount int, err error) {
+			mb.Listing().SearchFunc(func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 				u := getCurrentUser(ctx.R)
 				qdb := db
 				// If the current user doesn't has 'admin' role, do not allow them to view admin and manager roles
@@ -246,7 +242,7 @@ func NewConfig(db *gorm.DB) Config {
 				if currentRoles := u.GetRoles(); !slices.Contains(currentRoles, models.RoleAdmin) {
 					qdb = db.Where("name NOT IN (?)", []string{models.RoleAdmin, models.RoleManager})
 				}
-				return gorm2op.DataOperator(qdb).Search(model, params, ctx)
+				return gorm2op.DataOperator(qdb).Search(ctx, params)
 			})
 			return nil
 		})

@@ -33,7 +33,7 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 	// MenuIcon("people")
 	defer func() { ab.RegisterModel(user) }()
 
-	user.Listing().SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+	user.Listing().SearchFunc(func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 		u := getCurrentUser(ctx.R)
 		qdb := db
 
@@ -45,7 +45,7 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 				Having("COUNT(CASE WHEN r.name in (?) THEN 1 END) = 0", []string{models.RoleAdmin, models.RoleManager})
 		}
 
-		return gorm2op.DataOperator(qdb).Search(model, params, ctx)
+		return gorm2op.DataOperator(qdb).Search(ctx, params)
 	})
 
 	ed := user.Editing(

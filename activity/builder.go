@@ -219,6 +219,9 @@ func (ab *Builder) findUsers(ctx context.Context, ids []string) (map[string]*Use
 }
 
 func (ab *Builder) supplyUsers(ctx context.Context, logs []*ActivityLog) error {
+	if len(logs) == 0 {
+		return nil
+	}
 	userIDs := lo.Uniq(lo.Map(logs, func(log *ActivityLog, _ int) string {
 		return log.UserID
 	}))

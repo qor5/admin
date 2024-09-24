@@ -33,6 +33,7 @@ import (
 	"github.com/qor5/admin/v3/richeditor"
 	"github.com/qor5/admin/v3/seo"
 	"github.com/qor5/admin/v3/utils"
+	relay "github.com/theplant/gorelay"
 )
 
 type RenderInput struct {
@@ -545,9 +546,9 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 		}, nil
 	}))
 	lb.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
-		return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
-			r, totalCount, err = in(model, params, ctx)
-			cats := r.([]*Category)
+		return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
+			result, err = in(ctx, params)
+			cats := result.Nodes.([]*Category)
 			sort.Slice(cats, func(i, j int) bool {
 				return cats[i].Path < cats[j].Path
 			})
@@ -762,9 +763,9 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 		}, nil
 	}))
 	listing.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
-		return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+		return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 			b.firstOrCreateDemoContainers(ctx)
-			return in(model, params, ctx)
+			return in(ctx, params)
 		}
 	})
 	listing.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
@@ -849,13 +850,13 @@ func (b *Builder) firstOrCreateDemoContainers(ctx *web.EventContext, cons ...*Co
 }
 
 func sharedContainerSearcher(db *gorm.DB, b *ModelBuilder) presets.SearchFunc {
-	return func(obj interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+	return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 		ilike := "ILIKE"
 		if db.Dialector.Name() == "sqlite" {
 			ilike = "LIKE"
 		}
 
-		wh := db.Model(obj)
+		wh := db.Model(params.Model)
 		if len(params.KeywordColumns) > 0 && len(params.Keyword) > 0 {
 			var segs []string
 			var args []interface{}
@@ -870,12 +871,14 @@ func sharedContainerSearcher(db *gorm.DB, b *ModelBuilder) presets.SearchFunc {
 			wh = wh.Where(strings.Replace(cond.Query, " ILIKE ", " "+ilike+" ", -1), cond.Args...)
 		}
 
+		// TODO: relay
 		locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
 		var c int64
 		if err = wh.Select("count(display_name)").Where("shared = true AND locale_code = ? and page_model_name = ? ", locale, b.name).Group("display_name, model_name, model_id, locale_code").Count(&c).Error; err != nil {
-			return
+			return nil, err
 		}
-		totalCount = int(c)
+
+		totalCount := int(c)
 
 		if params.PerPage > 0 {
 			wh = wh.Limit(int(params.PerPage))
@@ -887,11 +890,17 @@ func sharedContainerSearcher(db *gorm.DB, b *ModelBuilder) presets.SearchFunc {
 			wh = wh.Offset(int(offset))
 		}
 
-		if err = wh.Select("MIN(id) AS id, display_name, model_name, model_id, locale_code").Find(obj).Error; err != nil {
-			return
+		rtNodes := reflect.New(reflect.SliceOf(reflect.TypeOf(params.Model))).Elem()
+		if err = wh.Select("MIN(id) AS id, display_name, model_name, model_id, locale_code").Find(rtNodes.Addr().Interface()).Error; err != nil {
+			return nil, err
 		}
-		r = reflect.ValueOf(obj).Elem().Interface()
-		return
+
+		return &presets.SearchResult{
+			PageInfo: relay.PageInfo{
+				TotalCount: totalCount,
+			},
+			Nodes: rtNodes.Interface(),
+		}, nil
 	}
 }
 

@@ -406,10 +406,10 @@ func PresetsListingCustomizationSearcher(b *presets.Builder, db *gorm.DB) (
 ) {
 	b.DataOperator(gorm2op.DataOperator(db))
 	mb = b.Model(&Customer{})
-	mb.Listing().SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+	mb.Listing().SearchFunc(func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 		// only display approved customers
 		qdb := db.Where("approved_at IS NOT NULL")
-		return gorm2op.DataOperator(qdb).Search(model, params, ctx)
+		return gorm2op.DataOperator(qdb).Search(ctx, params)
 	})
 	return
 }

@@ -54,7 +54,7 @@ func (mb *NestedManyBuilder) FieldInstall(fb *FieldBuilder) error {
 
 	foreignQuery := strcase.ToSnake(mb.foreignKey) + " = ?"
 	mb.Listing().WrapSearchFunc(func(in SearchFunc) SearchFunc {
-		return func(model any, params *SearchParams, ctx *web.EventContext) (r any, totalCount int, err error) {
+		return func(ctx *web.EventContext, params *SearchParams) (result *SearchResult, err error) {
 			compo := ListingCompoFromContext(ctx.R.Context())
 			if compo == nil || compo.ParentID == "" {
 				err = perm.PermissionDenied
@@ -64,7 +64,7 @@ func (mb *NestedManyBuilder) FieldInstall(fb *FieldBuilder) error {
 				Query: foreignQuery,
 				Args:  []any{compo.ParentID},
 			})
-			return in(model, params, ctx)
+			return in(ctx, params)
 		}
 	})
 	mb.Editing().WrapSaveFunc(func(in SaveFunc) SaveFunc {

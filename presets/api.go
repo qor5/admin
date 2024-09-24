@@ -6,6 +6,7 @@ import (
 
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/ui/vuetifyx"
+	relay "github.com/theplant/gorelay"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -34,7 +35,7 @@ type MessagesFunc func(r *http.Request) *Messages
 
 // Data Layer
 type DataOperator interface {
-	Search(obj interface{}, params *SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error)
+	Search(ctx *web.EventContext, params *SearchParams) (result *SearchResult, err error)
 	// return ErrRecordNotFound if record not found
 	Fetch(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error)
 	Save(obj interface{}, id string, ctx *web.EventContext) (err error)
@@ -49,7 +50,7 @@ type (
 )
 
 type (
-	SearchFunc func(model interface{}, params *SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error)
+	SearchFunc func(ctx *web.EventContext, params *SearchParams) (result *SearchResult, err error)
 	FetchFunc  func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error)
 	SaveFunc   func(obj interface{}, id string, ctx *web.EventContext) (err error)
 	DeleteFunc func(obj interface{}, id string, ctx *web.EventContext) (err error)
@@ -61,13 +62,22 @@ type SQLCondition struct {
 }
 
 type SearchParams struct {
+	Model          any
 	KeywordColumns []string
 	Keyword        string
 	SQLConditions  []*SQLCondition
 	PerPage        int64
-	Page           int64
-	OrderBy        string
 	PageURL        *url.URL
+
+	Page     int64
+	OrderBys []relay.OrderBy
+
+	RelayPagination relay.Pagination[any]
+}
+
+type SearchResult struct {
+	PageInfo relay.PageInfo // TODO: relay
+	Nodes    interface{}
 }
 
 type SlugDecoder interface {

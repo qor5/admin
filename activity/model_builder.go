@@ -238,14 +238,14 @@ func (amb *ModelBuilder) installPresetModelBuilder(mb *presets.ModelBuilder) {
 	listFieldNotes := lb.GetField(ListFieldNotes)
 	if listFieldNotes != nil && listFieldNotes.GetCompFunc() == nil {
 		lb.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
-			return func(model any, params *presets.SearchParams, ctx *web.EventContext) (r any, totalCount int, err error) {
-				r, totalCount, err = in(model, params, ctx)
+			return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
+				result, err = in(ctx, params)
 				if err != nil {
 					return
 				}
 				var modelName string
 				var modelKeyses []string
-				reflectutils.ForEach(r, func(obj any) {
+				reflectutils.ForEach(result.Nodes, func(obj any) {
 					if modelName == "" {
 						modelName = ParseModelName(obj)
 					}
@@ -254,7 +254,7 @@ func (amb *ModelBuilder) installPresetModelBuilder(mb *presets.ModelBuilder) {
 				if len(modelKeyses) > 0 {
 					counts, err := amb.ab.GetNotesCounts(ctx.R.Context(), modelName, modelKeyses)
 					if err != nil {
-						return r, totalCount, err
+						return nil, err
 					}
 					m := lo.SliceToMap(counts, func(v *NoteCount) (string, *NoteCount) {
 						return v.ModelKeys, v

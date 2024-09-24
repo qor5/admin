@@ -8,6 +8,10 @@ import (
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
+	"github.com/samber/lo"
+	relay "github.com/theplant/gorelay"
+	"github.com/theplant/gorelay/cursor"
+	"github.com/theplant/gorelay/gormrelay"
 	"gorm.io/gorm"
 )
 
@@ -22,13 +26,13 @@ type DataOperatorBuilder struct {
 	db *gorm.DB
 }
 
-func (op *DataOperatorBuilder) Search(obj interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+func (op *DataOperatorBuilder) Search(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 	ilike := "ILIKE"
 	if op.db.Dialector.Name() == "sqlite" {
 		ilike = "LIKE"
 	}
 
-	wh := op.db.Model(obj)
+	wh := op.db.Model(params.Model)
 	if len(params.KeywordColumns) > 0 && len(params.Keyword) > 0 {
 		var segs []string
 		var args []interface{}
@@ -44,34 +48,38 @@ func (op *DataOperatorBuilder) Search(obj interface{}, params *presets.SearchPar
 		wh = wh.Where(strings.Replace(cond.Query, " ILIKE ", " "+ilike+" ", -1), cond.Args...)
 	}
 
-	var c int64
-	err = wh.Count(&c).Error
-	if err != nil {
-		return
-	}
-	totalCount = int(c)
-
+	p := relay.New(
+		true, // nodesOnly
+		presets.PerPageMax, 10,
+		params.OrderBys,
+		gormrelay.NewOffsetAdapter[any](wh),
+	)
+	req := &relay.PaginateRequest[any]{}
 	if params.PerPage > 0 {
-		wh = wh.Limit(int(params.PerPage))
+		req.First = lo.ToPtr(int(params.PerPage))
 		page := params.Page
 		if page == 0 {
 			page = 1
 		}
-		offset := (page - 1) * params.PerPage
-		wh = wh.Offset(int(offset))
+		offset := int((page - 1) * params.PerPage)
+		if offset > 0 {
+			req.After = lo.ToPtr(cursor.EncodeOffsetCursor(offset - 1))
+		}
 	}
-
-	orderBy := params.OrderBy
-	if len(orderBy) > 0 {
-		wh = wh.Order(orderBy)
-	}
-
-	err = wh.Find(obj).Error
+	resp, err := p.Paginate(ctx.R.Context(), req)
 	if err != nil {
 		return
 	}
-	r = reflect.ValueOf(obj).Elem().Interface()
-	return
+
+	// []any => []modelType
+	nodes := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(params.Model)), len(resp.Nodes), len(resp.Nodes))
+	for i := 0; i < len(resp.Nodes); i++ {
+		nodes.Index(i).Set(reflect.ValueOf(resp.Nodes[i]))
+	}
+	return &presets.SearchResult{
+		PageInfo: resp.PageInfo,
+		Nodes:    nodes.Interface(),
+	}, nil
 }
 
 func (op *DataOperatorBuilder) primarySluggerWhere(obj interface{}, id string) *gorm.DB {

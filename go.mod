@@ -37,6 +37,7 @@ require (
 	github.com/theplant/bimg v1.1.1
 	github.com/theplant/docgo v0.0.16
 	github.com/theplant/gofixtures v1.1.3
+	github.com/theplant/gorelay v0.0.0-20240923184115-f1968b6a7d97
 	github.com/theplant/htmlgo v1.0.3
 	github.com/theplant/osenv v0.0.2
 	github.com/theplant/sliceutils v0.0.0-20200406042209-89153d988eb1
@@ -52,7 +53,7 @@ require (
 	golang.org/x/text v0.18.0
 	gorm.io/driver/postgres v1.5.9
 	gorm.io/driver/sqlite v1.5.6
-	gorm.io/gorm v1.25.11
+	gorm.io/gorm v1.25.12
 )
 
 require (
@@ -108,6 +109,7 @@ require (
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/klauspost/pgzip v1.2.6 // indirect
 	github.com/lufia/plan9stats v0.0.0-20240513124658-fba389f38bae // indirect
@@ -122,6 +124,8 @@ require (
 	github.com/moby/sys/sequential v0.5.0 // indirect
 	github.com/moby/sys/user v0.1.0 // indirect
 	github.com/moby/term v0.5.0 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/nwaples/rardecode/v2 v2.0.0-beta.2 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect

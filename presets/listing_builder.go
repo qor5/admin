@@ -12,6 +12,7 @@ import (
 	v "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/samber/lo"
+	relay "github.com/theplant/gorelay"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -68,7 +69,11 @@ type ListingBuilder struct {
 	disablePagination      bool
 	paginationTotalVisible int64
 
-	orderBy           string
+	// TODO: relay
+	relayPagination relay.Pagination[any]
+
+	defaultOrderBys   []relay.OrderBy
+	orderBy           string // TODO: relay
 	orderableFields   []*OrderableField
 	selectableColumns bool
 	conditions        []*SQLCondition
@@ -202,6 +207,16 @@ func (b *ListingBuilder) SearchColumns(vs ...string) (r *ListingBuilder) {
 
 func (b *ListingBuilder) PerPage(v int64) (r *ListingBuilder) {
 	b.perPage = v
+	return b
+}
+
+func (b *ListingBuilder) DefaultOrderBys(v ...relay.OrderBy) (r *ListingBuilder) {
+	b.defaultOrderBys = v
+	return b
+}
+
+func (b *ListingBuilder) RelayPagination(v relay.Pagination[any]) (r *ListingBuilder) {
+	b.relayPagination = v
 	return b
 }
 

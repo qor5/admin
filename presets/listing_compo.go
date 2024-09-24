@@ -11,6 +11,7 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/stateful"
 	"github.com/samber/lo"
+	relay "github.com/theplant/gorelay"
 	h "github.com/theplant/htmlgo"
 
 	"github.com/qor5/x/v3/i18n"
@@ -402,6 +403,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 	evCtx, msgr := c.MustGetEventContext(ctx)
 
 	searchParams := &SearchParams{
+		Model:         c.lb.mb.NewModel(),
 		PageURL:       evCtx.R.URL,
 		SQLConditions: c.lb.conditions,
 	}
@@ -411,37 +413,41 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		searchParams.Keyword = c.Keyword
 	}
 
-	orderBys := lo.Map(c.OrderBys, func(ob ColOrderBy, _ int) ColOrderBy {
+	colOrderBys := lo.Map(c.OrderBys, func(ob ColOrderBy, _ int) ColOrderBy {
 		ob.OrderBy = strings.ToUpper(ob.OrderBy)
 		if ob.OrderBy != OrderByASC && ob.OrderBy != OrderByDESC {
 			ob.OrderBy = OrderByDESC
 		}
 		return ob
 	})
-	orderableFieldMap := make(map[string]string)
-	for _, v := range c.lb.orderableFields {
-		orderableFieldMap[v.FieldName] = v.DBColumn
+	orderableFieldMap := make(map[string]bool)
+	for _, v := range c.lb.orderableFields { // TODO: relay
+		orderableFieldMap[v.FieldName] = true
 	}
-	var dbOrderBys []string
-	for _, ob := range orderBys {
-		dbCol, ok := orderableFieldMap[ob.FieldName]
+	var orderBys []relay.OrderBy
+	for _, ob := range colOrderBys {
+		_, ok := orderableFieldMap[ob.FieldName]
 		if !ok {
 			continue
 		}
-		dbBy := ob.OrderBy
-		dbOrderBys = append(dbOrderBys, fmt.Sprintf("%s %s", dbCol, dbBy))
+		orderBys = append(orderBys, relay.OrderBy{
+			Field: ob.FieldName,
+			Desc:  ob.OrderBy == OrderByDESC,
+		})
 	}
-	var orderBySQL string
-	if len(dbOrderBys) == 0 {
-		if c.lb.orderBy != "" {
-			orderBySQL = c.lb.orderBy
-		} else {
-			orderBySQL = fmt.Sprintf("%s %s", c.lb.mb.primaryField, OrderByDESC)
+	if len(orderBys) == 0 {
+		if len(c.lb.defaultOrderBys) > 0 {
+			orderBys = c.lb.defaultOrderBys
+		} else if c.lb.mb.primaryField != "" {
+			orderBys = []relay.OrderBy{
+				{
+					Field: c.lb.mb.primaryField,
+					Desc:  true,
+				},
+			}
 		}
-	} else {
-		orderBySQL = strings.Join(dbOrderBys, ", ")
 	}
-	searchParams.OrderBy = orderBySQL
+	searchParams.OrderBys = orderBys
 
 	if !c.lb.disablePagination {
 		perPage := cmp.Or(c.PerPage, c.lb.perPage, PerPageDefault)
@@ -466,7 +472,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 
 	}
 
-	objs, totalCount, err := c.lb.Searcher(c.lb.mb.NewModelSlice(), searchParams, evCtx)
+	result, err := c.lb.Searcher(evCtx, searchParams)
 	if err != nil {
 		panic(errors.Wrap(err, "searcher error"))
 	}
@@ -479,7 +485,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 	fieldColumn := lo.SliceToMap(columns, func(col *Column) (string, *Column) {
 		return col.Name, col
 	})
-	dataTable := vx.DataTable(objs).Hover(true).HoverClass("cursor-pointer").
+	dataTable := vx.DataTable(result.Nodes).Hover(true).HoverClass("cursor-pointer").
 		HeadCellWrapperFunc(func(_ h.MutableAttrHTMLComponent, field string, title string) (compo h.HTMLComponent) {
 			defer func() {
 				th, ok := compo.(h.MutableAttrHTMLComponent)
@@ -502,7 +508,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 				return h.Th(title)
 			}
 
-			orderBy, orderByIdx, exists := lo.FindIndexOf(orderBys, func(ob ColOrderBy) bool {
+			orderBy, orderByIdx, exists := lo.FindIndexOf(colOrderBys, func(ob ColOrderBy) bool {
 				return ob.FieldName == field
 			})
 			if !exists {
@@ -599,7 +605,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 	}
 
 	var dataTableAdditions h.HTMLComponent
-	if totalCount <= 0 {
+	if result.PageInfo.TotalCount <= 0 { // TODO: relay
 		dataTableAdditions = h.Div().Class("mt-10 text-center grey--text text--darken-2").Children(
 			h.Text(msgr.ListingNoRecordToShow),
 		)
@@ -607,9 +613,30 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		if c.lb.disablePagination {
 			return dataTable
 		}
+		// TODO: relay
+		// prev := VBtn("").Variant(VariantPlain).Icon("mdi-chevron-left").Disabled(!result.PageInfo.HasPreviousPage)
+		// next := VBtn("").Variant(VariantPlain).Icon("mdi-chevron-right").Disabled(!result.PageInfo.HasNextPage)
+		// if result.PageInfo.HasPreviousPage {
+		// 	prev.SetAttr("@click", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
+		// 		target.Page = searchParams.Page - 1
+		// 	}).ThenScript(ListingCompo_JsScrollToTop).Go())
+		// }
+		// if result.PageInfo.HasNextPage {
+		// 	next.SetAttr("@click", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
+		// 		target.Page = searchParams.Page + 1
+		// 	}).ThenScript(ListingCompo_JsScrollToTop).Go())
+		// }
+		// dataTableAdditions = h.Div().Style("margin-top:26px").Children(
+		// 	h.Div().Class("d-flex ga-2").Children(
+		// 		VSpacer(),
+		// 		prev,
+		// 		next,
+		// 	),
+		// )
+
 		dataTableAdditions = h.Div().Style("margin-top:26px").Children(
 			vx.VXTablePagination().
-				Total(int64(totalCount)).
+				Total(int64(result.PageInfo.TotalCount)).
 				CurrPage(searchParams.Page).
 				PerPage(searchParams.PerPage).
 				CustomPerPages([]int64{c.lb.perPage}).
