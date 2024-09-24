@@ -13,12 +13,13 @@ import (
 	"unicode"
 
 	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/i18n"
-	v "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+
+	"github.com/qor5/x/v3/i18n"
+	v "github.com/qor5/x/v3/ui/vuetify"
 )
 
 type FieldContext struct {
@@ -187,10 +188,16 @@ func (b *FieldBuilder) LazyWrapSetterFunc(w func(in FieldSetterFunc) FieldSetter
 }
 
 func (b *FieldBuilder) lazySetterFunc() FieldSetterFunc {
-	if b.lazyWrapSetterFunc == nil {
-		return b.setterFunc
+	setterFunc := b.setterFunc
+	if setterFunc == nil {
+		setterFunc = func(obj interface{}, field *FieldContext, ctx *web.EventContext) (err error) {
+			return nil
+		}
 	}
-	return b.lazyWrapSetterFunc(b.setterFunc)
+	if b.lazyWrapSetterFunc == nil {
+		return setterFunc
+	}
+	return b.lazyWrapSetterFunc(setterFunc)
 }
 
 func (b *FieldBuilder) WithContextValue(key interface{}, val interface{}) (r *FieldBuilder) {
@@ -409,11 +416,6 @@ func (b *FieldsBuilder) SetObjectFields(fromObj interface{}, toObj interface{}, 
 		if err1 == nil {
 			reflectutils.Set(toObj, f.name, val)
 		}
-
-		if f.setterFunc == nil {
-			continue
-		}
-
 		keyPath := f.name
 		if parent != nil && parent.FormKey != "" {
 			keyPath = fmt.Sprintf("%s.%s", parent.FormKey, f.name)

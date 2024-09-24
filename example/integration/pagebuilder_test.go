@@ -66,7 +66,8 @@ INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, t
 SELECT setval('page_builder_pages_id_seq', 10, true);
 INSERT INTO public.container_in_numbers (id, add_top_space, add_bottom_space, anchor_id, heading, items) VALUES (1, false, false, 'test1', '', 'null');
 INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, locale_code) VALUES (1, '2024-06-25 02:21:41.014915 +00:00', '2024-06-25 02:21:41.014915 +00:00', null, 'InNumbers', 1, 'International');
-`, []string{"page_builder_pages", "page_builder_containers", "container_in_numbers", "page_builder_demo_containers"}))
+INSERT INTO public.container_headings (id, add_top_space, add_bottom_space, anchor_id, heading, font_color, background_color, link, link_text, link_display_option, text) VALUES (1, false, false, '', '', '', '', '', '', '', '');
+`, []string{"page_builder_pages", "page_builder_containers", "container_in_numbers", "page_builder_demo_containers", "container_headings"}))
 
 func TestPageBuilder(t *testing.T) {
 	h := admin.TestHandler(TestDB, nil)
@@ -602,7 +603,7 @@ func TestPageBuilder(t *testing.T) {
 					Query(presets.ParamID, "10_2024-05-21-v01_International").
 					Query("section", "Page").
 					AddField("Page.Title", "123").
-					AddField("Page.Slug", "/123").
+					AddField("Page.Slug", "123").
 					AddField("Page.CategoryID", "0").
 					BuildEventFuncRequest()
 			},
@@ -615,6 +616,10 @@ func TestPageBuilder(t *testing.T) {
 				}
 				if cons[0].Title != "123" {
 					t.Fatalf("Expected Page Title, got %s", cons[0].Title)
+					return
+				}
+				if cons[0].Slug != "/123" {
+					t.Fatalf("Expected Page Slug, got %s", cons[0].Slug)
 					return
 				}
 			},
@@ -660,7 +665,7 @@ func TestPageBuilder(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`"Page.CategoryID":""`},
+			ExpectPortalUpdate0ContainsInOrder: []string{`"CategoryID":""`},
 		},
 		{
 			Name:  "Page Detail Editing Has Category",
@@ -675,7 +680,7 @@ func TestPageBuilder(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`"Page.CategoryID":1`},
+			ExpectPortalUpdate0ContainsInOrder: []string{`"CategoryID":1`},
 		},
 
 		{
@@ -817,6 +822,22 @@ func TestPageBuilder(t *testing.T) {
 					return
 				}
 			},
+		},
+		{
+			Name:  "Container Heading Update Validate",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/heading").
+					EventFunc(actions.Update).
+					Query(presets.ParamID, "1").
+					AddField("FontColor", "blue").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"LinkText 不能为空"},
 		},
 	}
 

@@ -586,7 +586,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 					Query(presets.ParamID, "1_2024-05-20-v01").
 					Query("section", "Page").
 					AddField("Page.Title", "123").
-					AddField("Page.Slug", "/123").
+					AddField("Page.Slug", "123").
 					AddField("Page.CategoryID", "2").
 					BuildEventFuncRequest()
 			},
@@ -599,6 +599,10 @@ func TestPageBuilderCampaign(t *testing.T) {
 				}
 				if cons[0].Title != "123" {
 					t.Fatalf("Expected Page Title, got %s", cons[0].Title)
+					return
+				}
+				if cons[0].Slug != "/123" {
+					t.Fatalf("Expected Page Slug, got %s", cons[0].Slug)
 					return
 				}
 			},

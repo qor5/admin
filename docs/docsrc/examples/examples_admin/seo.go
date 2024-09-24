@@ -3,16 +3,17 @@ package examples_admin
 import (
 	"net/http"
 
+	"gorm.io/gorm"
+
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/seo"
-	"gorm.io/gorm"
 )
 
 type SEOPost struct {
 	gorm.Model
 	Title string
-	Seo   seo.Setting
+	SEO   seo.Setting
 }
 
 func SEOExampleBasic(b *presets.Builder, db *gorm.DB) http.Handler {
@@ -24,8 +25,7 @@ func SEOExampleBasic(b *presets.Builder, db *gorm.DB) http.Handler {
 	b.DataOperator(gorm2op.DataOperator(db))
 
 	mb := b.Model(&SEOPost{})
-	dp := mb.Detailing("Title", seo.SeoDetailFieldName).Drawer(true)
-	_ = dp
+	mb.Detailing("Title", seo.SeoDetailFieldName).Drawer(true)
 	seob := seo.New(db).AutoMigrate()
 	seob.RegisterSEO("Post", &SEOPost{}).
 		RegisterContextVariable(

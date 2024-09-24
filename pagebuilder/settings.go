@@ -6,18 +6,17 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/qor5/web/v3"
 	"github.com/sunfmin/reflectutils"
+	h "github.com/theplant/htmlgo"
 
 	"github.com/qor5/x/v3/i18n"
-
-	"github.com/qor5/admin/v3/publish"
-
-	"github.com/qor5/web/v3"
 	. "github.com/qor5/x/v3/ui/vuetify"
-	h "github.com/theplant/htmlgo"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/publish"
 )
 
 func overview(m *ModelBuilder) presets.FieldComponentFunc {
@@ -124,25 +123,54 @@ transform-origin: 0 0; transform:scale(0.5);width:200%;height:200%`),
 	}
 }
 
-func detailingRow(label string, showComp h.HTMLComponent) (r *h.HTMLTagBuilder) {
-	return h.Div(
-		h.Div(h.Text(label)).Class("text-subtitle-2 mb-5").Style("width:180px;height:20px"),
-		h.Div(showComp).Class("text-body-1 ml-2 w-100"),
-	).Class("d-flex align-center ma-2").Style("height:60px")
-}
-
 func detailPageEditor(dp *presets.DetailingBuilder, b *Builder) {
 	db := b.db
-	fields := b.filterFields([]interface{}{"Title", "Slug", "CategoryID"})
-	dp.Section("Page").
+	fields := b.filterFields([]interface{}{"Title", "CategoryID", "Slug"})
+	section := dp.Section("Page").
 		Editing(fields...).
-		ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-			c := obj.(*Page)
-			c.Slug = path.Join("/", c.Slug)
-			err = pageValidator(ctx, c, db, b.l10n)
-			return
-		}).
-		ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
+			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+				p := obj.(*Page)
+				if err = pageValidator(ctx, p, db, b.l10n); err.HaveErrors() {
+					return
+				}
+				err = in(obj, ctx)
+				return
+			}
+		})
+	if b.expectField("Title") {
+		section.ViewingField("Title").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
+			return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+				comp := in(obj, field, ctx)
+				p := obj.(*Page)
+				return h.Div(comp).Attr(web.VAssign("vars", fmt.Sprintf(`{pageTitle:%q}`, p.Title))...)
+			}
+		})
+	}
+	if b.expectField("Slug") {
+		section.EditingField("Slug").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
+			return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+				msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+				comp := in(obj, field, ctx)
+				p := obj.(*Page)
+				return comp.(*vx.VXFieldBuilder).Label(msgr.Slug).
+					Attr(web.VField(field.Name, strings.TrimPrefix(p.Slug, "/"))...).
+					Attr("prefix", "/")
+
+			}
+		}).LazyWrapSetterFunc(func(in presets.FieldSetterFunc) presets.FieldSetterFunc {
+			return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+				p := obj.(*Page)
+				p.Slug = path.Join("/", p.Slug)
+				if err = in(obj, field, ctx); err != nil {
+					return
+				}
+				return
+			}
+		})
+	}
+	if b.expectField("CategoryID") {
+		section.ViewingField("CategoryID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			p := obj.(*Page)
 			var (
 				category Category
@@ -152,56 +180,33 @@ func detailPageEditor(dp *presets.DetailingBuilder, b *Builder) {
 				panic(err)
 			}
 			msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-			return h.Div(
-				h.If(b.expectField("Title"), detailingRow(msgr.Title, h.Text(p.Title)).Attr(web.VAssign("vars", fmt.Sprintf(`{pageTitle:%q}`, p.Title))...)),
-				h.If(b.expectField("Slug"), detailingRow(msgr.Slug, h.Text(p.Slug))),
-				h.If(b.expectField("CategoryID"), detailingRow(msgr.Category, h.Text(category.Path))),
-			)
-		}).EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		p := obj.(*Page)
-		categories := []*Category{}
-		locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
-		if err := db.Model(&Category{}).Where("locale_code = ?", locale).Find(&categories).Error; err != nil {
-			panic(err)
-		}
 
-		var vErr web.ValidationErrors
-		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
-			vErr = *ve
-		}
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		complete := VAutocomplete().
-			Variant(VariantOutlined).
-			Density(DensityCompact).
-			Multiple(false).Chips(false).
-			Items(categories).ItemTitle("Path").ItemValue("ID").
-			ErrorMessages(vErr.GetFieldErrors("Page.CategoryID")...)
-		if p.CategoryID > 0 {
-			complete.Attr(web.VField("Page.CategoryID", p.CategoryID)...)
-		} else {
-			complete.Attr(web.VField("Page.CategoryID", "")...)
-		}
-		return h.Components(
-			h.If(b.expectField("Title"), detailingRow(msgr.Title,
-				VTextField().
-					Variant(VariantOutlined).
-					Density(DensityCompact).
-					Attr(web.VField("Page.Title", p.Title)...).
-					ErrorMessages(vErr.GetFieldErrors("Page.Title")...),
-			)),
-			h.If(b.expectField("Slug"), detailingRow(msgr.Slug,
-				VTextField().
-					Variant(VariantOutlined).
-					Density(DensityCompact).
-					Attr(web.VField("Page.Slug", strings.TrimPrefix(p.Slug, "/"))...).
-					Prefix("/").
-					ErrorMessages(vErr.GetFieldErrors("Page.Slug")...),
-			)),
-			h.If(b.expectField("CategoryID"),
-				detailingRow(msgr.Category,
-					complete,
-				)),
-		)
-	})
+			return presets.CfReadonlyText().
+				Label(msgr.Category).
+				Value(category.Path)
+		})
+		section.EditingField("CategoryID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			var (
+				p          = obj.(*Page)
+				categories []*Category
+				locale, _  = l10n.IsLocalizableFromContext(ctx.R.Context())
+			)
+			if err := db.Model(&Category{}).Where("locale_code = ?", locale).Find(&categories).Error; err != nil {
+				panic(err)
+			}
+			msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+			complete := presets.CfSelectField().
+				Multiple(false).Chips(false).
+				Label(msgr.Category).
+				Items(categories).ItemTitle("Path").ItemValue("ID").
+				ErrorMessages(field.Errors...)
+			if p.CategoryID > 0 {
+				complete.Attr(web.VField(field.Name, p.CategoryID)...)
+			} else {
+				complete.Attr(web.VField(field.Name, "")...)
+			}
+			return complete
+		})
+	}
 	return
 }

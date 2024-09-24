@@ -1,13 +1,14 @@
 package containers
 
 import (
-	"github.com/qor5/admin/v3/pagebuilder"
-	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/richeditor"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/ui/vuetify"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/richeditor"
 )
 
 const (
@@ -45,6 +46,15 @@ func RegisterHeadingContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	ed := vb.Model(&Heading{}).Editing("AddTopSpace", "AddBottomSpace", "AnchorID", "Heading", "FontColor", "BackgroundColor", "Link", "LinkText", "LinkDisplayOption", "Text")
 	ed.Field("Text").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return richeditor.RichEditor(db, "Text").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*Heading).Text).Label(field.Label)
+	})
+	ed.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		p := obj.(*Heading)
+		if p.ID != 0 {
+			if p.LinkText == "" {
+				err.FieldError("LinkText", "LinkText 不能为空")
+			}
+		}
+		return
 	})
 
 	ed.Field("FontColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
