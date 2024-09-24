@@ -230,6 +230,7 @@ func cfTimeSetter(obj interface{}, field *FieldContext, ctx *web.EventContext) (
 	}
 	return reflectutils.Set(obj, field.Name, t)
 }
+
 func cfTextField(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	return CfTextField(obj, field, ctx)
 }
@@ -240,6 +241,7 @@ func CfTextField(obj interface{}, field *FieldContext, ctx *web.EventContext) *v
 		ErrorMessages(field.Errors...).
 		Disabled(field.Disabled)
 }
+
 func cfSelectField(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	return CfSelectField(obj, field, ctx)
 }
@@ -256,6 +258,7 @@ func CfReadonlyText(obj interface{}, field *FieldContext, ctx *web.EventContext)
 		Label(field.Label).
 		Value(field.StringValue(obj))
 }
+
 func cfReadonlyText(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	return CfReadonlyText(obj, field, ctx)
 }
@@ -270,6 +273,7 @@ func CfReadonlyCheckbox(obj interface{}, field *FieldContext, ctx *web.EventCont
 func cfReadonlyCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	return CfReadonlyCheckbox(obj, field, ctx)
 }
+
 func (b *FieldDefaults) builtInFieldTypes() {
 	if b.mode == LIST {
 		b.FieldType(true).

@@ -156,7 +156,6 @@ func detailPageEditor(dp *presets.DetailingBuilder, b *Builder) {
 				return comp.(*vx.VXFieldBuilder).Label(msgr.Slug).
 					Attr(web.VField(field.Name, strings.TrimPrefix(p.Slug, "/"))...).
 					Attr("prefix", "/")
-
 			}
 		}).LazyWrapSetterFunc(func(in presets.FieldSetterFunc) presets.FieldSetterFunc {
 			return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {

@@ -127,7 +127,6 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 					Label(msgr.Slug).
 					Attr(web.VField(field.Name, strings.TrimPrefix(p.Slug, "/"))...).
 					Disabled(field.Disabled).Attr("prefix", "/")
-
 			}
 		}).LazyWrapSetterFunc(func(in presets.FieldSetterFunc) presets.FieldSetterFunc {
 			return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
