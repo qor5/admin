@@ -827,9 +827,9 @@ func TestPageBuilder(t *testing.T) {
 			Name:  "Container Heading Update Validate",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				pageBuilderContainerTestData.TruncatePut(dbr)
+				pageBuilderDemoContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/heading").
+					PageURL("/page_builder/headings").
 					EventFunc(actions.Update).
 					Query(presets.ParamID, "1").
 					AddField("FontColor", "blue").
@@ -837,7 +837,7 @@ func TestPageBuilder(t *testing.T) {
 
 				return req
 			},
-			ExpectPageBodyContainsInOrder: []string{"LinkText 不能为空"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"blue", "LinkText 不能为空"},
 		},
 	}
 
