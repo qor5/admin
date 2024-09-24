@@ -974,7 +974,10 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 					URL(b.mb.Info().ListingHref()).
 					EventFunc(actions.Update).
 					Query(presets.ParamID, web.Var("payload.id")).
-					ThenScript(web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).Query(paramStatus, ctx.Param(paramStatus)).MergeQuery(true).Go()).
+					Query(presets.ParamPortalName, pageBuilderRightContentPortal).
+					Query(presets.ParamOverlay, actions.Content).
+					ThenScript(web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).
+						Query(paramStatus, ctx.Param(paramStatus)).MergeQuery(true).Go()).
 					Go(),
 			),
 		)

@@ -8,11 +8,12 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/qor5/web/v3"
+	"github.com/sunfmin/reflectutils"
+	h "github.com/theplant/htmlgo"
+
 	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/qor5/x/v3/ui/vuetifyx"
-	"github.com/sunfmin/reflectutils"
-	h "github.com/theplant/htmlgo"
 )
 
 type FieldDefaultBuilder struct {
@@ -231,31 +232,42 @@ func cfTimeSetter(obj interface{}, field *FieldContext, ctx *web.EventContext) (
 }
 
 func cfTextField(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	return h.Div(
-		h.Span(field.Label).Class("text-subtitle-2 text-high-emphasis section-filed-label mb-1 d-sm-inline-block"),
-		VTextField().
-			Density(DensityComfortable).
-			Class("section-field").
-			Type("text").
-			Variant(FieldVariantOutlined).
-			BgColor(ColorBackground).
-			Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
-			ErrorMessages(field.Errors...).
-			Disabled(field.Disabled),
-	).Class("section-field-wrap")
+	return TextField(obj, field, ctx)
 }
 
-func cfReadonlyText(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+func TextField(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXFieldBuilder {
+	return vuetifyx.VXField().Label(field.Label).
+		Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
+		ErrorMessages(field.Errors...).
+		Disabled(field.Disabled)
+}
+
+func SelectField(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXSelectBuilder {
+	return vuetifyx.VXSelect().
+		Label(field.Label).
+		Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
+		ErrorMessages(field.Errors...)
+}
+
+func ReadonlyText(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXReadonlyFieldBuilder {
 	return vuetifyx.VXReadonlyField().
 		Label(field.Label).
 		Value(field.StringValue(obj))
 }
 
-func cfReadonlyCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+func cfReadonlyText(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	return ReadonlyText(obj, field, ctx)
+}
+
+func ReadonlyCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXReadonlyFieldBuilder {
 	return vuetifyx.VXReadonlyField().
 		Label(field.Label).
 		Value(reflectutils.MustGet(obj, field.Name)).
 		Checkbox(true)
+}
+
+func cfReadonlyCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	return ReadonlyCheckbox(obj, field, ctx)
 }
 
 func (b *FieldDefaults) builtInFieldTypes() {

@@ -121,7 +121,7 @@ func TestPresetsListingCustomizationFilters(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				return httptest.NewRequest("GET", "/customers", nil)
 			},
-			ExpectPageBodyContainsInOrder: []string{`StartAt`, "EndAt", "Approved_Start_At", "Approved_End_At"},
+			ExpectPageBodyContainsInOrder: []string{`StartAt`, "EndAt", "Approved_Start_At", "Cancel1", "Approved_End_At"},
 		},
 		{
 			Name:  "DateOptions Filter Validate",
