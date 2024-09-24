@@ -181,7 +181,7 @@ func detailPageEditor(dp *presets.DetailingBuilder, b *Builder) {
 			}
 			msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
-			return presets.CfReadonlyText(obj, field, ctx).
+			return presets.ReadonlyText(obj, field, ctx).
 				Label(msgr.Category).
 				Value(category.Path)
 		})
@@ -195,7 +195,7 @@ func detailPageEditor(dp *presets.DetailingBuilder, b *Builder) {
 				panic(err)
 			}
 			msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-			complete := presets.CfSelectField(obj, field, ctx).
+			complete := presets.SelectField(obj, field, ctx).
 				Multiple(false).Chips(false).
 				Label(msgr.Category).
 				Items(categories).ItemTitle("Path").ItemValue("ID").

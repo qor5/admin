@@ -149,7 +149,7 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 				panic(innerErr)
 			}
 			msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-			complete := presets.CfSelectField(obj, field, ctx).
+			complete := presets.SelectField(obj, field, ctx).
 				Multiple(false).Chips(false).
 				Label(msgr.Category).
 				Items(categories).ItemTitle("Path").ItemValue("ID").

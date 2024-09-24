@@ -231,36 +231,33 @@ func cfTimeSetter(obj interface{}, field *FieldContext, ctx *web.EventContext) (
 	return reflectutils.Set(obj, field.Name, t)
 }
 func cfTextField(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	return CfTextField(obj, field, ctx)
+	return TextField(obj, field, ctx)
 }
 
-func CfTextField(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXFieldBuilder {
+func TextField(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXFieldBuilder {
 	return vuetifyx.VXField().Label(field.Label).
 		Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
 		ErrorMessages(field.Errors...).
 		Disabled(field.Disabled)
 }
-func cfSelectField(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	return CfSelectField(obj, field, ctx)
-}
 
-func CfSelectField(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXSelectBuilder {
+func SelectField(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXSelectBuilder {
 	return vuetifyx.VXSelect().
 		Label(field.Label).
 		Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
 		ErrorMessages(field.Errors...)
 }
 
-func CfReadonlyText(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXReadonlyFieldBuilder {
+func ReadonlyText(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXReadonlyFieldBuilder {
 	return vuetifyx.VXReadonlyField().
 		Label(field.Label).
 		Value(field.StringValue(obj))
 }
 func cfReadonlyText(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	return CfReadonlyText(obj, field, ctx)
+	return ReadonlyText(obj, field, ctx)
 }
 
-func CfReadonlyCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXReadonlyFieldBuilder {
+func ReadonlyCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXReadonlyFieldBuilder {
 	return vuetifyx.VXReadonlyField().
 		Label(field.Label).
 		Value(reflectutils.MustGet(obj, field.Name)).
@@ -268,7 +265,7 @@ func CfReadonlyCheckbox(obj interface{}, field *FieldContext, ctx *web.EventCont
 }
 
 func cfReadonlyCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	return CfReadonlyCheckbox(obj, field, ctx)
+	return ReadonlyCheckbox(obj, field, ctx)
 }
 func (b *FieldDefaults) builtInFieldTypes() {
 	if b.mode == LIST {
