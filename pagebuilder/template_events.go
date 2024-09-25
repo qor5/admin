@@ -1,9 +1,11 @@
 package pagebuilder
 
 import (
+	"fmt"
+
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
-	. "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
 )
 
@@ -19,7 +21,7 @@ const (
 	TemplateSelectedPortalName     = "TemplateSelectedPortalName"
 
 	templateDialogHeight = 620
-	templateDialogWidth  = 784
+	templateDialogWidth  = 700
 )
 
 func (b *TemplateBuilder) registerFunctions() {
@@ -41,17 +43,13 @@ func (b *TemplateBuilder) openTemplateDialog(ctx *web.EventContext) (r web.Event
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: TemplateSelectDialogPortalName,
 		Body: web.Scope(
-			VDialog(
-				VCard(
-					VCardTitle(
-						h.Span(msgr.CreateFromTemplate),
-						VBtn("").Icon("mdi-close").Variant(VariantText).Attr("@click", "vars.pageBuilderSelectTemplateDialog=false"),
-					).Class(W100, "d-flex justify-space-between"),
-					h.Div().Class("overflow-y-auto").Children(
-						web.Portal(b.templateContent(ctx)).Name(PageTemplatePortalName),
-					),
-				).Height(templateDialogHeight),
+			vx.VXDialog(
+				h.Div().Class("overflow-y-auto").Children(
+					web.Portal(b.templateContent(ctx)).Name(PageTemplatePortalName),
+				).Style(fmt.Sprintf("height:%vpx", templateDialogHeight)),
 			).Width(templateDialogWidth).
+				Title(msgr.CreateFromTemplate).
+				HideFooter(true).
 				Attr("v-model", "vars.pageBuilderSelectTemplateDialog"),
 		).VSlot("{ form }"),
 	})

@@ -267,7 +267,7 @@ func PresetsListingCustomizationFilters(b *presets.Builder, db *gorm.DB) (
 				ItemType: vuetifyx.ItemTypeDatetimeRange,
 				// SQLCondition: `cast(strftime('%%s', created_at) as INTEGER) %s ?`,
 				SQLCondition: `created_at %s ?`,
-				DateOptions:  &[]vuetifyx.DateOption{{Label: "Approved_Start_At"}, {Label: "Approved_End_At"}},
+				DateOptions:  &[]vuetifyx.DateOption{{Label: "Approved_Start_At", ClearText: "Cancel1"}, {Label: "Approved_End_At"}},
 				ValidateFunc: func(ctx *web.EventContext, vErr *web.ValidationErrors, it *vuetifyx.FilterItem) {
 					if it.ValueFrom >= it.ValueTo {
 						vErr.GlobalError("ApprovedAt Error")

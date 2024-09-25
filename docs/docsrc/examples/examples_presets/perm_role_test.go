@@ -6,11 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/qor5/admin/v3/example/admin"
-	"github.com/qor5/admin/v3/example/models"
-	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/gorm2op"
-	"github.com/qor5/admin/v3/role"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/qor5/x/v3/login"
@@ -19,6 +14,12 @@ import (
 	"github.com/theplant/gofixtures"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/example/admin"
+	"github.com/qor5/admin/v3/example/models"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/gorm2op"
+	"github.com/qor5/admin/v3/role"
 )
 
 type customer struct {
@@ -139,7 +140,7 @@ func TestPermWithoutID(t *testing.T) {
 						BuildEventFuncRequest()
 					return req
 				},
-				ExpectPortalUpdate0ContainsInOrder: []string{"v-assign='[form, {\"name_section.Name\":\"OldName\"}]' :disabled='false' class='section-field'></v-text-field>"},
+				ExpectPortalUpdate0ContainsInOrder: []string{"v-assign='[form, {\"name_section.Name\":\"OldName\"}]' :error-messages='null' :disabled='false'></vx-field>"},
 			},
 			Role: models.RoleViewer,
 		},
@@ -154,7 +155,7 @@ func TestPermWithoutID(t *testing.T) {
 						BuildEventFuncRequest()
 					return req
 				},
-				ExpectPortalUpdate0ContainsInOrder: []string{"v-assign='[form, {\"name_section.Name\":\"OldName\"}]' :disabled='false' class='section-field'></v-text-field>"},
+				ExpectPortalUpdate0ContainsInOrder: []string{"v-assign='[form, {\"name_section.Name\":\"OldName\"}]' :error-messages='null' :disabled='false'></vx-field>"},
 			},
 			Role: models.RoleEditor,
 		},

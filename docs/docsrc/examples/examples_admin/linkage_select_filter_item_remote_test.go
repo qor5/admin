@@ -43,10 +43,11 @@ func TestLinkageSelectFilter(t *testing.T) {
 				req := multipartestutils.NewMultipartBuilder().
 					PageURL("/addresses").
 					EventFunc(actions.Edit).
+					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPageBodyContainsInOrder: []string{"vx-linkageselect-remote"},
+			ExpectPageBodyContainsInOrder: []string{"vx-linkageselect-remote", "浙江", "杭州", "拱墅区"},
 		},
 		{
 			Name:  "Index LinkageSelectFilterItemRemote",

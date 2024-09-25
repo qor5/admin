@@ -10,12 +10,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/i18n"
-	. "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
+
+	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/x/v3/i18n"
+	. "github.com/qor5/x/v3/ui/vuetify"
 )
 
 const (
@@ -902,9 +903,6 @@ func (b *SectionBuilder) DefaultElementUnmarshal() func(toObj, formObj any, pref
 			}
 			if v, err := reflectutils.Get(formObj, f.name); err == nil {
 				reflectutils.Set(toObj, f.name, v)
-			}
-			if f.setterFunc == nil {
-				continue
 			}
 			keyPath := fmt.Sprintf("%s.%s", prefix, f.name)
 			err := f.lazySetterFunc()(toObj, &FieldContext{

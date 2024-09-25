@@ -6,10 +6,11 @@ import (
 	"strings"
 
 	"github.com/qor5/web/v3"
+	h "github.com/theplant/htmlgo"
+
 	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
-	h "github.com/theplant/htmlgo"
 
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/l10n"
@@ -96,71 +97,62 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 		}, nil
 	}))
 	eb := pm.Editing().Creating(names...)
-	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-		c := obj.(*Page)
-		err = pageValidator(ctx, c, db, b.l10n)
-		return
+	eb.WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
+		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			p := obj.(*Page)
+			if err = pageValidator(ctx, p, db, b.l10n); err.HaveErrors() {
+				return
+			}
+			return in(obj, ctx)
+		}
 	})
 	titleFiled := eb.GetField("Title")
 	if titleFiled != nil {
-		titleFiled.ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			var vErr web.ValidationErrors
-			if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
-				vErr = *ve
+		titleFiled.LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
+			return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+				msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+				comp := in(obj, field, ctx)
+				return comp.(*vx.VXFieldBuilder).Label(msgr.ListHeaderTitle)
 			}
-			msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-
-			return VTextField().
-				Label(msgr.ListHeaderTitle).
-				Variant(FieldVariantUnderlined).
-				Attr(web.VField(field.Name, field.Value(obj))...).
-				ErrorMessages(vErr.GetFieldErrors("Page.Title")...)
 		})
 	}
 	slugFiled := eb.GetField("Slug")
 	if slugFiled != nil {
-		slugFiled.ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			var vErr web.ValidationErrors
-			if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
-				vErr = *ve
+		slugFiled.LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
+			return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+				comp := in(obj, field, ctx)
+				p := obj.(*Page)
+				msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+				return comp.(*vx.VXFieldBuilder).
+					Label(msgr.Slug).
+					Attr(web.VField(field.Name, strings.TrimPrefix(p.Slug, "/"))...).
+					Disabled(field.Disabled).Attr("prefix", "/")
 			}
-			msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-
-			return VTextField().
-				Variant(FieldVariantUnderlined).
-				Label(msgr.Slug).
-				Attr(web.VField(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"))...).
-				Prefix("/").
-				ErrorMessages(vErr.GetFieldErrors("Page.Slug")...)
-		}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
-			m := obj.(*Page)
-			m.Slug = path.Join("/", m.Slug)
-			return nil
+		}).LazyWrapSetterFunc(func(in presets.FieldSetterFunc) presets.FieldSetterFunc {
+			return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+				p := obj.(*Page)
+				p.Slug = path.Join("/", p.Slug)
+				return in(obj, field, ctx)
+			}
 		})
 	}
 	categoryIDFiled := eb.GetField("CategoryID")
 	if categoryIDFiled != nil {
 		categoryIDFiled.ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			p := obj.(*Page)
-			categories := []*Category{}
-			locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
-			if err := db.Model(&Category{}).Where("locale_code = ?", locale).Find(&categories).Error; err != nil {
-				panic(err)
+			var (
+				p          = obj.(*Page)
+				categories []*Category
+				locale, _  = l10n.IsLocalizableFromContext(ctx.R.Context())
+			)
+			if innerErr := db.Model(&Category{}).Where("locale_code = ?", locale).Find(&categories).Error; innerErr != nil {
+				panic(innerErr)
 			}
-
-			var vErr web.ValidationErrors
-			if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
-				vErr = *ve
-			}
-
 			msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-
-			complete := VAutocomplete().
-				Label(msgr.Category).
-				Variant(FieldVariantUnderlined).
+			complete := presets.SelectField(obj, field, ctx).
 				Multiple(false).Chips(false).
+				Label(msgr.Category).
 				Items(categories).ItemTitle("Path").ItemValue("ID").
-				ErrorMessages(vErr.GetFieldErrors("Page.Category")...)
+				ErrorMessages(field.Errors...)
 			if p.CategoryID > 0 {
 				complete.Attr(web.VField(field.Name, p.CategoryID)...)
 			} else {
