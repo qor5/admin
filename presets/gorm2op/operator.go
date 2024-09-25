@@ -55,6 +55,7 @@ func (op *DataOperatorBuilder) Search(ctx *web.EventContext, params *presets.Sea
 	var p relay.Pagination[any]
 	var req *relay.PaginateRequest[any]
 	if params.RelayPagination != nil {
+		ctx.WithContextValue(ctxKeyDB{}, wh)
 		p, err = params.RelayPagination(ctx)
 		if err != nil {
 			return nil, err
@@ -63,7 +64,6 @@ func (op *DataOperatorBuilder) Search(ctx *web.EventContext, params *presets.Sea
 		if req == nil {
 			return nil, errors.New("RelayPaginateRequest is required")
 		}
-		ctx.WithContextValue(ctxKeyDB{}, wh)
 	} else {
 		if params.RelayPaginateRequest != nil {
 			return nil, errors.New("RelayPagination is required")
@@ -71,7 +71,7 @@ func (op *DataOperatorBuilder) Search(ctx *web.EventContext, params *presets.Sea
 
 		p = relay.New(
 			true, // nodesOnly
-			presets.PerPageMax, 10,
+			presets.PerPageMax, presets.PerPageDefault,
 			gormrelay.NewOffsetAdapter[any](wh),
 		)
 		req = &relay.PaginateRequest[any]{

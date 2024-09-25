@@ -479,17 +479,6 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 
 	if c.lb.relayPagination != nil {
 		searchParams.RelayPagination = c.lb.relayPagination
-		// func(ctx *web.EventContext) (relay.Pagination[any], error) {
-		// 	next, err := c.lb.relayPagination(ctx)
-		// 	if err != nil {
-		// 		return nil, err
-		// 	}
-		// 	return relay.AppendApplyCursorsMiddleware(
-		// 		cursor.KeysetEncodeBySortableFields[any](
-		// 			lo.Keys(orderableFieldMap)...,
-		// 		),
-		// 	)(next), nil
-		// }
 		req := &relay.PaginateRequest[any]{
 			After:    c.After,
 			Before:   c.Before,
