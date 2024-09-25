@@ -79,6 +79,15 @@ func checkIsParent(city *Item, parentID string) bool {
 	return false
 }
 
+func getItem(name string) *Item {
+	for _, item := range cities {
+		if item.Name == name {
+			return &item
+		}
+	}
+	return nil
+}
+
 func citiesResponse(page, pageSize, level int, search, parentID string) *PaginatedResponse {
 	var findCities []Item
 	for _, city := range cities {
