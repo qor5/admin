@@ -21,7 +21,7 @@ type UtilDialogPayloadType struct {
 	ContentEl    h.HTMLComponent
 	OkAction     string
 	CancelAction string
-	Width 			 int
+	Width        int
 	HideClose    bool
 	Msgr         *Messages
 }
