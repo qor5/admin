@@ -27,7 +27,12 @@ func LinkageSelectFilterItemRemoteExample(b *presets.Builder, mux examples.Muxer
 	remoteUrl := "/examples/api/linkage-select-server"
 	eb.Field("ProvinceCityDistrict").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return vx.VXLinkageSelectRemote().
-			Attr(web.VField(field.Name, []interface{}{})...).
+			Attr(web.VField(field.Name,
+				[]Item{
+					{ID: "1", Name: "浙江", Level: 1, ParentID: ""},
+					{ID: "3", Name: "杭州", Level: 2, ParentID: "1"},
+					{ID: "7", Name: "拱墅区", Level: 3, ParentID: "3"},
+				})...).
 			Labels(labels...).
 			RemoteUrl(remoteUrl).
 			IsPaging(true).
@@ -59,6 +64,11 @@ func LinkageSelectFilterItemRemoteExample(b *presets.Builder, mux examples.Muxer
 				Key:      "province_city_district",
 				Label:    "Province&City&District",
 				ItemType: vx.ItemTypeLinkageSelectRemote,
+				ValuesAre: []Item{
+					{ID: "1", Name: "浙江", Level: 1, ParentID: ""},
+					{ID: "3", Name: "杭州", Level: 2, ParentID: "1"},
+					{ID: "7", Name: "拱墅区", Level: 3, ParentID: "3"},
+				},
 				LinkageSelectData: vx.FilterLinkageSelectData{
 					Labels:                     labels,
 					SelectOutOfOrder:           true,
