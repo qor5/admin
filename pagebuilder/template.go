@@ -9,8 +9,8 @@ import (
 	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/sunfmin/reflectutils"
-	relay "github.com/theplant/gorelay"
 	h "github.com/theplant/htmlgo"
+	"github.com/theplant/relay"
 
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"

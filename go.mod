@@ -36,9 +36,9 @@ require (
 	github.com/theplant/bimg v1.1.1
 	github.com/theplant/docgo v0.0.16
 	github.com/theplant/gofixtures v1.1.3
-	github.com/theplant/gorelay v0.0.0-20240925081028-817638b12646
 	github.com/theplant/htmlgo v1.0.3
 	github.com/theplant/osenv v0.0.2
+	github.com/theplant/relay v0.0.0-20240925095447-115793d5818c
 	github.com/theplant/sliceutils v0.0.0-20200406042209-89153d988eb1
 	github.com/theplant/testenv v0.0.1
 	github.com/theplant/testingutils v0.0.2
@@ -52,7 +52,7 @@ require (
 	golang.org/x/text v0.18.0
 	gorm.io/driver/postgres v1.5.9
 	gorm.io/driver/sqlite v1.5.6
-	gorm.io/gorm v1.25.12
+	gorm.io/gorm v1.25.11
 )
 
 require (

@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/qor5/web/v3"
-	"github.com/theplant/gorelay/cursor"
 	h "github.com/theplant/htmlgo"
+	"github.com/theplant/relay/cursor"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
 

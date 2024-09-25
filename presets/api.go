@@ -6,8 +6,8 @@ import (
 
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/ui/vuetifyx"
-	relay "github.com/theplant/gorelay"
 	h "github.com/theplant/htmlgo"
+	"github.com/theplant/relay"
 )
 
 type (

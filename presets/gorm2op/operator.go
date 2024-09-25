@@ -11,9 +11,9 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/samber/lo"
-	relay "github.com/theplant/gorelay"
-	"github.com/theplant/gorelay/cursor"
-	"github.com/theplant/gorelay/gormrelay"
+	"github.com/theplant/relay"
+	"github.com/theplant/relay/cursor"
+	"github.com/theplant/relay/gormrelay"
 	"gorm.io/gorm"
 )
 

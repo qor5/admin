@@ -12,8 +12,8 @@ import (
 	v "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/samber/lo"
-	relay "github.com/theplant/gorelay"
 	h "github.com/theplant/htmlgo"
+	"github.com/theplant/relay"
 )
 
 type ListingStyle string

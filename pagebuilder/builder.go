@@ -33,7 +33,7 @@ import (
 	"github.com/qor5/admin/v3/richeditor"
 	"github.com/qor5/admin/v3/seo"
 	"github.com/qor5/admin/v3/utils"
-	relay "github.com/theplant/gorelay"
+	"github.com/theplant/relay"
 )
 
 type RenderInput struct {
