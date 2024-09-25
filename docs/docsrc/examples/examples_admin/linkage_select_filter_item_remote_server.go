@@ -78,6 +78,7 @@ func checkIsParent(city *Item, parentID string) bool {
 	}
 	return false
 }
+
 func getItem(name string) *Item {
 	for _, item := range cities {
 		if item.Name == name {
