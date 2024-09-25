@@ -72,21 +72,6 @@ func TestListingExample(t *testing.T) {
 			ExpectPageBodyNotContains:     []string{"No records to show"},
 			ExpectPageBodyContainsInOrder: []string{"v-pagination", ":total-visible='5'"},
 		},
-		{
-			Name:  "PaginationTotalVisible 2",
-			Debug: true,
-			HandlerMaker: func() http.Handler {
-				return listingExample(presets.New(), TestDB, func(mb *presets.ModelBuilder) {
-					mb.Listing().PaginationTotalVisible(2)
-				})
-			},
-			ReqFunc: func() *http.Request {
-				dataSeedForListing.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/posts", nil)
-			},
-			ExpectPageBodyNotContains:     []string{"No records to show"},
-			ExpectPageBodyContainsInOrder: []string{"v-pagination", ":total-visible='2'"},
-		},
 
 		{
 			Name:  "show action button",

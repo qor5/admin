@@ -61,22 +61,29 @@ type SQLCondition struct {
 	Args  []interface{}
 }
 
-type SearchParams struct {
-	Model          any
-	KeywordColumns []string
-	Keyword        string
-	SQLConditions  []*SQLCondition
-	PerPage        int64
-	PageURL        *url.URL
+type (
+	RelayPagination func(ctx *web.EventContext) (relay.Pagination[any], error)
+	SearchParams    struct {
+		Model   any
+		PageURL *url.URL
 
-	Page     int64
-	OrderBys []relay.OrderBy
+		KeywordColumns []string
+		Keyword        string
+		SQLConditions  []*SQLCondition
 
-	RelayPagination relay.Pagination[any]
-}
+		Page     int64
+		PerPage  int64
+		OrderBys []relay.OrderBy
+
+		// Both must exist simultaneously, and when they do, Page, PerPage, and OrderBys will be ignored
+		// Or you can use the default pagination
+		RelayPaginateRequest *relay.PaginateRequest[any]
+		RelayPagination      RelayPagination
+	}
+)
 
 type SearchResult struct {
-	PageInfo relay.PageInfo // TODO: relay
+	PageInfo relay.PageInfo
 	Nodes    interface{}
 }
 

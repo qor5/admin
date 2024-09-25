@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/samber/lo"
@@ -21,6 +23,8 @@ func DataOperator(db *gorm.DB) (r *DataOperatorBuilder) {
 	r = &DataOperatorBuilder{db: db}
 	return
 }
+
+type ctxKeyDB struct{}
 
 type DataOperatorBuilder struct {
 	db *gorm.DB
@@ -48,24 +52,44 @@ func (op *DataOperatorBuilder) Search(ctx *web.EventContext, params *presets.Sea
 		wh = wh.Where(strings.Replace(cond.Query, " ILIKE ", " "+ilike+" ", -1), cond.Args...)
 	}
 
-	p := relay.New(
-		true, // nodesOnly
-		presets.PerPageMax, 10,
-		params.OrderBys,
-		gormrelay.NewOffsetAdapter[any](wh),
-	)
-	req := &relay.PaginateRequest[any]{}
-	if params.PerPage > 0 {
-		req.First = lo.ToPtr(int(params.PerPage))
-		page := params.Page
-		if page == 0 {
-			page = 1
+	var p relay.Pagination[any]
+	var req *relay.PaginateRequest[any]
+	if params.RelayPagination != nil {
+		p, err = params.RelayPagination(ctx)
+		if err != nil {
+			return nil, err
 		}
-		offset := int((page - 1) * params.PerPage)
-		if offset > 0 {
-			req.After = lo.ToPtr(cursor.EncodeOffsetCursor(offset - 1))
+		req = params.RelayPaginateRequest
+		if req == nil {
+			return nil, errors.New("RelayPaginateRequest is required")
+		}
+		ctx.WithContextValue(ctxKeyDB{}, wh)
+	} else {
+		if params.RelayPaginateRequest != nil {
+			return nil, errors.New("RelayPagination is required")
+		}
+
+		p = relay.New(
+			true, // nodesOnly
+			presets.PerPageMax, 10,
+			gormrelay.NewOffsetAdapter[any](wh),
+		)
+		req = &relay.PaginateRequest[any]{
+			OrderBys: params.OrderBys,
+		}
+		if params.PerPage > 0 {
+			req.First = lo.ToPtr(int(params.PerPage))
+			page := params.Page
+			if page == 0 {
+				page = 1
+			}
+			offset := int((page - 1) * params.PerPage)
+			if offset > 0 {
+				req.After = lo.ToPtr(cursor.EncodeOffsetCursor(offset - 1))
+			}
 		}
 	}
+
 	resp, err := p.Paginate(ctx.R.Context(), req)
 	if err != nil {
 		return

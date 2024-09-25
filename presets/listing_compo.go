@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -56,6 +57,8 @@ type ListingCompo struct {
 	SelectedIds        []string         `json:"selected_ids" query:",omitempty"`
 	Keyword            string           `json:"keyword" query:",omitempty"`
 	OrderBys           []ColOrderBy     `json:"order_bys" query:",omitempty"`
+	After              *string          `json:"after" query:",omitempty"`
+	Before             *string          `json:"before" query:",omitempty"`
 	Page               int64            `json:"page" query:",omitempty"`
 	PerPage            int64            `json:"per_page" query:",omitempty;cookie"`
 	DisplayColumns     []*DisplayColumn `json:"display_columns" query:",omitempty;cookie"`
@@ -193,6 +196,7 @@ func (c *ListingCompo) tabsFilter(ctx context.Context) h.HTMLComponent {
 			VTab().
 				Attr("@click", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
 					target.Page = 0
+					target.After, target.Before = nil, nil
 					target.ActiveFilterTab = ft.ID
 					target.FilterQuery = encodedQuery
 				}).ThenScript(ListingCompo_JsScrollToTop).Go()).
@@ -229,6 +233,7 @@ func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 			stateful.ReloadAction(ctx, c,
 				func(target *ListingCompo) {
 					target.Page = 0
+					target.After, target.Before = nil, nil
 				},
 				stateful.WithAppendFix(`v.compo.keyword = targetKeyword;`),
 			).ThenScript(ListingCompo_JsScrollToTop).Go(),
@@ -338,6 +343,7 @@ func (c *ListingCompo) filterSearch(ctx context.Context, fd vx.FilterData) h.HTM
 		vx.VXFilter(fd).Translations(ft).
 			UpdateModelValue(stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
 				target.Page = 0
+				target.After, target.Before = nil, nil
 			}, opts...).ThenScript(ListingCompo_JsScrollToTop).Go()).
 			Attr("v-on-mounted", fmt.Sprintf(`({el}) => { 
 				xlocals.textFieldSearchElem = el.ownerDocument.getElementById(%q); 
@@ -421,7 +427,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		return ob
 	})
 	orderableFieldMap := make(map[string]bool)
-	for _, v := range c.lb.orderableFields { // TODO: relay
+	for _, v := range c.lb.orderableFields {
 		orderableFieldMap[v.FieldName] = true
 	}
 	var orderBys []relay.OrderBy
@@ -469,7 +475,32 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 			Query: cond,
 			Args:  args,
 		})
+	}
 
+	if c.lb.relayPagination != nil {
+		searchParams.RelayPagination = c.lb.relayPagination
+		// func(ctx *web.EventContext) (relay.Pagination[any], error) {
+		// 	next, err := c.lb.relayPagination(ctx)
+		// 	if err != nil {
+		// 		return nil, err
+		// 	}
+		// 	return relay.AppendApplyCursorsMiddleware(
+		// 		cursor.KeysetEncodeBySortableFields[any](
+		// 			lo.Keys(orderableFieldMap)...,
+		// 		),
+		// 	)(next), nil
+		// }
+		req := &relay.PaginateRequest[any]{
+			After:    c.After,
+			Before:   c.Before,
+			OrderBys: searchParams.OrderBys,
+		}
+		if c.Before != nil {
+			req.Last = lo.ToPtr(int(searchParams.PerPage))
+		} else {
+			req.First = lo.ToPtr(int(searchParams.PerPage))
+		}
+		searchParams.RelayPaginateRequest = req
 	}
 
 	result, err := c.lb.Searcher(evCtx, searchParams)
@@ -525,6 +556,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 			return h.Th("").
 				Attr("@click.stop", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
 					target.Page = 0
+					target.After, target.Before = nil, nil
 					if orderBy.OrderBy == OrderByASC {
 						orderBy.OrderBy = OrderByDESC
 					} else {
@@ -605,7 +637,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 	}
 
 	var dataTableAdditions h.HTMLComponent
-	if result.PageInfo.TotalCount <= 0 { // TODO: relay
+	if result.PageInfo.TotalCount <= 0 && result.PageInfo.StartCursor == nil {
 		dataTableAdditions = h.Div().Class("mt-10 text-center grey--text text--darken-2").Children(
 			h.Text(msgr.ListingNoRecordToShow),
 		)
@@ -613,51 +645,89 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		if c.lb.disablePagination {
 			return dataTable
 		}
-		// TODO: relay
-		// prev := VBtn("").Variant(VariantPlain).Icon("mdi-chevron-left").Disabled(!result.PageInfo.HasPreviousPage)
-		// next := VBtn("").Variant(VariantPlain).Icon("mdi-chevron-right").Disabled(!result.PageInfo.HasNextPage)
-		// if result.PageInfo.HasPreviousPage {
-		// 	prev.SetAttr("@click", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
-		// 		target.Page = searchParams.Page - 1
-		// 	}).ThenScript(ListingCompo_JsScrollToTop).Go())
-		// }
-		// if result.PageInfo.HasNextPage {
-		// 	next.SetAttr("@click", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
-		// 		target.Page = searchParams.Page + 1
-		// 	}).ThenScript(ListingCompo_JsScrollToTop).Go())
-		// }
-		// dataTableAdditions = h.Div().Style("margin-top:26px").Children(
-		// 	h.Div().Class("d-flex ga-2").Children(
-		// 		VSpacer(),
-		// 		prev,
-		// 		next,
-		// 	),
-		// )
-
-		dataTableAdditions = h.Div().Style("margin-top:26px").Children(
-			vx.VXTablePagination().
-				Total(int64(result.PageInfo.TotalCount)).
-				CurrPage(searchParams.Page).
-				PerPage(searchParams.PerPage).
-				CustomPerPages([]int64{c.lb.perPage}).
-				PerPageText(msgr.PaginationRowsPerPage).
-				NoOffsetPart(true).
-				TotalVisible(cmp.Or(c.lb.paginationTotalVisible, int64(5))).
-				OnSelectPerPage(stateful.ReloadAction(ctx, c,
-					func(target *ListingCompo) {
-						target.Page = 0
-					},
-					stateful.WithAppendFix(`v.compo.per_page = parseInt($event, 10)`),
-				).ThenScript(ListingCompo_JsScrollToTop).Go()).
-				OnSelectPage(stateful.ReloadAction(ctx, c, nil,
-					stateful.WithAppendFix(`v.compo.page = parseInt(value,10);`),
-				).ThenScript(ListingCompo_JsScrollToTop).Go()),
-		)
+		if c.lb.relayPagination != nil {
+			dataTableAdditions = c.relayPaginationCompo(ctx, int(searchParams.PerPage), result.PageInfo)
+		} else {
+			dataTableAdditions = h.Div().Style("margin-top:26px").Children(
+				vx.VXTablePagination().
+					Total(int64(result.PageInfo.TotalCount)).
+					CurrPage(searchParams.Page).
+					PerPage(searchParams.PerPage).
+					CustomPerPages([]int64{c.lb.perPage}).
+					PerPageText(msgr.PaginationRowsPerPage).
+					NoOffsetPart(true).
+					TotalVisible(5).
+					OnSelectPerPage(stateful.ReloadAction(ctx, c,
+						func(target *ListingCompo) {
+							target.Page = 0
+							target.After, target.Before = nil, nil
+						},
+						stateful.WithAppendFix(`v.compo.per_page = parseInt($event, 10)`),
+					).ThenScript(ListingCompo_JsScrollToTop).Go()).
+					OnSelectPage(stateful.ReloadAction(ctx, c, nil,
+						stateful.WithAppendFix(`v.compo.page = parseInt(value,10);`),
+					).ThenScript(ListingCompo_JsScrollToTop).Go()),
+			)
+		}
 	}
 	return h.Components(
 		filterScript,
 		dataTable,
 		dataTableAdditions,
+	)
+}
+
+func (c *ListingCompo) relayPaginationCompo(ctx context.Context, perPage int, pageInfo relay.PageInfo) h.HTMLComponent {
+	if c.lb.relayPagination == nil {
+		return nil
+	}
+	_, msgr := c.MustGetEventContext(ctx)
+
+	perPageSelectItems := []int{10, 15, 20, 50, 100}
+	perPageSelectItems = append(perPageSelectItems, perPage)
+	if c.lb.perPage > 0 {
+		perPageSelectItems = append(perPageSelectItems, int(c.lb.perPage))
+	}
+	perPageSelectItems = lo.Uniq(perPageSelectItems)
+	sort.Ints(perPageSelectItems)
+
+	perPageSelect := h.Div().Class("d-flex align-center ga-6").Children(
+		h.Text(msgr.PaginationRowsPerPage),
+		VSelect().MinWidth(64).Class("mt-n2").Variant(FieldVariantUnderlined).HideDetails(true).Density(DensityCompact).
+			Items(lo.Map(perPageSelectItems, func(v int, _ int) string {
+				return fmt.Sprint(v)
+			})).ModelValue(fmt.Sprint(perPage)).
+			Attr("@update:model-value", stateful.ReloadAction(ctx, c,
+				func(target *ListingCompo) {
+					target.Page = 0
+					target.After, target.Before = nil, nil
+				},
+				stateful.WithAppendFix(`v.compo.per_page = parseInt($event, 10)`),
+			).ThenScript(ListingCompo_JsScrollToTop).Go()),
+	)
+
+	prev := VBtn("").Variant(VariantPlain).Icon("mdi-chevron-left").Disabled(!pageInfo.HasPreviousPage)
+	next := VBtn("").Variant(VariantPlain).Icon("mdi-chevron-right").Disabled(!pageInfo.HasNextPage)
+	if pageInfo.HasPreviousPage {
+		prev.SetAttr("@click", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
+			target.Before = pageInfo.StartCursor
+			target.After = nil
+		}).ThenScript(ListingCompo_JsScrollToTop).Go())
+	}
+	if pageInfo.HasNextPage {
+		next.SetAttr("@click", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
+			target.Before = nil
+			target.After = pageInfo.EndCursor
+		}).ThenScript(ListingCompo_JsScrollToTop).Go())
+	}
+	prevNext := h.Div().Class("d-flex align-center ga-2").Children(
+		prev,
+		next,
+	)
+	return h.Div().Class("d-flex align-center ga-3 mt-6").Children(
+		VSpacer(),
+		perPageSelect,
+		prevNext,
 	)
 }
 

@@ -66,14 +66,12 @@ type ListingBuilder struct {
 	// 1. the pagination component will not display on listing page.
 	// 2. the perPage will actually be ignored.
 	// 3. all data will be returned in one page.
-	disablePagination      bool
-	paginationTotalVisible int64
+	disablePagination bool
 
-	// TODO: relay
-	relayPagination relay.Pagination[any]
+	// If empty, regular pagination will be used
+	relayPagination RelayPagination
 
 	defaultOrderBys   []relay.OrderBy
-	orderBy           string // TODO: relay
 	orderableFields   []*OrderableField
 	selectableColumns bool
 	conditions        []*SQLCondition
@@ -163,11 +161,6 @@ func (b *ListingBuilder) DisablePagination(v bool) (r *ListingBuilder) {
 	return b
 }
 
-func (b *ListingBuilder) PaginationTotalVisible(v int64) (r *ListingBuilder) {
-	b.paginationTotalVisible = v
-	return b
-}
-
 func (b *ListingBuilder) SearchFunc(v SearchFunc) (r *ListingBuilder) {
 	b.Searcher = v
 	return b
@@ -215,13 +208,8 @@ func (b *ListingBuilder) DefaultOrderBys(v ...relay.OrderBy) (r *ListingBuilder)
 	return b
 }
 
-func (b *ListingBuilder) RelayPagination(v relay.Pagination[any]) (r *ListingBuilder) {
+func (b *ListingBuilder) RelayPagination(v RelayPagination) (r *ListingBuilder) {
 	b.relayPagination = v
-	return b
-}
-
-func (b *ListingBuilder) OrderBy(v string) (r *ListingBuilder) {
-	b.orderBy = v
 	return b
 }
 

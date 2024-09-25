@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/qor5/web/v3"
+	"github.com/theplant/gorelay/cursor"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
@@ -197,6 +198,16 @@ func PresetsListingCustomizationFields(b *presets.Builder, db *gorm.DB) (
 		}
 		return
 	})
+
+	aesCursorMiddleware := cursor.AES[any](
+		[]byte("0123456789abcdef0123456789abcdef"), // 32bytes aes256
+	)
+	cl.RelayPagination(
+		gorm2op.KeysetBasedPagination(true, aesCursorMiddleware),
+	)
+	comp.Listing().RelayPagination(
+		gorm2op.KeysetBasedPagination(true, aesCursorMiddleware),
+	)
 
 	return
 }

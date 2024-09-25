@@ -16,6 +16,7 @@ import (
 	"github.com/qor5/x/v3/perm"
 	v "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
+	relay "github.com/theplant/gorelay"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
@@ -317,7 +318,7 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 		})).
 		SearchColumns("version", "version_name").
 		PerPage(10).
-		OrderBy("created_at DESC").
+		DefaultOrderBys(relay.OrderBy{Field: "CreatedAt", Desc: true}).
 		WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
 			return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 				compo := presets.ListingCompoFromEventContext(ctx)

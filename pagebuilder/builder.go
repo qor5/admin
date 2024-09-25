@@ -871,7 +871,6 @@ func sharedContainerSearcher(db *gorm.DB, b *ModelBuilder) presets.SearchFunc {
 			wh = wh.Where(strings.Replace(cond.Query, " ILIKE ", " "+ilike+" ", -1), cond.Args...)
 		}
 
-		// TODO: relay
 		locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
 		var c int64
 		if err = wh.Select("count(display_name)").Where("shared = true AND locale_code = ? and page_model_name = ? ", locale, b.name).Group("display_name, model_name, model_id, locale_code").Count(&c).Error; err != nil {

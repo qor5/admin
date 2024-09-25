@@ -14,7 +14,6 @@ require (
 	github.com/gosimple/slug v1.14.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/iancoleman/strcase v0.3.0
-	github.com/jinzhu/gorm v1.9.16
 	github.com/jinzhu/inflection v1.0.0
 	github.com/lib/pq v1.10.9
 	github.com/manifoldco/promptui v0.9.0
@@ -37,7 +36,7 @@ require (
 	github.com/theplant/bimg v1.1.1
 	github.com/theplant/docgo v0.0.16
 	github.com/theplant/gofixtures v1.1.3
-	github.com/theplant/gorelay v0.0.0-20240923184115-f1968b6a7d97
+	github.com/theplant/gorelay v0.0.0-20240925081028-817638b12646
 	github.com/theplant/htmlgo v1.0.3
 	github.com/theplant/osenv v0.0.2
 	github.com/theplant/sliceutils v0.0.0-20200406042209-89153d988eb1
