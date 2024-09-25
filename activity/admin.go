@@ -106,6 +106,9 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			Args:  []any{false},
 		})
 		result, err = op.Search(ctx, params)
+		if err != nil {
+			return nil, err
+		}
 		logs := result.Nodes.([]*ActivityLog)
 		if err := ab.supplyUsers(ctx.R.Context(), logs); err != nil {
 			return nil, err
