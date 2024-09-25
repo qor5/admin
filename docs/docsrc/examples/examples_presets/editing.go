@@ -269,6 +269,10 @@ func PresetsEditingSetter(b *presets.Builder, db *gorm.DB) (
 		if c.Name == "" {
 			return errors.New("name must not be empty")
 		}
+		if c.Name == "global" {
+			return web.ValidationGlobalError(errors.New(`You can not use "global" as name`))
+		}
+
 		return
 	})
 	eb.Field("Name").LazyWrapSetterFunc(func(in presets.FieldSetterFunc) presets.FieldSetterFunc {

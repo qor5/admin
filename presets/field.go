@@ -427,7 +427,11 @@ func (b *FieldsBuilder) SetObjectFields(fromObj interface{}, toObj interface{}, 
 			Label:     b.getLabel(f.NameLabel),
 		}, ctx)
 		if err1 != nil {
-			vErr.FieldError(f.name, err1.Error())
+			if web.IsValidationGlobalError(err1) {
+				vErr.GlobalError(err1.Error())
+			} else {
+				vErr.FieldError(f.name, err1.Error())
+			}
 		}
 	}
 	return

@@ -72,6 +72,18 @@ func TestPresetsEditingSetter(t *testing.T) {
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{`You can not use \"system\" as name`},
 		},
+		{
+			Name:  "setter return global error",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				companyData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/companies?__execute_event__=presets_Update").
+					AddField("Name", "global").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"You can not use","global" ,"as name"},
+		},
 	}
 
 	for _, c := range cases {
