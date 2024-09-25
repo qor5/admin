@@ -270,7 +270,7 @@ func PresetsEditingSetter(b *presets.Builder, db *gorm.DB) (
 			return errors.New("name must not be empty")
 		}
 		if c.Name == "global" {
-			return web.ValidationGlobalError(errors.New(`You can not use "global" as name`))
+			return web.ValidationGlobalError(errors.New(`You can not use global as name`))
 		}
 
 		return

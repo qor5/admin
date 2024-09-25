@@ -82,7 +82,7 @@ func TestPresetsEditingSetter(t *testing.T) {
 					AddField("Name", "global").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"You can not use", "global", "as name"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"You can not use global as name"},
 		},
 	}
 
