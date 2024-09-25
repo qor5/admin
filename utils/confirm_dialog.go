@@ -21,6 +21,7 @@ type UtilDialogPayloadType struct {
 	ContentEl    h.HTMLComponent
 	OkAction     string
 	CancelAction string
+	Width        int
 	HideClose    bool
 	Msgr         *Messages
 }
@@ -75,6 +76,7 @@ func CustomDialog(payload UtilDialogPayloadType) h.HTMLComponent {
 		).Size(payload.Size).
 			Type(payload.TypeField).
 			Title(payload.Title).
+			Width(payload.Width).
 			OkText(payload.Msgr.OK).
 			CancelText(payload.Msgr.Cancel).
 			Attr("v-model", "locals.customConfirmationDialog").
