@@ -79,9 +79,9 @@ func listingExample(b *presets.Builder, db *gorm.DB, customize func(mb *presets.
 	postModelBuilder := b.Model(&Post{})
 	postModelBuilder.Listing("ID", "Title", "Body", "CategoryID", "VirtualField")
 
-	postModelBuilder.Listing().SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+	postModelBuilder.Listing().SearchFunc(func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 		qdb := db.Where("disabled != true")
-		return gorm2op.DataOperator(qdb).Search(model, params, ctx)
+		return gorm2op.DataOperator(qdb).Search(ctx, params)
 	})
 
 	rmn := postModelBuilder.Listing().RowMenu()

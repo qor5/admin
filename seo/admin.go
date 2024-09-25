@@ -106,7 +106,7 @@ func (b *Builder) configListing(seoModel *presets.ModelBuilder) {
 	)
 
 	listing.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
-		return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+		return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 			locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
 			var seoNames []string
 			for name := range b.registeredSEO {
@@ -120,12 +120,8 @@ func (b *Builder) configListing(seoModel *presets.ModelBuilder) {
 			}
 
 			params.SQLConditions = append(params.SQLConditions, &cond)
-			r, totalCount, err = in(model, params, ctx)
-			if totalCount == 0 {
-				panic("The localization of SEO is not configured correctly. " +
-					"Please check if you correctly configured the `WithLocales` option when initializing the SEO Builder.")
-			}
-			b.SortSEOs(r.([]*QorSEOSetting))
+			result, err = in(ctx, params)
+			b.SortSEOs(result.Nodes.([]*QorSEOSetting))
 			return
 		}
 	})

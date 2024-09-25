@@ -10,6 +10,7 @@ import (
 	. "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
+	"github.com/theplant/relay"
 
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
@@ -182,12 +183,10 @@ func (b *TemplateBuilder) configModelWithTemplate() {
 func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent {
 	var (
 		err            error
-		total          int
 		cardClickEvent string
 		model          = b.model
 		mb             = model.mb
 		obj            = mb.NewModel()
-		objs           = mb.NewModelSlice()
 		ml             = mb.Listing()
 		pMsgr          = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 		msgr           = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
@@ -198,19 +197,20 @@ func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent
 		cardHeight     = iframeCardHeight
 	)
 	searchParams := &presets.SearchParams{
+		Model:          mb.NewModel(),
 		PageURL:        ctx.R.URL,
 		Keyword:        ctx.Param(ParamSearchKeyword),
 		KeywordColumns: []string{"Name"},
-		OrderBy:        "created_at desc",
+		OrderBys:       []relay.OrderBy{{Field: "CreatedAt", Desc: true}},
 	}
 	searchParams.PerPage = perPage
 	searchParams.Page = page
-	objs, total, err = ml.Searcher(mb.NewModelSlice(), searchParams, ctx)
+	result, err := ml.Searcher(ctx, searchParams)
 	if err != nil {
 		panic(errors.Wrap(err, "searcher error"))
 	}
-	pagesCount := int64(total)/perPage + 1
-	if int64(total)%(perPage) == 0 {
+	pagesCount := int64(result.PageInfo.TotalCount)/perPage + 1
+	if int64(result.PageInfo.TotalCount)%(perPage) == 0 {
 		pagesCount--
 	}
 
@@ -234,7 +234,7 @@ func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent
 		}
 
 	}
-	reflectutils.ForEach(objs, func(obj interface{}) {
+	reflectutils.ForEach(result.Nodes, func(obj interface{}) {
 		var (
 			name        string
 			description string
@@ -332,7 +332,7 @@ func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent
 				).Class("position-sticky top-0", "bg-"+ColorBackground).Attr("style", "z-index:2"),
 			),
 			rows,
-			h.If(int64(total) > perPage,
+			h.If(int64(result.PageInfo.TotalCount) > perPage,
 				VRow(
 					VCol(
 						VPagination().

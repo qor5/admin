@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -12,6 +13,7 @@ import (
 	"github.com/qor5/web/v3/stateful"
 	"github.com/samber/lo"
 	h "github.com/theplant/htmlgo"
+	"github.com/theplant/relay"
 
 	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
@@ -55,6 +57,8 @@ type ListingCompo struct {
 	SelectedIds        []string         `json:"selected_ids" query:",omitempty"`
 	Keyword            string           `json:"keyword" query:",omitempty"`
 	OrderBys           []ColOrderBy     `json:"order_bys" query:",omitempty"`
+	After              *string          `json:"after" query:",omitempty"`
+	Before             *string          `json:"before" query:",omitempty"`
 	Page               int64            `json:"page" query:",omitempty"`
 	PerPage            int64            `json:"per_page" query:",omitempty;cookie"`
 	DisplayColumns     []*DisplayColumn `json:"display_columns" query:",omitempty;cookie"`
@@ -192,6 +196,7 @@ func (c *ListingCompo) tabsFilter(ctx context.Context) h.HTMLComponent {
 			VTab().
 				Attr("@click", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
 					target.Page = 0
+					target.After, target.Before = nil, nil
 					target.ActiveFilterTab = ft.ID
 					target.FilterQuery = encodedQuery
 				}).ThenScript(ListingCompo_JsScrollToTop).Go()).
@@ -228,6 +233,7 @@ func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 			stateful.ReloadAction(ctx, c,
 				func(target *ListingCompo) {
 					target.Page = 0
+					target.After, target.Before = nil, nil
 				},
 				stateful.WithAppendFix(`v.compo.keyword = targetKeyword;`),
 			).ThenScript(ListingCompo_JsScrollToTop).Go(),
@@ -337,6 +343,7 @@ func (c *ListingCompo) filterSearch(ctx context.Context, fd vx.FilterData) h.HTM
 		vx.VXFilter(fd).Translations(ft).
 			UpdateModelValue(stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
 				target.Page = 0
+				target.After, target.Before = nil, nil
 			}, opts...).ThenScript(ListingCompo_JsScrollToTop).Go()).
 			Attr("v-on-mounted", fmt.Sprintf(`({el}) => { 
 				xlocals.textFieldSearchElem = el.ownerDocument.getElementById(%q); 
@@ -370,27 +377,201 @@ func (c *ListingCompo) toolbarSearch(ctx context.Context) h.HTMLComponent {
 	)
 }
 
-func (c *ListingCompo) defaultCellWrapperFunc(_ context.Context) func(cell h.MutableAttrHTMLComponent, id string, obj any, dataTableID string) h.HTMLComponent {
-	return func(cell h.MutableAttrHTMLComponent, id string, obj any, _ string) h.HTMLComponent {
-		if c.lb.mb.hasDetailing && !c.lb.mb.detailing.drawer {
-			cell.SetAttr("@click", web.Plaid().PushStateURL(c.lb.mb.Info().DetailingHref(id)).Go())
-			return cell
+func (c *ListingCompo) defaultCellWrapperFunc(cell h.MutableAttrHTMLComponent, id string, _ any, _ string) h.HTMLComponent {
+	if c.lb.mb.hasDetailing && !c.lb.mb.detailing.drawer {
+		cell.SetAttr("@click", web.Plaid().PushStateURL(c.lb.mb.Info().DetailingHref(id)).Go())
+		return cell
+	}
+
+	event := actions.Edit
+	if c.lb.mb.hasDetailing {
+		event = actions.DetailingDrawer
+	}
+	onClick := web.Plaid().EventFunc(event).Query(ParamID, id)
+	if c.Popup {
+		onClick.URL(c.lb.mb.Info().ListingHref()).Query(ParamOverlay, actions.Dialog)
+	}
+	if c.ParentID != "" {
+		onClick.Query(ParamParentID, c.ParentID)
+	}
+	onClick.Query(ParamVarCurrentActive, c.VarCurrentActive())
+	cell.SetAttr("@click", onClick.Go())
+	return cell
+}
+
+func (c *ListingCompo) getOrderBys(colOrderBys []ColOrderBy, orderableFieldMap map[string]bool) []relay.OrderBy {
+	var orderBys []relay.OrderBy
+	for _, ob := range colOrderBys {
+		if orderableFieldMap[ob.FieldName] {
+			orderBys = append(orderBys, relay.OrderBy{
+				Field: ob.FieldName,
+				Desc:  ob.OrderBy == OrderByDESC,
+			})
+		}
+	}
+
+	if len(orderBys) == 0 {
+		if len(c.lb.defaultOrderBys) > 0 {
+			return c.lb.defaultOrderBys
+		}
+		if c.lb.mb.primaryField != "" {
+			return []relay.OrderBy{{Field: c.lb.mb.primaryField, Desc: true}}
+		}
+	}
+	return orderBys
+}
+
+func (c *ListingCompo) processFilter(evCtx *web.EventContext) (h.HTMLComponent, []*SQLCondition) {
+	var filterScript h.HTMLComponent
+	if c.lb.filterDataFunc != nil {
+		fd := c.lb.filterDataFunc(evCtx)
+		cond, args, vErr := fd.SetByQueryString(evCtx, c.FilterQuery)
+		if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
+			filterScript = web.RunScript(fmt.Sprintf(`(el)=>{%s}`, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), "error")))
+		}
+		return filterScript, []*SQLCondition{{Query: cond, Args: args}}
+	}
+	return nil, nil
+}
+
+func (c *ListingCompo) prepareRelayPaginateRequest(orderBys []relay.OrderBy, perPage int) *relay.PaginateRequest[any] {
+	req := &relay.PaginateRequest[any]{After: c.After, Before: c.Before, OrderBys: orderBys}
+	if c.Before != nil {
+		req.Last = lo.ToPtr(perPage)
+	} else {
+		req.First = lo.ToPtr(perPage)
+	}
+	return req
+}
+
+func (c *ListingCompo) cellWrapperFunc(evCtx *web.EventContext) func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
+	return func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
+		if c.lb.cellProcessor != nil {
+			compo, err := c.lb.cellProcessor(evCtx, cell, id, obj)
+			if err != nil {
+				panic(err)
+			}
+			return compo
+		}
+		if c.lb.cellWrapperFunc != nil {
+			return c.lb.cellWrapperFunc(cell, id, obj, dataTableID)
+		}
+		return c.defaultCellWrapperFunc(cell, id, obj, dataTableID)
+	}
+}
+
+func (c *ListingCompo) rowWrapperFunc(evCtx *web.EventContext) func(row h.MutableAttrHTMLComponent, id string, obj any, _ string) h.HTMLComponent {
+	return func(row h.MutableAttrHTMLComponent, id string, obj any, _ string) h.HTMLComponent {
+		if c.lb.rowProcessor != nil {
+			compo, err := c.lb.rowProcessor(evCtx, row, id, obj)
+			if err != nil {
+				panic(err)
+			}
+			return compo
+		}
+		row.SetAttr(":class", fmt.Sprintf(`{ %q: vars.%s === %q }`, ListingCompo_CurrentActiveClass, c.VarCurrentActive(), id))
+		return row
+	}
+}
+
+func (c *ListingCompo) headCellWrapperFunc(ctx context.Context, columns []*Column, colOrderBys []ColOrderBy, orderableFieldMap map[string]bool) func(_ h.MutableAttrHTMLComponent, field string, title string) (compo h.HTMLComponent) {
+	evCtx, _ := c.MustGetEventContext(ctx)
+
+	fieldColumn := lo.SliceToMap(columns, func(col *Column) (string, *Column) {
+		return col.Name, col
+	})
+	return func(_ h.MutableAttrHTMLComponent, field string, title string) (compo h.HTMLComponent) {
+		defer func() {
+			th, ok := compo.(h.MutableAttrHTMLComponent)
+			if !ok {
+				return
+			}
+			col, ok := fieldColumn[field]
+			if ok && col.WrapHeader != nil {
+				wrapper, err := col.WrapHeader(evCtx, col, th)
+				if err != nil {
+					panic(err)
+				}
+				compo = wrapper
+			} else {
+				th.SetAttr("style", "min-width: 100px;")
+			}
+		}()
+
+		if _, exists := orderableFieldMap[field]; !exists {
+			return h.Th(title)
 		}
 
-		event := actions.Edit
-		if c.lb.mb.hasDetailing {
-			event = actions.DetailingDrawer
+		orderBy, orderByIdx, exists := lo.FindIndexOf(colOrderBys, func(ob ColOrderBy) bool {
+			return ob.FieldName == field
+		})
+		if !exists {
+			orderBy = ColOrderBy{
+				FieldName: field,
+				OrderBy:   OrderByDESC,
+			}
 		}
-		onClick := web.Plaid().EventFunc(event).Query(ParamID, id)
-		if c.Popup {
-			onClick.URL(c.lb.mb.Info().ListingHref()).Query(ParamOverlay, actions.Dialog)
+
+		icon := "mdi-arrow-down"
+		if orderBy.OrderBy == OrderByASC {
+			icon = "mdi-arrow-up"
 		}
-		if c.ParentID != "" {
-			onClick.Query(ParamParentID, c.ParentID)
+		return h.Th("").
+			Attr("@click.stop", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
+				target.Page = 0
+				target.After, target.Before = nil, nil
+				if orderBy.OrderBy == OrderByASC {
+					orderBy.OrderBy = OrderByDESC
+				} else {
+					orderBy.OrderBy = OrderByASC
+				}
+				if exists {
+					if orderBy.OrderBy == OrderByASC {
+						target.OrderBys = append(target.OrderBys[:orderByIdx], target.OrderBys[orderByIdx+1:]...)
+					} else {
+						target.OrderBys[orderByIdx] = orderBy
+					}
+				} else {
+					target.OrderBys = append(target.OrderBys, orderBy)
+				}
+			}).ThenScript(ListingCompo_JsScrollToTop).Go()).
+			Children(
+				h.Div().Style("cursor: pointer; white-space: nowrap;").Children(
+					h.Span(title).Style("text-decoration: underline;"),
+					h.Span("").StyleIf("visibility: hidden;", !exists).Children(
+						VIcon(icon).Size(SizeSmall),
+						h.Span(fmt.Sprint(orderByIdx+1)),
+					),
+				),
+			)
+	}
+}
+
+func (c *ListingCompo) setupBulkActions(ctx context.Context, dataTable *vx.DataTableBuilder) {
+	if len(c.lb.bulkActions) <= 0 {
+		return
+	}
+
+	_, msgr := c.MustGetEventContext(ctx)
+
+	syncQuery := ""
+	if stateful.IsSyncQuery(ctx) {
+		syncQuery = web.Plaid().PushState(true).MergeQuery(true).Query("selected_ids", web.Var(`selected_ids`)).RunPushState()
+	}
+	dataTable.SelectedIds(c.SelectedIds).
+		OnSelectionChanged(fmt.Sprintf(`function(selected_ids) { locals.selected_ids = selected_ids; %s }`, syncQuery)).
+		SelectedCountLabel(msgr.ListingSelectedCountNotice).
+		ClearSelectionLabel(msgr.ListingClearSelection)
+}
+
+func (c *ListingCompo) setupColumns(dataTable *vx.DataTableBuilder, columns []*Column) {
+	for _, col := range columns {
+		if !col.Visible {
+			continue
 		}
-		onClick.Query(ParamVarCurrentActive, c.VarCurrentActive())
-		cell.SetAttr("@click", onClick.Go())
-		return cell
+		// fill in empty compFunc and setter func with default
+		f := c.lb.getFieldOrDefault(col.Name)
+		dataTable.Column(col.Name).Title(col.Label).CellComponentFunc(c.lb.cellComponentFunc(f))
 	}
 }
 
@@ -399,9 +580,10 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		panic(errors.New("function Searcher is not set"))
 	}
 
-	evCtx, msgr := c.MustGetEventContext(ctx)
+	evCtx, _ := c.MustGetEventContext(ctx)
 
 	searchParams := &SearchParams{
+		Model:         c.lb.mb.NewModel(),
 		PageURL:       evCtx.R.URL,
 		SQLConditions: c.lb.conditions,
 	}
@@ -411,37 +593,20 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		searchParams.Keyword = c.Keyword
 	}
 
-	orderBys := lo.Map(c.OrderBys, func(ob ColOrderBy, _ int) ColOrderBy {
+	colOrderBys := lo.Map(c.OrderBys, func(ob ColOrderBy, _ int) ColOrderBy {
 		ob.OrderBy = strings.ToUpper(ob.OrderBy)
 		if ob.OrderBy != OrderByASC && ob.OrderBy != OrderByDESC {
 			ob.OrderBy = OrderByDESC
 		}
 		return ob
 	})
-	orderableFieldMap := make(map[string]string)
+
+	orderableFieldMap := make(map[string]bool)
 	for _, v := range c.lb.orderableFields {
-		orderableFieldMap[v.FieldName] = v.DBColumn
+		orderableFieldMap[v.FieldName] = true
 	}
-	var dbOrderBys []string
-	for _, ob := range orderBys {
-		dbCol, ok := orderableFieldMap[ob.FieldName]
-		if !ok {
-			continue
-		}
-		dbBy := ob.OrderBy
-		dbOrderBys = append(dbOrderBys, fmt.Sprintf("%s %s", dbCol, dbBy))
-	}
-	var orderBySQL string
-	if len(dbOrderBys) == 0 {
-		if c.lb.orderBy != "" {
-			orderBySQL = c.lb.orderBy
-		} else {
-			orderBySQL = fmt.Sprintf("%s %s", c.lb.mb.primaryField, OrderByDESC)
-		}
-	} else {
-		orderBySQL = strings.Join(dbOrderBys, ", ")
-	}
-	searchParams.OrderBy = orderBySQL
+
+	searchParams.OrderBys = c.getOrderBys(colOrderBys, orderableFieldMap)
 
 	if !c.lb.disablePagination {
 		perPage := cmp.Or(c.PerPage, c.lb.perPage, PerPageDefault)
@@ -451,22 +616,16 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		searchParams.PerPage = perPage
 	}
 	searchParams.Page = cmp.Or(c.Page, 1)
-	var filterScript h.HTMLComponent
-	var fd vx.FilterData
-	if c.lb.filterDataFunc != nil {
-		fd = c.lb.filterDataFunc(evCtx)
-		cond, args, vErr := fd.SetByQueryString(evCtx, c.FilterQuery)
-		if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
-			filterScript = web.RunScript(fmt.Sprintf(`(el)=>{%s}`, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), "error")))
-		}
-		searchParams.SQLConditions = append(searchParams.SQLConditions, &SQLCondition{
-			Query: cond,
-			Args:  args,
-		})
 
+	filterScript, filterConds := c.processFilter(evCtx)
+	searchParams.SQLConditions = append(searchParams.SQLConditions, filterConds...)
+
+	if c.lb.relayPagination != nil {
+		searchParams.RelayPagination = c.lb.relayPagination
+		searchParams.RelayPaginateRequest = c.prepareRelayPaginateRequest(searchParams.OrderBys, int(searchParams.PerPage))
 	}
 
-	objs, totalCount, err := c.lb.Searcher(c.lb.mb.NewModelSlice(), searchParams, evCtx)
+	searchResult, err := c.lb.Searcher(evCtx, searchParams)
 	if err != nil {
 		panic(errors.Wrap(err, "searcher error"))
 	}
@@ -476,120 +635,15 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		panic(errors.Wrap(err, "get columns error"))
 	}
 
-	fieldColumn := lo.SliceToMap(columns, func(col *Column) (string, *Column) {
-		return col.Name, col
-	})
-	dataTable := vx.DataTable(objs).Hover(true).HoverClass("cursor-pointer").
-		HeadCellWrapperFunc(func(_ h.MutableAttrHTMLComponent, field string, title string) (compo h.HTMLComponent) {
-			defer func() {
-				th, ok := compo.(h.MutableAttrHTMLComponent)
-				if !ok {
-					return
-				}
-				col, ok := fieldColumn[field]
-				if ok && col.WrapHeader != nil {
-					wrapper, err := col.WrapHeader(evCtx, col, th)
-					if err != nil {
-						panic(err)
-					}
-					compo = wrapper
-				} else {
-					th.SetAttr("style", "min-width: 100px;")
-				}
-			}()
-
-			if _, exists := orderableFieldMap[field]; !exists {
-				return h.Th(title)
-			}
-
-			orderBy, orderByIdx, exists := lo.FindIndexOf(orderBys, func(ob ColOrderBy) bool {
-				return ob.FieldName == field
-			})
-			if !exists {
-				orderBy = ColOrderBy{
-					FieldName: field,
-					OrderBy:   OrderByDESC,
-				}
-			}
-
-			icon := "mdi-arrow-down"
-			if orderBy.OrderBy == OrderByASC {
-				icon = "mdi-arrow-up"
-			}
-			return h.Th("").
-				Attr("@click.stop", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
-					target.Page = 0
-					if orderBy.OrderBy == OrderByASC {
-						orderBy.OrderBy = OrderByDESC
-					} else {
-						orderBy.OrderBy = OrderByASC
-					}
-					if exists {
-						if orderBy.OrderBy == OrderByASC {
-							target.OrderBys = append(target.OrderBys[:orderByIdx], target.OrderBys[orderByIdx+1:]...)
-						} else {
-							target.OrderBys[orderByIdx] = orderBy
-						}
-					} else {
-						target.OrderBys = append(target.OrderBys, orderBy)
-					}
-				}).ThenScript(ListingCompo_JsScrollToTop).Go()).
-				Children(
-					h.Div().Style("cursor: pointer; white-space: nowrap;").Children(
-						h.Span(title).Style("text-decoration: underline;"),
-						h.Span("").StyleIf("visibility: hidden;", !exists).Children(
-							VIcon(icon).Size(SizeSmall),
-							h.Span(fmt.Sprint(orderByIdx+1)),
-						),
-					),
-				)
-		}).
-		RowWrapperFunc(func(row h.MutableAttrHTMLComponent, id string, obj any, _ string) h.HTMLComponent {
-			if c.lb.rowProcessor != nil {
-				compo, err := c.lb.rowProcessor(evCtx, row, id, obj)
-				if err != nil {
-					panic(err)
-				}
-				return compo
-			}
-			row.SetAttr(":class", fmt.Sprintf(`{ %q: vars.%s === %q }`, ListingCompo_CurrentActiveClass, c.VarCurrentActive(), id))
-			return row
-		}).
+	dataTable := vx.DataTable(searchResult.Nodes).Hover(true).HoverClass("cursor-pointer").
+		HeadCellWrapperFunc(c.headCellWrapperFunc(ctx, columns, colOrderBys, orderableFieldMap)).
+		RowWrapperFunc(c.rowWrapperFunc(evCtx)).
 		RowMenuHead(btnConfigColumns).
 		RowMenuItemFuncs(c.lb.RowMenu().listingItemFuncs(evCtx)...).
-		CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
-			if c.lb.cellProcessor != nil {
-				compo, err := c.lb.cellProcessor(evCtx, cell, id, obj)
-				if err != nil {
-					panic(err)
-				}
-				return compo
-			}
-			if c.lb.cellWrapperFunc != nil {
-				return c.lb.cellWrapperFunc(cell, id, obj, dataTableID)
-			}
-			return c.defaultCellWrapperFunc(ctx)(cell, id, obj, dataTableID)
-		})
+		CellWrapperFunc(c.cellWrapperFunc(evCtx))
 
-	if len(c.lb.bulkActions) > 0 {
-		syncQuery := ""
-		if stateful.IsSyncQuery(ctx) {
-			syncQuery = web.Plaid().PushState(true).MergeQuery(true).Query("selected_ids", web.Var(`selected_ids`)).RunPushState()
-		}
-		dataTable.SelectedIds(c.SelectedIds).
-			OnSelectionChanged(fmt.Sprintf(`function(selected_ids) { locals.selected_ids = selected_ids; %s }`, syncQuery)).
-			SelectedCountLabel(msgr.ListingSelectedCountNotice).
-			ClearSelectionLabel(msgr.ListingClearSelection)
-	}
-
-	for _, col := range columns {
-		if !col.Visible {
-			continue
-		}
-		// fill in empty compFunc and setter func with default
-		f := c.lb.getFieldOrDefault(col.Name)
-		dataTable.Column(col.Name).Title(col.Label).CellComponentFunc(c.lb.cellComponentFunc(f))
-	}
+	c.setupBulkActions(ctx, dataTable)
+	c.setupColumns(dataTable, columns)
 
 	if c.lb.tableProcessor != nil {
 		dataTable, err = c.lb.tableProcessor(evCtx, dataTable)
@@ -598,39 +652,109 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		}
 	}
 
-	var dataTableAdditions h.HTMLComponent
-	if totalCount <= 0 {
-		dataTableAdditions = h.Div().Class("mt-10 text-center grey--text text--darken-2").Children(
-			h.Text(msgr.ListingNoRecordToShow),
-		)
-	} else {
-		if c.lb.disablePagination {
-			return dataTable
-		}
-		dataTableAdditions = h.Div().Style("margin-top:26px").Children(
-			vx.VXTablePagination().
-				Total(int64(totalCount)).
-				CurrPage(searchParams.Page).
-				PerPage(searchParams.PerPage).
-				CustomPerPages([]int64{c.lb.perPage}).
-				PerPageText(msgr.PaginationRowsPerPage).
-				NoOffsetPart(true).
-				TotalVisible(cmp.Or(c.lb.paginationTotalVisible, int64(5))).
-				OnSelectPerPage(stateful.ReloadAction(ctx, c,
-					func(target *ListingCompo) {
-						target.Page = 0
-					},
-					stateful.WithAppendFix(`v.compo.per_page = parseInt($event, 10)`),
-				).ThenScript(ListingCompo_JsScrollToTop).Go()).
-				OnSelectPage(stateful.ReloadAction(ctx, c, nil,
-					stateful.WithAppendFix(`v.compo.page = parseInt(value,10);`),
-				).ThenScript(ListingCompo_JsScrollToTop).Go()),
-		)
-	}
 	return h.Components(
 		filterScript,
 		dataTable,
-		dataTableAdditions,
+		c.buildDataTableAdditions(ctx, searchParams, searchResult),
+	)
+}
+
+func (c *ListingCompo) buildDataTableAdditions(ctx context.Context, searchParams *SearchParams, searchResult *SearchResult) h.HTMLComponent {
+	if searchResult.PageInfo.TotalCount <= 0 && searchResult.PageInfo.StartCursor == nil {
+		_, msgr := c.MustGetEventContext(ctx)
+		return h.Div().Class("mt-10 text-center grey--text text--darken-2").Children(
+			h.Text(msgr.ListingNoRecordToShow),
+		)
+	}
+
+	if c.lb.disablePagination {
+		return nil
+	}
+
+	if c.lb.relayPagination != nil {
+		return c.relayPaginationCompo(ctx, int(searchParams.PerPage), searchResult.PageInfo)
+	}
+	return c.regularPagination(ctx, searchParams, searchResult)
+}
+
+func (c *ListingCompo) regularPagination(ctx context.Context, searchParams *SearchParams, searchResult *SearchResult) h.HTMLComponent {
+	if c.lb.relayPagination != nil {
+		return nil
+	}
+	_, msgr := c.MustGetEventContext(ctx)
+	return h.Div().Style("margin-top:26px").Children(
+		vx.VXTablePagination().
+			Total(int64(searchResult.PageInfo.TotalCount)).
+			CurrPage(searchParams.Page).
+			PerPage(searchParams.PerPage).
+			CustomPerPages([]int64{c.lb.perPage}).
+			PerPageText(msgr.PaginationRowsPerPage).
+			NoOffsetPart(true).
+			TotalVisible(5).
+			OnSelectPerPage(stateful.ReloadAction(ctx, c,
+				func(target *ListingCompo) {
+					target.Page = 0
+					target.After, target.Before = nil, nil
+				},
+				stateful.WithAppendFix(`v.compo.per_page = parseInt($event, 10)`),
+			).ThenScript(ListingCompo_JsScrollToTop).Go()).
+			OnSelectPage(stateful.ReloadAction(ctx, c, nil,
+				stateful.WithAppendFix(`v.compo.page = parseInt(value,10);`),
+			).ThenScript(ListingCompo_JsScrollToTop).Go()),
+	)
+}
+
+func (c *ListingCompo) relayPaginationCompo(ctx context.Context, perPage int, pageInfo relay.PageInfo) h.HTMLComponent {
+	if c.lb.relayPagination == nil {
+		return nil
+	}
+	_, msgr := c.MustGetEventContext(ctx)
+
+	perPageSelectItems := []int{10, 15, 20, 50, 100}
+	perPageSelectItems = append(perPageSelectItems, perPage)
+	if c.lb.perPage > 0 {
+		perPageSelectItems = append(perPageSelectItems, int(c.lb.perPage))
+	}
+	perPageSelectItems = lo.Uniq(perPageSelectItems)
+	sort.Ints(perPageSelectItems)
+
+	perPageSelect := h.Div().Class("d-flex align-center ga-6").Children(
+		h.Text(msgr.PaginationRowsPerPage),
+		VSelect().MinWidth(64).Class("mt-n2").Variant(FieldVariantUnderlined).HideDetails(true).Density(DensityCompact).
+			Items(lo.Map(perPageSelectItems, func(v int, _ int) string {
+				return fmt.Sprint(v)
+			})).ModelValue(fmt.Sprint(perPage)).
+			Attr("@update:model-value", stateful.ReloadAction(ctx, c,
+				func(target *ListingCompo) {
+					target.Page = 0
+					target.After, target.Before = nil, nil
+				},
+				stateful.WithAppendFix(`v.compo.per_page = parseInt($event, 10)`),
+			).ThenScript(ListingCompo_JsScrollToTop).Go()),
+	)
+
+	prev := VBtn("").Variant(VariantText).Icon("mdi-chevron-left").Disabled(!pageInfo.HasPreviousPage)
+	next := VBtn("").Variant(VariantText).Icon("mdi-chevron-right").Disabled(!pageInfo.HasNextPage)
+	if pageInfo.HasPreviousPage {
+		prev.SetAttr("@click", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
+			target.Before = pageInfo.StartCursor
+			target.After = nil
+		}).ThenScript(ListingCompo_JsScrollToTop).Go())
+	}
+	if pageInfo.HasNextPage {
+		next.SetAttr("@click", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
+			target.Before = nil
+			target.After = pageInfo.EndCursor
+		}).ThenScript(ListingCompo_JsScrollToTop).Go())
+	}
+	prevNext := h.Div().Class("d-flex align-center ga-2").Children(
+		prev,
+		next,
+	)
+	return h.Div().Class("d-flex align-center ga-3 mt-6").Children(
+		VSpacer(),
+		perPageSelect,
+		prevNext,
 	)
 }
 

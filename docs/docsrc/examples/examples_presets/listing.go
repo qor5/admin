@@ -8,6 +8,7 @@ import (
 
 	"github.com/qor5/web/v3"
 	h "github.com/theplant/htmlgo"
+	"github.com/theplant/relay/cursor"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
 
@@ -197,6 +198,16 @@ func PresetsListingCustomizationFields(b *presets.Builder, db *gorm.DB) (
 		}
 		return
 	})
+
+	aesCursorMiddleware := cursor.AES[any](
+		[]byte("0123456789abcdef0123456789abcdef"), // 32bytes aes256
+	)
+	cl.RelayPagination(
+		gorm2op.KeysetBasedPagination(true, aesCursorMiddleware),
+	)
+	comp.Listing().RelayPagination(
+		gorm2op.KeysetBasedPagination(true, aesCursorMiddleware),
+	)
 
 	return
 }
@@ -406,10 +417,10 @@ func PresetsListingCustomizationSearcher(b *presets.Builder, db *gorm.DB) (
 ) {
 	b.DataOperator(gorm2op.DataOperator(db))
 	mb = b.Model(&Customer{})
-	mb.Listing().SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+	mb.Listing().SearchFunc(func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 		// only display approved customers
 		qdb := db.Where("approved_at IS NOT NULL")
-		return gorm2op.DataOperator(qdb).Search(model, params, ctx)
+		return gorm2op.DataOperator(qdb).Search(ctx, params)
 	})
 	return
 }

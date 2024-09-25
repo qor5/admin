@@ -201,9 +201,9 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.Model
 
 func makeSearchFunc(mb *presets.ModelBuilder, db *gorm.DB) func(searcher presets.SearchFunc) presets.SearchFunc {
 	return func(searcher presets.SearchFunc) presets.SearchFunc {
-		return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+		return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 			stmt := &gorm.Statement{DB: db}
-			stmt.Parse(model)
+			stmt.Parse(params.Model)
 			tn := stmt.Schema.Table
 
 			var pks []string
@@ -259,7 +259,7 @@ func makeSearchFunc(mb *presets.ModelBuilder, db *gorm.DB) func(searcher presets
 			}
 			params.SQLConditions = append(params.SQLConditions, &con)
 
-			return searcher(model, params, ctx)
+			return searcher(ctx, params)
 		}
 	}
 }

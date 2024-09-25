@@ -100,20 +100,20 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		return errors.New("should not be used")
 	})
 
-	lb.SearchFunc(func(model any, params *presets.SearchParams, ctx *web.EventContext) (r any, totalCount int, err error) {
+	lb.SearchFunc(func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 		params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
 			Query: "hidden = ?",
 			Args:  []any{false},
 		})
-		r, totalCount, err = op.Search(model, params, ctx)
-		if totalCount <= 0 {
-			return
+		result, err = op.Search(ctx, params)
+		if err != nil {
+			return nil, err
 		}
-		logs := r.([]*ActivityLog)
+		logs := result.Nodes.([]*ActivityLog)
 		if err := ab.supplyUsers(ctx.R.Context(), logs); err != nil {
-			return nil, 0, err
+			return nil, err
 		}
-		return logs, totalCount, nil
+		return result, nil
 	})
 
 	// use mb.LabelName handle this now

@@ -7,6 +7,7 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
+	"github.com/theplant/relay"
 )
 
 type (
@@ -34,7 +35,7 @@ type MessagesFunc func(r *http.Request) *Messages
 
 // Data Layer
 type DataOperator interface {
-	Search(obj interface{}, params *SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error)
+	Search(ctx *web.EventContext, params *SearchParams) (result *SearchResult, err error)
 	// return ErrRecordNotFound if record not found
 	Fetch(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error)
 	Save(obj interface{}, id string, ctx *web.EventContext) (err error)
@@ -49,7 +50,7 @@ type (
 )
 
 type (
-	SearchFunc func(model interface{}, params *SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error)
+	SearchFunc func(ctx *web.EventContext, params *SearchParams) (result *SearchResult, err error)
 	FetchFunc  func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error)
 	SaveFunc   func(obj interface{}, id string, ctx *web.EventContext) (err error)
 	DeleteFunc func(obj interface{}, id string, ctx *web.EventContext) (err error)
@@ -60,14 +61,30 @@ type SQLCondition struct {
 	Args  []interface{}
 }
 
-type SearchParams struct {
-	KeywordColumns []string
-	Keyword        string
-	SQLConditions  []*SQLCondition
-	PerPage        int64
-	Page           int64
-	OrderBy        string
-	PageURL        *url.URL
+type (
+	RelayPagination func(ctx *web.EventContext) (relay.Pagination[any], error)
+	SearchParams    struct {
+		Model   any
+		PageURL *url.URL
+
+		KeywordColumns []string
+		Keyword        string
+		SQLConditions  []*SQLCondition
+
+		Page     int64
+		PerPage  int64
+		OrderBys []relay.OrderBy
+
+		// Both must exist simultaneously, and when they do, Page, PerPage, and OrderBys will be ignored
+		// Or you can use the default pagination
+		RelayPaginateRequest *relay.PaginateRequest[any]
+		RelayPagination      RelayPagination
+	}
+)
+
+type SearchResult struct {
+	PageInfo relay.PageInfo
+	Nodes    interface{}
 }
 
 type SlugDecoder interface {
