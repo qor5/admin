@@ -215,7 +215,7 @@ func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string)
 	return
 }
 
-const ContainerToPageLayoutKey = "ContainerToPageLayout"
+type CtxKeyContainerToPageLayout struct{}
 
 type ContainerSorterItem struct {
 	Index           int    `json:"index"`

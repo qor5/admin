@@ -401,7 +401,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			}
 `))
 		}
-		if f := ctx.R.Context().Value(ContainerToPageLayoutKey); f != nil {
+		if f := ctx.R.Context().Value(CtxKeyContainerToPageLayout{}); f != nil {
 			pl, ok := f.(*PageLayoutInput)
 			if ok {
 				input.FreeStyleCss = append(input.FreeStyleCss, pl.FreeStyleCss...)

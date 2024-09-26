@@ -295,7 +295,15 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	header := pb.RegisterContainer("MyContent").Group("Navigation").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			c := obj.(*MyContent)
-			return Div().Text(c.Text).Class("test-div")
+			ctx.WithContextValue(pagebuilder.CtxKeyContainerToPageLayout{}, &pagebuilder.PageLayoutInput{
+				FreeStyleCss: []string{`.test-ctx {
+  color: red;
+}`},
+			})
+			return Div(
+				Div().Text(c.Text).Class("test-ctx"),
+				Div().Text(c.Text).Class("test-div"),
+			)
 		}).Cover("https://qor5.com/img/qor-logo.png")
 
 	ed := header.Model(&MyContent{}).Editing("Text", "Color")
@@ -324,7 +332,20 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	// Campaigns Menu
 	campaignModelBuilder := b.Model(&Campaign{})
 	ct := b.Model(&CampaignTemplate{})
-	campaignModelBuilder.Editing().Creating(pagebuilder.PageTemplateSelectionFiled, "Title")
+	cmbCreating := campaignModelBuilder.Editing().Creating(pagebuilder.PageTemplateSelectionFiled, "Title")
+	cmbCreating.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			if err = in(obj, id, ctx); err != nil {
+				return
+			}
+			if p, ok := obj.(presets.SlugEncoder); ok {
+				ctx.R.Form.
+					Set(presets.ParamOverlayAfterUpdateScript,
+						web.Plaid().URL(campaignModelBuilder.Info().DetailingHref(p.PrimarySlug())).PushState(true).Go())
+			}
+			return
+		}
+	})
 	pb.RegisterModelBuilderTemplate(campaignModelBuilder, ct)
 	campaignModelBuilder.Listing("Title")
 	detail := campaignModelBuilder.Detailing(
@@ -339,7 +360,6 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 			}
 			return
 		})
-
 	pb.RegisterModelContainer("CampaignContent", campaignModelBuilder).Group("Campaign").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			c := obj.(*CampaignContent)
