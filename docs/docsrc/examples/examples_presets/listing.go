@@ -199,14 +199,16 @@ func PresetsListingCustomizationFields(b *presets.Builder, db *gorm.DB) (
 		return
 	})
 
-	aesCursorMiddleware := cursor.AES[any](
-		[]byte("0123456789abcdef0123456789abcdef"), // 32bytes aes256
-	)
+	gcm, err := cursor.NewGCM([]byte("0123456789abcdef0123456789abcdef"))
+	if err != nil {
+		panic(err)
+	}
+	gcmMiddleware := cursor.GCM[any](gcm)
 	cl.RelayPagination(
-		gorm2op.KeysetBasedPagination(true, aesCursorMiddleware),
+		gorm2op.KeysetBasedPagination(true, gcmMiddleware),
 	)
 	comp.Listing().RelayPagination(
-		gorm2op.KeysetBasedPagination(true, aesCursorMiddleware),
+		gorm2op.KeysetBasedPagination(true, gcmMiddleware),
 	)
 
 	return
