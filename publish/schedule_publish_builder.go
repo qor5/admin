@@ -11,19 +11,12 @@ import (
 
 type SchedulePublishBuilder struct {
 	publisher *Builder
-	context   context.Context
 }
 
 func NewSchedulePublishBuilder(publisher *Builder) *SchedulePublishBuilder {
 	return &SchedulePublishBuilder{
 		publisher: publisher,
-		context:   context.Background(),
 	}
-}
-
-func (b *SchedulePublishBuilder) WithValue(key, val interface{}) *SchedulePublishBuilder {
-	b.context = context.WithValue(b.context, key, val)
-	return b
 }
 
 type SchedulePublisher interface {
@@ -32,14 +25,21 @@ type SchedulePublisher interface {
 
 // model is a empty struct
 // example: Product{}
-func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
+func (b *SchedulePublishBuilder) Run(ctx context.Context, model interface{}) (err error) {
+	reqCtx := b.publisher.WithContextValues(ctx)
+	deferFuncs := deferFuncsFromContext(reqCtx)
+	if len(deferFuncs) > 0 {
+		for _, f := range deferFuncs {
+			defer f(err)
+		}
+	}
+
 	var scope *gorm.DB
 	if m, ok := model.(SchedulePublisher); ok {
 		scope = m.SchedulePublisherDBScope(b.publisher.db)
 	} else {
 		scope = b.publisher.db
 	}
-	reqCtx := b.publisher.WithContextValues(context.Background())
 
 	// If model is Product{}
 	// Generate a records: []*Product{}

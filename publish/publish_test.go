@@ -11,6 +11,7 @@ import (
 
 	"github.com/qor/oss"
 	"github.com/qor5/admin/v3/publish"
+	"github.com/stretchr/testify/require"
 	"github.com/theplant/sliceutils"
 	"github.com/theplant/testenv"
 	"github.com/theplant/testingutils"
@@ -311,7 +312,7 @@ func TestPublishList(t *testing.T) {
 
 	publisher.Publish(context.Background(), &productV1)
 	publisher.Publish(context.Background(), &productV3)
-	if err := listPublisher.Run(ProductWithoutVersion{}); err != nil {
+	if err := listPublisher.Run(context.Background(), ProductWithoutVersion{}); err != nil {
 		panic(err)
 	}
 
@@ -325,7 +326,7 @@ get: %v
 	}
 
 	publisher.Publish(context.Background(), &productV2)
-	if err := listPublisher.Run(ProductWithoutVersion{}); err != nil {
+	if err := listPublisher.Run(context.Background(), ProductWithoutVersion{}); err != nil {
 		panic(err)
 	}
 
@@ -338,7 +339,7 @@ get: %v
 	}
 
 	publisher.UnPublish(context.Background(), &productV2)
-	if err := listPublisher.Run(ProductWithoutVersion{}); err != nil {
+	if err := listPublisher.Run(context.Background(), ProductWithoutVersion{}); err != nil {
 		panic(err)
 	}
 
@@ -351,7 +352,7 @@ get: %v
 	}
 
 	publisher.UnPublish(context.Background(), &productV3)
-	if err := listPublisher.Run(ProductWithoutVersion{}); err != nil {
+	if err := listPublisher.Run(context.Background(), ProductWithoutVersion{}); err != nil {
 		panic(err)
 	}
 
@@ -362,6 +363,50 @@ want: %v
 get: %v
 `, expected, storage.Objects["/product_without_version/list/1.html"])
 	}
+
+	t.Run("append defer funcs", func(t *testing.T) {
+		ctx := context.Background()
+		deferLogs := []string{}
+		ctx = publish.ContextWithAppendDeferFunc(ctx,
+			func(v ...any) {
+				deferLogs = append(deferLogs, "a")
+			},
+			func(v ...any) {
+				deferLogs = append(deferLogs, "b")
+			},
+		)
+		ctx = publish.ContextWithAppendDeferFunc(ctx, func(v ...any) {
+			deferLogs = append(deferLogs, "c")
+		})
+
+		publisher.UnPublish(context.Background(), &productV3)
+		require.NoError(t, listPublisher.Run(context.Background(), ProductWithoutVersion{}))
+	})
+
+	t.Run("defer panic", func(t *testing.T) {
+		ctx := context.Background()
+		deferLogs := []string{}
+		ctx = publish.ContextWithAppendDeferFunc(ctx,
+			func(v ...any) {
+				deferLogs = append(deferLogs, "end")
+			},
+			func(v ...any) {
+				if r := recover(); r != nil {
+					deferLogs = append(deferLogs, fmt.Sprintf("got panic from %v", r))
+				}
+				deferLogs = append(deferLogs, "a")
+			},
+			func(v ...any) {
+				panic("b")
+			},
+		)
+		ctx = publish.ContextWithAppendDeferFunc(ctx, func(v ...any) {
+			deferLogs = append(deferLogs, "c")
+		})
+
+		publisher.UnPublish(context.Background(), &productV3)
+		require.NoError(t, listPublisher.Run(context.Background(), ProductWithoutVersion{}))
+	})
 }
 
 func TestSchedulePublish(t *testing.T) {
@@ -399,7 +444,7 @@ func TestSchedulePublish(t *testing.T) {
 		panic(err)
 	}
 	schedulePublisher := publish.NewSchedulePublishBuilder(publisher)
-	if err := schedulePublisher.Run(productV1); err != nil {
+	if err := schedulePublisher.Run(context.Background(), productV1); err != nil {
 		panic(err)
 	}
 	expected = "12"
@@ -415,7 +460,7 @@ func TestSchedulePublish(t *testing.T) {
 	if err := db.Save(&productV1).Error; err != nil {
 		panic(err)
 	}
-	if err := schedulePublisher.Run(productV1); err != nil {
+	if err := schedulePublisher.Run(context.Background(), productV1); err != nil {
 		panic(err)
 	}
 	expected = ""
@@ -425,6 +470,56 @@ func TestSchedulePublish(t *testing.T) {
 	get: %v
 	`, expected, storage.Objects["test/product/1/index.html"])
 	}
+
+	t.Run("append defer funcs", func(t *testing.T) {
+		ctx := context.Background()
+		deferLogs := []string{}
+		ctx = publish.ContextWithAppendDeferFunc(ctx,
+			func(v ...any) {
+				deferLogs = append(deferLogs, "a")
+			},
+			func(v ...any) {
+				deferLogs = append(deferLogs, "b")
+			},
+		)
+		ctx = publish.ContextWithAppendDeferFunc(ctx, func(v ...any) {
+			deferLogs = append(deferLogs, "c")
+		})
+
+		endAt := startAt.Add(time.Second * 2)
+		productV1.ScheduledEndAt = &endAt
+		require.NoError(t, db.Save(&productV1).Error)
+		require.NoError(t, schedulePublisher.Run(ctx, productV1))
+		require.Equal(t, []string{"c", "b", "a"}, deferLogs)
+	})
+
+	t.Run("defer panic", func(t *testing.T) {
+		ctx := context.Background()
+		deferLogs := []string{}
+		ctx = publish.ContextWithAppendDeferFunc(ctx,
+			func(v ...any) {
+				deferLogs = append(deferLogs, "end")
+			},
+			func(v ...any) {
+				if r := recover(); r != nil {
+					deferLogs = append(deferLogs, fmt.Sprintf("got panic from %v", r))
+				}
+				deferLogs = append(deferLogs, "a")
+			},
+			func(v ...any) {
+				panic("b")
+			},
+		)
+		ctx = publish.ContextWithAppendDeferFunc(ctx, func(v ...any) {
+			deferLogs = append(deferLogs, "c")
+		})
+
+		endAt := startAt.Add(time.Second * 2)
+		productV1.ScheduledEndAt = &endAt
+		require.NoError(t, db.Save(&productV1).Error)
+		require.NoError(t, schedulePublisher.Run(ctx, productV1))
+		require.Equal(t, []string{"c", "got panic from b", "a", "end"}, deferLogs)
+	})
 }
 
 func TestPublishContentWithoutVersionToS3(t *testing.T) {

@@ -286,7 +286,7 @@ func makeSetVersionSetterFunc(db *gorm.DB) func(presets.SetterFunc) presets.Sett
 func (b *Builder) Install(pb *presets.Builder) error {
 	if b.autoSchedule {
 		defer func() {
-			go RunPublisher(b.db, b.storage, b)
+			go RunPublisher(context.Background(), b.db, b.storage, b)
 		}()
 	}
 	pb.FieldDefaults(presets.LIST).

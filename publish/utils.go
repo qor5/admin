@@ -19,13 +19,26 @@ const (
 	listPublishJobNamePrefix     = "list-publisher"
 )
 
-func RunPublisher(db *gorm.DB, storage oss.StorageInterface, publisher *Builder) {
+type ctxKeyDeferFuncs struct{}
+
+func deferFuncsFromContext(ctx context.Context) []func(v ...any) {
+	funcs, _ := ctx.Value(ctxKeyDeferFuncs{}).([]func(v ...any))
+	return funcs
+}
+
+func ContextWithAppendDeferFunc(ctx context.Context, f ...func(v ...any)) context.Context {
+	funcs := deferFuncsFromContext(ctx)
+	funcs = append(funcs, f...)
+	return context.WithValue(ctx, ctxKeyDeferFuncs{}, funcs)
+}
+
+func RunPublisher(ctx context.Context, db *gorm.DB, storage oss.StorageInterface, publisher *Builder) {
 	{ // schedule publisher
 		scheduleP := NewSchedulePublishBuilder(publisher)
 
 		for name, model := range NonVersionPublishModels {
 			go RunJob(schedulePublishJobNamePrefix+"-"+name, time.Minute, time.Minute*5, func() {
-				if err := scheduleP.Run(model); err != nil {
+				if err := scheduleP.Run(ctx, model); err != nil {
 					log.Printf("schedule publisher error: %v\n", err)
 				}
 			})
@@ -33,7 +46,7 @@ func RunPublisher(db *gorm.DB, storage oss.StorageInterface, publisher *Builder)
 
 		for name, model := range VersionPublishModels {
 			go RunJob(schedulePublishJobNamePrefix+"-"+name, time.Minute, time.Minute*5, func() {
-				if err := scheduleP.Run(model); err != nil {
+				if err := scheduleP.Run(ctx, model); err != nil {
 					log.Printf("schedule publisher error: %v\n", err)
 				}
 			})
@@ -44,7 +57,7 @@ func RunPublisher(db *gorm.DB, storage oss.StorageInterface, publisher *Builder)
 		listP := NewListPublishBuilder(db, storage)
 		for name, model := range ListPublishModels {
 			go RunJob(listPublishJobNamePrefix+"-"+name, time.Minute, time.Minute*5, func() {
-				if err := listP.Run(model); err != nil {
+				if err := listP.Run(ctx, model); err != nil {
 					log.Printf("schedule publisher error: %v\n", err)
 				}
 			})

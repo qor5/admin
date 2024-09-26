@@ -112,7 +112,7 @@ func PublishExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	b.Use(publisher)
 	mb.Use(publisher)
 	// run the publisher job if Schedule is used
-	go publish.RunPublisher(db, nil, publisher)
+	go publish.RunPublisher(context.Background(), db, nil, publisher)
 	// @snippet_end
 	return b
 }
