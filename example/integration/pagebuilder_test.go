@@ -665,7 +665,7 @@ func TestPageBuilder(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`"Page.CategoryID":""`},
+			ExpectPortalUpdate0ContainsInOrder: []string{`"Page.Title":"1234567"`, `"Page.CategoryID":""`, `"Page.Slug":"12313"`},
 		},
 		{
 			Name:  "Page Detail Editing Has Category",
@@ -680,7 +680,7 @@ func TestPageBuilder(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`"Page.CategoryID":1`},
+			ExpectPortalUpdate0ContainsInOrder: []string{`"Page.Title":"12312"`, `"Page.CategoryID":1`, `"Page.Slug":"123"`},
 		},
 
 		{

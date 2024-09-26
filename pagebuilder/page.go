@@ -125,7 +125,7 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 				msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 				return comp.(*vx.VXFieldBuilder).
 					Label(msgr.Slug).
-					Attr(web.VField(field.Name, strings.TrimPrefix(p.Slug, "/"))...).
+					Attr(web.VField(field.FormKey, strings.TrimPrefix(p.Slug, "/"))...).
 					Disabled(field.Disabled).Attr("prefix", "/")
 			}
 		}).LazyWrapSetterFunc(func(in presets.FieldSetterFunc) presets.FieldSetterFunc {
@@ -154,9 +154,9 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 				Items(categories).ItemTitle("Path").ItemValue("ID").
 				ErrorMessages(field.Errors...)
 			if p.CategoryID > 0 {
-				complete.Attr(web.VField(field.Name, p.CategoryID)...)
+				complete.Attr(web.VField(field.FormKey, p.CategoryID)...)
 			} else {
-				complete.Attr(web.VField(field.Name, "")...)
+				complete.Attr(web.VField(field.FormKey, "")...)
 			}
 			return complete
 		})
