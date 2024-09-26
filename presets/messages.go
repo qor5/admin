@@ -9,7 +9,7 @@ import (
 )
 
 type Messages struct {
-	DialogTitleDefault												 string
+	DialogTitleDefault                         string
 	SuccessfullyUpdated                        string
 	SuccessfullyCreated                        string
 	Search                                     string
@@ -146,7 +146,7 @@ func (msgr *Messages) HumanizeTime(then time.Time) string {
 }
 
 var Messages_en_US = &Messages{
-	DialogTitleDefault:						"Confirm",
+	DialogTitleDefault:           "Confirm",
 	SuccessfullyUpdated:          "Successfully Updated",
 	SuccessfullyCreated:          "Successfully Created",
 	Search:                       "Search",
@@ -229,7 +229,7 @@ var Messages_en_US = &Messages{
 }
 
 var Messages_zh_CN = &Messages{
-	DialogTitleDefault:						"确认",
+	DialogTitleDefault:           "确认",
 	SuccessfullyUpdated:          "成功更新了",
 	SuccessfullyCreated:          "成功创建了",
 	Search:                       "搜索",
@@ -312,7 +312,7 @@ var Messages_zh_CN = &Messages{
 }
 
 var Messages_ja_JP = &Messages{
-	DialogTitleDefault:						"確認",
+	DialogTitleDefault:           "確認",
 	SuccessfullyUpdated:          "更新に成功しました",
 	SuccessfullyCreated:          "作成に成功しました",
 	Search:                       "検索",
