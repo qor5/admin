@@ -253,6 +253,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
+			ExpectRunScriptContainsInOrder: []string{"/campaigns/", "pushState(true)"},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
 				var campaign Campaign
 				if err := TestDB.First(&campaign, "title = ?", "Hello 4").Error; err != nil {
@@ -687,7 +688,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 
 				return req
 			},
-			ExpectPageBodyContainsInOrder: []string{"MyContent", "CampaignContent"},
+			ExpectPageBodyContainsInOrder: []string{"MyContent", "CampaignContent", ".test-ctx"},
 			ExpectPageBodyNotContains:     []string{"ProductContent", "PagesContent"},
 		},
 		{
