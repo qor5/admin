@@ -38,7 +38,7 @@ require (
 	github.com/theplant/gofixtures v1.1.3
 	github.com/theplant/htmlgo v1.0.3
 	github.com/theplant/osenv v0.0.2
-	github.com/theplant/relay v0.0.0-20240925143550-df827ef2f86f
+	github.com/theplant/relay v0.1.1
 	github.com/theplant/sliceutils v0.0.0-20200406042209-89153d988eb1
 	github.com/theplant/testenv v0.0.1
 	github.com/theplant/testingutils v0.0.2
