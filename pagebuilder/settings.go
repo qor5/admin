@@ -154,7 +154,7 @@ func detailPageEditor(dp *presets.DetailingBuilder, b *Builder) {
 				comp := in(obj, field, ctx)
 				p := obj.(*Page)
 				return comp.(*vx.VXFieldBuilder).Label(msgr.Slug).
-					Attr(web.VField(field.Name, strings.TrimPrefix(p.Slug, "/"))...).
+					Attr(web.VField(field.FormKey, strings.TrimPrefix(p.Slug, "/"))...).
 					Attr("prefix", "/")
 			}
 		}).LazyWrapSetterFunc(func(in presets.FieldSetterFunc) presets.FieldSetterFunc {
@@ -200,9 +200,9 @@ func detailPageEditor(dp *presets.DetailingBuilder, b *Builder) {
 				Items(categories).ItemTitle("Path").ItemValue("ID").
 				ErrorMessages(field.Errors...)
 			if p.CategoryID > 0 {
-				complete.Attr(web.VField(field.Name, p.CategoryID)...)
+				complete.Attr(web.VField(field.FormKey, p.CategoryID)...)
 			} else {
-				complete.Attr(web.VField(field.Name, "")...)
+				complete.Attr(web.VField(field.FormKey, "")...)
 			}
 			return complete
 		})
