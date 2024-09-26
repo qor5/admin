@@ -700,13 +700,13 @@ func (b *Builder) rightDrawer(ctx *web.EventContext, r *web.EventResponse, comp 
 		Name: RightDrawerPortalName,
 		Body: VNavigationDrawer(
 			vuetifyx.VXDialog().Persistent(true).
-			Title(msgr.DialogTitleDefault).
-			Text(msgr.LeaveBeforeUnsubmit).
-			HideClose(true).
-			OkText(msgr.OK).
-			CancelText(msgr.Cancel).
-			Attr("@click:ok", "vars.confirmDrawerLeave=false;vars.presetsRightDrawer = false").
-			Attr("v-model", "vars.confirmDrawerLeave"),
+				Title(msgr.DialogTitleDefault).
+				Text(msgr.LeaveBeforeUnsubmit).
+				HideClose(true).
+				OkText(msgr.OK).
+				CancelText(msgr.Cancel).
+				Attr("@click:ok", "vars.confirmDrawerLeave=false;vars.presetsRightDrawer = false").
+				Attr("v-model", "vars.confirmDrawerLeave"),
 			activeWatcher,
 			web.GlobalEvents().Attr("@keyup.esc", fmt.Sprintf(" if (!Object.values(vars.%s).some(value => value === true)) { vars.presetsRightDrawer = false} else {vars.confirmDrawerLeave=true};", VarsPresetsDataChanged)),
 			web.Portal(comp).Name(RightDrawerContentPortalName),
