@@ -26,7 +26,7 @@ require (
 	github.com/qor/oss v0.0.0-20240729105053-88484a799a79
 	github.com/qor5/web v1.3.2
 	github.com/qor5/web/v3 v3.0.9-0.20240925032527-e126c3282af2
-	github.com/qor5/x/v3 v3.0.10-0.20240925072355-d9262ada53f5
+	github.com/qor5/x/v3 v3.0.10-0.20240927031452-632d84e3e183
 	github.com/samber/lo v1.47.0
 	github.com/shurcooL/sanitized_anchor_name v1.0.0
 	github.com/spf13/cast v1.6.0
