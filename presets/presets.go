@@ -833,7 +833,6 @@ func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse
 			vuetifyx.VXDialog().
 				Size(vuetifyx.DialogSizeDefault).
 				Title("Confirm").
-				HideClose(true).
 				Text(promptText).
 				CancelText(cancelText).
 				OkText(okText).
