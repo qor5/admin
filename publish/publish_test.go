@@ -363,50 +363,6 @@ want: %v
 get: %v
 `, expected, storage.Objects["/product_without_version/list/1.html"])
 	}
-
-	t.Run("append defer funcs", func(t *testing.T) {
-		ctx := context.Background()
-		deferLogs := []string{}
-		ctx = publish.ContextWithAppendDeferFunc(ctx,
-			func(v ...any) {
-				deferLogs = append(deferLogs, "a")
-			},
-			func(v ...any) {
-				deferLogs = append(deferLogs, "b")
-			},
-		)
-		ctx = publish.ContextWithAppendDeferFunc(ctx, func(v ...any) {
-			deferLogs = append(deferLogs, "c")
-		})
-
-		publisher.UnPublish(context.Background(), &productV3)
-		require.NoError(t, listPublisher.Run(context.Background(), ProductWithoutVersion{}))
-	})
-
-	t.Run("defer panic", func(t *testing.T) {
-		ctx := context.Background()
-		deferLogs := []string{}
-		ctx = publish.ContextWithAppendDeferFunc(ctx,
-			func(v ...any) {
-				deferLogs = append(deferLogs, "end")
-			},
-			func(v ...any) {
-				if r := recover(); r != nil {
-					deferLogs = append(deferLogs, fmt.Sprintf("got panic from %v", r))
-				}
-				deferLogs = append(deferLogs, "a")
-			},
-			func(v ...any) {
-				panic("b")
-			},
-		)
-		ctx = publish.ContextWithAppendDeferFunc(ctx, func(v ...any) {
-			deferLogs = append(deferLogs, "c")
-		})
-
-		publisher.UnPublish(context.Background(), &productV3)
-		require.NoError(t, listPublisher.Run(context.Background(), ProductWithoutVersion{}))
-	})
 }
 
 func TestSchedulePublish(t *testing.T) {
@@ -470,56 +426,6 @@ func TestSchedulePublish(t *testing.T) {
 	get: %v
 	`, expected, storage.Objects["test/product/1/index.html"])
 	}
-
-	t.Run("append defer funcs", func(t *testing.T) {
-		ctx := context.Background()
-		deferLogs := []string{}
-		ctx = publish.ContextWithAppendDeferFunc(ctx,
-			func(v ...any) {
-				deferLogs = append(deferLogs, "a")
-			},
-			func(v ...any) {
-				deferLogs = append(deferLogs, "b")
-			},
-		)
-		ctx = publish.ContextWithAppendDeferFunc(ctx, func(v ...any) {
-			deferLogs = append(deferLogs, "c")
-		})
-
-		endAt := startAt.Add(time.Second * 2)
-		productV1.ScheduledEndAt = &endAt
-		require.NoError(t, db.Save(&productV1).Error)
-		require.NoError(t, schedulePublisher.Run(ctx, productV1))
-		require.Equal(t, []string{"c", "b", "a"}, deferLogs)
-	})
-
-	t.Run("defer panic", func(t *testing.T) {
-		ctx := context.Background()
-		deferLogs := []string{}
-		ctx = publish.ContextWithAppendDeferFunc(ctx,
-			func(v ...any) {
-				deferLogs = append(deferLogs, "end")
-			},
-			func(v ...any) {
-				if r := recover(); r != nil {
-					deferLogs = append(deferLogs, fmt.Sprintf("got panic from %v", r))
-				}
-				deferLogs = append(deferLogs, "a")
-			},
-			func(v ...any) {
-				panic("b")
-			},
-		)
-		ctx = publish.ContextWithAppendDeferFunc(ctx, func(v ...any) {
-			deferLogs = append(deferLogs, "c")
-		})
-
-		endAt := startAt.Add(time.Second * 2)
-		productV1.ScheduledEndAt = &endAt
-		require.NoError(t, db.Save(&productV1).Error)
-		require.NoError(t, schedulePublisher.Run(ctx, productV1))
-		require.Equal(t, []string{"c", "got panic from b", "a", "end"}, deferLogs)
-	})
 }
 
 func TestPublishContentWithoutVersionToS3(t *testing.T) {
@@ -564,6 +470,44 @@ func TestPublishContentWithoutVersionToS3(t *testing.T) {
 	assertNoVersionUpdateStatus(t, db, &product1Clone, publish.StatusOffline, product1Clone.getUrl())
 	// if delete product1 file
 	assertContentDeleted(t, product1Clone.getUrl(), storage)
+
+	{
+		// wrap publish
+		var spends time.Duration
+		warpperCalled := false
+		p.WrapPublish(func(in publish.PublishFunc) publish.PublishFunc {
+			return func(ctx context.Context, record any) error {
+				start := time.Now()
+				defer func() {
+					spends = time.Since(start)
+					warpperCalled = true
+				}()
+				return in(ctx, record)
+			}
+		})
+		require.NoError(t, p.Publish(ctx, &product1Clone))
+		require.True(t, spends > 0)
+		require.True(t, warpperCalled)
+	}
+
+	{
+		// wrap unpublish
+		var spends time.Duration
+		warpperCalled := false
+		p.WrapUnPublish(func(in publish.UnPublishFunc) publish.UnPublishFunc {
+			return func(ctx context.Context, record any) error {
+				start := time.Now()
+				defer func() {
+					spends = time.Since(start)
+					warpperCalled = true
+				}()
+				return in(ctx, record)
+			}
+		})
+		require.NoError(t, p.UnPublish(ctx, &product1Clone))
+		require.True(t, spends > 0)
+		require.True(t, warpperCalled)
+	}
 }
 
 func assertUpdateStatus(t *testing.T, db *gorm.DB, p *Product, assertStatus string, asserOnlineUrl string) {
