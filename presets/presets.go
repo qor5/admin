@@ -702,7 +702,6 @@ func (b *Builder) rightDrawer(ctx *web.EventContext, r *web.EventResponse, comp 
 			vuetifyx.VXDialog().Persistent(true).
 				Title(msgr.DialogTitleDefault).
 				Text(msgr.LeaveBeforeUnsubmit).
-				HideClose(true).
 				OkText(msgr.OK).
 				CancelText(msgr.Cancel).
 				Attr("@click:ok", "vars.confirmDrawerLeave=false;vars.presetsRightDrawer = false").
