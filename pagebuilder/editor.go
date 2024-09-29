@@ -181,16 +181,16 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 					web.Slot(
 						VBtn("").
 							Attr(":icon", "vars.$pbLeftIconName").
+							Attr("@click.stop", `() => {
+								vars.$pbLeftDrawerFolded = !vars.$pbLeftDrawerFolded
+								vars.$window.localStorage.setItem("$pbLeftDrawerFolded", vars.$pbLeftDrawerFolded ? "1": "0")
+							}`).
 							Size(SizeSmall).
 							Class("pb-drawer-btn drawer-btn-left")).
 						Name("append"),
 				).Location(LocationLeft).
 					Permanent(true).
-					Attr(":width", "vars.$pbLeftDrawerWidth").
-					Attr("@click", `() => {
-						vars.$pbLeftDrawerFolded = !vars.$pbLeftDrawerFolded
-						vars.$window.localStorage.setItem("$pbLeftDrawerFolded", vars.$pbLeftDrawerFolded ? "1": "0")
-					}`),
+					Attr(":width", "vars.$pbLeftDrawerWidth"),
 
 				VNavigationDrawer(
 					h.Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf(`({el}) => {
@@ -208,17 +208,17 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 					web.Slot(
 						VBtn("").
 							Attr(":icon", "vars.$pbRightIconName").
+							Attr("@click", `() => {
+								vars.$pbRightDrawerFolded = !vars.$pbRightDrawerFolded
+								vars.$window.localStorage.setItem("$pbRightDrawerFolded", vars.$pbRightDrawerFolded ? "1": "0")
+							}`).
 							Size(SizeSmall).
 							Class("pb-drawer-btn drawer-btn-right")).
 						Name("append"),
 					web.Portal(editContainerDrawer).Name(pageBuilderRightContentPortal),
 				).Location(LocationRight).
 					Permanent(true).
-					Attr(":width", "vars.$pbRightDrawerWidth").
-					Attr("@click", `() => {
-						vars.$pbRightDrawerFolded = !vars.$pbRightDrawerFolded
-						vars.$window.localStorage.setItem("$pbRightDrawerFolded", vars.$pbRightDrawerFolded ? "1": "0")
-					}`),
+					Attr(":width", "vars.$pbRightDrawerWidth"),
 			),
 			VMain(
 				addOverlay,
