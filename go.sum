@@ -310,8 +310,6 @@ github.com/qor/oss v0.0.0-20240729105053-88484a799a79 h1:MXQCoxxGj15XjuOSdhkLrPs
 github.com/qor/oss v0.0.0-20240729105053-88484a799a79/go.mod h1:FDxJAVwmZ1j8ITcKJExFlzkTYuUor1dBKZgNVWqEqlM=
 github.com/qor5/web v1.3.2 h1:zw796YJeDLe8vRwGR1cM+uS1ZuSkPutchBEXv2GgOhI=
 github.com/qor5/web v1.3.2/go.mod h1:LszskQJbFQDJwOeZC6j6afOiHxxyjrzz8B3zuBwfgKQ=
-github.com/qor5/web/v3 v3.0.9-0.20240925032527-e126c3282af2 h1:M19hKQryK3MM7UQdb9Mwg5y/NO1hjooH9aptPpWWX2w=
-github.com/qor5/web/v3 v3.0.9-0.20240925032527-e126c3282af2/go.mod h1:32vdHHcZb2JimlcaclW9hLUyimdXjrllZDHTh3rl6d0=
 github.com/qor5/web/v3 v3.0.9-0.20240929073942-01c436069b26 h1:vwflIdQdM4Bt5L9UC8txmJu0cAabPiNu6Pf42cw+UnE=
 github.com/qor5/web/v3 v3.0.9-0.20240929073942-01c436069b26/go.mod h1:32vdHHcZb2JimlcaclW9hLUyimdXjrllZDHTh3rl6d0=
 github.com/qor5/x/v3 v3.0.10-0.20240929090127-f9a7d00d6ad7 h1:O2n4Jxsd+/L/7a/nUsxvI0TzEbQulPvWT24R40S/xDE=

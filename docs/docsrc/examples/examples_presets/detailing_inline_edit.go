@@ -57,6 +57,32 @@ func PresetsDetailInlineEditDetails(b *presets.Builder, db *gorm.DB) (
 	return
 }
 
+func PresetsDetailSectionView(b *presets.Builder, db *gorm.DB) (
+	cust *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	err := db.AutoMigrate(&Customer{}, &CreditCard{}, &Note{})
+	if err != nil {
+		panic(err)
+	}
+	mediaBuilder := media.New(db)
+	b.DataOperator(gorm2op.DataOperator(db)).Use(mediaBuilder)
+
+	cust = b.Model(&Customer{})
+	dp = cust.Detailing("Details").Drawer(true)
+	dp.Section("Details").
+		Editing("Name").ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return v.VSwitch().Label("Prevent components covering the Edit button and making it unclickable").Color("primary").
+			Attr(web.VField(fmt.Sprintf("%s.%s", field.FormKey, "Invalid"), true)...).
+			Density(v.DensityCompact).
+			Readonly(true)
+	})
+
+	return
+}
+
 func PresetsDetailTabsSection(b *presets.Builder, db *gorm.DB) (
 	cust *presets.ModelBuilder,
 	cl *presets.ListingBuilder,
