@@ -310,10 +310,10 @@ github.com/qor/oss v0.0.0-20240729105053-88484a799a79 h1:MXQCoxxGj15XjuOSdhkLrPs
 github.com/qor/oss v0.0.0-20240729105053-88484a799a79/go.mod h1:FDxJAVwmZ1j8ITcKJExFlzkTYuUor1dBKZgNVWqEqlM=
 github.com/qor5/web v1.3.2 h1:zw796YJeDLe8vRwGR1cM+uS1ZuSkPutchBEXv2GgOhI=
 github.com/qor5/web v1.3.2/go.mod h1:LszskQJbFQDJwOeZC6j6afOiHxxyjrzz8B3zuBwfgKQ=
-github.com/qor5/web/v3 v3.0.9-0.20240929092114-88e174ff3a24 h1:3WHZACGd1Z2L4ZnekrcO0erXK2Xj9TH9Cfs1R7/HgR8=
-github.com/qor5/web/v3 v3.0.9-0.20240929092114-88e174ff3a24/go.mod h1:32vdHHcZb2JimlcaclW9hLUyimdXjrllZDHTh3rl6d0=
-github.com/qor5/x/v3 v3.0.10-0.20240929090127-f9a7d00d6ad7 h1:O2n4Jxsd+/L/7a/nUsxvI0TzEbQulPvWT24R40S/xDE=
-github.com/qor5/x/v3 v3.0.10-0.20240929090127-f9a7d00d6ad7/go.mod h1:ebg7TORMQLVRlZyDyZbAsxbQoiN4wMBVhyFHdYxv6Tw=
+github.com/qor5/web/v3 v3.0.9 h1:ozrgeRPw6KGaJdc0F9C0vrKU905DoZBV2h9ymttPypo=
+github.com/qor5/web/v3 v3.0.9/go.mod h1:32vdHHcZb2JimlcaclW9hLUyimdXjrllZDHTh3rl6d0=
+github.com/qor5/x/v3 v3.0.10 h1:StbTtGgHS3F4S+qHpoxcIA45afGLtW7RiEHiMAhz/pU=
+github.com/qor5/x/v3 v3.0.10/go.mod h1:kMR6DyRGm90zkro6v4xf+pfieESWEplueTZIiMh3M/Y=
 github.com/robfig/cron/v3 v3.0.1/go.mod h1:eQICP3HwyT7UooqI/z+Ov+PtYAWygg1TEWWzGIFLtro=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.12.0 h1:exVL4IDcn6na9z1rAb56Vxr+CgyK3nn3O+epU5NdKM8=
