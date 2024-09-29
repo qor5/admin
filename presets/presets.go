@@ -699,14 +699,13 @@ func (b *Builder) rightDrawer(ctx *web.EventContext, r *web.EventResponse, comp 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: RightDrawerPortalName,
 		Body: VNavigationDrawer(
-			VDialog(
-				VCard(
-					VCardTitle(h.Text(msgr.LeaveBeforeUnsubmit)).Class("pa-6"),
-					VCardActions(
-						VBtn(msgr.Cancel).Variant(VariantOutlined).Color(ColorSecondary).Size(SizeSmall).Attr("@click", "vars.confirmDrawerLeave=false"),
-						VBtn(msgr.OK).Variant(VariantFlat).Color(ColorPrimary).Size(SizeSmall).Attr("@click", "vars.confirmDrawerLeave=false;vars.presetsRightDrawer = false")).Class("pb-6 px-6"),
-				),
-			).Persistent(true).Class("common-dialog").Width("400").Attr("v-model", "vars.confirmDrawerLeave"),
+			vuetifyx.VXDialog().Persistent(true).
+				Title(msgr.DialogTitleDefault).
+				Text(msgr.LeaveBeforeUnsubmit).
+				OkText(msgr.OK).
+				CancelText(msgr.Cancel).
+				Attr("@click:ok", "vars.confirmDrawerLeave=false;vars.presetsRightDrawer = false").
+				Attr("v-model", "vars.confirmDrawerLeave"),
 			activeWatcher,
 			web.GlobalEvents().Attr("@keyup.esc", fmt.Sprintf(" if (!Object.values(vars.%s).some(value => value === true)) { vars.presetsRightDrawer = false} else {vars.confirmDrawerLeave=true};", VarsPresetsDataChanged)),
 			web.Portal(comp).Name(RightDrawerContentPortalName),

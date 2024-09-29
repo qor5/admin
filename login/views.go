@@ -14,6 +14,7 @@ import (
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/login"
 	. "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	. "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"golang.org/x/text/language/display"
@@ -365,36 +366,19 @@ func defaultChangePasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.Pa
 
 func changePasswordDialog(_ *login.ViewHelper, ctx *web.EventContext, showVar string, content HTMLComponent) HTMLComponent {
 	pmsgr := presets.MustGetMessages(ctx.R)
-	return web.Scope(VDialog(
-		VCard(
-			content,
-			VCardActions(
-				VSpacer(),
-				VBtn(pmsgr.Cancel).
-					Size(SizeSmall).
-					Variant(VariantOutlined).
-					Class("ml-2").
-					On("click", fmt.Sprintf("dialogLocals.%s = false", showVar)),
-
-				VBtn(pmsgr.OK).
-					Color("primary").
-					Size(SizeSmall).
-					Variant(VariantFlat).
-					Theme(ThemeLight).
-					Attr("@click", web.Plaid().EventFunc("login_changePassword").Go()),
-			).Class("pa-6"),
-		).
-			Attr("v-on-mounted", "({el}) => { dialogLocals.refCard = el; }"),
-	).MaxWidth("400px").
-		Class("common-dialog").
-		Attr("v-model", fmt.Sprintf("dialogLocals.%s", showVar)).
+	msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
+	return web.Scope(vx.VXDialog(
+		content,
+	).OkText(pmsgr.OK).
+		Title(msgr.ChangePasswordTitle).
+		HideClose(true).
 		Persistent(true).
 		NoClickAnimation(true).
-		Attr("@click.outside", fmt.Sprintf(`
-			if (dialogLocals.refCard && !dialogLocals.refCard.contains($event.target)) {
-				%s;
-			}
-		`, presets.ShowSnackbarScript(pmsgr.LeaveBeforeUnsubmit, ColorWarning))),
+		CancelText(pmsgr.Cancel).
+		Width(400).
+		Attr("@click:ok", web.Plaid().EventFunc("login_changePassword").Go()).
+		Attr("v-model", fmt.Sprintf("dialogLocals.%s", showVar)).
+		Attr("@click:outside", presets.ShowSnackbarScript(pmsgr.LeaveBeforeUnsubmit, ColorWarning)),
 	).VSlot(" { locals : dialogLocals}").Init(fmt.Sprintf(`{%s: true}`, showVar))
 }
 
@@ -402,7 +386,7 @@ func defaultChangePasswordDialogContent(vh *login.ViewHelper, _ *presets.Builder
 	return func(ctx *web.EventContext) HTMLComponent {
 		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
 		return Div(
-			VCardTitle(Text(msgr.ChangePasswordTitle)).Class("pa-6"),
+			// VCardTitle(Text(msgr.ChangePasswordTitle)).Class("pa-6"),
 			VCardText(
 				Form().Children( // just used to prevent 1password auto submit
 					Div(
@@ -416,21 +400,21 @@ func defaultChangePasswordDialogContent(vh *login.ViewHelper, _ *presets.Builder
 								Label(msgr.ChangePasswordNewLabel).
 								Attr(web.VField("password", "")...),
 							"password", ""),
-					).Class("mt-6"),
+					),
 					Div(
 						DefaultViewCommon.PasswordInput("confirm_password", msgr.ChangePasswordNewConfirmPlaceholder, "", true).
 							Label(msgr.ChangePasswordNewConfirmLabel).
 							Attr(web.VField("confirm_password", "")...),
-					).Class("mt-6"),
+					),
 					If(vh.TOTPEnabled(),
 						Div(
 							DefaultViewCommon.Input("otp", msgr.TOTPValidateCodePlaceholder, "").
 								Label(msgr.TOTPValidateCodeLabel).
 								Attr(web.VField("otp", "")...),
-						).Class("mt-6"),
+						),
 					),
 				),
-			).Class("pb-0 px-6"),
+			).Class("pa-0"),
 		)
 	}
 }
