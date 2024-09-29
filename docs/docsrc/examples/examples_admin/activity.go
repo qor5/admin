@@ -40,9 +40,11 @@ func activityExample(b *presets.Builder, db *gorm.DB, customize func(mb *presets
 	// @snippet_begin(ActivityRegisterPresetsModelsSample)
 	type WithActivityProduct struct {
 		gorm.Model
-		Title string
-		Code  string
-		Price float64
+		Title    string
+		Code     string
+		Approved bool
+		Edited   bool
+		Price    float64
 	}
 
 	err := db.AutoMigrate(&WithActivityProduct{})
@@ -54,7 +56,7 @@ func activityExample(b *presets.Builder, db *gorm.DB, customize func(mb *presets
 	defer func() { ab.RegisterModel(mb) }()
 	mb.Listing("Title", activity.ListFieldNotes, "Code", "Price")
 	dp := mb.Detailing("Content").Drawer(true)
-	dp.Section("Content").Editing("Title", "Code", "Price")
+	dp.Section("Content").Editing("Title", "Code", "Approved", "Edited", "Price")
 	dp.SidePanelFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		return ab.MustGetModelBuilder(mb).NewTimelineCompo(ctx, obj, "_side")
 	})

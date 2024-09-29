@@ -176,7 +176,7 @@ func cfTextTd(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTM
 }
 
 func cfCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	return VCheckbox().
+	return vuetifyx.VXCheckbox().
 		Attr(web.VField(field.FormKey, reflectutils.MustGet(obj, field.Name).(bool))...).
 		Label(field.Label).
 		ErrorMessages(field.Errors...).
@@ -259,11 +259,14 @@ func cfReadonlyText(obj interface{}, field *FieldContext, ctx *web.EventContext)
 	return ReadonlyText(obj, field, ctx)
 }
 
-func ReadonlyCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXReadonlyFieldBuilder {
-	return vuetifyx.VXReadonlyField().
+func ReadonlyCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXCheckboxBuilder {
+	msgr := MustGetMessages(ctx.R)
+	return vuetifyx.VXCheckbox().
 		Label(field.Label).
+		TrueLabel(msgr.CheckboxTrueLabel).
+		FalseLabel(msgr.CheckboxFalseLabel).
 		Value(reflectutils.MustGet(obj, field.Name)).
-		Checkbox(true)
+		Readonly(true)
 }
 
 func cfReadonlyCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {

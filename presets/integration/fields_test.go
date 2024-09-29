@@ -113,7 +113,7 @@ func TestFields(t *testing.T) {
 
 <vx-field label='String1' v-model='form["String1"]' v-assign='[form, {"String1":"hello"}]' :error-messages='["too small"]' :disabled='false'></vx-field>
 
-<v-checkbox v-model='form["Bool1"]' v-assign='[form, {"Bool1":true}]' label='Bool1' :disabled='false'></v-checkbox>
+<vx-checkbox v-model='form["Bool1"]' v-assign='[form, {"Bool1":true}]' label='Bool1' :disabled='false'></vx-checkbox>
 
 <div v-model='form["Time1"]' v-assign='[form, {"Time1":"2019-08-29"}]' class='time-control'></div>
 

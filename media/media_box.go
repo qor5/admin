@@ -793,7 +793,7 @@ func updateDescriptionDialog(mb *Builder) web.EventFunc {
 						).Name(VSlotAppend),
 						VTextField().Variant(FieldVariantUnderlined).
 							Class("px-6").
-							Label("Description").Attr(web.VField(ParamCurrentDescription, obj.File.Description)...),
+							Label(msgr.UpdateDescriptionTextFieldPlaceholder).Attr(web.VField(ParamCurrentDescription, obj.File.Description)...),
 						VCardActions(
 							VSpacer(),
 							VBtn(pMsgr.Cancel).Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
