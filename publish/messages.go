@@ -242,5 +242,5 @@ var Messages_ja_JP = &Messages{
 	HeaderOption:  "オプション",
 
 	HeaderDraftCount: "下書き数",
-	HeaderLive:       "公開中",
+	HeaderLive:       "公開ステータス",
 }
