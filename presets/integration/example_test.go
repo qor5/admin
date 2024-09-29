@@ -242,7 +242,7 @@ func TestExample(t *testing.T) {
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{
 				"Object.values(vars.presetsDataChanged)",
-				"v-dialog", "If you leave before submitting the form, you will lose all the unsaved input.",
+				"vx-dialog", "If you leave before submitting the form, you will lose all the unsaved input.",
 			},
 		},
 		{
@@ -257,7 +257,7 @@ func TestExample(t *testing.T) {
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{
 				"Object.values(vars.presetsDataChanged)",
-				"v-dialog", "If you leave before submitting the form, you will lose all the unsaved input.",
+				"vx-dialog", "If you leave before submitting the form, you will lose all the unsaved input.",
 			},
 		},
 	}

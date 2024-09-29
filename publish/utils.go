@@ -19,19 +19,6 @@ const (
 	listPublishJobNamePrefix     = "list-publisher"
 )
 
-type ctxKeyDeferFuncs struct{}
-
-func deferFuncsFromContext(ctx context.Context) []func(v ...any) {
-	funcs, _ := ctx.Value(ctxKeyDeferFuncs{}).([]func(v ...any))
-	return funcs
-}
-
-func ContextWithAppendDeferFunc(ctx context.Context, f ...func(v ...any)) context.Context {
-	funcs := deferFuncsFromContext(ctx)
-	funcs = append(funcs, f...)
-	return context.WithValue(ctx, ctxKeyDeferFuncs{}, funcs)
-}
-
 func RunPublisher(ctx context.Context, db *gorm.DB, storage oss.StorageInterface, publisher *Builder) {
 	{ // schedule publisher
 		scheduleP := NewSchedulePublishBuilder(publisher)
