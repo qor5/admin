@@ -60,6 +60,7 @@ type Messages struct {
 	BulkActionNoRecordsSelected                string
 	BulkActionNoAvailableRecords               string
 	BulkActionSelectedIdsProcessNoticeTemplate string
+	ConfirmDialogTitleText                     string
 	ConfirmDialogPromptText                    string
 	Language                                   string
 	Colon                                      string
@@ -199,6 +200,7 @@ var Messages_en_US = &Messages{
 	BulkActionNoRecordsSelected:  "No records selected",
 	BulkActionNoAvailableRecords: "None of the selected records can be executed with this action.",
 	BulkActionSelectedIdsProcessNoticeTemplate: "Partially selected records cannot be executed with this action: {ids}.",
+	ConfirmDialogTitleText:                     "Confirm",
 	ConfirmDialogPromptText:                    "Are you sure?",
 	Language:                                   "Language",
 	Colon:                                      ":",
@@ -284,6 +286,7 @@ var Messages_zh_CN = &Messages{
 	BulkActionNoRecordsSelected:  "没有选中的记录",
 	BulkActionNoAvailableRecords: "所有选中的记录均无法执行这个操作。",
 	BulkActionSelectedIdsProcessNoticeTemplate: "部分选中的记录无法被执行这个操作: {ids}。",
+	ConfirmDialogTitleText:                     "确认",
 	ConfirmDialogPromptText:                    "你确定吗?",
 	Language:                                   "语言",
 	Colon:                                      "：",
@@ -331,7 +334,7 @@ var Messages_ja_JP = &Messages{
 	Cancel:                       "キャンセル",
 	Clear:                        "消去する",
 	Create:                       "作成する",
-	DeleteConfirmationText:       "を削除してもよろしいですか？",
+	DeleteConfirmationText:       "削除してもよろしいですか？",
 	CreatingObjectTitleTemplate:  "新規{modelName}作成",
 	EditingObjectTitleTemplate:   "{modelName} {id}を編集する",
 	ListingObjectTitleTemplate:   "{modelName}のリスト",
@@ -369,6 +372,7 @@ var Messages_ja_JP = &Messages{
 	BulkActionNoRecordsSelected:  "レコードが選択されていません",
 	BulkActionNoAvailableRecords: "選択されたレコードのいずれも、このアクションでは実行できません。",
 	BulkActionSelectedIdsProcessNoticeTemplate: "部分的に選択されたレコードは、このアクションでは実行できません：{ids}。",
+	ConfirmDialogTitleText:                     "確認",
 	ConfirmDialogPromptText:                    "実行してもよろしいですか?",
 	Language:                                   "言語",
 	Colon:                                      ":",
