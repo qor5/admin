@@ -488,7 +488,7 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 				VCard(
 					VCardText(
 						h.Div(
-							h.Div(btn).Class("section-edit-area top-area"),
+							h.Div(btn).Class("section-edit-area top-area").Style("z-index:2;"),
 							h.Div(showComponent).
 								Class("flex-grow-1"),
 						).Class("section-content"),

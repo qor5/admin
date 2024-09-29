@@ -774,3 +774,27 @@ func TestPresetsDetailAfterTitle(t *testing.T) {
 		})
 	}
 }
+
+func TestPresetsDetailSectionView(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsDetailSectionView(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "detail without drawer after title",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				customerData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers/1?__execute_event__=presets_DetailingDrawer").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"section-edit-area", "z-index:2"},
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}
