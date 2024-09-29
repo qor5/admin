@@ -66,6 +66,8 @@ type Messages struct {
 	ButtonLabelActionsMenu                     string
 	Save                                       string
 	AddRow                                     string
+	CheckboxTrueLabel                          string
+	CheckboxFalseLabel                         string
 
 	HumanizeTimeAgo       string
 	HumanizeTimeFromNow   string
@@ -202,6 +204,8 @@ var Messages_en_US = &Messages{
 	ButtonLabelActionsMenu:                     "Actions",
 	Save:                                       "Save",
 	AddRow:                                     "Add Row",
+	CheckboxTrueLabel:                          "YES",
+	CheckboxFalseLabel:                         "NO",
 
 	HumanizeTimeAgo:       "ago",
 	HumanizeTimeFromNow:   "from now",
@@ -284,6 +288,8 @@ var Messages_zh_CN = &Messages{
 	ButtonLabelActionsMenu:                     "菜单",
 	Save:                                       "保存",
 	AddRow:                                     "新增",
+	CheckboxTrueLabel:                          "是",
+	CheckboxFalseLabel:                         "否",
 
 	HumanizeTimeAgo:       "前",
 	HumanizeTimeFromNow:   "后",
@@ -366,6 +372,8 @@ var Messages_ja_JP = &Messages{
 	ButtonLabelActionsMenu:                     "アクション",
 	Save:                                       "保存する",
 	AddRow:                                     "行の追加",
+	CheckboxTrueLabel:                          "選択済み",
+	CheckboxFalseLabel:                         "未選択",
 
 	HumanizeTimeAgo:       "前",
 	HumanizeTimeFromNow:   "今後",
