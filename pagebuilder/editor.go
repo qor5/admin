@@ -162,12 +162,12 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 		}
 		r.Body = h.Components(
 			h.Div().Style("display:none").
-			Attr("v-on-unmounted", fmt.Sprintf(`()=>{
+				Attr("v-on-unmounted", fmt.Sprintf(`()=>{
 				vars.$pbRightDrawerOnMouseLeave = null
 				vars.$pbRightDrawerOnMouseDown = null
 				vars.$pbRightDrawerOnMouseMove = null
 			}`)).
-			Attr("v-on-mounted", fmt.Sprintf(`({ref, window, computed})=>{
+				Attr("v-on-mounted", fmt.Sprintf(`({ref, window, computed})=>{
 				vars.$pbLeftDrawerFolded = window.localStorage.getItem("$pbLeftDrawerFolded") === '1'
 				vars.$pbRightDrawerFolded = window.localStorage.getItem("$pbRightDrawerFolded") === '1'
 				vars.$pbLeftDrawerWidth = computed(()=>vars.$pbLeftDrawerFolded ? 32 : 350)
@@ -272,7 +272,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 				).Location(LocationLeft).
 					Permanent(true).
 					Attr(":width", "vars.$pbLeftDrawerWidth"),
-			
+
 				VNavigationDrawer(
 					h.Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf(`({el}) => {
 							el.__handleScroll = (event) => {
@@ -289,8 +289,8 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 					web.Slot(
 						VBtn("").
 							Attr(":icon", "vars.$pbRightIconName").
-							Attr("@mousemove.stop","()=>{vars.$pbRightDrawerHighlight=false}").
-							Attr("@mousedown.stop","()=>{vars.$pbRightDrawerHighlight=false}").
+							Attr("@mousemove.stop", "()=>{vars.$pbRightDrawerHighlight=false}").
+							Attr("@mousedown.stop", "()=>{vars.$pbRightDrawerHighlight=false}").
 							Attr("@click", `() => {
 									vars.$pbRightDrawerFolded = !vars.$pbRightDrawerFolded
 									vars.$window.localStorage.setItem("$pbRightDrawerFolded", vars.$pbRightDrawerFolded ? "1": "0")
