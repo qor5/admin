@@ -161,14 +161,93 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			return
 		}
 		r.Body = h.Components(
-			h.Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf(`({window, computed})=>{
+			h.Div().Style("display:none").
+				Attr("v-on-unmounted", fmt.Sprintf(`()=>{
+				vars.$pbRightDrawerOnMouseLeave = null
+				vars.$pbRightDrawerOnMouseDown = null
+				vars.$pbRightDrawerOnMouseMove = null
+			}`)).
+				Attr("v-on-mounted", fmt.Sprintf(`({ref, window, computed})=>{
 				vars.$pbLeftDrawerFolded = window.localStorage.getItem("$pbLeftDrawerFolded") === '1'
 				vars.$pbRightDrawerFolded = window.localStorage.getItem("$pbRightDrawerFolded") === '1'
 				vars.$pbLeftDrawerWidth = computed(()=>vars.$pbLeftDrawerFolded ? 32 : 350)
-				vars.$pbRightDrawerWidth = computed(()=>vars.$pbRightDrawerFolded ? 32 : 350)
+				vars.$pbRightAdjustableWidth = +window.localStorage.getItem("$pbRightAdjustableWidth") || 350
+				vars.$pbRightDrawerWidth = computed(()=>vars.$pbRightDrawerFolded ? 32 : vars.$pbRightAdjustableWidth)
 				vars.$pbLeftIconName = computed(()=> vars.$pbLeftDrawerFolded ? "mdi-chevron-right": "mdi-chevron-left")
 				vars.$pbRightIconName = computed(()=> vars.$pbRightDrawerFolded ? "mdi-chevron-left": "mdi-chevron-right")
+				vars.$pbRightDrawerHighlight = false
+				vars.$pbRightDrawerIsDragging = false
 				vars.$window = window
+
+				const borderWidth = 5
+				const draggableEl = ref(null)
+
+				vars.$pbRightDrawerRefGet = (el) => {
+					draggableEl.value = el.parentElement?.parentElement || el.parentElement
+				}
+
+				function isOnLeftBorder(event) {
+					const rect = draggableEl.value.getBoundingClientRect()
+					const x = event.clientX - rect.left
+					// console.log(event.clientX,rect.left, event.clientX - rect.left)
+
+					return x <= borderWidth
+				}
+				
+				function onMouseMove(event) {
+					if (vars.$pbRightDrawerIsDragging) {
+						if (animationFrameId) return;
+						animationFrameId = window.requestAnimationFrame(() => {
+							const rect = draggableEl.value.getBoundingClientRect();
+							const dx = rect.right - event.clientX;
+							const minWidth = 350; 
+							const maxWidth = window.innerWidth / 2;
+
+							const newWidth = Math.min(Math.max(dx, minWidth), maxWidth);
+							if (vars.$pbRightAdjustableWidth !== newWidth) {
+								vars.$pbRightAdjustableWidth = newWidth;
+							}
+
+							animationFrameId = null;
+						});
+					}
+				}
+
+				function onMouseUp () {
+					vars.$pbRightDrawerIsDragging = false
+					vars.$pbRightDrawerHighlight = false
+					window.localStorage.setItem("$pbRightAdjustableWidth", vars.$pbRightAdjustableWidth)
+					
+					window.removeEventListener("mousemove", onMouseMove);
+      		window.removeEventListener("mouseup", onMouseUp);
+				}
+
+				vars.$pbRightDrawerOnMouseDown = (event) => {
+					if(vars.$pbRightDrawerFolded) return
+
+					if (isOnLeftBorder(event)) {
+						vars.$pbRightDrawerIsDragging = true
+						event.preventDefault()
+
+						 window.addEventListener("mousemove", onMouseMove, {passive:true, capture:true});
+      			 window.addEventListener("mouseup", onMouseUp, {capture:true});
+					}
+
+					if(vars.$pbRightDrawerIsDragging) {
+						vars.$pbRightDrawerHighlight = true
+					}
+				}
+
+				vars.$pbRightDrawerOnMouseLeave = (event) => {
+					if(vars.$pbRightDrawerIsDragging) return
+					vars.$pbRightDrawerHighlight = false
+				}
+
+				vars.$pbRightDrawerOnMouseMove = (event) => {
+					if(vars.$pbRightDrawerFolded || vars.$pbRightDrawerIsDragging) return
+
+					vars.$pbRightDrawerHighlight = isOnLeftBorder(event)
+				}
 			}`)),
 			VAppBar(
 				h.Div(
@@ -196,33 +275,39 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 
 				VNavigationDrawer(
 					h.Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf(`({el}) => {
-						el.__handleScroll = (event) => {
-							locals.__pageBuilderRightContentScrollTop = event.target.scrollTop;
-						}
-						el.parentElement.addEventListener('scroll', el.__handleScroll)
-
-						locals.__pageBuilderRightContentKeepScroll = () => {
-							el.parentElement.scrollTop = locals.__pageBuilderRightContentScrollTop;
-						}
-					}`)).Attr("v-on-unmounted", `({el}) => {
-						el.parentElement.removeEventListener('scroll', el.__handleScroll);
-					}`),
+							el.__handleScroll = (event) => {
+								locals.__pageBuilderRightContentScrollTop = event.target.scrollTop;
+							}
+							el.parentElement.addEventListener('scroll', el.__handleScroll)
+	
+							locals.__pageBuilderRightContentKeepScroll = () => {
+								el.parentElement.scrollTop = locals.__pageBuilderRightContentScrollTop;
+							}
+						}`)).Attr("v-on-unmounted", `({el}) => {
+							el.parentElement.removeEventListener('scroll', el.__handleScroll);
+						}`),
 					web.Slot(
 						VBtn("").
 							Attr(":icon", "vars.$pbRightIconName").
+							Attr("@mousemove.stop", "()=>{vars.$pbRightDrawerHighlight=false}").
+							Attr("@mousedown.stop", "()=>{vars.$pbRightDrawerHighlight=false}").
 							Attr("@click", `() => {
-								vars.$pbRightDrawerFolded = !vars.$pbRightDrawerFolded
-								vars.$window.localStorage.setItem("$pbRightDrawerFolded", vars.$pbRightDrawerFolded ? "1": "0")
-							}`).
+									vars.$pbRightDrawerFolded = !vars.$pbRightDrawerFolded
+									vars.$window.localStorage.setItem("$pbRightDrawerFolded", vars.$pbRightDrawerFolded ? "1": "0")
+								}`).
 							Size(SizeSmall).
 							Class("pb-drawer-btn drawer-btn-right")).
 						Name("append"),
 					h.Div(
 						web.Portal(editContainerDrawer).Name(pageBuilderRightContentPortal),
-					).Attr("v-show", "!vars.$pbRightDrawerFolded"),
+					).Attr("v-show", "!vars.$pbRightDrawerFolded").Attr(":ref", "vars.$pbRightDrawerRefGet"),
 				).Location(LocationRight).
 					Permanent(true).
-					Attr(":width", "vars.$pbRightDrawerWidth"),
+					Attr(":class", "['draggable-el',{'border-left-draggable-highlight': vars.$pbRightDrawerHighlight}]").
+					Attr(":width", "vars.$pbRightDrawerWidth").
+					Attr("@mousedown", "vars.$pbRightDrawerOnMouseDown").
+					Attr("@mousemove", "vars.$pbRightDrawerOnMouseMove").
+					Attr("@mouseleave", "vars.$pbRightDrawerOnMouseLeave"),
 			),
 			VMain(
 				addOverlay,
