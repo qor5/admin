@@ -177,7 +177,9 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			).Elevation(0).Density(DensityCompact).Height(96).Class("align-center border-b"),
 			h.If(!isStag,
 				VNavigationDrawer(
-					web.Portal(navigatorDrawer).Name(pageBuilderLayerContainerPortal),
+					h.Div(
+						web.Portal(navigatorDrawer).Name(pageBuilderLayerContainerPortal),
+					).Attr("v-show", "!vars.$pbLeftDrawerFolded"),
 					web.Slot(
 						VBtn("").
 							Attr(":icon", "vars.$pbLeftIconName").
@@ -215,7 +217,9 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 							Size(SizeSmall).
 							Class("pb-drawer-btn drawer-btn-right")).
 						Name("append"),
-					web.Portal(editContainerDrawer).Name(pageBuilderRightContentPortal),
+					h.Div(
+						web.Portal(editContainerDrawer).Name(pageBuilderRightContentPortal),
+					).Attr("v-show", "!vars.$pbRightDrawerFolded"),
 				).Location(LocationRight).
 					Permanent(true).
 					Attr(":width", "vars.$pbRightDrawerWidth"),
