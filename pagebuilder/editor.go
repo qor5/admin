@@ -161,6 +161,15 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			return
 		}
 		r.Body = h.Components(
+			h.Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf(`({window, computed})=>{
+				vars.$pbLeftDrawerFolded = window.localStorage.getItem("$pbLeftDrawerFolded") === '1'
+				vars.$pbRightDrawerFolded = window.localStorage.getItem("$pbRightDrawerFolded") === '1'
+				vars.$pbLeftDrawerWidth = computed(()=>vars.$pbLeftDrawerFolded ? 32 : 350)
+				vars.$pbRightDrawerWidth = computed(()=>vars.$pbRightDrawerFolded ? 32 : 350)
+				vars.$pbLeftIconName = computed(()=> vars.$pbLeftDrawerFolded ? "mdi-chevron-right": "mdi-chevron-left")
+				vars.$pbRightIconName = computed(()=> vars.$pbRightDrawerFolded ? "mdi-chevron-left": "mdi-chevron-right")
+				vars.$window = window
+			}`)),
 			VAppBar(
 				h.Div(
 					pageAppbarContent...,
@@ -169,9 +178,20 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			h.If(!isStag,
 				VNavigationDrawer(
 					web.Portal(navigatorDrawer).Name(pageBuilderLayerContainerPortal),
+					web.Slot(
+						VBtn("").
+							Attr(":icon", "vars.$pbLeftIconName").
+							Attr("@click.stop", `() => {
+								vars.$pbLeftDrawerFolded = !vars.$pbLeftDrawerFolded
+								vars.$window.localStorage.setItem("$pbLeftDrawerFolded", vars.$pbLeftDrawerFolded ? "1": "0")
+							}`).
+							Size(SizeSmall).
+							Class("pb-drawer-btn drawer-btn-left")).
+						Name("append"),
 				).Location(LocationLeft).
 					Permanent(true).
-					Width(350),
+					Attr(":width", "vars.$pbLeftDrawerWidth"),
+
 				VNavigationDrawer(
 					h.Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf(`({el}) => {
 						el.__handleScroll = (event) => {
@@ -185,10 +205,20 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 					}`)).Attr("v-on-unmounted", `({el}) => {
 						el.parentElement.removeEventListener('scroll', el.__handleScroll);
 					}`),
+					web.Slot(
+						VBtn("").
+							Attr(":icon", "vars.$pbRightIconName").
+							Attr("@click", `() => {
+								vars.$pbRightDrawerFolded = !vars.$pbRightDrawerFolded
+								vars.$window.localStorage.setItem("$pbRightDrawerFolded", vars.$pbRightDrawerFolded ? "1": "0")
+							}`).
+							Size(SizeSmall).
+							Class("pb-drawer-btn drawer-btn-right")).
+						Name("append"),
 					web.Portal(editContainerDrawer).Name(pageBuilderRightContentPortal),
 				).Location(LocationRight).
 					Permanent(true).
-					Width(350),
+					Attr(":width", "vars.$pbRightDrawerWidth"),
 			),
 			VMain(
 				addOverlay,
