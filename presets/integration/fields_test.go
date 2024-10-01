@@ -407,7 +407,7 @@ func TestFieldsBuilder(t *testing.T) {
 
 %s
 
-<v-text-field type='number' :variant='"underlined"' v-model='form["PeopleCount"]' v-assign='[form, {"PeopleCount":"0"}]' label='People Count' :disabled='false'></v-text-field>
+<vx-field type='number' v-model='form["PeopleCount"]' v-assign='[form, {"PeopleCount":"0"}]' label='People Count' :error-messages='null' :disabled='false'></vx-field>
 `,
 				addressHTML(Address{}, "Departments[0].Employees[0]."),
 				addressHTML(Address{}, "Departments[0].Employees[2]."),
@@ -513,7 +513,7 @@ func TestFieldsBuilder(t *testing.T) {
 
 %s
 
-<v-text-field type='number' :variant='"underlined"' v-model='form["PeopleCount"]' v-assign='[form, {"PeopleCount":"0"}]' label='People Count' :disabled='false'></v-text-field>
+<vx-field type='number' v-model='form["PeopleCount"]' v-assign='[form, {"PeopleCount":"0"}]' label='People Count' :error-messages='null' :disabled='false'></vx-field>
 `,
 				addressHTML(Address{}, "Departments[0].Employees[2]."),
 				addressHTML(Address{}, "Departments[0].Employees[0]."),
