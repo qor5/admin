@@ -183,6 +183,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 				const draggableEl = ref(null)
 
 				vars.$pbRightDrawerRefGet = (el) => {
+					if(!el) return
 					draggableEl.value = el.parentElement?.parentElement || el.parentElement
 				}
 

@@ -107,9 +107,9 @@ func TestFields(t *testing.T) {
 						ctx)
 			},
 			expect: `
-<v-text-field type='number' :variant='"underlined"' v-model='form["Int1"]' v-assign='[form, {"Int1":"2"}]' label='整数1' :disabled='false'></v-text-field>
+<vx-field type='number' v-model='form["Int1"]' v-assign='[form, {"Int1":"2"}]' label='整数1' :error-messages='null' :disabled='false'></vx-field>
 
-<v-text-field type='number' :variant='"underlined"' v-model='form["Float1"]' v-assign='[form, {"Float1":"23.1"}]' label='Float1' :disabled='false'></v-text-field>
+<vx-field type='number' v-model='form["Float1"]' v-assign='[form, {"Float1":"23.1"}]' label='Float1' :error-messages='null' :disabled='false'></vx-field>
 
 <vx-field label='String1' v-model='form["String1"]' v-assign='[form, {"String1":"hello"}]' :error-messages='["too small"]' :disabled='false'></vx-field>
 
@@ -131,9 +131,9 @@ func TestFields(t *testing.T) {
 					ToComponent(mb.Info(), user, ctx)
 			},
 			expect: `
-<v-text-field type='number' :variant='"underlined"' v-model='form["Int1"]' v-assign='[form, {"Int1":"2"}]' label='Int1' :disabled='false'></v-text-field>
+<vx-field type='number' v-model='form["Int1"]' v-assign='[form, {"Int1":"2"}]' label='Int1' :error-messages='null' :disabled='false'></vx-field>
 
-<v-text-field type='number' :variant='"underlined"' v-model='form["Float1"]' v-assign='[form, {"Float1":"23.1"}]' label='Float1' :disabled='false'></v-text-field>
+<vx-field type='number' v-model='form["Float1"]' v-assign='[form, {"Float1":"23.1"}]' label='Float1' :error-messages='null' :disabled='false'></vx-field>
 
 <vx-field label='String1' v-model='form["String1"]' v-assign='[form, {"String1":"hello"}]' :error-messages='["too small"]' :disabled='false'></vx-field>
 
@@ -407,7 +407,7 @@ func TestFieldsBuilder(t *testing.T) {
 
 %s
 
-<v-text-field type='number' :variant='"underlined"' v-model='form["PeopleCount"]' v-assign='[form, {"PeopleCount":"0"}]' label='People Count' :disabled='false'></v-text-field>
+<vx-field type='number' v-model='form["PeopleCount"]' v-assign='[form, {"PeopleCount":"0"}]' label='People Count' :error-messages='null' :disabled='false'></vx-field>
 `,
 				addressHTML(Address{}, "Departments[0].Employees[0]."),
 				addressHTML(Address{}, "Departments[0].Employees[2]."),
@@ -513,7 +513,7 @@ func TestFieldsBuilder(t *testing.T) {
 
 %s
 
-<v-text-field type='number' :variant='"underlined"' v-model='form["PeopleCount"]' v-assign='[form, {"PeopleCount":"0"}]' label='People Count' :disabled='false'></v-text-field>
+<vx-field type='number' v-model='form["PeopleCount"]' v-assign='[form, {"PeopleCount":"0"}]' label='People Count' :error-messages='null' :disabled='false'></vx-field>
 `,
 				addressHTML(Address{}, "Departments[0].Employees[2]."),
 				addressHTML(Address{}, "Departments[0].Employees[0]."),

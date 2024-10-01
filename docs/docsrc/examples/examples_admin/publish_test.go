@@ -264,7 +264,7 @@ func TestPublish(t *testing.T) {
 				publishData.TruncatePut(dbr)
 				return httptest.NewRequest("GET", "/with-publish-products-version-list-dialog?__execute_event__=publish_eventRenameVersionDialog&id=1_2024-05-20-v01&overlay=dialog&version_name=2024-05-20-v01", nil)
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Rename Version", "2024-05-20-v01", "Cancel", "OK"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Rename Version", "Cancel", "OK", "2024-05-20-v01"},
 		},
 	}
 
