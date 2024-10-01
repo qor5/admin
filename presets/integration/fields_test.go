@@ -107,9 +107,9 @@ func TestFields(t *testing.T) {
 						ctx)
 			},
 			expect: `
-<v-text-field type='number' :variant='"underlined"' v-model='form["Int1"]' v-assign='[form, {"Int1":"2"}]' label='整数1' :disabled='false'></v-text-field>
+<vx-field type='number' v-model='form["Int1"]' v-assign='[form, {"Int1":"2"}]' label='整数1' :error-messages='null' :disabled='false'></vx-field>
 
-<v-text-field type='number' :variant='"underlined"' v-model='form["Float1"]' v-assign='[form, {"Float1":"23.1"}]' label='Float1' :disabled='false'></v-text-field>
+<vx-field type='number' v-model='form["Float1"]' v-assign='[form, {"Float1":"23.1"}]' label='Float1' :error-messages='null' :disabled='false'></vx-field>
 
 <vx-field label='String1' v-model='form["String1"]' v-assign='[form, {"String1":"hello"}]' :error-messages='["too small"]' :disabled='false'></vx-field>
 
@@ -131,9 +131,9 @@ func TestFields(t *testing.T) {
 					ToComponent(mb.Info(), user, ctx)
 			},
 			expect: `
-<v-text-field type='number' :variant='"underlined"' v-model='form["Int1"]' v-assign='[form, {"Int1":"2"}]' label='Int1' :disabled='false'></v-text-field>
+<vx-field type='number' v-model='form["Int1"]' v-assign='[form, {"Int1":"2"}]' label='Int1' :error-messages='null' :disabled='false'></vx-field>
 
-<v-text-field type='number' :variant='"underlined"' v-model='form["Float1"]' v-assign='[form, {"Float1":"23.1"}]' label='Float1' :disabled='false'></v-text-field>
+<vx-field type='number' v-model='form["Float1"]' v-assign='[form, {"Float1":"23.1"}]' label='Float1' :error-messages='null' :disabled='false'></vx-field>
 
 <vx-field label='String1' v-model='form["String1"]' v-assign='[form, {"String1":"hello"}]' :error-messages='["too small"]' :disabled='false'></vx-field>
 
