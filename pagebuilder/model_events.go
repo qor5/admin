@@ -136,7 +136,8 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 										VListItemTitle(
 											VListItem(
 												web.Scope(
-													VTextField().HideDetails(true).Density(DensityCompact).Color(ColorPrimary).Autofocus(true).Variant(FieldVariantOutlined).
+													vx.VXField().Autofocus(true).
+														Attr(":hide-details", "true").
 														Attr("v-model", fmt.Sprintf("form.%s", paramsDisplayName)).
 														Attr("v-if", "element.editShow").
 														Attr("@blur", "element.editShow=false;"+renameEvent).
@@ -331,27 +332,14 @@ func (b *ModelBuilder) deleteContainerConfirmation(ctx *web.EventContext) (r web
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: presets.DeleteConfirmPortalName,
 		Body: web.Scope(
-			VDialog(
-				VCard(
-					VCardTitle(h.Text(msgr.AreWantDeleteContainer(containerName))),
-					VCardActions(
-						VSpacer(),
-						VBtn(pMsgr.Cancel).
-							Variant(VariantFlat).
-							Class("ml-2").
-							Attr("@click", "locals.deleteConfirmation = false"),
-
-						VBtn(pMsgr.Delete).
-							Color(ColorPrimary).
-							Variant(VariantFlat).
-							Theme(ThemeDark).
-							Attr("@click", web.Plaid().
-								EventFunc(DeleteContainerEvent).
-								Query(paramContainerID, containerID).
-								Go()),
-					),
-				),
-			).MaxWidth("600px").
+			vx.VXDialog(h.Text(msgr.AreWantDeleteContainer(containerName))).
+				Title(msgr.ModalTitleConfirm).
+				CancelText(pMsgr.Cancel).
+				OkText(pMsgr.Delete).
+				Attr("@click:ok", web.Plaid().
+				EventFunc(DeleteContainerEvent).
+				Query(paramContainerID, containerID).
+				Go()).
 				Attr("v-model", "locals.deleteConfirmation"),
 		).VSlot(`{ locals  }`).Init(`{deleteConfirmation: true}`),
 	})

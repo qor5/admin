@@ -8,6 +8,7 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"github.com/theplant/relay"
@@ -363,21 +364,17 @@ func (b *TemplateBuilder) searchComponent(ctx *web.EventContext) h.HTMLComponent
 		Query(presets.ParamOverlay, ctx.Param(presets.ParamOverlay)).
 		Query(ParamSearchKeyword, web.Var("vars.searchMsg")).Go()
 
-	return VTextField().
-		Density(DensityCompact).
-		Variant(FieldVariantOutlined).
-		Label(msgr.Search).
-		Flat(true).
-		Clearable(true).
+	return vx.VXField().
+		Placeholder(msgr.Search).
 		HideDetails(true).
-		SingleLine(true).
+		Attr(":clearable", "true").
 		Attr("v-model", "vars.searchMsg").
 		Attr(web.VAssign("vars", fmt.Sprintf(`{searchMsg:%q}`, ctx.Param(ParamSearchKeyword)))...).
 		Attr("@click:clear", `vars.searchMsg="";`+clickEvent).
 		Attr("@keyup.enter", clickEvent).
 		Children(
 			web.Slot(VIcon("mdi-magnify").Attr("@click", clickEvent)).Name("append-inner"),
-		).MaxWidth(320)
+		).Width(320)
 }
 
 func (b *TemplateBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponent {

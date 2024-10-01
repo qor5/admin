@@ -240,15 +240,11 @@ func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 		)
 	}
 	return web.Scope().VSlot("{ locals: xlocals }").Init(fmt.Sprintf("{ keyword: %q }", c.Keyword)).Children(
-		VTextField().
+		vx.VXField().
 			Id(c.textFieldSearchID()).
-			Density(DensityCompact).
-			Variant(FieldVariantOutlined).
-			Label(msgr.Search).
-			Flat(true).
-			Clearable(true).
+			Placeholder(msgr.Search).
 			HideDetails(true).
-			SingleLine(true).
+			Attr(":clearable","true").
 			Attr("v-model", "xlocals.keyword").
 			Attr("@blur", fmt.Sprintf("xlocals.keyword = %q", c.Keyword)).
 			Attr("@keyup.enter", newReloadAction()).

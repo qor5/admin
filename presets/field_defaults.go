@@ -12,7 +12,6 @@ import (
 	h "github.com/theplant/htmlgo"
 
 	"github.com/qor5/x/v3/i18n"
-	. "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/qor5/x/v3/ui/vuetifyx"
 )
 
@@ -184,9 +183,8 @@ func cfCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) h.H
 }
 
 func cfNumber(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	return VTextField().
+	return vuetifyx.VXField().
 		Type("number").
-		Variant(FieldVariantUnderlined).
 		Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
 		Label(field.Label).
 		ErrorMessages(field.Errors...).
