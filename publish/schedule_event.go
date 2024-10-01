@@ -55,9 +55,9 @@ func scheduleDialog(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 		cmsgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 		maxWidthStr := lo.If(displayStartAtPicker, "480").Else("280")
 		maxWidth, err := strconv.Atoi(maxWidthStr)
-    if err != nil {
-        panic("convert string to int error")
-    } 
+		if err != nil {
+			panic("convert string to int error")
+		}
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: PortalSchedulePublishDialog,
@@ -84,7 +84,7 @@ func scheduleDialog(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 					Attr("@click:ok", fmt.Sprintf(`({isLoading}) => {
 						isLoading.value = isFetching;
 						%s
-					}`,web.Plaid().EventFunc(eventSchedulePublish).Query(presets.ParamID, slug).URL(mb.Info().ListingHref()).Go())).
+					}`, web.Plaid().EventFunc(eventSchedulePublish).Query(presets.ParamID, slug).URL(mb.Info().ListingHref()).Go())).
 					MaxWidth(maxWidth),
 			),
 		})

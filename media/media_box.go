@@ -266,7 +266,7 @@ func deleteConfirmation(mb *Builder) web.EventFunc {
 		}
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: deleteConfirmPortalName(field),
-			Body: 	vx.VXDialog(
+			Body: vx.VXDialog(
 				h.Span(message),
 			).
 				Title(pMsgr.DialogTitleDefault).
@@ -275,9 +275,9 @@ func deleteConfirmation(mb *Builder) web.EventFunc {
 				CancelText(pMsgr.Cancel).
 				OkText(pMsgr.Delete).
 				Attr("@click:ok", web.Plaid().
-				EventFunc(DoDeleteEvent).
-				Queries(ctx.Queries()).
-				Go()),
+					EventFunc(DoDeleteEvent).
+					Queries(ctx.Queries()).
+					Go()),
 		})
 
 		r.RunScript = "setTimeout(function(){ vars.mediaLibrary_deleteConfirmation = true }, 100)"
@@ -785,10 +785,10 @@ func moveToFolderDialog(mb *Builder) web.EventFunc {
 					CancelText(pMsgr.Cancel).
 					OkText(pMsgr.OK).
 					Attr("@click:ok", web.Plaid().
-					EventFunc(MoveToFolderEvent).
-					Queries(ctx.Queries()).
-					Query(ParamParentID, web.Var(fmt.Sprintf("form.%s", ParamSelectFolderID))).
-					Go()),
+						EventFunc(MoveToFolderEvent).
+						Queries(ctx.Queries()).
+						Query(ParamParentID, web.Var(fmt.Sprintf("form.%s", ParamSelectFolderID))).
+						Go()),
 			).VSlot("{locals:dialogLocals,form}").Init("{show:true}").FormInit(fmt.Sprintf("{%s:0}", ParamSelectFolderID)),
 		})
 		return

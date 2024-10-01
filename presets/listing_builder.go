@@ -385,14 +385,14 @@ func (b *ListingBuilder) deleteConfirmation(evCtx *web.EventContext) (r web.Even
 			vx.VXDialog(
 				h.Span(msgr.DeleteConfirmationText),
 			).Title(msgr.DialogTitleDefault).
-			CancelText(msgr.Cancel).
-			OkText(msgr.Delete).
-			Attr("@click:ok", web.Plaid().
-			EventFunc(actions.DoDelete).
-			Queries(evCtx.Queries()).
-			URL(b.mb.Info().ListingHref()).
-			Go()).
-			Attr("v-model", "locals.deleteConfirmation"),
+				CancelText(msgr.Cancel).
+				OkText(msgr.Delete).
+				Attr("@click:ok", web.Plaid().
+					EventFunc(actions.DoDelete).
+					Queries(evCtx.Queries()).
+					URL(b.mb.Info().ListingHref()).
+					Go()).
+				Attr("v-model", "locals.deleteConfirmation"),
 		),
 	})
 	return

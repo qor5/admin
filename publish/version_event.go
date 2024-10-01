@@ -106,13 +106,13 @@ func renameVersionDialog(_ *presets.ModelBuilder) web.EventFunc {
 				vx.VXDialog(
 					vx.VXField().Attr(web.VField("VersionName", versionName)...).HideDetails(true),
 				).Title(msgr.RenameVersion).
-				CancelText(utilMsgr.Cancel).
-				OkText(utilMsgr.OK).
-				Attr("@click:ok", web.Plaid().
-					URL(ctx.R.URL.Path).
-					EventFunc(eventRenameVersion).
-					Queries(ctx.Queries()).Go()).
-				Attr("v-model", "locals.renameVersionDialog"),
+					CancelText(utilMsgr.Cancel).
+					OkText(utilMsgr.OK).
+					Attr("@click:ok", web.Plaid().
+						URL(ctx.R.URL.Path).
+						EventFunc(eventRenameVersion).
+						Queries(ctx.Queries()).Go()).
+					Attr("v-model", "locals.renameVersionDialog"),
 
 				// vx.VXDialog(
 				// 	v.VCard(

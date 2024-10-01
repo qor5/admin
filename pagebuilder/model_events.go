@@ -337,9 +337,9 @@ func (b *ModelBuilder) deleteContainerConfirmation(ctx *web.EventContext) (r web
 				CancelText(pMsgr.Cancel).
 				OkText(pMsgr.Delete).
 				Attr("@click:ok", web.Plaid().
-				EventFunc(DeleteContainerEvent).
-				Query(paramContainerID, containerID).
-				Go()).
+					EventFunc(DeleteContainerEvent).
+					Query(paramContainerID, containerID).
+					Go()).
 				Attr("v-model", "locals.deleteConfirmation"),
 		).VSlot(`{ locals  }`).Init(`{deleteConfirmation: true}`),
 	})

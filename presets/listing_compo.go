@@ -244,7 +244,7 @@ func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 			Id(c.textFieldSearchID()).
 			Placeholder(msgr.Search).
 			HideDetails(true).
-			Attr(":clearable","true").
+			Attr(":clearable", "true").
 			Attr("v-model", "xlocals.keyword").
 			Attr("@blur", fmt.Sprintf("xlocals.keyword = %q", c.Keyword)).
 			Attr("@keyup.enter", newReloadAction()).
