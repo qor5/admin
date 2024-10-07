@@ -83,8 +83,9 @@ type (
 )
 
 type SearchResult struct {
-	PageInfo relay.PageInfo
-	Nodes    interface{}
+	PageInfo   relay.PageInfo
+	TotalCount *int
+	Nodes      interface{}
 }
 
 type SlugDecoder interface {

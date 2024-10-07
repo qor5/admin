@@ -891,10 +891,9 @@ func sharedContainerSearcher(db *gorm.DB, b *ModelBuilder) presets.SearchFunc {
 		}
 
 		return &presets.SearchResult{
-			PageInfo: relay.PageInfo{
-				TotalCount: totalCount,
-			},
-			Nodes: rtNodes.Interface(),
+			PageInfo:   relay.PageInfo{},
+			TotalCount: &totalCount,
+			Nodes:      rtNodes.Interface(),
 		}, nil
 	}
 }

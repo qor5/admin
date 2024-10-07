@@ -38,7 +38,7 @@ require (
 	github.com/theplant/gofixtures v1.1.3
 	github.com/theplant/htmlgo v1.0.3
 	github.com/theplant/osenv v0.0.2
-	github.com/theplant/relay v0.1.1
+	github.com/theplant/relay v0.2.0
 	github.com/theplant/sliceutils v0.0.0-20200406042209-89153d988eb1
 	github.com/theplant/testenv v0.0.1
 	github.com/theplant/testingutils v0.0.2
@@ -49,7 +49,7 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
-	golang.org/x/text v0.18.0
+	golang.org/x/text v0.19.0
 	gorm.io/driver/postgres v1.5.9
 	gorm.io/driver/sqlite v1.5.6
 	gorm.io/gorm v1.25.11
