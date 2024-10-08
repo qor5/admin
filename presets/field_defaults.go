@@ -264,7 +264,6 @@ func ReadonlyCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContex
 		TrueLabel(msgr.CheckboxTrueLabel).
 		FalseLabel(msgr.CheckboxFalseLabel).
 		TrueIcon("mdi-circle-outline").
-		FalseIcon("mdi-circle-outline").
 		FalseIcon("mdi-window-close").
 		HideDetails(true).
 		TrueIconColor("primary").
