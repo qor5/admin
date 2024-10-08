@@ -50,7 +50,7 @@ func (op *DataOperatorBuilder) Search(evCtx *web.EventContext, params *presets.S
 	}
 
 	for _, cond := range params.SQLConditions {
-		wh = wh.Where(strings.Replace(cond.Query, " ILIKE ", " "+ilike+" ", -1), cond.Args...)
+		wh = wh.Where(strings.ReplaceAll(cond.Query, " ILIKE ", " "+ilike+" "), cond.Args...)
 	}
 
 	var p relay.Pagination[any]
