@@ -260,10 +260,14 @@ func cfReadonlyText(obj interface{}, field *FieldContext, ctx *web.EventContext)
 func ReadonlyCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXCheckboxBuilder {
 	msgr := MustGetMessages(ctx.R)
 	return vuetifyx.VXCheckbox().
-		Label(field.Label).
+		Title(field.Label).
 		TrueLabel(msgr.CheckboxTrueLabel).
 		FalseLabel(msgr.CheckboxFalseLabel).
-		Value(reflectutils.MustGet(obj, field.Name)).
+		TrueIcon("mdi-circle-outline").
+		FalseIcon("mdi-window-close").
+		HideDetails(true).
+		TrueIconColor("primary").
+		ModelValue(reflectutils.MustGet(obj, field.Name)).
 		Readonly(true)
 }
 
