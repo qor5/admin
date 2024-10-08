@@ -12,15 +12,15 @@ import (
 	"gorm.io/gorm"
 )
 
-func OffsetBasedPagination(disableTotalCount bool, cursorMiddlewares ...relay.CursorMiddleware[any]) presets.RelayPagination {
-	return relayPagination(gormrelay.NewOffsetAdapter[any], disableTotalCount, cursorMiddlewares...)
+func OffsetBasedPagination(skipTotalCount bool, cursorMiddlewares ...relay.CursorMiddleware[any]) presets.RelayPagination {
+	return relayPagination(gormrelay.NewOffsetAdapter[any], skipTotalCount, cursorMiddlewares...)
 }
 
-func KeysetBasedPagination(disableTotalCount bool, cursorMiddlewares ...relay.CursorMiddleware[any]) presets.RelayPagination {
-	return relayPagination(gormrelay.NewKeysetAdapter[any], disableTotalCount, cursorMiddlewares...)
+func KeysetBasedPagination(skipTotalCount bool, cursorMiddlewares ...relay.CursorMiddleware[any]) presets.RelayPagination {
+	return relayPagination(gormrelay.NewKeysetAdapter[any], skipTotalCount, cursorMiddlewares...)
 }
 
-func relayPagination(f func(db *gorm.DB) relay.ApplyCursorsFunc[any], disableTotalCount bool, cursorMiddlewares ...relay.CursorMiddleware[any]) presets.RelayPagination {
+func relayPagination(f func(db *gorm.DB) relay.ApplyCursorsFunc[any], skipTotalCount bool, cursorMiddlewares ...relay.CursorMiddleware[any]) presets.RelayPagination {
 	p := relay.New(
 		func(ctx context.Context, req *relay.ApplyCursorsRequest) (*relay.ApplyCursorsResponse[any], error) {
 			db, ok := ctx.Value(ctxKeyDB{}).(*gorm.DB)
@@ -35,7 +35,7 @@ func relayPagination(f func(db *gorm.DB) relay.ApplyCursorsFunc[any], disableTot
 	return func(ctx *web.EventContext) (relay.Pagination[any], error) {
 		return relay.PaginationFunc[any](func(ctx context.Context, req *relay.PaginateRequest[any]) (*relay.PaginateResponse[any], error) {
 			ctx = relay.WithSkipEdges(ctx)
-			if disableTotalCount {
+			if skipTotalCount {
 				ctx = relay.WithSkipTotalCount(ctx)
 			}
 			return p.Paginate(ctx, req)
