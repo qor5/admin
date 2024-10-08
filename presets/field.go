@@ -328,8 +328,9 @@ func CloneFieldsLayout(layout []interface{}) (r []interface{}) {
 }
 
 type FieldsSection struct {
-	Title string
-	Rows  [][]string
+	Title     string
+	IsSection bool
+	Rows      [][]string
 }
 
 func NewFieldsBuilder() *FieldsBuilder {
@@ -817,12 +818,30 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 				if t.Title != "" {
 					titleComp = h.H2(i18n.PT(ctx.R, ModelsI18nModuleKey, info.Label(), t.Title)).Class("section-title")
 				}
-				comp = h.Div(
-					h.Div(titleComp).Class("section-title-wrap"),
-					h.Div(
-						v.VCard(rowsComp...).Variant(v.VariantFlat).Class("mx-0 mt-1  px-4 pb-0 pt-4 section-body"),
-					).Class("section-body border-b"),
-				).Class("section-wrap")
+				fieldSection := iv.(*FieldsSection)
+				if !fieldSection.IsSection {
+					comp = h.Div(
+						h.Div(titleComp).Class("section-title-wrap"),
+						h.Div(
+							v.VCard(rowsComp...).Variant(v.VariantFlat).Class("mx-0 mt-1  px-4 pb-0 pt-4 section-body"),
+						).Class("section-body border-b"),
+					).Class("section-wrap")
+				} else {
+					comp = h.Div(
+						h.Div(titleComp).Class("section-title-wrap"),
+						h.Div(
+							v.VCard(
+								v.VCardText(
+									h.Div(
+										// h.Div(btn).Class("section-edit-area top-area").Style("z-index:2;"),
+										h.Div(rowsComp...).
+											Class("flex-grow-1"),
+									).Class("section-content"),
+								),
+							).Variant(v.VariantFlat),
+						).Class("section-body"),
+					).Class("section-wrap with-border-b")
+				}
 			}
 		default:
 			panic("unknown fields layout, must be string/[]string/*FieldsSection")

@@ -388,7 +388,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 			VMain(
 				VSheet(
 					VCard(asideContent).Variant(VariantFlat),
-				).Class("pa-2"),
+				).Class("pa-2 detailing-page-wrap"),
 			),
 		),
 	).VSlot("{ form }")
