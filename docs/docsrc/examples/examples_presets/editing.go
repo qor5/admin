@@ -289,7 +289,6 @@ func PresetsEditingSetter(b *presets.Builder, db *gorm.DB) (
 	return
 }
 
-
 func PresetsEditingSection(b *presets.Builder, db *gorm.DB) (
 	cust *presets.ModelBuilder,
 	cl *presets.ListingBuilder,
