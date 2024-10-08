@@ -21,6 +21,7 @@ import (
 	"github.com/qor5/x/v3/ui/cropper"
 	"github.com/qor5/x/v3/ui/fileicons"
 	. "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
@@ -265,29 +266,18 @@ func deleteConfirmation(mb *Builder) web.EventFunc {
 		}
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: deleteConfirmPortalName(field),
-			Body: VDialog(
-				VCard(
-					VCardTitle(h.Text(message)),
-					VCardActions(
-						VSpacer(),
-						VBtn(pMsgr.Cancel).
-							Variant(VariantFlat).
-							Class("ml-2").
-							On("click", "vars.mediaLibrary_deleteConfirmation = false"),
-
-						VBtn(pMsgr.Delete).
-							Color(ColorPrimary).
-							Variant(VariantFlat).
-							Theme(ThemeDark).
-							Attr("@click", web.Plaid().
-								EventFunc(DoDeleteEvent).
-								Queries(ctx.Queries()).
-								Go()),
-					),
-				),
-			).MaxWidth("600px").
+			Body: vx.VXDialog(
+				h.Span(message),
+			).
+				Title(pMsgr.DialogTitleDefault).
 				Attr("v-model", "vars.mediaLibrary_deleteConfirmation").
-				Attr(web.VAssign("vars", `{mediaLibrary_deleteConfirmation: false}`)...),
+				Attr(web.VAssign("vars", `{mediaLibrary_deleteConfirmation: false}`)...).
+				CancelText(pMsgr.Cancel).
+				OkText(pMsgr.Delete).
+				Attr("@click:ok", web.Plaid().
+					EventFunc(DoDeleteEvent).
+					Queries(ctx.Queries()).
+					Go()),
 		})
 
 		r.RunScript = "setTimeout(function(){ vars.mediaLibrary_deleteConfirmation = true }, 100)"
@@ -427,12 +417,9 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 							readonly,
 							h.Span(value),
 						).Else(
-							VTextField().
+							vx.VXField().
 								Attr(web.VField(fieldName, value)...).
 								Placeholder(msgr.DescriptionForAccessibility).
-								Density(DensityCompact).
-								HideDetails(true).
-								Variant(VariantOutlined).
 								Disabled(disabled),
 						),
 					).Cols(12).Class("pl-0 pt-0"),
@@ -706,30 +693,16 @@ func renameDialog(mb *Builder) web.EventFunc {
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: renameDialogPortalName,
 			Body: web.Scope(
-				VDialog(
-					VCard(
-						web.Slot(h.Text(msgr.Rename)).Name("title"),
-						web.Slot(
-							VSpacer(),
-							VBtn("").Icon("mdi-close").
-								Variant(VariantText).Attr("@click", "dialogLocals.show=false"),
-						).Name(VSlotAppend),
-						VTextField().Variant(FieldVariantUnderlined).
-							Class("px-6").
-							Label(msgr.Name).Attr(web.VField(ParamName, fileName)...),
-						VCardActions(
-							VSpacer(),
-							VBtn(pMsgr.Cancel).Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
-							VBtn(pMsgr.OK).Color(ColorPrimary).
-								Attr(":disabled", fmt.Sprintf("!form.%s", ParamName)).
-								Attr("@click",
-									web.Plaid().EventFunc(RenameEvent).
-										Queries(ctx.Queries()).
-										Go(),
-								),
-						),
-					),
-				).MaxWidth(300).Attr("v-model", "dialogLocals.show"),
+				vx.VXDialog(
+					vx.VXField().Label(msgr.Name).Attr(web.VField(ParamName, fileName)...),
+				).
+					Attr("v-model", "dialogLocals.show").
+					Title(msgr.Rename).
+					CancelText(pMsgr.Cancel).
+					Width(300).
+					OkText(pMsgr.OK).
+					Attr(":disable-ok", fmt.Sprintf("!form.%s", ParamName)).
+					Attr("@click:ok", web.Plaid().EventFunc(RenameEvent).Queries(ctx.Queries()).Go()),
 			).VSlot("{locals:dialogLocals}").Init("{show:true}"),
 		})
 		return
@@ -746,28 +719,15 @@ func newFolderDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: newFolderDialogPortalName,
 		Body: web.Scope(
-			VDialog(
-				VCard(
-					web.Slot(h.Text(msgr.NewFolder)).Name("title"),
-					web.Slot(
-						VSpacer(),
-						VBtn("").Icon("mdi-close").
-							Variant(VariantText).Attr("@click", "dialogLocals.show=false"),
-					).Name(VSlotAppend),
-					VTextField().Variant(FieldVariantUnderlined).
-						Class("px-6").
-						Label(msgr.Name).Attr(web.VField(ParamName, ctx.Param(ParamName))...),
-					VCardActions(
-						VSpacer(),
-						VBtn(pMsgr.Cancel).Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
-						VBtn(pMsgr.OK).Color(ColorPrimary).Attr("@click",
-							web.Plaid().EventFunc(CreateFolderEvent).
-								Queries(ctx.Queries()).
-								Go(),
-						),
-					),
-				),
-			).MaxWidth(300).Attr("v-model", "dialogLocals.show"),
+			vx.VXDialog(
+				vx.VXField().Label(msgr.Name).Attr(web.VField(ParamName, ctx.Param(ParamName))...),
+			).
+				Attr("v-model", "dialogLocals.show").
+				Title(msgr.NewFolder).
+				Width(300).
+				CancelText(pMsgr.Cancel).
+				OkText(pMsgr.OK).
+				Attr("@click:ok", web.Plaid().EventFunc(CreateFolderEvent).Queries(ctx.Queries()).Go()),
 		).VSlot("{locals:dialogLocals}").Init("{show:true}"),
 	})
 	return
@@ -783,28 +743,15 @@ func updateDescriptionDialog(mb *Builder) web.EventFunc {
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: updateDescriptionDialogPortalName,
 			Body: web.Scope(
-				VDialog(
-					VCard(
-						web.Slot(h.Text(msgr.UpdateDescription)).Name("title"),
-						web.Slot(
-							VSpacer(),
-							VBtn("").Icon("mdi-close").
-								Variant(VariantText).Attr("@click", "dialogLocals.show=false"),
-						).Name(VSlotAppend),
-						VTextField().Variant(FieldVariantUnderlined).
-							Class("px-6").
-							Label("Description").Attr(web.VField(ParamCurrentDescription, obj.File.Description)...),
-						VCardActions(
-							VSpacer(),
-							VBtn(pMsgr.Cancel).Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
-							VBtn(pMsgr.OK).Color(ColorPrimary).Attr("@click",
-								web.Plaid().EventFunc(UpdateDescriptionEvent).
-									Queries(ctx.Queries()).
-									Go(),
-							),
-						),
-					),
-				).MaxWidth(300).Attr("v-model", "dialogLocals.show"),
+				vx.VXDialog(
+					vx.VXField().Label(msgr.UpdateDescriptionTextFieldPlaceholder).Attr(web.VField(ParamCurrentDescription, obj.File.Description)...),
+				).
+					Attr("v-model", "dialogLocals.show").
+					Title(msgr.UpdateDescription).
+					Width(300).
+					CancelText(pMsgr.Cancel).
+					OkText(pMsgr.OK).
+					Attr("@click:ok", web.Plaid().EventFunc(UpdateDescriptionEvent).Queries(ctx.Queries()).Go()),
 			).VSlot("{locals:dialogLocals}").Init("{show:true}"),
 		})
 		return
@@ -821,34 +768,27 @@ func moveToFolderDialog(mb *Builder) web.EventFunc {
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: moveToFolderDialogPortalName,
 			Body: web.Scope(
-				VDialog(
-					VCard(
-						web.Slot(h.Text(msgr.ChooseFolder)).Name("title"),
-						web.Slot(
-							VSpacer(),
-							VBtn("").Icon("mdi-close").
-								Variant(VariantText).Attr("@click", "dialogLocals.show=false"),
-						).Name(VSlotAppend),
-						VCardItem(
-							VCard(
-								VList(
-									h.Components(folderGroupsComponents(db, ctx, -1)...),
-								).ActiveColor(ColorPrimary).BgColor(ColorGreyLighten5),
-							).Color(ColorGreyLighten5).Height(340).Class("overflow-auto"),
-						),
-
-						VCardActions(
-							VSpacer(),
-							VBtn(pMsgr.Cancel).Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
-							VBtn(pMsgr.OK).Color(ColorPrimary).
-								Attr("@click", web.Plaid().
-									EventFunc(MoveToFolderEvent).
-									Queries(ctx.Queries()).
-									Query(ParamParentID, web.Var(fmt.Sprintf("form.%s", ParamSelectFolderID))).
-									Go()),
-						),
-					).Height(571).Width(658).Class("pa-6"),
-				).MaxWidth(658).Attr("v-model", "dialogLocals.show"),
+				vx.VXDialog(
+					VCardItem(
+						VCard(
+							VList(
+								h.Components(folderGroupsComponents(db, ctx, -1)...),
+							).ActiveColor(ColorPrimary).BgColor(ColorGreyLighten5),
+						).Color(ColorGreyLighten5).Height(340).Class("overflow-auto"),
+					),
+				).
+					Attr("v-model", "dialogLocals.show").
+					Title(msgr.ChooseFolder).
+					Size("large").
+					Width(658).
+					ContentHeight(571).
+					CancelText(pMsgr.Cancel).
+					OkText(pMsgr.OK).
+					Attr("@click:ok", web.Plaid().
+						EventFunc(MoveToFolderEvent).
+						Queries(ctx.Queries()).
+						Query(ParamParentID, web.Var(fmt.Sprintf("form.%s", ParamSelectFolderID))).
+						Go()),
 			).VSlot("{locals:dialogLocals,form}").Init("{show:true}").FormInit(fmt.Sprintf("{%s:0}", ParamSelectFolderID)),
 		})
 		return

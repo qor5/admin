@@ -27,12 +27,6 @@ type SchedulePublisher interface {
 // example: Product{}
 func (b *SchedulePublishBuilder) Run(ctx context.Context, model interface{}) (err error) {
 	reqCtx := b.publisher.WithContextValues(ctx)
-	deferFuncs := deferFuncsFromContext(reqCtx)
-	if len(deferFuncs) > 0 {
-		for _, f := range deferFuncs {
-			defer f(err)
-		}
-	}
 
 	var scope *gorm.DB
 	if m, ok := model.(SchedulePublisher); ok {

@@ -795,6 +795,7 @@ func (b *Builder) notificationCenter(ctx *web.EventContext) (er web.EventRespons
 
 const (
 	ConfirmDialogConfirmEvent     = "presets_ConfirmDialog_ConfirmEvent"
+	ConfirmDialogTitleText        = "presets_ConfirmDialog_TitleText"
 	ConfirmDialogPromptText       = "presets_ConfirmDialog_PromptText"
 	ConfirmDialogOKText           = "presets_ConfirmDialog_OKText"
 	ConfirmDialogCancelText       = "presets_ConfirmDialog_CancelText"
@@ -809,6 +810,10 @@ func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse
 	}
 
 	msgr := MustGetMessages(ctx.R)
+	titleText := msgr.ConfirmDialogTitleText
+	if v := ctx.R.FormValue(ConfirmDialogTitleText); v != "" {
+		titleText = v
+	}
 	promptText := msgr.ConfirmDialogPromptText
 	if v := ctx.R.FormValue(ConfirmDialogPromptText); v != "" {
 		promptText = v
@@ -832,7 +837,7 @@ func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse
 		Body: web.Scope(
 			vuetifyx.VXDialog().
 				Size(vuetifyx.DialogSizeDefault).
-				Title("Confirm").
+				Title(titleText).
 				Text(promptText).
 				CancelText(cancelText).
 				OkText(okText).

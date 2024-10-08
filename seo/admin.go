@@ -365,7 +365,7 @@ func (b *Builder) vSeoReadonly(obj interface{}, fieldPrefix, locale string, seo 
 	}
 	return h.Components(
 		h.Div(
-			h.Span(msgr.SearchResultPreview).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
+			h.Span(msgr.SEOPreview).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
 		),
 		VCard(
 			VCardText(

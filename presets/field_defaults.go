@@ -12,7 +12,6 @@ import (
 	h "github.com/theplant/htmlgo"
 
 	"github.com/qor5/x/v3/i18n"
-	. "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/qor5/x/v3/ui/vuetifyx"
 )
 
@@ -176,7 +175,7 @@ func cfTextTd(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTM
 }
 
 func cfCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	return VCheckbox().
+	return vuetifyx.VXCheckbox().
 		Attr(web.VField(field.FormKey, reflectutils.MustGet(obj, field.Name).(bool))...).
 		Label(field.Label).
 		ErrorMessages(field.Errors...).
@@ -184,9 +183,8 @@ func cfCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) h.H
 }
 
 func cfNumber(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	return VTextField().
+	return vuetifyx.VXField().
 		Type("number").
-		Variant(FieldVariantUnderlined).
 		Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
 		Label(field.Label).
 		ErrorMessages(field.Errors...).
@@ -259,11 +257,14 @@ func cfReadonlyText(obj interface{}, field *FieldContext, ctx *web.EventContext)
 	return ReadonlyText(obj, field, ctx)
 }
 
-func ReadonlyCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXReadonlyFieldBuilder {
-	return vuetifyx.VXReadonlyField().
+func ReadonlyCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXCheckboxBuilder {
+	msgr := MustGetMessages(ctx.R)
+	return vuetifyx.VXCheckbox().
 		Label(field.Label).
+		TrueLabel(msgr.CheckboxTrueLabel).
+		FalseLabel(msgr.CheckboxFalseLabel).
 		Value(reflectutils.MustGet(obj, field.Name)).
-		Checkbox(true)
+		Readonly(true)
 }
 
 func cfReadonlyCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {

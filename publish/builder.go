@@ -24,6 +24,11 @@ import (
 	"gorm.io/gorm/schema"
 )
 
+type (
+	PublishFunc   func(ctx context.Context, record any) error
+	UnPublishFunc func(ctx context.Context, record any) error
+)
+
 type Builder struct {
 	db                *gorm.DB
 	storage           oss.StorageInterface
@@ -31,15 +36,21 @@ type Builder struct {
 	ctxValueProviders []ContextValueFunc
 	afterInstallFuncs []func()
 	autoSchedule      bool
+
+	publish   PublishFunc
+	unpublish UnPublishFunc
 }
 
 type ContextValueFunc func(ctx context.Context) context.Context
 
 func New(db *gorm.DB, storage oss.StorageInterface) *Builder {
-	return &Builder{
+	b := &Builder{
 		db:      db,
 		storage: storage,
 	}
+	b.publish = b.defaultPublish
+	b.unpublish = b.defaultUnPublish
+	return b
 }
 
 func (b *Builder) Activity(v *activity.Builder) (r *Builder) {
@@ -421,8 +432,17 @@ func (b *Builder) getUnPublishActions(ctx context.Context, obj interface{}) (act
 	return b.defaultUnPublishActions(ctx, b.db, b.storage, obj)
 }
 
+func (b *Builder) WrapPublish(w func(in PublishFunc) PublishFunc) *Builder {
+	b.publish = w(b.publish)
+	return b
+}
+
+func (b *Builder) Publish(ctx context.Context, record any) (err error) {
+	return b.publish(ctx, record)
+}
+
 // 幂等
-func (b *Builder) Publish(ctx context.Context, record interface{}) (err error) {
+func (b *Builder) defaultPublish(ctx context.Context, record any) (err error) {
 	err = utils.Transact(b.db, func(tx *gorm.DB) (err error) {
 		// publish content
 		var objs []*PublishAction
@@ -485,7 +505,17 @@ func (b *Builder) Publish(ctx context.Context, record interface{}) (err error) {
 	return
 }
 
-func (b *Builder) UnPublish(ctx context.Context, record interface{}) (err error) {
+func (b *Builder) WrapUnPublish(w func(in UnPublishFunc) UnPublishFunc) *Builder {
+	b.unpublish = w(b.unpublish)
+	return b
+}
+
+func (b *Builder) UnPublish(ctx context.Context, record any) (err error) {
+	return b.unpublish(ctx, record)
+}
+
+// 幂等
+func (b *Builder) defaultUnPublish(ctx context.Context, record any) (err error) {
 	err = utils.Transact(b.db, func(tx *gorm.DB) (err error) {
 		// unpublish content
 		var objs []*PublishAction

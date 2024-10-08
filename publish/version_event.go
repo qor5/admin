@@ -9,9 +9,8 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
-	v "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
-	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
@@ -104,31 +103,42 @@ func renameVersionDialog(_ *presets.ModelBuilder) web.EventFunc {
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: presets.DialogPortalName,
 			Body: web.Scope(
-				v.VDialog(
-					v.VCard(
-						v.VCardTitle(h.Text(msgr.RenameVersion)),
-						v.VCardText(
-							v.VTextField().Attr(web.VField("VersionName", versionName)...).Variant(v.FieldVariantUnderlined),
-						),
-						v.VCardActions(
-							v.VSpacer(),
-							v.VBtn(utilMsgr.Cancel).
-								Variant(v.VariantFlat).
-								Class("ml-2").
-								On("click", "locals.renameVersionDialog = false"),
+				vx.VXDialog(
+					vx.VXField().Attr(web.VField("VersionName", versionName)...).HideDetails(true),
+				).Title(msgr.RenameVersion).
+					CancelText(utilMsgr.Cancel).
+					OkText(utilMsgr.OK).
+					Attr("@click:ok", web.Plaid().
+						URL(ctx.R.URL.Path).
+						EventFunc(eventRenameVersion).
+						Queries(ctx.Queries()).Go()).
+					Attr("v-model", "locals.renameVersionDialog"),
 
-							v.VBtn(utilMsgr.OK).
-								Color("primary").
-								Variant(v.VariantFlat).
-								Theme(v.ThemeDark).
-								Attr("@click", web.Plaid().
-									URL(ctx.R.URL.Path).
-									EventFunc(eventRenameVersion).
-									Queries(ctx.Queries()).Go(),
-								),
-						),
-					),
-				).MaxWidth("420px").Attr("v-model", "locals.renameVersionDialog"),
+				// vx.VXDialog(
+				// 	v.VCard(
+				// 		v.VCardTitle(h.Text(msgr.RenameVersion)),
+				// 		v.VCardText(
+				// 			v.VTextField().Attr(web.VField("VersionName", versionName)...).Variant(v.FieldVariantUnderlined),
+				// 		),
+				// 		v.VCardActions(
+				// 			v.VSpacer(),
+				// 			v.VBtn(utilMsgr.Cancel).
+				// 				Variant(v.VariantFlat).
+				// 				Class("ml-2").
+				// 				On("click", "locals.renameVersionDialog = false"),
+
+				// 			v.VBtn(utilMsgr.OK).
+				// 				Color("primary").
+				// 				Variant(v.VariantFlat).
+				// 				Theme(v.ThemeDark).
+				// 				Attr("@click", web.Plaid().
+				// 					URL(ctx.R.URL.Path).
+				// 					EventFunc(eventRenameVersion).
+				// 					Queries(ctx.Queries()).Go(),
+				// 				),
+				// 		),
+				// 	),
+				// ).MaxWidth("420px").Attr("v-model", "locals.renameVersionDialog"),
 			).Init("{renameVersionDialog:true}").VSlot("{locals}"),
 		})
 		return

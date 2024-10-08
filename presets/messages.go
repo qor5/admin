@@ -60,6 +60,7 @@ type Messages struct {
 	BulkActionNoRecordsSelected                string
 	BulkActionNoAvailableRecords               string
 	BulkActionSelectedIdsProcessNoticeTemplate string
+	ConfirmDialogTitleText                     string
 	ConfirmDialogPromptText                    string
 	Language                                   string
 	Colon                                      string
@@ -67,6 +68,8 @@ type Messages struct {
 	ButtonLabelActionsMenu                     string
 	Save                                       string
 	AddRow                                     string
+	CheckboxTrueLabel                          string
+	CheckboxFalseLabel                         string
 
 	HumanizeTimeAgo       string
 	HumanizeTimeFromNow   string
@@ -197,6 +200,7 @@ var Messages_en_US = &Messages{
 	BulkActionNoRecordsSelected:  "No records selected",
 	BulkActionNoAvailableRecords: "None of the selected records can be executed with this action.",
 	BulkActionSelectedIdsProcessNoticeTemplate: "Partially selected records cannot be executed with this action: {ids}.",
+	ConfirmDialogTitleText:                     "Confirm",
 	ConfirmDialogPromptText:                    "Are you sure?",
 	Language:                                   "Language",
 	Colon:                                      ":",
@@ -204,6 +208,8 @@ var Messages_en_US = &Messages{
 	ButtonLabelActionsMenu:                     "Actions",
 	Save:                                       "Save",
 	AddRow:                                     "Add Row",
+	CheckboxTrueLabel:                          "YES",
+	CheckboxFalseLabel:                         "NO",
 
 	HumanizeTimeAgo:       "ago",
 	HumanizeTimeFromNow:   "from now",
@@ -280,6 +286,7 @@ var Messages_zh_CN = &Messages{
 	BulkActionNoRecordsSelected:  "没有选中的记录",
 	BulkActionNoAvailableRecords: "所有选中的记录均无法执行这个操作。",
 	BulkActionSelectedIdsProcessNoticeTemplate: "部分选中的记录无法被执行这个操作: {ids}。",
+	ConfirmDialogTitleText:                     "确认",
 	ConfirmDialogPromptText:                    "你确定吗?",
 	Language:                                   "语言",
 	Colon:                                      "：",
@@ -287,6 +294,8 @@ var Messages_zh_CN = &Messages{
 	ButtonLabelActionsMenu:                     "菜单",
 	Save:                                       "保存",
 	AddRow:                                     "新增",
+	CheckboxTrueLabel:                          "是",
+	CheckboxFalseLabel:                         "否",
 
 	HumanizeTimeAgo:       "前",
 	HumanizeTimeFromNow:   "后",
@@ -325,7 +334,7 @@ var Messages_ja_JP = &Messages{
 	Cancel:                       "キャンセル",
 	Clear:                        "消去する",
 	Create:                       "作成する",
-	DeleteConfirmationText:       "を削除してもよろしいですか？",
+	DeleteConfirmationText:       "削除してもよろしいですか？",
 	CreatingObjectTitleTemplate:  "新規{modelName}作成",
 	EditingObjectTitleTemplate:   "{modelName} {id}を編集する",
 	ListingObjectTitleTemplate:   "{modelName}のリスト",
@@ -363,6 +372,7 @@ var Messages_ja_JP = &Messages{
 	BulkActionNoRecordsSelected:  "レコードが選択されていません",
 	BulkActionNoAvailableRecords: "選択されたレコードのいずれも、このアクションでは実行できません。",
 	BulkActionSelectedIdsProcessNoticeTemplate: "部分的に選択されたレコードは、このアクションでは実行できません：{ids}。",
+	ConfirmDialogTitleText:                     "確認",
 	ConfirmDialogPromptText:                    "実行してもよろしいですか?",
 	Language:                                   "言語",
 	Colon:                                      ":",
@@ -370,6 +380,8 @@ var Messages_ja_JP = &Messages{
 	ButtonLabelActionsMenu:                     "アクション",
 	Save:                                       "保存する",
 	AddRow:                                     "行の追加",
+	CheckboxTrueLabel:                          "選択済み",
+	CheckboxFalseLabel:                         "未選択",
 
 	HumanizeTimeAgo:       "前",
 	HumanizeTimeFromNow:   "今後",

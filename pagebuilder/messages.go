@@ -75,6 +75,7 @@ type Messages struct {
 	FilterTabFilled    string
 	FilterTabNotFilled string
 
+	ModalTitleConfirm          string
 	ModelLabelPages            string
 	ModelLabelPage             string
 	ModelLabelSharedContainers string
@@ -158,6 +159,7 @@ var Messages_en_US = &Messages{
 	FilterTabFilled:    "Filled",
 	FilterTabNotFilled: "Not Filled",
 
+	ModalTitleConfirm:          "Confirm",
 	ModelLabelPages:            "Pages",
 	ModelLabelPage:             "Page",
 	ModelLabelSharedContainers: "Shared Containers",
@@ -243,6 +245,7 @@ var Messages_zh_CN = &Messages{
 	FilterTabFilled:    "已填写",
 	FilterTabNotFilled: "未填写",
 
+	ModalTitleConfirm:          "确认",
 	ModelLabelPages:            "页面管理",
 	ModelLabelPage:             "页面",
 	ModelLabelSharedContainers: "公用组件",
@@ -328,6 +331,7 @@ var Messages_ja_JP = &Messages{
 	FilterTabFilled:    "入力済み",
 	FilterTabNotFilled: "未入力",
 
+	ModalTitleConfirm:          "確認",
 	ModelLabelPages:            "ページ",
 	ModelLabelPage:             "ページ",
 	ModelLabelSharedContainers: "共有コンテナ",

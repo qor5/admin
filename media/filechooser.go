@@ -11,6 +11,7 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 
@@ -899,19 +900,15 @@ func searchComponent(ctx *web.EventContext, field string, cfg *media_library.Med
 	}
 	event := clickEvent.Go()
 
-	return VTextField().
-		Density(DensityCompact).
-		Variant(FieldVariantOutlined).
-		Label(msgr.Search).
-		Flat(true).
-		Clearable(true).
+	return vx.VXField().
+		Placeholder(msgr.Search).
 		HideDetails(true).
-		SingleLine(true).
+		Attr(":clearable", "true").
 		Attr("v-model", "vars.searchMsg").
 		Attr(web.VAssign("vars", fmt.Sprintf(`{searchMsg:%q}`, ctx.Param(searchKeywordName(field))))...).
 		Attr("@click:clear", `vars.searchMsg="";`+event).
 		Attr("@keyup.enter", event).
 		Children(
 			web.Slot(VIcon("mdi-magnify").Attr("@click", event)).Name("append-inner"),
-		).MaxWidth(320)
+		).Width(320)
 }

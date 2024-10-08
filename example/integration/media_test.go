@@ -140,7 +140,7 @@ func TestMedia(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"v-dialog", "New Folder"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"vx-dialog", "New Folder"},
 		},
 		{
 			Name:  "MediaLibrary Move To Folder Dialog",
@@ -155,7 +155,7 @@ func TestMedia(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"v-dialog", "Choose Folder", "Root Directory", "0_folder_portal_name"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"vx-dialog", "Choose Folder", "Root Directory", "0_folder_portal_name"},
 			ExpectPortalUpdate0NotContains:     []string{"test001"},
 		},
 		{
@@ -214,7 +214,7 @@ func TestMedia(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"v-dialog", "Are you sure you want to delete"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"vx-dialog", "Are you sure you want to delete"},
 		},
 		{
 			Name:  "MediaLibrary Delete One object",

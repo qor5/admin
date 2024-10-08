@@ -382,23 +382,17 @@ func (b *ListingBuilder) deleteConfirmation(evCtx *web.EventContext) (r web.Even
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: DeleteConfirmPortalName,
 		Body: web.Scope().VSlot("{ locals }").Init(`{deleteConfirmation:true}`).Children(
-			v.VDialog().MaxWidth("600px").Attr("v-model", "locals.deleteConfirmation").Children(
-				v.VCard(
-					v.VCardTitle(
-						h.Text(msgr.DeleteConfirmationText),
-					),
-					v.VCardActions(
-						v.VSpacer(),
-						v.VBtn(msgr.Cancel).Variant(v.VariantFlat).Class("ml-2").Attr("@click", "locals.deleteConfirmation = false"),
-						v.VBtn(msgr.Delete).Color("primary").Variant(v.VariantFlat).Theme(v.ThemeDark).Attr("@click", web.Plaid().
-							EventFunc(actions.DoDelete).
-							Queries(evCtx.Queries()).
-							URL(b.mb.Info().ListingHref()).
-							Go(),
-						),
-					),
-				),
-			),
+			vx.VXDialog(
+				h.Span(msgr.DeleteConfirmationText),
+			).Title(msgr.DialogTitleDefault).
+				CancelText(msgr.Cancel).
+				OkText(msgr.Delete).
+				Attr("@click:ok", web.Plaid().
+					EventFunc(actions.DoDelete).
+					Queries(evCtx.Queries()).
+					URL(b.mb.Info().ListingHref()).
+					Go()).
+				Attr("v-model", "locals.deleteConfirmation"),
 		),
 	})
 	return
