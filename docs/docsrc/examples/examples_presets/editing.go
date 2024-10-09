@@ -16,6 +16,7 @@ import (
 	v "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
+	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
 
@@ -285,5 +286,54 @@ func PresetsEditingSetter(b *presets.Builder, db *gorm.DB) (
 		}
 	})
 
+	return
+}
+
+func PresetsEditingSection(b *presets.Builder, db *gorm.DB) (
+	cust *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	err := db.AutoMigrate(&Customer{}, &CreditCard{}, &Note{})
+	if err != nil {
+		panic(err)
+	}
+	mediaBuilder := media.New(db)
+	b.DataOperator(gorm2op.DataOperator(db)).Use(mediaBuilder)
+
+	type i18nMessage struct {
+		CustomersFieldSectionTitle string
+		CustomersSectionTitle      string
+		CustomersSectionEN         string
+	}
+	b.GetI18n().SupportLanguages(language.English, language.Japanese).
+		RegisterForModule(language.English, presets.ModelsI18nModuleKey, i18nMessage{
+			CustomersFieldSectionTitle: "Field_sectionEN",
+			CustomersSectionTitle:      "SectionEN",
+			CustomersSectionEN:         "Wrong",
+		}).
+		RegisterForModule(language.Japanese, presets.ModelsI18nModuleKey, i18nMessage{
+			CustomersFieldSectionTitle: "Field_sectionJP",
+			CustomersSectionTitle:      "SectionJP",
+			CustomersSectionEN:         "Wrong",
+		})
+
+	cust = b.Model(&Customer{})
+	cust.Editing(
+		&presets.FieldsSection{
+			Title: "FieldSectionTitle",
+			Rows: [][]string{
+				{"Name"},
+				{"Description"},
+			},
+		},
+		&presets.FieldsSection{
+			Title: "SectionTitle",
+			Rows: [][]string{
+				{"Email"},
+			},
+		},
+	)
 	return
 }
