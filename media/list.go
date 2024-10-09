@@ -12,11 +12,12 @@ import (
 
 const (
 	mediaLibraryListField = "media-library-list"
-	MediaLibraryURIName   = "media-library"
+	MediaLibraryURIName   = "media-libraries"
 )
 
 func configList(b *presets.Builder, mb *Builder) {
 	mm := b.Model(&media_library.MediaLibrary{}).Label("Media Library").MenuIcon("mdi-image").URIName(MediaLibraryURIName)
+	mb.mb = mm
 	oldPageFunc := mm.Listing().GetPageFunc()
 	mm.Listing().PageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		var (

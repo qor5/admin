@@ -311,7 +311,7 @@ func (b *Builder) DisabledNormalContainersGroup(v bool) (r *Builder) {
 func (b *Builder) Model(mb *presets.ModelBuilder) (r *ModelBuilder) {
 	r = &ModelBuilder{
 		mb:      mb,
-		editor:  b.ps.Model(mb.NewModel()).URIName(mb.Info().URIName() + "-editors"),
+		editor:  b.ps.Model(mb.NewModel()).URIName(mb.Info().URIName()),
 		builder: b,
 		db:      b.db,
 	}

@@ -5,20 +5,19 @@ import (
 	"net/url"
 	"reflect"
 
-	"github.com/iancoleman/strcase"
-	"github.com/qor5/admin/v3/activity"
-	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/actions"
-	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/stateful"
 	"github.com/qor5/x/v3/i18n"
-	"github.com/qor5/x/v3/perm"
 	v "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
 	"github.com/theplant/relay"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/admin/v3/utils"
 )
 
 const filterKeySelected = "f_select_id"
@@ -287,10 +286,6 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 	mb := b.Model(pm.NewModel()).
 		URIName(pm.Info().URIName() + VersionListDialogURISuffix).
 		InMenu(false)
-
-	b.GetPermission().CreatePolicies(
-		perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(fmt.Sprintf("*:presets:%s:*", strcase.ToSnake(pm.Info().URIName()+VersionListDialogURISuffix))),
-	)
 
 	listingHref := mb.Info().ListingHref()
 	registerEventFuncsForVersion(mb, db)

@@ -4,7 +4,6 @@ import (
 	"slices"
 
 	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/perm"
 	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/media/base"
@@ -18,7 +17,7 @@ type (
 	SaverFunc  func(db *gorm.DB, obj interface{}, id string, ctx *web.EventContext) error
 	Builder    struct {
 		db                  *gorm.DB
-		permVerifier        *perm.Verifier
+		mb                  *presets.ModelBuilder
 		mediaLibraryPerPage int
 		currentUserID       UserIDFunc
 		searcher            SearchFunc

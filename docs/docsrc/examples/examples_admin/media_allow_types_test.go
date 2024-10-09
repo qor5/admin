@@ -34,7 +34,7 @@ func TestMediaAllowTypesExample(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				allowTypesMediaData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -62,7 +62,7 @@ func TestMediaAllowTypesExample(t *testing.T) {
 				allowTypesMediaData.TruncatePut(dbr)
 				media_oss.Storage = filesystem.New("/tmp/media_test")
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.UploadFileEvent).
 					Query(media.ParamField, "media").
 					AddReader("NewFiles", "test2.png", bytes.NewReader([]byte("test upload file"))).
@@ -86,7 +86,7 @@ func TestMediaAllowTypesExample(t *testing.T) {
 				allowTypesMediaData.TruncatePut(dbr)
 				media_oss.Storage = filesystem.New("/tmp/media_test")
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.UploadFileEvent).
 					Query(media.ParamField, "media").
 					AddReader("NewFiles", "test2.txt", bytes.NewReader([]byte("test upload file"))).
