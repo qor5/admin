@@ -1449,9 +1449,17 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %q}`, device))
 }
 
-func (b *Builder) getModelBuilder(mb *presets.ModelBuilder) *ModelBuilder {
+func (b *Builder) GetModelBuilder(mb *presets.ModelBuilder) *ModelBuilder {
 	for _, modelBuilder := range b.models {
 		if modelBuilder.mb == mb {
+			return modelBuilder
+		}
+	}
+	return nil
+}
+func (b *Builder) GetPageModelBuilder() *ModelBuilder {
+	for _, modelBuilder := range b.models {
+		if modelBuilder.name == utils.GetObjectName(&Page{}) {
 			return modelBuilder
 		}
 	}
