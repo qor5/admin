@@ -36,35 +36,7 @@ func (b *ModelBuilder) registerFuncs() {
 	b.editor.RegisterEventFunc(ReloadRenderPageOrTemplateEvent, b.reloadRenderPageOrTemplate)
 	b.editor.RegisterEventFunc(MarkAsSharedContainerEvent, b.markAsSharedContainer)
 	b.editor.RegisterEventFunc(ContainerPreviewEvent, b.containerPreview)
-	b.preview = web.Page(b.previewContent).Builder(web.New().LayoutFunc(func(in web.PageFunc) web.PageFunc {
-		return func(ctx *web.EventContext) (r web.PageResponse, err error) {
-			r, err = in(ctx)
-			if r.PageTitle != "" && b.builder.seoBuilder == nil {
-				ctx.Injector.Title(r.PageTitle)
-			}
-			if b.builder.seoBuilder != nil {
-				ctx.Injector.SkipDefaultSetting()
-			}
-			if err != nil {
-				panic(err)
-			}
-			r.Body = h.HTMLComponents{
-				h.RawHTML("<!DOCTYPE html>\n"),
-				h.Tag("html").Children(
-					h.Head(
-						ctx.Injector.GetHeadHTMLComponent(),
-					),
-					h.Body(
-						h.Div(
-							r.Body,
-						).Id("app").Attr("v-cloak", true),
-						ctx.Injector.GetTailHTMLComponent(),
-					).Class("front"),
-				).Attr(ctx.Injector.HTMLLangAttrs()...),
-			}
-			return
-		}
-	}))
+	b.preview = web.Page(b.previewContent)
 }
 
 func (b *ModelBuilder) showSortedContainerDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
