@@ -1457,6 +1457,7 @@ func (b *Builder) GetModelBuilder(mb *presets.ModelBuilder) *ModelBuilder {
 	}
 	return nil
 }
+
 func (b *Builder) GetPageModelBuilder() *ModelBuilder {
 	for _, modelBuilder := range b.models {
 		if modelBuilder.name == utils.GetObjectName(&Page{}) {
