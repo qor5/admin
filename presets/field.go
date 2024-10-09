@@ -282,6 +282,7 @@ func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *Field
 	}
 	return b
 }
+
 func (b *FieldBuilder) GetNestedFieldsBuilder() *FieldsBuilder {
 	return b.nestedFieldsBuilder
 }

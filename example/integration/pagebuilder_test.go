@@ -860,7 +860,8 @@ func TestPageBuilder(t *testing.T) {
 					t.Fatalf("container has not updated")
 					return
 				}
-			}},
+			},
+		},
 	}
 
 	for _, c := range cases {

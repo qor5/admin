@@ -159,6 +159,7 @@ func (b *Builder) PageStyle(v h.HTMLComponent) (r *Builder) {
 	b.pageStyle = v
 	return b
 }
+
 func (b *Builder) AutoSaveReload(v bool) (r *Builder) {
 	b.autoSaveReload = v
 	return b
@@ -1053,6 +1054,7 @@ func (b *ContainerBuilder) Install() {
 		)
 	})
 }
+
 func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 	b.model = m
 	b.mb = b.builder.ps.Model(m)
