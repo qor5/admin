@@ -18,6 +18,17 @@ import (
 	"github.com/qor/oss"
 	"github.com/qor/oss/filesystem"
 	"github.com/qor/oss/s3"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/login"
+	"github.com/qor5/x/v3/perm"
+	v "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
+	h "github.com/theplant/htmlgo"
+	"github.com/theplant/osenv"
+	"golang.org/x/text/language"
+	"gorm.io/gorm"
+
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/autosync"
 	"github.com/qor5/admin/v3/example/models"
@@ -38,16 +49,6 @@ import (
 	"github.com/qor5/admin/v3/role"
 	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/admin/v3/worker"
-	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/i18n"
-	"github.com/qor5/x/v3/login"
-	"github.com/qor5/x/v3/perm"
-	v "github.com/qor5/x/v3/ui/vuetify"
-	vx "github.com/qor5/x/v3/ui/vuetifyx"
-	h "github.com/theplant/htmlgo"
-	"github.com/theplant/osenv"
-	"golang.org/x/text/language"
-	"gorm.io/gorm"
 )
 
 //go:embed assets
@@ -270,8 +271,7 @@ func NewConfig(db *gorm.DB) Config {
 	configNestedFieldDemo(b, db)
 
 	b.Use(w.Activity(ab))
-
-	pageBuilder := example.ConfigPageBuilder(db, "/page_builder", ``, b.GetI18n())
+	pageBuilder := example.ConfigPageBuilder(db, "/page_builder", ``, b)
 	pageBuilder.
 		Media(mediab).
 		L10n(l10nBuilder).
