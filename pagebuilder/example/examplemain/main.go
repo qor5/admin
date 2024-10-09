@@ -4,10 +4,11 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/qor5/web/v3"
+
 	"github.com/qor5/admin/v3/pagebuilder/example"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
-	"github.com/qor5/web/v3"
 )
 
 func main() {
@@ -16,7 +17,7 @@ func main() {
 	p := presets.New().
 		URIPrefix("/admin").
 		DataOperator(gorm2op.DataOperator(db))
-	pb := example.ConfigPageBuilder(db, "/page_builder", `<link rel="stylesheet" href="/frontstyle.css">`, p.GetI18n())
+	pb := example.ConfigPageBuilder(db, "/page_builder", `<link rel="stylesheet" href="/frontstyle.css">`, p)
 
 	pb.Install(p)
 

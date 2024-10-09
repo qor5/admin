@@ -20,6 +20,7 @@ import (
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
+	"github.com/theplant/relay"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
 
@@ -33,7 +34,6 @@ import (
 	"github.com/qor5/admin/v3/richeditor"
 	"github.com/qor5/admin/v3/seo"
 	"github.com/qor5/admin/v3/utils"
-	"github.com/theplant/relay"
 )
 
 type RenderInput struct {
@@ -96,6 +96,7 @@ type Builder struct {
 	templateEnabled               bool
 	expendContainers              bool
 	pageEnabled                   bool
+	autoSaveReload                bool
 	disabledNormalContainersGroup bool
 	previewOpenNewTab             bool
 	previewContainer              bool
@@ -116,11 +117,11 @@ const (
 	PageBuilderPreviewCard = "PageBuilderPreviewCard"
 )
 
-func New(prefix string, db *gorm.DB) *Builder {
-	return newBuilder(prefix, db)
+func New(prefix string, db *gorm.DB, b *presets.Builder) *Builder {
+	return newBuilder(prefix, db, b)
 }
 
-func newBuilder(prefix string, db *gorm.DB) *Builder {
+func newBuilder(prefix string, db *gorm.DB, b *presets.Builder) *Builder {
 	r := &Builder{
 		db:                db,
 		wb:                web.New(),
@@ -142,10 +143,9 @@ func newBuilder(prefix string, db *gorm.DB) *Builder {
 		BrandTitle("Page Builder").
 		DataOperator(gorm2op.DataOperator(db)).
 		URIPrefix(prefix).
+		I18n(b.GetI18n()).
 		DetailLayoutFunc(r.pageEditorLayout)
-	r.ps.Permission(perm.New().Policies(
-		perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
-	))
+	r.ps.Permission(b.GetPermission())
 	return r
 }
 
@@ -157,6 +157,11 @@ func (b *Builder) Prefix(v string) (r *Builder) {
 
 func (b *Builder) PageStyle(v h.HTMLComponent) (r *Builder) {
 	b.pageStyle = v
+	return b
+}
+
+func (b *Builder) AutoSaveReload(v bool) (r *Builder) {
+	b.autoSaveReload = v
 	return b
 }
 
@@ -381,6 +386,9 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 	b.configDemoContainer(pb)
 	b.preparePlugins()
 	for _, t := range b.templates {
+		t.Install()
+	}
+	for _, t := range b.containerBuilders {
 		t.Install()
 	}
 	return
@@ -940,10 +948,52 @@ func (b *Builder) RegisterModelContainer(name string, mb *presets.ModelBuilder) 
 	return
 }
 
-func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
-	b.model = m
-	b.mb = b.builder.ps.Model(m)
-	b.mb.Editing().WrapIdCurrentActive(func(in presets.IdCurrentActiveProcessor) presets.IdCurrentActiveProcessor {
+type TagInterface interface {
+	SetAttr(k string, v interface{})
+}
+
+func (b *ContainerBuilder) setFieldsLazyWrapComponentFunc(fields *presets.FieldsBuilder) {
+	for _, fieldName := range fields.FieldNames() {
+		field := fields.GetField(fieldName.(string))
+		if field.GetNestedFieldsBuilder() != nil {
+			b.setFieldsLazyWrapComponentFunc(field.GetNestedFieldsBuilder())
+			continue
+		}
+		field.LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
+			return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+				comp := in(obj, field, ctx)
+				formKey := field.ModelInfo.URIName() + "_" + field.FormKey
+				if p, ok := comp.(TagInterface); ok {
+					p.SetAttr("ref", formKey)
+					return h.Div(comp).Attr("v-on-mounted", fmt.Sprintf(`({el,window})=>{
+		const refName = "%s";
+		vars.__currentFocusUpdating = false;
+		el.__handleFocusIn=()=>{
+			vars.__currentFocusRefName = refName;
+		};
+		el.__handleFocusOut=(event)=>{
+			if(vars.__currentFocusUpdating){return}
+			vars.__currentFocusRefName ="";
+		};
+
+		el.addEventListener("focusin",el.__handleFocusIn);
+		el.addEventListener("focusout",el.__handleFocusOut);
+	   }`, formKey)).Attr("v-on-unmounted", `({el})=>{
+		el.removeEventListener("focusin",el.__handleFocusIn);
+		el.removeEventListener("focusout",el.__handleFocusOut);
+}`).Attr("v-before-unmount", `({el})=>{
+	vars.__currentFocusUpdating = true;
+}`)
+				}
+				return comp
+			}
+		})
+	}
+}
+
+func (b *ContainerBuilder) Install() {
+	editing := b.mb.Editing()
+	editing.WrapIdCurrentActive(func(in presets.IdCurrentActiveProcessor) presets.IdCurrentActiveProcessor {
 		return func(ctx *web.EventContext, current string) (s string, err error) {
 			s, err = in(ctx, current)
 			if err != nil {
@@ -953,7 +1003,10 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 			return
 		}
 	})
-	b.mb.Editing().AppendHiddenFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+	if b.builder.autoSaveReload {
+		b.setFieldsLazyWrapComponentFunc(&editing.FieldsBuilder)
+	}
+	editing.AppendHiddenFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		if portalName := ctx.Param(presets.ParamPortalName); portalName != pageBuilderRightContentPortal {
 			return nil
 		}
@@ -971,6 +1024,9 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 				const newAddRowBtn = window.document.getElementById(addRowBtnID);
 				newAddRowBtn.scrollIntoView({ behavior: 'smooth', block: 'end' });
 				}
+				 const __currentFocusRefName = $refs[vars.__currentFocusRefName];
+                 if(!__currentFocusRefName || typeof __currentFocusRefName.focus != 'function'){return}
+				  __currentFocusRefName.focus();	
 			}`, addRowBtnID)),
 			web.Listen(
 				b.mb.NotifRowUpdated(),
@@ -984,8 +1040,25 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 						Query(paramStatus, ctx.Param(paramStatus)).MergeQuery(true).Go()).
 					Go(),
 			),
+			h.If(b.builder.autoSaveReload,
+				web.Listen(
+					b.mb.NotifModelsUpdated(),
+					web.Plaid().
+						URL(b.mb.Info().ListingHref()).
+						EventFunc(actions.Edit).
+						Query(presets.ParamID, web.Var("payload.ids[0]")).
+						Query(presets.ParamPortalName, pageBuilderRightContentPortal).
+						Query(presets.ParamOverlay, actions.Content).Go(),
+				),
+			),
 		)
 	})
+}
+
+func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
+	b.model = m
+	b.mb = b.builder.ps.Model(m)
+
 	val := reflect.ValueOf(m)
 	if val.Kind() != reflect.Ptr {
 		panic("model pointer type required")

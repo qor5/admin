@@ -839,6 +839,29 @@ func TestPageBuilder(t *testing.T) {
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"blue", "LinkText 不能为空"},
 		},
+		{
+			Name:  "Container Heading Update Reload Editing",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderDemoContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/headings").
+					EventFunc(actions.Update).
+					Query(presets.ParamID, "1").
+					AddField("LinkText", "Replace{{Name}}").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				heading := containers.Heading{}
+				TestDB.First(&heading, 1)
+				if heading.LinkText != "ReplaceLinkText" {
+					t.Fatalf("container has not updated")
+					return
+				}
+			},
+		},
 	}
 
 	for _, c := range cases {
