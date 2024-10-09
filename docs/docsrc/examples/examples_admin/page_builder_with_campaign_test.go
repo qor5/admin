@@ -560,8 +560,9 @@ func TestPageBuilderCampaign(t *testing.T) {
 					PageURL("/pages/1_2024-05-20-v01").
 					BuildEventFuncRequest()
 			},
-			ExpectPageBodyContainsInOrder: []string{"Title", "Slug"},
-			ExpectPageBodyNotContains:     []string{"Category"},
+			ExpectPageBodyContainsInOrder: []string{"Title", "Slug", `<div id='display_preview' style='display:none;'>
+<iframe src='<!DOCTYPE html>`},
+			ExpectPageBodyNotContains: []string{"Category"},
 		},
 		{
 			Name:  "Pages New Dialog Expect Without Category",
