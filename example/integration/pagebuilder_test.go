@@ -44,7 +44,7 @@ INSERT INTO public.page_builder_templates (id, created_at, updated_at, deleted_a
 
 var pageBuilderContainerTestData = gofixtures.Data(gofixtures.Sql(`
 INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, seo, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code) VALUES 
-										(10, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, '1234567', '12313', 0, '{"OpenGraphImageFromMediaLibrary":{"ID":0,"Url":"","VideoLink":"","FileName":"","Description":""}}', 'draft', '', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'International');
+										(10, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, '1234567', '12313', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'draft', '', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'International');
 SELECT setval('page_builder_pages_id_seq', 10, true);
 
 INSERT INTO public.page_builder_containers (id,created_at, updated_at, deleted_at, page_id, page_version, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id,page_model_name) VALUES 
@@ -493,7 +493,7 @@ func TestPageBuilder(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"ListContent", "Header"},
 		},
 		{
-			Name:  "Page Builder preview",
+			Name:  "Page Builder Preview  With SEO Title",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
@@ -504,7 +504,7 @@ func TestPageBuilder(t *testing.T) {
 
 				return req
 			},
-			ExpectPageBodyContainsInOrder: []string{"1234567", "list-contents", "headers"},
+			ExpectPageBodyContainsInOrder: []string{"1234567default", "list-contents", "headers"},
 		},
 		{
 			Name:  "Demo Container List",

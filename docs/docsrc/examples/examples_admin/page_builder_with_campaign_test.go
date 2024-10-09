@@ -560,8 +560,9 @@ func TestPageBuilderCampaign(t *testing.T) {
 					PageURL("/pages/1_2024-05-20-v01").
 					BuildEventFuncRequest()
 			},
-			ExpectPageBodyContainsInOrder: []string{"Title", "Slug"},
-			ExpectPageBodyNotContains:     []string{"Category"},
+			ExpectPageBodyContainsInOrder: []string{"Title", "Slug", `<div id='display_preview' style='display:none;'>
+<iframe src='<!DOCTYPE html>`},
+			ExpectPageBodyNotContains: []string{"Category"},
 		},
 		{
 			Name:  "Pages New Dialog Expect Without Category",
@@ -946,6 +947,34 @@ func TestPageBuilderCampaign(t *testing.T) {
 
 				}
 			},
+		},
+		{
+			Name:  "Campaign Preview",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/campaigns/preview").
+					Query(presets.ParamID, "1_2024-05-20-v01").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"Hello Campaign", "my-contents"},
+		},
+		{
+			Name:  "Page Preview",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderPageData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages/preview").
+					Query(presets.ParamID, "1_2024-05-20-v01").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"12312", "my-contents", "my-contents2"},
 		},
 	}
 	for _, c := range cases {

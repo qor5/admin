@@ -163,7 +163,7 @@ func (b *TemplateBuilder) configModelWithTemplate() {
 					if b.builder.l10n == nil {
 						localeCode = ""
 					}
-					if err = b.builder.getModelBuilder(b.mb).copyContainersToAnotherPage(b.builder.db, tplID, "", localeCode, int(pageID.(uint)), version, localeCode, b.model.name, b.builder.getModelBuilder(b.mb).name); err != nil {
+					if err = b.builder.GetModelBuilder(b.mb).copyContainersToAnotherPage(b.builder.db, tplID, "", localeCode, int(pageID.(uint)), version, localeCode, b.model.name, b.builder.GetModelBuilder(b.mb).name); err != nil {
 						panic(err)
 					}
 				}
@@ -465,7 +465,7 @@ func (b *TemplateBuilder) Install() {
 		tm = builder.templateModel
 	}
 	defer builder.useAllPlugin(tm)
-	model := builder.getModelBuilder(tm)
+	model := builder.GetModelBuilder(tm)
 	if model == nil {
 		model = builder.Model(tm)
 		if _, ok := tm.NewModel().(publish.VersionInterface); ok {
