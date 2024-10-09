@@ -582,6 +582,9 @@ func (b *ModelBuilder) previewContent(ctx *web.EventContext) (r web.PageResponse
 	if err != nil {
 		return
 	}
+	if b.builder.seoBuilder != nil && b.builder.seoBuilder.GetSEO(obj) != nil {
+		return
+	}
 	if p, ok := obj.(PageTitleInterface); ok {
 		r.PageTitle = p.GetTitle()
 	}

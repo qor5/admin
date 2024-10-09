@@ -948,6 +948,34 @@ func TestPageBuilderCampaign(t *testing.T) {
 				}
 			},
 		},
+		{
+			Name:  "Campaign Preview",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/campaigns/preview").
+					Query(presets.ParamID, "1_2024-05-20-v01").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"Hello Campaign", "my-contents"},
+		},
+		{
+			Name:  "Page Preview",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderPageData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages/preview").
+					Query(presets.ParamID, "1_2024-05-20-v01").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"12312", "my-contents", "my-contents2"},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
