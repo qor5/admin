@@ -283,6 +283,10 @@ func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *Field
 	return b
 }
 
+func (b *FieldBuilder) GetNestedFieldsBuilder() *FieldsBuilder {
+	return b.nestedFieldsBuilder
+}
+
 func (b *FieldBuilder) AppendTabs(fb *FieldBuilder) (r *FieldBuilder) {
 	if b.tabFieldsBuilders == nil {
 		b.tabFieldsBuilders = NewTabsFieldBuilder()

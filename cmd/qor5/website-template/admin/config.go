@@ -7,6 +7,14 @@ import (
 	"net/http"
 
 	"github.com/qor/oss/filesystem"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/perm"
+	"github.com/qor5/x/v3/ui/vuetify"
+	. "github.com/theplant/htmlgo"
+	"github.com/theplant/osenv"
+	"golang.org/x/text/language"
+	"gorm.io/gorm"
+
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/pagebuilder"
@@ -15,13 +23,6 @@ import (
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/seo"
 	"github.com/qor5/admin/v3/utils"
-	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/perm"
-	"github.com/qor5/x/v3/ui/vuetify"
-	. "github.com/theplant/htmlgo"
-	"github.com/theplant/osenv"
-	"golang.org/x/text/language"
-	"gorm.io/gorm"
 )
 
 var PublishDir = osenv.Get(
@@ -77,7 +78,7 @@ func newConfig(db *gorm.DB) config {
 	publisher := publish.New(db, storage)
 	seoBuilder := seo.New(db).AutoMigrate()
 
-	pageBuilder := pagebuilder.New(b.GetURIPrefix()+"/page_builder", db).
+	pageBuilder := pagebuilder.New(b.GetURIPrefix()+"/page_builder", db, b).
 		AutoMigrate().
 		Publisher(publisher)
 

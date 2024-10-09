@@ -8,6 +8,8 @@ import (
 	"github.com/theplant/testenv"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"github.com/qor5/admin/v3/presets"
 )
 
 var TestDB *gorm.DB
@@ -37,7 +39,7 @@ func TestPage_PublishUrl(t *testing.T) {
 	pageBuilderData.TruncatePut(dbr)
 	page := &Page{}
 	TestDB.First(page, 1)
-	b := New("/", TestDB)
+	b := New("/", TestDB, presets.New())
 	r := b.Model(b.ps.Model(page))
 	s := page.PublishUrl(TestDB, context.WithValue(context.Background(), r.name, r), nil)
 	if s != "/12/123/index.html" {

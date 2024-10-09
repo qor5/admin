@@ -1,6 +1,8 @@
 package containers
 
 import (
+	"strings"
+
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/ui/vuetify"
 	. "github.com/theplant/htmlgo"
@@ -55,6 +57,16 @@ func RegisterHeadingContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 			}
 		}
 		return
+	})
+	ed.Field("LinkText").LazyWrapSetterFunc(func(in presets.FieldSetterFunc) presets.FieldSetterFunc {
+		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+			if err = in(obj, field, ctx); err != nil {
+				return
+			}
+			p := obj.(*Heading)
+			p.LinkText = strings.Replace(p.LinkText, "{{Name}}", field.Name, -1)
+			return
+		}
 	})
 
 	ed.Field("FontColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
