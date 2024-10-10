@@ -872,7 +872,7 @@ func sharedContainerSearcher(db *gorm.DB, b *ModelBuilder) presets.SearchFunc {
 		}
 
 		for _, cond := range params.SQLConditions {
-			wh = wh.Where(strings.Replace(cond.Query, " ILIKE ", " "+ilike+" ", -1), cond.Args...)
+			wh = wh.Where(strings.ReplaceAll(cond.Query, " ILIKE ", " "+ilike+" "), cond.Args...)
 		}
 
 		locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
@@ -899,10 +899,9 @@ func sharedContainerSearcher(db *gorm.DB, b *ModelBuilder) presets.SearchFunc {
 		}
 
 		return &presets.SearchResult{
-			PageInfo: relay.PageInfo{
-				TotalCount: totalCount,
-			},
-			Nodes: rtNodes.Interface(),
+			PageInfo:   relay.PageInfo{},
+			TotalCount: &totalCount,
+			Nodes:      rtNodes.Interface(),
 		}, nil
 	}
 }
