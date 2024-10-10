@@ -117,7 +117,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 				div.AppendChildren(v.VBtn(msgr.Duplicate).
 					Height(36).Class("ml-2").Variant(v.VariantOutlined).
 					Attr(":disabled", phraseHasPresetsDataChanged).
-					Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventDuplicateVersion)))
+					Attr("@click", fmt.Sprintf(`locals.action=%q;locals.commonConfirmDialog = true`, EventDuplicateVersion)))
 			}
 		}
 
@@ -127,7 +127,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 			switch status.EmbedStatus().Status {
 			case StatusDraft, StatusOffline:
 				if !deniedPublish {
-					publishEvent := fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventPublish)
+					publishEvent := fmt.Sprintf(`locals.action=%q;locals.commonConfirmDialog = true`, EventPublish)
 					if config.PublishEvent != nil {
 						publishEvent = config.PublishEvent(obj, field, ctx)
 					}
@@ -142,13 +142,13 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 			case StatusOnline:
 				var unPublishEvent, rePublishEvent string
 				if !deniedUnpublish {
-					unPublishEvent = fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventUnpublish)
+					unPublishEvent = fmt.Sprintf(`locals.action=%q;locals.commonConfirmDialog = true`, EventUnpublish)
 					if config.UnPublishEvent != nil {
 						unPublishEvent = config.UnPublishEvent(obj, field, ctx)
 					}
 				}
 				if !deniedPublish {
-					rePublishEvent = fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventRepublish)
+					rePublishEvent = fmt.Sprintf(`locals.action=%q;locals.commonConfirmDialog = true`, EventRepublish)
 					if config.RePublishEvent != nil {
 						rePublishEvent = config.RePublishEvent(obj, field, ctx)
 					}

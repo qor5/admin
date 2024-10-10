@@ -151,7 +151,7 @@ func TestPageBuilder(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/page_builder/pages-editors/10_2024-05-21-v01_International", nil)
+				return httptest.NewRequest("GET", "/page_builder/pages/10_2024-05-21-v01_International", nil)
 			},
 			ExpectPageBodyContainsInOrder: []string{"Add Container", "Select an element and change the setting here."},
 		},
@@ -170,7 +170,7 @@ func TestPageBuilder(t *testing.T) {
 			},
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/page_builder/pages-editors/10_2024-05-21-v01_International", nil)
+				return httptest.NewRequest("GET", "/page_builder/pages/10_2024-05-21-v01_International", nil)
 			},
 			ExpectPageBodyNotContains: []string{"Add Container", "Select an element and change the setting here."},
 		},
