@@ -12,56 +12,33 @@ import (
 	"gorm.io/gorm"
 )
 
-func OffsetBasedPagination(disableTotalCount bool, middlewares ...relay.CursorMiddleware[any]) presets.RelayPagination {
-	p := relay.New(
-		true, // nodesOnly
-		presets.PerPageMax, presets.PerPageDefault,
-		func(ctx context.Context, req *relay.ApplyCursorsRequest) (*relay.ApplyCursorsResponse[any], error) {
-			db, ok := ctx.Value(ctxKeyDB{}).(*gorm.DB)
-			if !ok {
-				return nil, errors.New("db not found in context")
-			}
-			var finer cursor.OffsetFinder[any]
-			if disableTotalCount {
-				finer = gormrelay.NewOffsetFinder[any](db)
-			} else {
-				finer = gormrelay.NewOffsetCounter[any](db)
-			}
-			f := cursor.Base64(cursor.NewOffsetAdapter(finer))
-			for _, middleware := range middlewares {
-				f = middleware(f)
-			}
-			return f(ctx, req)
-		},
-	)
-	return func(ctx *web.EventContext) (relay.Pagination[any], error) {
-		return p, nil
-	}
+func OffsetBasedPagination(skipTotalCount bool, cursorMiddlewares ...relay.CursorMiddleware[any]) presets.RelayPagination {
+	return relayPagination(gormrelay.NewOffsetAdapter[any], skipTotalCount, cursorMiddlewares...)
 }
 
-func KeysetBasedPagination(disableTotalCount bool, middlewares ...relay.CursorMiddleware[any]) presets.RelayPagination {
+func KeysetBasedPagination(skipTotalCount bool, cursorMiddlewares ...relay.CursorMiddleware[any]) presets.RelayPagination {
+	return relayPagination(gormrelay.NewKeysetAdapter[any], skipTotalCount, cursorMiddlewares...)
+}
+
+func relayPagination(f func(db *gorm.DB) relay.ApplyCursorsFunc[any], skipTotalCount bool, cursorMiddlewares ...relay.CursorMiddleware[any]) presets.RelayPagination {
 	p := relay.New(
-		true, // nodesOnly
-		presets.PerPageMax, presets.PerPageDefault,
 		func(ctx context.Context, req *relay.ApplyCursorsRequest) (*relay.ApplyCursorsResponse[any], error) {
 			db, ok := ctx.Value(ctxKeyDB{}).(*gorm.DB)
 			if !ok {
 				return nil, errors.New("db not found in context")
 			}
-			var finer cursor.KeysetFinder[any]
-			if disableTotalCount {
-				finer = gormrelay.NewKeysetFinder[any](db)
-			} else {
-				finer = gormrelay.NewKeysetCounter[any](db)
-			}
-			f := cursor.Base64(cursor.NewKeysetAdapter(finer))
-			for _, middleware := range middlewares {
-				f = middleware(f)
-			}
-			return f(ctx, req)
+			return cursor.Base64(f(db))(ctx, req)
 		},
+		relay.EnsureLimits[any](presets.PerPageMax, presets.PerPageDefault),
+		relay.AppendCursorMiddleware(cursorMiddlewares...),
 	)
 	return func(ctx *web.EventContext) (relay.Pagination[any], error) {
-		return p, nil
+		return relay.PaginationFunc[any](func(ctx context.Context, req *relay.PaginateRequest[any]) (*relay.PaginateResponse[any], error) {
+			ctx = relay.WithSkipEdges(ctx)
+			if skipTotalCount {
+				ctx = relay.WithSkipTotalCount(ctx)
+			}
+			return p.Paginate(ctx, req)
+		}), nil
 	}
 }

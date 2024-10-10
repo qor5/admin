@@ -1,6 +1,7 @@
 package gorm2op
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -30,7 +31,7 @@ type DataOperatorBuilder struct {
 	db *gorm.DB
 }
 
-func (op *DataOperatorBuilder) Search(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
+func (op *DataOperatorBuilder) Search(evCtx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 	ilike := "ILIKE"
 	if op.db.Dialector.Name() == "sqlite" {
 		ilike = "LIKE"
@@ -49,14 +50,15 @@ func (op *DataOperatorBuilder) Search(ctx *web.EventContext, params *presets.Sea
 	}
 
 	for _, cond := range params.SQLConditions {
-		wh = wh.Where(strings.Replace(cond.Query, " ILIKE ", " "+ilike+" ", -1), cond.Args...)
+		wh = wh.Where(strings.ReplaceAll(cond.Query, " ILIKE ", " "+ilike+" "), cond.Args...)
 	}
 
 	var p relay.Pagination[any]
 	var req *relay.PaginateRequest[any]
+	ctx := relay.WithSkipEdges(evCtx.R.Context())
 	if params.RelayPagination != nil {
-		ctx.WithContextValue(ctxKeyDB{}, wh)
-		p, err = params.RelayPagination(ctx)
+		ctx = context.WithValue(ctx, ctxKeyDB{}, wh)
+		p, err = params.RelayPagination(evCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -70,9 +72,8 @@ func (op *DataOperatorBuilder) Search(ctx *web.EventContext, params *presets.Sea
 		}
 
 		p = relay.New(
-			true, // nodesOnly
-			presets.PerPageMax, presets.PerPageDefault,
 			gormrelay.NewOffsetAdapter[any](wh),
+			relay.EnsureLimits[any](presets.PerPageMax, presets.PerPageDefault),
 		)
 		req = &relay.PaginateRequest[any]{
 			OrderBys: params.OrderBys,
@@ -90,7 +91,7 @@ func (op *DataOperatorBuilder) Search(ctx *web.EventContext, params *presets.Sea
 		}
 	}
 
-	resp, err := p.Paginate(ctx.R.Context(), req)
+	resp, err := p.Paginate(ctx, req)
 	if err != nil {
 		return
 	}
@@ -101,8 +102,9 @@ func (op *DataOperatorBuilder) Search(ctx *web.EventContext, params *presets.Sea
 		nodes.Index(i).Set(reflect.ValueOf(resp.Nodes[i]))
 	}
 	return &presets.SearchResult{
-		PageInfo: resp.PageInfo,
-		Nodes:    nodes.Interface(),
+		PageInfo:   resp.PageInfo,
+		TotalCount: resp.TotalCount,
+		Nodes:      nodes.Interface(),
 	}, nil
 }
 

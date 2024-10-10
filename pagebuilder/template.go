@@ -210,8 +210,12 @@ func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent
 	if err != nil {
 		panic(errors.Wrap(err, "searcher error"))
 	}
-	pagesCount := int64(result.PageInfo.TotalCount)/perPage + 1
-	if int64(result.PageInfo.TotalCount)%(perPage) == 0 {
+	totalCount := int64(0)
+	if result.TotalCount != nil {
+		totalCount = int64(*result.TotalCount)
+	}
+	pagesCount := totalCount/perPage + 1
+	if totalCount%(perPage) == 0 {
 		pagesCount--
 	}
 
@@ -338,7 +342,7 @@ func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent
 				).Class("position-sticky top-0", "bg-"+ColorBackground).Attr("style", "z-index:2"),
 			),
 			rows,
-			h.If(int64(result.PageInfo.TotalCount) > perPage,
+			h.If(totalCount > perPage,
 				VRow(
 					VCol(
 						VPagination().
