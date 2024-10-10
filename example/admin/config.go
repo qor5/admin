@@ -63,6 +63,10 @@ type Config struct {
 	loginSessionBuilder *plogin.SessionBuilder
 }
 
+func (c *Config) GetPresetsBuilder() *presets.Builder {
+	return c.pb
+}
+
 var (
 	s3Bucket                  = osenv.Get("S3_Bucket", "s3-bucket for media library storage", "example")
 	s3Region                  = osenv.Get("S3_Region", "s3-region for media library storage", "ap-northeast-1")
