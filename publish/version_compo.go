@@ -5,11 +5,6 @@ import (
 	"net/url"
 	"reflect"
 
-	"github.com/iancoleman/strcase"
-	"github.com/qor5/admin/v3/activity"
-	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/actions"
-	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/stateful"
 	"github.com/qor5/x/v3/i18n"
@@ -19,6 +14,11 @@ import (
 	h "github.com/theplant/htmlgo"
 	"github.com/theplant/relay"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/admin/v3/utils"
 )
 
 const filterKeySelected = "f_select_id"
@@ -117,7 +117,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 				div.AppendChildren(v.VBtn(msgr.Duplicate).
 					Height(36).Class("ml-2").Variant(v.VariantOutlined).
 					Attr(":disabled", phraseHasPresetsDataChanged).
-					Attr("@click", fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventDuplicateVersion)))
+					Attr("@click", fmt.Sprintf(`locals.action=%q;locals.commonConfirmDialog = true`, EventDuplicateVersion)))
 			}
 		}
 
@@ -127,7 +127,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 			switch status.EmbedStatus().Status {
 			case StatusDraft, StatusOffline:
 				if !deniedPublish {
-					publishEvent := fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventPublish)
+					publishEvent := fmt.Sprintf(`locals.action=%q;locals.commonConfirmDialog = true`, EventPublish)
 					if config.PublishEvent != nil {
 						publishEvent = config.PublishEvent(obj, field, ctx)
 					}
@@ -142,13 +142,13 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 			case StatusOnline:
 				var unPublishEvent, rePublishEvent string
 				if !deniedUnpublish {
-					unPublishEvent = fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventUnpublish)
+					unPublishEvent = fmt.Sprintf(`locals.action=%q;locals.commonConfirmDialog = true`, EventUnpublish)
 					if config.UnPublishEvent != nil {
 						unPublishEvent = config.UnPublishEvent(obj, field, ctx)
 					}
 				}
 				if !deniedPublish {
-					rePublishEvent = fmt.Sprintf(`locals.action="%s";locals.commonConfirmDialog = true`, EventRepublish)
+					rePublishEvent = fmt.Sprintf(`locals.action=%q;locals.commonConfirmDialog = true`, EventRepublish)
 					if config.RePublishEvent != nil {
 						rePublishEvent = config.RePublishEvent(obj, field, ctx)
 					}
@@ -288,9 +288,12 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 		URIName(pm.Info().URIName() + VersionListDialogURISuffix).
 		InMenu(false)
 
-	b.GetPermission().CreatePolicies(
-		perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(fmt.Sprintf("*:presets:%s:*", strcase.ToSnake(pm.Info().URIName()+VersionListDialogURISuffix))),
-	)
+	mb.WrapVerifier(func(in func() *perm.Verifier) func() *perm.Verifier {
+		return func() *perm.Verifier {
+			v := mb.GetPresetsBuilder().GetVerifier().Spawn()
+			return v.SnakeOn(pm.Info().URIName())
+		}
+	})
 
 	listingHref := mb.Info().ListingHref()
 	registerEventFuncsForVersion(mb, db)

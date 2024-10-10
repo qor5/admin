@@ -8,13 +8,14 @@ import (
 
 	"github.com/qor5/admin/v3/pagebuilder"
 
-	"github.com/qor5/admin/v3/cmd/qor5/website-template/admin"
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
 	"github.com/theplant/testenv"
 	"github.com/theplant/testingutils"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"github.com/qor5/admin/v3/cmd/qor5/website-template/admin"
 )
 
 var (
@@ -61,7 +62,7 @@ func TestAll(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				data.TruncatePut(SqlDB)
 				req := multipartestutils.NewMultipartBuilder().
-					PageURL("/admin/page_builder/pages-editors/2_2024-06-08-v01?__execute_event__=page_builder_AddContainerEvent&containerName=MyHeader&modelName=MyHeader&tab=Elements").
+					PageURL("/admin/page_builder/pages/2_2024-06-08-v01?__execute_event__=page_builder_AddContainerEvent&containerName=MyHeader&modelName=MyHeader&tab=Elements").
 					BuildEventFuncRequest()
 				return req
 			},

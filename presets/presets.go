@@ -144,6 +144,10 @@ func (b *Builder) I18n(v *i18n.Builder) (r *Builder) {
 	return b
 }
 
+func (b *Builder) GetVerifier() (r *perm.Verifier) {
+	return b.verifier
+}
+
 func (b *Builder) Permission(v *perm.Builder) (r *Builder) {
 	b.permissionBuilder = v
 	b.verifier = perm.NewVerifier(PermModule, v)

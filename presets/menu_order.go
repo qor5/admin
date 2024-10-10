@@ -71,9 +71,6 @@ func (b *MenuOrderBuilder) check(item string, groupName string, ctx *web.EventCo
 	if !ok {
 		return nil, false
 	}
-	if groupName != "" {
-		m.menuGroupName = groupName
-	}
 	disabled := m.notInMenu || (m.Info().Verifier().Do(PermList).WithReq(ctx.R).IsAllowed() != nil)
 	if disabled {
 		return m, false

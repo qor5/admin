@@ -7,15 +7,16 @@ import (
 	"strings"
 
 	"github.com/qor/oss"
-	"github.com/qor5/admin/v3/activity"
-	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/gorm2op"
-	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/gorm2op"
+	"github.com/qor5/admin/v3/publish"
 )
 
 // @snippet_begin(PublishInjectModules)
@@ -82,7 +83,7 @@ func PublishExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	b.DataOperator(gorm2op.DataOperator(db))
 	b.Permission(
 		perm.New().Policies(
-			perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On("*:presets:with_publish_products:*"),
+			perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
 		),
 	)
 	// @snippet_begin(PublishConfigureView)

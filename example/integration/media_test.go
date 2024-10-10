@@ -63,7 +63,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					AddField("type", "all").
 					AddField("order_by", "created_at_desc").
 					BuildEventFuncRequest()
@@ -78,7 +78,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					AddField("type", "all").
 					AddField("order_by", "created_at").
 					BuildEventFuncRequest()
@@ -93,7 +93,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.CreateFolderEvent).
 					AddField(media.ParamName, "test_create_directory").
 					AddField(media.ParamParentID, "0").
@@ -119,7 +119,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.CreateFolderEvent).
 					AddField(media.ParamName, "").
 					AddField(media.ParamParentID, "0").
@@ -135,7 +135,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.NewFolderDialogEvent).
 					BuildEventFuncRequest()
 				return req
@@ -149,7 +149,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.MoveToFolderDialogEvent).
 					Query(media.ParamSelectIDS, "1,2,3").
 					BuildEventFuncRequest()
@@ -165,7 +165,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.NextFolderEvent).
 					Query(media.ParamSelectFolderID, "0").
 					BuildEventFuncRequest()
@@ -182,7 +182,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.MoveToFolderEvent).
 					Query(media.ParamSelectFolderID, "5").
 					Query(media.ParamSelectIDS, "1,2,3").
@@ -208,7 +208,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.DeleteConfirmationEvent).
 					Query(media.ParamMediaIDS, "1,2,3").
 					BuildEventFuncRequest()
@@ -223,7 +223,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.DoDeleteEvent).
 					Query(media.ParamMediaIDS, "1").
 					BuildEventFuncRequest()
@@ -248,7 +248,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.DoDeleteEvent).
 					Query(media.ParamMediaIDS, "4").
 					BuildEventFuncRequest()
@@ -273,7 +273,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.DoDeleteEvent).
 					Query(media.ParamMediaIDS, "1,2,3,4,5,6").
 					BuildEventFuncRequest()
@@ -298,7 +298,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.RenameDialogEvent).
 					Query(media.ParamMediaIDS, "1").
 					BuildEventFuncRequest()
@@ -314,7 +314,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.RenameDialogEvent).
 					Query(media.ParamMediaIDS, "6").
 					BuildEventFuncRequest()
@@ -329,7 +329,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.RenameEvent).
 					Query(media.ParamMediaIDS, "1").
 					AddField(media.ParamName, "1").
@@ -355,7 +355,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.RenameEvent).
 					Query(media.ParamMediaIDS, "6").
 					AddField(media.ParamName, "test").
@@ -381,7 +381,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.UpdateDescriptionDialogEvent).
 					Query(media.ParamMediaIDS, "1").
 					BuildEventFuncRequest()
@@ -396,7 +396,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.UpdateDescriptionEvent).
 					Query(media.ParamMediaIDS, "1").
 					AddField(media.ParamCurrentDescription, "321").
@@ -436,7 +436,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(media.ParamField, "media").
 					Query(web.EventFuncIDName, media.ImageSearchEvent).
 					Query("media_file_chooser_search_keyword", "test_search2").
@@ -453,7 +453,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(media.ParamField, "media").
 					Query(web.EventFuncIDName, media.ImageSearchEvent).
 					Query("media_file_chooser_search_keyword", "2").
@@ -470,7 +470,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(media.ParamField, "media").
 					Query("media_file_chooser_current_page", "2").
 					Query(web.EventFuncIDName, media.ImageJumpPageEvent).
@@ -486,7 +486,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(media.ParamField, "media").
 					Query("tab", "folders").
 					Query("type", "image").
@@ -521,7 +521,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(media.ParamField, "media").
 					Query("tab", "folders").
 					Query("type", "video").
@@ -556,7 +556,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(media.ParamField, "media").
 					Query("tab", "folders").
 					Query("type", "file").
@@ -592,7 +592,7 @@ func TestMedia(t *testing.T) {
 				mediaTestData.TruncatePut(dbr)
 				media_oss.Storage = filesystem.New("/tmp/media_test")
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.UploadFileEvent).
 					Query(media.ParamField, "media").
 					AddReader("NewFiles", "test2.txt", bytes.NewReader([]byte("test upload file"))).
@@ -661,7 +661,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.OpenFileChooserEvent).
 					Query(media.ParamField, "media").
 					Query(media.ParamParentID, "4").
@@ -688,7 +688,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					AddField("type", "all").
 					AddField("order_by", "created_at_desc").
 					BuildEventFuncRequest()

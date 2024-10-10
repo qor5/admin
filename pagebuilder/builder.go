@@ -311,7 +311,7 @@ func (b *Builder) DisabledNormalContainersGroup(v bool) (r *Builder) {
 func (b *Builder) Model(mb *presets.ModelBuilder) (r *ModelBuilder) {
 	r = &ModelBuilder{
 		mb:      mb,
-		editor:  b.ps.Model(mb.NewModel()).URIName(mb.Info().URIName() + "-editors"),
+		editor:  b.ps.Model(mb.NewModel()).URIName(mb.Info().URIName()),
 		builder: b,
 		db:      b.db,
 	}
@@ -1056,7 +1056,16 @@ func (b *ContainerBuilder) Install() {
 
 func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 	b.model = m
-	b.mb = b.builder.ps.Model(m)
+
+	mb := b.builder.ps.Model(m)
+	mb.WrapVerifier(func(_ func() *perm.Verifier) func() *perm.Verifier {
+		return func() *perm.Verifier {
+			v := mb.GetPresetsBuilder().GetVerifier().Spawn()
+			v.SnakeOn("demo_containers")
+			return v.SnakeOn(mb.Info().URIName())
+		}
+	})
+	b.mb = mb
 
 	val := reflect.ValueOf(m)
 	if val.Kind() != reflect.Ptr {

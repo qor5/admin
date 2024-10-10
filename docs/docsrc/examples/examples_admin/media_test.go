@@ -101,7 +101,7 @@ func TestMediaExample(t *testing.T) {
 				simpleMediaData.TruncatePut(dbr)
 				media_oss.Storage = filesystem.New("/tmp/media_test")
 				req := multipartestutils.NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.UploadFileEvent).
 					Query(media.ParamField, "media").
 					AddReader("NewFiles", "test2.txt", bytes.NewReader([]byte("test upload file"))).
@@ -129,7 +129,7 @@ func TestMediaExample(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				simpleMediaData.TruncatePut(dbr)
 				req := multipartestutils.NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, "mediaLibrary_CropImageEvent").
 					Query(media.ParamField, "media").
 					Query(media.ParamMediaIDS, "5").
@@ -159,7 +159,7 @@ func TestMediaExample(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				simpleMediaData.TruncatePut(dbr)
 				req := multipartestutils.NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.CreateFolderEvent).
 					Query(media.ParamName, "folder_test").
 					BuildEventFuncRequest()

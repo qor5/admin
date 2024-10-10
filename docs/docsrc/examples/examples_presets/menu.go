@@ -177,7 +177,7 @@ func PresetsGroupMenuWithPermission(b *presets.Builder, db *gorm.DB) (
 		perm.New().Policies(
 			perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
 			perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(perm.Anything).On(
-				"*:mg_media:musics:*",
+				"*:musics:*",
 			),
 		),
 	)

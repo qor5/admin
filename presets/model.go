@@ -21,7 +21,7 @@ type ModelBuilder struct {
 	model               any
 	primaryField        string
 	modelType           reflect.Type
-	menuGroupName       string
+	verifier            func() *perm.Verifier
 	notInMenu           bool
 	menuIcon            string
 	menuItem            func(evCtx *web.EventContext, isSub bool) (h.HTMLComponent, error)
@@ -48,6 +48,7 @@ type ModelBuilder struct {
 
 func NewModelBuilder(p *Builder, model interface{}) (mb *ModelBuilder) {
 	mb = &ModelBuilder{p: p, model: model, primaryField: "ID"}
+	mb.verifier = mb.defaultVerifier
 	mb.modelType = reflect.TypeOf(model)
 	if mb.modelType.Kind() != reflect.Ptr {
 		panic(fmt.Sprintf("model %#+v must be pointer", model))
@@ -221,12 +222,18 @@ func (b ModelInfo) LabelName(evCtx *web.EventContext, singular bool) string {
 	return i18n.T(evCtx.R, ModelsI18nModuleKey, key)
 }
 
+func (mb *ModelBuilder) defaultVerifier() *perm.Verifier {
+	v := mb.p.verifier.Spawn()
+	return v.SnakeOn(mb.uriName)
+}
+
+func (mb *ModelBuilder) WrapVerifier(w func(in func() *perm.Verifier) func() *perm.Verifier) *ModelBuilder {
+	mb.verifier = w(mb.defaultVerifier)
+	return mb
+}
+
 func (b ModelInfo) Verifier() *perm.Verifier {
-	v := b.mb.p.verifier.Spawn()
-	if b.mb.menuGroupName != "" {
-		v.SnakeOn("mg_" + b.mb.menuGroupName)
-	}
-	return v.SnakeOn(b.mb.uriName)
+	return b.mb.verifier()
 }
 
 func (mb *ModelBuilder) URIName(v string) (r *ModelBuilder) {
