@@ -256,6 +256,9 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 	if status != publish.StatusDraft && isEditor {
 		isReadonly = true
 	}
+	if !isReadonly && b.mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil {
+		isReadonly = true
+	}
 	var comps []h.HTMLComponent
 	comps, err = b.renderContainers(ctx, obj, pageID, pageVersion, locale, isEditor, isReadonly)
 	if err != nil {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/qor5/web/v3"
 	. "github.com/qor5/web/v3/multipartestutils"
+	"github.com/qor5/x/v3/perm"
 	"github.com/theplant/gofixtures"
 	"github.com/theplant/testenv"
 	"gorm.io/gorm"
@@ -144,6 +145,34 @@ func TestPageBuilder(t *testing.T) {
 				return req
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Name is required"},
+		},
+		{
+			Name:  "Page Builder Editor Page",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				return httptest.NewRequest("GET", "/page_builder/pages-editors/10_2024-05-21-v01_International", nil)
+			},
+			ExpectPageBodyContainsInOrder: []string{"Add Container", "Select an element and change the setting here."},
+		},
+		{
+			Name:  "Page Builder Editor Page without perm.Update",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				mux, c := admin.TestHandlerComplex(TestDB, nil)
+				c.GetPresetsBuilder().Permission(
+					perm.New().Policies(
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermUpdate).On("*:presets:pages:*"),
+					),
+				)
+				return mux
+			},
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				return httptest.NewRequest("GET", "/page_builder/pages-editors/10_2024-05-21-v01_International", nil)
+			},
+			ExpectPageBodyNotContains: []string{"Add Container", "Select an element and change the setting here."},
 		},
 		{
 			Name:  "Add a new page",

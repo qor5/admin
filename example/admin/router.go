@@ -20,7 +20,7 @@ const (
 	exportOrdersURL = "/export-orders"
 )
 
-func TestHandler(db *gorm.DB, u *models.User) http.Handler {
+func TestHandlerComplex(db *gorm.DB, u *models.User) (http.Handler, Config) {
 	mux := http.NewServeMux()
 	c := NewConfig(db)
 	if u == nil {
@@ -36,6 +36,11 @@ func TestHandler(db *gorm.DB, u *models.User) http.Handler {
 	m := login.MockCurrentUser(u)
 	mux.Handle("/page_builder/", m(c.pageBuilder))
 	mux.Handle("/", m(c.pb))
+	return mux, c
+}
+
+func TestHandler(db *gorm.DB, u *models.User) http.Handler {
+	mux, _ := TestHandlerComplex(db, u)
 	return mux
 }
 
