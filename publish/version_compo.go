@@ -8,6 +8,7 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/stateful"
 	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/perm"
 	v "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
@@ -286,6 +287,13 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 	mb := b.Model(pm.NewModel()).
 		URIName(pm.Info().URIName() + VersionListDialogURISuffix).
 		InMenu(false)
+
+	mb.WrapVerifier(func(in func() *perm.Verifier) func() *perm.Verifier {
+		return func() *perm.Verifier {
+			v := mb.GetPresetsBuilder().GetVerifier().Spawn()
+			return v.SnakeDo(pm.Info().URIName())
+		}
+	})
 
 	listingHref := mb.Info().ListingHref()
 	registerEventFuncsForVersion(mb, db)
