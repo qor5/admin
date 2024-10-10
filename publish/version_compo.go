@@ -291,7 +291,7 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 	mb.WrapVerifier(func(in func() *perm.Verifier) func() *perm.Verifier {
 		return func() *perm.Verifier {
 			v := mb.GetPresetsBuilder().GetVerifier().Spawn()
-			return v.SnakeDo(pm.Info().URIName())
+			return v.SnakeOn(pm.Info().URIName())
 		}
 	})
 
