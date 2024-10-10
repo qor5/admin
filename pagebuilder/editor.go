@@ -131,6 +131,9 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			ctx.R.Form.Set(paramStatus, p.EmbedStatus().Status)
 			isStag = p.EmbedStatus().Status == publish.StatusOnline || p.EmbedStatus().Status == publish.StatusOffline
 		}
+		if !isStag && m.mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil {
+			isStag = true
+		}
 		afterLeaveEvent := removeVirtualElement() + "vars.emptyIframe = true;" + scrollToContainer(fmt.Sprintf("vars.%s", paramContainerDataID))
 		addOverlay := vx.VXOverlay(m.newContainerContent(ctx)).
 			MaxWidth(665).
