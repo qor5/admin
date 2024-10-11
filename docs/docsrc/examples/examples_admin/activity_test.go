@@ -364,6 +364,36 @@ func TestActivity(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"WithActivityProduct 13", ">Add Note</v-btn>", "A updated note", "edited at now"},
 		},
 		{
+			Name:  "Update note without model_keys",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				activityData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/with-activity-products?__execute_event__=__dispatch_stateful_action__").
+					AddField("__action__", `
+		{
+			"compo_type": "*activity.TimelineCompo",
+			"compo": {
+				"id": "with-activity-products:13",
+				"model_name": "WithActivityProduct",
+				"model_keys": "",
+				"model_link": "/examples/activity-example/with-activity-products/13"
+			},
+			"injector": "__activity:with-activity-products__",
+			"sync_query": false,
+			"method": "UpdateNote",
+			"request": {
+				"log_id": 45,
+				"note": "A updated note"
+			}
+		}
+		`).
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"permission denied"},
+		},
+		{
 			Name:  "Update note (without PermEditNote)",
 			Debug: true,
 			HandlerMaker: func() http.Handler {
