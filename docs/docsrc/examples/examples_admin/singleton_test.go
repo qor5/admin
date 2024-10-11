@@ -9,6 +9,7 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/multipartestutils"
+	"github.com/qor5/x/v3/perm"
 )
 
 func TestSingletonExample(t *testing.T) {
@@ -25,8 +26,28 @@ func TestSingletonExample(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				return httptest.NewRequest("GET", "/with-singleten-products", nil)
 			},
-			ExpectPageBodyContainsInOrder: []string{"Editing WithSingletenProduct", "Title", `"Title":""`, `.eventFunc("presets_Update").queries({"id":["1"]})`},
+			ExpectPageBodyContainsInOrder: []string{"Editing WithSingletenProduct", "Title", `"Title":""`, `:disabled='false'`, `.eventFunc("presets_Update").queries({"id":["1"]})`},
 		},
+		{
+			Name:  "index without perm.Update",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				pb := presets.New()
+				pb.Permission(
+					perm.New().Policies(
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermUpdate).On("*:presets:with_singleten_products:*"),
+					),
+				)
+				singletonExample(pb, TestDB, nil)
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				return httptest.NewRequest("GET", "/with-singleten-products", nil)
+			},
+			ExpectPageBodyContainsInOrder: []string{"Editing WithSingletenProduct", "Title", `"Title":""`, `:disabled='true'`},
+		},
+
 		{
 			Name:  "update",
 			Debug: true,
