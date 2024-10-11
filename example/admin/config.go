@@ -342,6 +342,7 @@ func NewConfig(db *gorm.DB) Config {
 
 	configOrder(b, db)
 	configECDashboard(b, db)
+	configureDemoCase(b, db)
 
 	configUser(b, ab, db, publisher, loginSessionBuilder)
 
@@ -466,6 +467,7 @@ func configMenuOrder(b *presets.Builder) {
 		).Icon("mdi-account-multiple"),
 		b.MenuGroup("Featured Models Management").SubItems(
 			"InputDemo",
+			"DemoCase",
 			"Post",
 			"qor-seo-settings",
 			"List Editor Example",
