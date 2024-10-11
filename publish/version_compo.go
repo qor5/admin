@@ -56,64 +56,32 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 		phraseHasPresetsDataChanged = "false"
 	}
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		var (
-			version        VersionInterface
-			status         StatusInterface
-			primarySlugger presets.SlugEncoder
-			ok             bool
-			versionSwitch  *v.VChipBuilder
-			publishBtn     h.HTMLComponent
-			verifier       = mb.Info().Verifier()
-		)
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 		utilsMsgr := i18n.MustGetModuleMessages(ctx.R, utils.I18nUtilsKey, utils.Messages_en_US).(*utils.Messages)
 
-		primarySlugger, ok = obj.(presets.SlugEncoder)
+		primarySlugger, ok := obj.(presets.SlugEncoder)
 		if !ok {
 			panic("obj should be SlugEncoder")
 		}
 		slug := primarySlugger.PrimarySlug()
 
 		div := h.Div().Class("tagList-bar-warp")
-
 		confirmDialogPayload := utils.UtilDialogPayloadType{
 			Text:     msgr.Areyousure,
 			OkAction: web.Plaid().EventFunc(web.Var("locals.action")).Query(presets.ParamID, slug).Go(),
 			Msgr:     utilsMsgr,
 		}
-
-		div.AppendChildren(
-			utils.ConfirmDialog(confirmDialogPayload),
-		)
+		div.AppendChildren(utils.ConfirmDialog(confirmDialogPayload))
 
 		if !config.Top {
 			div.Class("pb-4")
 		}
 
 		urlSuffix := field.ModelInfo.URIName() + VersionListDialogURISuffix
-		if version, ok = obj.(VersionInterface); ok {
-			versionSwitch = v.VChip(
-				h.Span(`{{ xlocals.versionName }}`).Class("ellipsis"),
-			).Label(true).Variant(v.VariantOutlined).
-				Attr("style", "height:36px;").
-				Color(v.ColorAbsGreyDarken3).
-				Attr(":disabled", phraseHasPresetsDataChanged).
-				On("click", web.Plaid().EventFunc(actions.OpenListingDialog).
-					URL(mb.Info().PresetsPrefix()+"/"+urlSuffix).
-					Query(filterKeySelected, slug).
-					Go()).
-				Class(v.W100, "version-select-wrap")
-			if status, ok = obj.(StatusInterface); ok {
-				versionSwitch.AppendChildren(statusChip(status.EmbedStatus().Status, msgr).Class("mx-2 flex-shrink-0"))
-			}
-			versionSwitch.AppendIcon("mdi-menu-down").Size(16).Color(v.ColorAbsGreyDarken3)
+		if _, ok := obj.(VersionInterface); ok {
+			div.AppendChildren(buildVersionSwitch(obj, mb, slug, urlSuffix, msgr, phraseHasPresetsDataChanged))
 
-			div.AppendChildren(web.Scope().VSlot(" { locals: xlocals } ").Init(fmt.Sprintf("{versionName: %q}", version.EmbedVersion().VersionName)).Children(
-				versionSwitch,
-				web.Listen(mb.NotifModelsUpdated(), fmt.Sprintf(`xlocals.versionName = payload.models[%q]?.VersionName ?? xlocals.versionName;`, slug)),
-			))
-
-			if !DeniedDo(verifier, obj, ctx.R, presets.PermUpdate, PermDuplicate) {
+			if !DeniedDo(mb.Info().Verifier(), obj, ctx.R, presets.PermUpdate, PermDuplicate) {
 				div.AppendChildren(v.VBtn(msgr.Duplicate).
 					Height(36).Class("ml-2").Variant(v.VariantOutlined).
 					Attr(":disabled", phraseHasPresetsDataChanged).
@@ -121,91 +89,16 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 			}
 		}
 
+		verifier := mb.Info().Verifier()
 		deniedPublish := DeniedDo(verifier, obj, ctx.R, PermPublish)
 		deniedUnpublish := DeniedDo(verifier, obj, ctx.R, PermUnpublish)
-		if status, ok = obj.(StatusInterface); ok {
-			switch status.EmbedStatus().Status {
-			case StatusDraft, StatusOffline:
-				if !deniedPublish {
-					publishEvent := fmt.Sprintf(`locals.action=%q;locals.commonConfirmDialog = true`, EventPublish)
-					if config.PublishEvent != nil {
-						publishEvent = config.PublishEvent(obj, field, ctx)
-					}
-					publishBtn = h.Div(
-						v.VBtn(msgr.Publish).
-							Attr(":disabled", phraseHasPresetsDataChanged).
-							Attr("@click", publishEvent).Class("ml-2").
-							ClassIf("rounded", config.Top).ClassIf("rounded-0 rounded-s", !config.Top).
-							Variant(v.VariantElevated).Color(v.ColorPrimary).Height(36),
-					)
-				}
-			case StatusOnline:
-				var unPublishEvent, rePublishEvent string
-				if !deniedUnpublish {
-					unPublishEvent = fmt.Sprintf(`locals.action=%q;locals.commonConfirmDialog = true`, EventUnpublish)
-					if config.UnPublishEvent != nil {
-						unPublishEvent = config.UnPublishEvent(obj, field, ctx)
-					}
-				}
-				if !deniedPublish {
-					rePublishEvent = fmt.Sprintf(`locals.action=%q;locals.commonConfirmDialog = true`, EventRepublish)
-					if config.RePublishEvent != nil {
-						rePublishEvent = config.RePublishEvent(obj, field, ctx)
-					}
-				}
-				if unPublishEvent != "" || rePublishEvent != "" {
-					publishBtn = h.Div(
-						h.Iff(unPublishEvent != "", func() h.HTMLComponent {
-							return v.VBtn(msgr.Unpublish).
-								Attr(":disabled", phraseHasPresetsDataChanged).
-								Attr("@click", unPublishEvent).
-								Class("ml-2").Variant(v.VariantElevated).Color(v.ColorError).Height(36)
-						}),
-						h.Iff(rePublishEvent != "", func() h.HTMLComponent {
-							return v.VBtn(msgr.Republish).
-								Attr(":disabled", phraseHasPresetsDataChanged).
-								Attr("@click", rePublishEvent).Class("ml-2").
-								ClassIf("rounded", config.Top).ClassIf("rounded-0 rounded-s", !config.Top).
-								Variant(v.VariantElevated).Color(v.ColorPrimary).Height(36)
-						}),
-					).Class("d-inline-flex")
-				}
-			}
-			if publishBtn != nil {
-				div.AppendChildren(publishBtn)
-				// Publish/Unpublish/Republish CustomDialog
-				if config.UnPublishEvent != nil || config.RePublishEvent != nil || config.PublishEvent != nil {
-					div.AppendChildren(web.Portal().Name(PortalPublishCustomDialog))
-				}
-			}
+
+		if _, ok := obj.(StatusInterface); ok {
+			div.AppendChildren(buildPublishButton(obj, field, ctx, config, msgr, phraseHasPresetsDataChanged, deniedPublish, deniedUnpublish))
 		}
 
-		if _, ok = obj.(ScheduleInterface); ok {
-			deniedSchedule := deniedPublish || deniedUnpublish || DeniedDo(verifier, obj, ctx.R, PermSchedule)
-			if !deniedSchedule {
-				var scheduleBtn h.HTMLComponent
-				clickEvent := web.Plaid().
-					EventFunc(eventSchedulePublishDialog).
-					Query(presets.ParamOverlay, actions.Dialog).
-					Query(presets.ParamID, slug).
-					URL(mb.Info().ListingHref()).Go()
-				if config.Top {
-					scheduleBtn = v.VAutocomplete().PrependInnerIcon("mdi-alarm").Density(v.DensityCompact).
-						Variant(v.FieldVariantSoloFilled).ModelValue(msgr.SchedulePublishTime).
-						BgColor(v.ColorPrimaryLighten2).Readonly(true).
-						Width(500).HideDetails(true).
-						Attr(":disabled", phraseHasPresetsDataChanged).
-						Attr("@click", clickEvent).Class("ml-2 text-caption page-builder-autoCmp")
-				} else {
-					scheduleBtn = v.VBtn("").Size(v.SizeSmall).Children(v.VIcon("mdi-alarm").Size(v.SizeXLarge)).Rounded("0").Class("rounded-e ml-abs-1").
-						Variant(v.VariantElevated).Color(v.ColorPrimary).Width(36).Height(36).
-						Attr(":disabled", phraseHasPresetsDataChanged).
-						Attr("@click", clickEvent)
-				}
-				div.AppendChildren(scheduleBtn)
-				// SchedulePublishDialog
-				div.AppendChildren(web.Portal().Name(PortalSchedulePublishDialog))
-			}
+		if _, ok := obj.(ScheduleInterface); ok {
+			div.AppendChildren(buildScheduleButton(obj, ctx, mb, slug, config, msgr, phraseHasPresetsDataChanged, deniedPublish, deniedUnpublish))
 		}
 
 		children := []h.HTMLComponent{div}
@@ -217,6 +110,133 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 		}
 		return web.Scope(children...).VSlot(" { locals } ").Init(`{action: "", commonConfirmDialog: false }`)
 	}
+}
+
+func buildVersionSwitch(obj interface{}, mb *presets.ModelBuilder, slug, urlSuffix string, msgr *Messages, phraseHasPresetsDataChanged string) h.HTMLComponent {
+	version, ok := obj.(VersionInterface)
+	if !ok {
+		return nil
+	}
+	versionSwitch := v.VChip(
+		h.Span(`{{ xlocals.versionName }}`).Class("ellipsis"),
+	).Label(true).Variant(v.VariantOutlined).
+		Attr("style", "height:36px;").
+		Color(v.ColorAbsGreyDarken3).
+		Attr(":disabled", phraseHasPresetsDataChanged).
+		On("click", web.Plaid().EventFunc(actions.OpenListingDialog).
+			URL(mb.Info().PresetsPrefix()+"/"+urlSuffix).
+			Query(filterKeySelected, slug).
+			Go()).
+		Class(v.W100, "version-select-wrap")
+	if status, ok := obj.(StatusInterface); ok {
+		versionSwitch.AppendChildren(statusChip(status.EmbedStatus().Status, msgr).Class("mx-2 flex-shrink-0"))
+	}
+	versionSwitch.AppendIcon("mdi-menu-down").Size(16).Color(v.ColorAbsGreyDarken3)
+
+	return web.Scope().VSlot(" { locals: xlocals } ").Init(fmt.Sprintf("{versionName: %q}", version.EmbedVersion().VersionName)).Children(
+		versionSwitch,
+		web.Listen(mb.NotifModelsUpdated(), fmt.Sprintf(`xlocals.versionName = payload.models[%q]?.VersionName ?? xlocals.versionName;`, slug)),
+	)
+}
+
+func buildPublishButton(obj interface{}, field *presets.FieldContext, ctx *web.EventContext, config VersionComponentConfig, msgr *Messages, phraseHasPresetsDataChanged string, deniedPublish, deniedUnpublish bool) h.HTMLComponent {
+	status, ok := obj.(StatusInterface)
+	if !ok {
+		return nil
+	}
+
+	var publishBtn h.HTMLComponent
+	switch status.EmbedStatus().Status {
+	case StatusDraft, StatusOffline:
+		if !deniedPublish {
+			publishEvent := fmt.Sprintf(`locals.action=%q;locals.commonConfirmDialog = true`, EventPublish)
+			if config.PublishEvent != nil {
+				publishEvent = config.PublishEvent(obj, field, ctx)
+			}
+			publishBtn = h.Div(
+				v.VBtn(msgr.Publish).
+					Attr(":disabled", phraseHasPresetsDataChanged).
+					Attr("@click", publishEvent).Class("ml-2").
+					ClassIf("rounded", config.Top).ClassIf("rounded-0 rounded-s", !config.Top).
+					Variant(v.VariantElevated).Color(v.ColorPrimary).Height(36),
+			)
+		}
+	case StatusOnline:
+		var unPublishEvent, rePublishEvent string
+		if !deniedUnpublish {
+			unPublishEvent = fmt.Sprintf(`locals.action=%q;locals.commonConfirmDialog = true`, EventUnpublish)
+			if config.UnPublishEvent != nil {
+				unPublishEvent = config.UnPublishEvent(obj, field, ctx)
+			}
+		}
+		if !deniedPublish {
+			rePublishEvent = fmt.Sprintf(`locals.action=%q;locals.commonConfirmDialog = true`, EventRepublish)
+			if config.RePublishEvent != nil {
+				rePublishEvent = config.RePublishEvent(obj, field, ctx)
+			}
+		}
+		if unPublishEvent != "" || rePublishEvent != "" {
+			publishBtn = h.Div(
+				h.Iff(unPublishEvent != "", func() h.HTMLComponent {
+					return v.VBtn(msgr.Unpublish).
+						Attr(":disabled", phraseHasPresetsDataChanged).
+						Attr("@click", unPublishEvent).
+						Class("ml-2").Variant(v.VariantElevated).Color(v.ColorError).Height(36)
+				}),
+				h.Iff(rePublishEvent != "", func() h.HTMLComponent {
+					return v.VBtn(msgr.Republish).
+						Attr(":disabled", phraseHasPresetsDataChanged).
+						Attr("@click", rePublishEvent).Class("ml-2").
+						ClassIf("rounded", config.Top).ClassIf("rounded-0 rounded-s", !config.Top).
+						Variant(v.VariantElevated).Color(v.ColorPrimary).Height(36)
+				}),
+			).Class("d-inline-flex")
+		}
+	}
+	if publishBtn != nil {
+		var compos h.HTMLComponents = []h.HTMLComponent{publishBtn}
+		// Publish/Unpublish/Republish CustomDialog
+		if config.UnPublishEvent != nil || config.RePublishEvent != nil || config.PublishEvent != nil {
+			compos = append(compos, web.Portal().Name(PortalPublishCustomDialog))
+		}
+		return compos
+	}
+	return nil
+}
+
+func buildScheduleButton(obj interface{}, ctx *web.EventContext, mb *presets.ModelBuilder, slug string, config VersionComponentConfig, msgr *Messages, phraseHasPresetsDataChanged string, deniedPublish, deniedUnpublish bool) h.HTMLComponent {
+	_, ok := obj.(ScheduleInterface)
+	if !ok {
+		return nil
+	}
+
+	deniedSchedule := deniedPublish || deniedUnpublish || DeniedDo(mb.Info().Verifier(), obj, ctx.R, PermSchedule)
+	if !deniedSchedule {
+		var scheduleBtn h.HTMLComponent
+		clickEvent := web.Plaid().
+			EventFunc(eventSchedulePublishDialog).
+			Query(presets.ParamOverlay, actions.Dialog).
+			Query(presets.ParamID, slug).
+			URL(mb.Info().ListingHref()).Go()
+		if config.Top {
+			scheduleBtn = v.VAutocomplete().PrependInnerIcon("mdi-alarm").Density(v.DensityCompact).
+				Variant(v.FieldVariantSoloFilled).ModelValue(msgr.SchedulePublishTime).
+				BgColor(v.ColorPrimaryLighten2).Readonly(true).
+				Width(500).HideDetails(true).
+				Attr(":disabled", phraseHasPresetsDataChanged).
+				Attr("@click", clickEvent).Class("ml-2 text-caption page-builder-autoCmp")
+		} else {
+			scheduleBtn = v.VBtn("").Size(v.SizeSmall).Children(v.VIcon("mdi-alarm").Size(v.SizeXLarge)).Rounded("0").Class("rounded-e ml-abs-1").
+				Variant(v.VariantElevated).Color(v.ColorPrimary).Width(36).Height(36).
+				Attr(":disabled", phraseHasPresetsDataChanged).
+				Attr("@click", clickEvent)
+		}
+		var compos h.HTMLComponents = []h.HTMLComponent{scheduleBtn}
+		// SchedulePublishDialog
+		compos = append(compos, web.Portal().Name(PortalSchedulePublishDialog))
+		return compos
+	}
+	return nil
 }
 
 func DefaultVersionBar(db *gorm.DB) presets.ObjectComponentFunc {
