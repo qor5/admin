@@ -279,6 +279,6 @@ func generateSection(detailing *presets.DetailingBuilder, section, editField, la
 	return detailing.Section(section).Label(label).Editing(editField).
 		ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			p := obj.(*DemoCase)
-			return vx.VXReadonlyField().Value(h.JSONString(p.FieldData)).Label(editField)
+			return vx.VXReadonlyField().Value(h.JSONString(reflectutils.MustGet(p, editField))).Label(editField)
 		})
 }
