@@ -94,7 +94,7 @@ func categoryValidator(ctx *web.EventContext, category *Category, db *gorm.DB, l
 
 	categoryPath := path.Clean(category.Path)
 	if !directoryRe.MatchString(categoryPath) {
-		err.FieldError("Category", msgr.InvalidPathMsg)
+		err.FieldError("Path", msgr.InvalidPathMsg)
 		return
 	}
 
@@ -119,7 +119,7 @@ func categoryValidator(ctx *web.EventContext, category *Category, db *gorm.DB, l
 			innerLocalePath = l10nB.GetLocalePath(c.LocaleCode)
 		}
 		if generatePublishUrl(innerLocalePath, c.Path, "") == currentCategoryPathPublishUrl {
-			err.FieldError("Category", msgr.ExistingPathMsg)
+			err.FieldError("Path", msgr.ExistingPathMsg)
 			return
 		}
 	}
