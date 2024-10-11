@@ -12,8 +12,7 @@ import (
 	"github.com/qor5/admin/v3/presets/actions"
 )
 
-var (
-	demoContainerData = gofixtures.Data(gofixtures.Sql(`
+var demoContainerData = gofixtures.Data(gofixtures.Sql(`
 INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (1, '2024-08-26 03:00:44.699127 +00:00', '2024-08-26 03:00:44.699127 +00:00', null, 'Header', 1, false, 'International');
 INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (2, '2024-08-26 03:00:44.727313 +00:00', '2024-08-26 03:00:44.727313 +00:00', null, 'Heading', 1, false, 'International');
 INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (3, '2024-08-26 03:00:45.406616 +00:00', '2024-08-26 03:00:45.406616 +00:00', null, 'PageTitle', 1, false, 'International');
@@ -41,13 +40,12 @@ INSERT INTO public.container_headers (id, color) VALUES (1, '');
 
 `,
 
-		[]string{
-			`page_builder_demo_containers`, `container_list_content_with_image`, `container_brand_grids`, `container_list_content_lite`,
-			`container_contact_form`, `container_in_numbers`, `container_list_content`, `container_images`, `container_footers`,
-			`container_brand_grids`, `container_video_banners`, `container_page_title`, `container_headings`, `container_headers`,
-		},
-	))
-)
+	[]string{
+		`page_builder_demo_containers`, `container_list_content_with_image`, `container_brand_grids`, `container_list_content_lite`,
+		`container_contact_form`, `container_in_numbers`, `container_list_content`, `container_images`, `container_footers`,
+		`container_brand_grids`, `container_video_banners`, `container_page_title`, `container_headings`, `container_headers`,
+	},
+))
 
 func TestDemoContainer(t *testing.T) {
 	h := admin.TestHandler(TestDB, nil)
