@@ -49,24 +49,29 @@ func (c *FieldData) Scan(value interface{}) error {
 	}
 	return nil
 }
+
 func (c *FieldData) Value() (driver.Value, error) {
 	return json.Marshal(c)
 }
+
 func (c *SelectData) Scan(value interface{}) error {
 	if bytes, ok := value.([]byte); ok {
 		return json.Unmarshal(bytes, c)
 	}
 	return nil
 }
+
 func (c *SelectData) Value() (driver.Value, error) {
 	return json.Marshal(c)
 }
+
 func (c *CheckboxData) Scan(value interface{}) error {
 	if bytes, ok := value.([]byte); ok {
 		return json.Unmarshal(bytes, c)
 	}
 	return nil
 }
+
 func (c *CheckboxData) Value() (driver.Value, error) {
 	return json.Marshal(c)
 }
@@ -107,6 +112,7 @@ func DemoCaseSelect(obj interface{}, section, editField, field, label string, vE
 		Attr(web.VField(formKey, reflectutils.MustGet(obj, fieldName))...).
 		ErrorMessages(vErr.GetFieldErrors(formKey)...)
 }
+
 func DemoCaseCheckBox(obj interface{}, section, editField, field, label string) *vx.VXCheckboxBuilder {
 	fieldName := fmt.Sprintf("%s.%s", editField, field)
 	formKey := fmt.Sprintf("%s.%s", section, fieldName)
@@ -161,6 +167,7 @@ func configVxField(detailing *presets.DetailingBuilder) {
 		}
 	})
 }
+
 func configVxSelect(detailing *presets.DetailingBuilder) {
 	section := "SelectSection"
 	editField := "SelectData"
@@ -172,8 +179,14 @@ func configVxSelect(detailing *presets.DetailingBuilder) {
 				vErr = *ve
 			}
 			items := []DemoSelectItem{
-				{ID: 1, Name: "Petter"}, {ID: 2, Name: "John"}, {ID: 3, Name: "Devi"}, {ID: 4, Name: "Anna"},
-				{ID: 5, Name: "Jane"}, {ID: 6, Name: "Britta"}, {ID: 7, Name: "Sandra"}, {ID: 8, Name: "Trevor"},
+				{ID: 1, Name: "Petter"},
+				{ID: 2, Name: "John"},
+				{ID: 3, Name: "Devi"},
+				{ID: 4, Name: "Anna"},
+				{ID: 5, Name: "Jane"},
+				{ID: 6, Name: "Britta"},
+				{ID: 7, Name: "Sandra"},
+				{ID: 8, Name: "Trevor"},
 			}
 			return h.Components(
 				v.VRow(
@@ -188,8 +201,6 @@ func configVxSelect(detailing *presets.DetailingBuilder) {
 							Type("autocomplete"),
 					),
 				),
-
-
 			)
 		}).WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
 		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
@@ -205,6 +216,7 @@ func configVxSelect(detailing *presets.DetailingBuilder) {
 		}
 	})
 }
+
 func configVxCheckBox(detailing *presets.DetailingBuilder) {
 	section := "CheckboxSection"
 	editField := "CheckboxData"
@@ -257,11 +269,8 @@ func configVxDialog(detailing *presets.DetailingBuilder) {
 							Title("ActivatorSlot").
 							Text(text),
 					),
-
 				),
 			).Class("section-wrap with-border-b"),
-
-
 		).VSlot("{locals}").Init("{dialogVisible:false}")
 	})
 }
