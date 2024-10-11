@@ -582,42 +582,19 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 	})
 
 	eb := pm.Editing("Name", "Path", "Description")
-	eb.Field("Name").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		var vErr web.ValidationErrors
-		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
-			vErr = *ve
+	eb.Field("Path").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
+		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			comp := in(obj, field, ctx)
+			if p, ok := comp.(*vx.VXFieldBuilder); ok {
+				p.Attr(web.VField(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"))...).
+					Attr("prefix", "/")
+			}
+			return comp
 		}
-
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		return vx.VXField().Label(msgr.ListHeaderName).
-			Attr(web.VField(field.Name, field.Value(obj))...).
-			ErrorMessages(vErr.GetFieldErrors("Category.Name")...)
-	})
-
-	eb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		var vErr web.ValidationErrors
-		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
-			vErr = *ve
-		}
-
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		return vx.VXField().Label(msgr.ListHeaderPath).
-			Attr(web.VField(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"))...).
-			Attr("prefix", "/").
-			ErrorMessages(vErr.GetFieldErrors("Category.Category")...)
 	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 		m := obj.(*Category)
 		m.Path = path.Join("/", m.Path)
 		return nil
-	})
-
-	eb.Field("Description").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		return vx.VXField().
-			Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
-			Label(msgr.ListHeaderDescription).
-			ErrorMessages(field.Errors...).
-			Disabled(field.Disabled)
 	})
 
 	eb.DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {

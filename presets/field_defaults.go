@@ -243,6 +243,7 @@ func TextField(obj interface{}, field *FieldContext, ctx *web.EventContext) *vue
 func SelectField(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXSelectBuilder {
 	return vuetifyx.VXSelect().
 		Label(field.Label).
+		Disabled(field.Disabled).
 		Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
 		ErrorMessages(field.Errors...)
 }
