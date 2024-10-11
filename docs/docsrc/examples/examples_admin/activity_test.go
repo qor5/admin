@@ -9,6 +9,7 @@ import (
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3/multipartestutils"
+	"github.com/qor5/x/v3/perm"
 	"github.com/theplant/gofixtures"
 	"gorm.io/gorm"
 )
@@ -151,6 +152,78 @@ func TestActivity(t *testing.T) {
 			ExpectPortalUpdate0NotContains:     []string{"Created"},
 		},
 		{
+			Name:  "without PermAddNote for ModelBuilder",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				pb := presets.New()
+				pb.Permission(
+					perm.New().Policies(
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(activity.PermAddNote).On("*:presets:with_activity_products:*"),
+					),
+				)
+				activityExample(pb, TestDB, nil)
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				activityData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/with-activity-products?__execute_event__=presets_DetailingDrawer&id=13").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"WithActivityProduct 13", "John", "Added a note", "The newest model of the off-legacy Air Jordans is ready to burst onto to the scene."},
+			ExpectPortalUpdate0NotContains:     []string{">Add Note</v-btn>"},
+		},
+		{
+			Name:  "without PermEditNote for ModelBuilder",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				pb := presets.New()
+				pb.Permission(
+					perm.New().Policies(
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(activity.PermEditNote).On("*:presets:with_activity_products:*"),
+					),
+				)
+				activityExample(pb, TestDB, nil)
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				activityData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/with-activity-products?__execute_event__=presets_DetailingDrawer&id=13").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"WithActivityProduct 13", ">Add Note</v-btn>", "John", "Added a note", "The newest model of the off-legacy Air Jordans is ready to burst onto to the scene."},
+			ExpectPortalUpdate0NotContains:     []string{"mdi-square-edit-outline"},
+		},
+		{
+			Name:  "without PermDeleteNote for ModelBuilder",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				pb := presets.New()
+				pb.Permission(
+					perm.New().Policies(
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(activity.PermDeleteNote).On("*:presets:with_activity_products:*"),
+					),
+				)
+				activityExample(pb, TestDB, nil)
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				activityData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/with-activity-products?__execute_event__=presets_DetailingDrawer&id=13").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"WithActivityProduct 13", ">Add Note</v-btn>", "John", "Added a note", "The newest model of the off-legacy Air Jordans is ready to burst onto to the scene."},
+			ExpectPortalUpdate0NotContains:     []string{"mdi-delete"},
+		},
+		{
 			Name:  "Create note",
 			Debug: true,
 			ReqFunc: func() *http.Request {
@@ -178,6 +251,46 @@ func TestActivity(t *testing.T) {
 				return req
 			},
 			ExpectRunScriptContainsInOrder: []string{"Successfully created note", "The iconic all-black look."},
+		},
+		{
+			Name:  "Create note (without PermAddNote)",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				pb := presets.New()
+				pb.Permission(
+					perm.New().Policies(
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(activity.PermAddNote).On("*:presets:with_activity_products:*"),
+					),
+				)
+				activityExample(pb, TestDB, nil)
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				activityData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/with-activity-products?__execute_event__=__dispatch_stateful_action__").
+					AddField("__action__", `
+		{
+			"compo_type": "*activity.TimelineCompo",
+			"compo": {
+				"id": "with-activity-products:13",
+				"model_name": "WithActivityProduct",
+				"model_keys": "13",
+				"model_link": "/examples/activity-example/with-activity-products/13"
+			},
+			"injector": "__activity:with-activity-products__",
+			"sync_query": false,
+			"method": "CreateNote",
+			"request": {
+				"note": "The iconic all-black look."
+			}
+		}
+		`).
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"permission denied"},
 		},
 		{
 			Name:  "create note with invalid data",
@@ -251,6 +364,47 @@ func TestActivity(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"WithActivityProduct 13", ">Add Note</v-btn>", "A updated note", "edited at now"},
 		},
 		{
+			Name:  "Update note (without PermEditNote)",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				pb := presets.New()
+				pb.Permission(
+					perm.New().Policies(
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(activity.PermEditNote).On("*:presets:with_activity_products:*"),
+					),
+				)
+				activityExample(pb, TestDB, nil)
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				activityData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/with-activity-products?__execute_event__=__dispatch_stateful_action__").
+					AddField("__action__", `
+		{
+			"compo_type": "*activity.TimelineCompo",
+			"compo": {
+				"id": "with-activity-products:13",
+				"model_name": "WithActivityProduct",
+				"model_keys": "13",
+				"model_link": "/examples/activity-example/with-activity-products/13"
+			},
+			"injector": "__activity:with-activity-products__",
+			"sync_query": false,
+			"method": "UpdateNote",
+			"request": {
+				"log_id": 45,
+				"note": "A updated note"
+			}
+		}
+		`).
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"permission denied"},
+		},
+		{
 			Name:  "Delete Note",
 			Debug: true,
 			ReqFunc: func() *http.Request {
@@ -278,6 +432,46 @@ func TestActivity(t *testing.T) {
 				return req
 			},
 			ExpectRunScriptContainsInOrder: []string{"Successfully deleted note", "45"},
+		},
+		{
+			Name:  "Delete Note (without PermDeleteNote)",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				pb := presets.New()
+				pb.Permission(
+					perm.New().Policies(
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(activity.PermDeleteNote).On("*:presets:with_activity_products:*"),
+					),
+				)
+				activityExample(pb, TestDB, nil)
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				activityData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/with-activity-products?__execute_event__=__dispatch_stateful_action__").
+					AddField("__action__", `
+		{
+			"compo_type": "*activity.TimelineCompo",
+			"compo": {
+				"id": "with-activity-products:13",
+				"model_name": "WithActivityProduct",
+				"model_keys": "13",
+				"model_link": "/examples/activity-example/with-activity-products/13"
+			},
+			"injector": "__activity:with-activity-products__",
+			"sync_query": false,
+			"method": "DeleteNote",
+			"request": {
+				"log_id": 45
+			}
+		}
+		`).
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"permission denied"},
 		},
 	}
 

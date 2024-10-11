@@ -135,15 +135,21 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		return h.Div().Attr("v-pre", true).Text(perm.PermissionDenied.Error()).MarshalHTML(ctx)
 	}
 
+	canAddNote := c.mb.Info().Verifier().Do(PermAddNote).WithReq(evCtx.R).IsAllowed() == nil
+	canEditNote := c.mb.Info().Verifier().Do(PermEditNote).WithReq(evCtx.R).IsAllowed() == nil
+	canDeleteNote := c.mb.Info().Verifier().Do(PermDeleteNote).WithReq(evCtx.R).IsAllowed() == nil
+
 	children := []h.HTMLComponent{
 		web.Scope().VSlot("{locals: xlocals, form}").Init("{showEditBox:false}").Children(
 			h.Div().Class("d-flex flex-column ga-4 mb-8").Children(
 				h.Div().Class("d-flex align-center ga-2").Children(
 					h.Div().Class("text-h6").Text(msgr.Activities),
 					v.VSpacer(),
-					v.VBtn(msgr.AddNote).Attr(":disabled", "xlocals.showEditBox || toplocals.editing").
-						Class("text-caption").Variant(v.VariantTonal).Color("grey-darken-3").Size(v.SizeSmall).PrependIcon("mdi-plus").
-						Attr("@click", "xlocals.showEditBox = true; toplocals.editing = true"),
+					h.Iff(canAddNote, func() h.HTMLComponent {
+						return v.VBtn(msgr.AddNote).Attr(":disabled", "xlocals.showEditBox || toplocals.editing").
+							Class("text-caption").Variant(v.VariantTonal).Color("grey-darken-3").Size(v.SizeSmall).PrependIcon("mdi-plus").
+							Attr("@click", "xlocals.showEditBox = true; toplocals.editing = true")
+					}),
 				),
 				v.VDivider(),
 				h.Div().Attr("v-if", "!!xlocals.showEditBox").Class("d-flex flex-column mb-n6").Style("position: relative").Children(
@@ -255,10 +261,14 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 			child = h.Div().Class("d-flex flex-column").Style("position: relative").Children(
 				h.Div().Attr("v-if", "isHovering && !xlocals.showEditBox && !toplocals.editing").Class("d-flex flex-row ga-1").
 					Style("position: absolute; top: 21px; right: 16px").Children(
-					v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(v.SizeXSmall).Icon("mdi-square-edit-outline").
-						Attr("@click", "xlocals.showEditBox = true; toplocals.editing = true"),
-					v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(v.SizeXSmall).Icon("mdi-delete").
-						Attr("@click", fmt.Sprintf(`toplocals.deletingLogID = %q`, idStr)),
+					h.Iff(canEditNote, func() h.HTMLComponent {
+						return v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(v.SizeXSmall).Icon("mdi-square-edit-outline").
+							Attr("@click", "xlocals.showEditBox = true; toplocals.editing = true")
+					}),
+					h.Iff(canDeleteNote, func() h.HTMLComponent {
+						return v.VBtn("").Variant(v.VariantText).Color("grey-darken-3").Size(v.SizeXSmall).Icon("mdi-delete").
+							Attr("@click", fmt.Sprintf(`toplocals.deletingLogID = %q`, idStr))
+					}),
 				),
 				child,
 			)
@@ -367,12 +377,14 @@ type CreateNoteRequest struct {
 
 func (c *TimelineCompo) CreateNote(ctx context.Context, req CreateNoteRequest) (r web.EventResponse, _ error) {
 	if c.ModelName == "" || c.ModelKeys == "" {
-		return r, perm.PermissionDenied
+		presets.ShowMessage(&r, perm.PermissionDenied.Error(), v.ColorError)
+		return
 	}
 
 	evCtx, msgr := c.MustGetEventContext(ctx)
-	if c.mb.Info().Verifier().Do(presets.PermGet).WithReq(evCtx.R).IsAllowed() != nil {
-		return r, perm.PermissionDenied
+	if c.mb.Info().Verifier().Do(PermAddNote).WithReq(evCtx.R).IsAllowed() != nil {
+		presets.ShowMessage(&r, perm.PermissionDenied.Error(), v.ColorError)
+		return
 	}
 
 	req.Note = strings.TrimSpace(req.Note)
@@ -403,12 +415,14 @@ type UpdateNoteRequest struct {
 
 func (c *TimelineCompo) UpdateNote(ctx context.Context, req UpdateNoteRequest) (r web.EventResponse, _ error) {
 	if c.ModelName == "" || c.ModelKeys == "" {
-		return r, perm.PermissionDenied
+		presets.ShowMessage(&r, perm.PermissionDenied.Error(), v.ColorError)
+		return
 	}
 
 	evCtx, msgr := c.MustGetEventContext(ctx)
-	if c.mb.Info().Verifier().Do(presets.PermGet).WithReq(evCtx.R).IsAllowed() != nil {
-		return r, perm.PermissionDenied
+	if c.mb.Info().Verifier().Do(PermEditNote).WithReq(evCtx.R).IsAllowed() != nil {
+		presets.ShowMessage(&r, perm.PermissionDenied.Error(), v.ColorError)
+		return
 	}
 
 	req.Note = strings.TrimSpace(req.Note)
@@ -467,12 +481,14 @@ type DeleteNoteRequest struct {
 
 func (c *TimelineCompo) DeleteNote(ctx context.Context, req DeleteNoteRequest) (r web.EventResponse, _ error) {
 	if c.ModelName == "" || c.ModelKeys == "" {
-		return r, perm.PermissionDenied
+		presets.ShowMessage(&r, perm.PermissionDenied.Error(), v.ColorError)
+		return
 	}
 
 	evCtx, msgr := c.MustGetEventContext(ctx)
-	if c.mb.Info().Verifier().Do(presets.PermGet).WithReq(evCtx.R).IsAllowed() != nil {
-		return r, perm.PermissionDenied
+	if c.mb.Info().Verifier().Do(PermDeleteNote).WithReq(evCtx.R).IsAllowed() != nil {
+		presets.ShowMessage(&r, perm.PermissionDenied.Error(), v.ColorError)
+		return
 	}
 
 	user, err := c.ab.currentUserFunc(ctx)
