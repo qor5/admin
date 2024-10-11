@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/ui/vuetify"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 
@@ -47,7 +46,7 @@ func RegisterHeadingContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 		})
 	ed := vb.Model(&Heading{}).Editing("AddTopSpace", "AddBottomSpace", "AnchorID", "Heading", "FontColor", "BackgroundColor", "Link", "LinkText", "LinkDisplayOption", "Text")
 	ed.Field("Text").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return richeditor.RichEditor(db, "Text").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*Heading).Text).Label(field.Label)
+		return richeditor.RichEditor(db, "Text").Disabled(field.Disabled).Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*Heading).Text).Label(field.Label)
 	})
 	ed.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		p := obj.(*Heading)
@@ -70,25 +69,13 @@ func RegisterHeadingContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	})
 
 	ed.Field("FontColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return vuetify.VSelect().
-			Items(FontColors).
-			Label(field.Label).
-			Variant(vuetify.FieldVariantUnderlined).
-			Attr(web.VField(field.FormKey, field.Value(obj))...)
+		return presets.SelectField(obj, field, ctx).Items(FontColors)
 	})
 	ed.Field("BackgroundColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return vuetify.VSelect().
-			Items(BackgroundColors).
-			Label(field.Label).
-			Variant(vuetify.FieldVariantUnderlined).
-			Attr(web.VField(field.FormKey, field.Value(obj))...)
+		return presets.SelectField(obj, field, ctx).Items(BackgroundColors)
 	})
 	ed.Field("LinkDisplayOption").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return vuetify.VSelect().
-			Items(LinkDisplayOptions).
-			Label(field.Label).
-			Variant(vuetify.FieldVariantUnderlined).
-			Attr(web.VField(field.FormKey, field.Value(obj))...)
+		return presets.SelectField(obj, field, ctx).Items(LinkDisplayOptions)
 	})
 }
 

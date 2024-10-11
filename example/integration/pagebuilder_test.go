@@ -758,6 +758,75 @@ func TestPageBuilder(t *testing.T) {
 			ExpectPageBodyNotContains:     []string{"category_456"},
 		},
 		{
+			Name:  "Page Category Validate Empty Name",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_categories").
+					EventFunc(actions.Update).
+					Query(presets.ParamID, "1_International").
+					Query("Name", "").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Invalid Name"},
+		},
+		{
+			Name:  "Page Category Validate Empty Name",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_categories").
+					EventFunc(actions.Update).
+					Query(presets.ParamID, "1_International").
+					AddField("Name", "").
+					AddField("LocaleCode", "International").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Invalid Name"},
+		},
+		{
+			Name:  "Page Category Validate InvalidPath",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_categories").
+					EventFunc(actions.Update).
+					Query(presets.ParamID, "1_International").
+					AddField("Name", "category_123").
+					AddField("Path", "/**)))=--").
+					AddField("LocaleCode", "International").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Invalid Path"},
+		},
+		{
+			Name:  "Page Category Validate Existing Path",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_categories").
+					EventFunc(actions.Update).
+					Query(presets.ParamID, "1_International").
+					AddField("Name", "category_123").
+					AddField("Path", "45").
+					AddField("LocaleCode", "International").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Existing Path"},
+		},
+		{
 			Name:  "Page Category Delete Related Page",
 			Debug: true,
 			ReqFunc: func() *http.Request {

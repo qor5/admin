@@ -1,13 +1,13 @@
 package containers
 
 import (
+	"github.com/qor5/web/v3"
+	. "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
+
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/ui/vuetify"
-	. "github.com/theplant/htmlgo"
-	"gorm.io/gorm"
 )
 
 type ImageContainer struct {
@@ -34,18 +34,10 @@ func RegisterImageContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	mb := vb.Model(&ImageContainer{})
 	eb := mb.Editing("AddTopSpace", "AddBottomSpace", "AnchorID", "BackgroundColor", "TransitionBackgroundColor", "Image")
 	eb.Field("BackgroundColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return vuetify.VSelect().
-			Items([]string{"white", "blue", "grey"}).
-			Variant(vuetify.FieldVariantUnderlined).
-			Label(field.Label).
-			Attr(web.VField(field.FormKey, field.Value(obj))...)
+		return presets.SelectField(obj, field, ctx).Items([]string{"white", "blue", "grey"})
 	})
 	eb.Field("TransitionBackgroundColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return vuetify.VSelect().
-			Items([]string{"white", "blue", "grey"}).
-			Label(field.Label).
-			Variant(vuetify.FieldVariantUnderlined).
-			Attr(web.VField(field.FormKey, field.Value(obj))...)
+		return presets.SelectField(obj, field, ctx).Items([]string{"white", "blue", "grey"})
 	})
 }
 
