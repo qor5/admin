@@ -960,6 +960,45 @@ func TestPageBuilder(t *testing.T) {
 				}
 			},
 		},
+		{
+			Name:  "PageBuilder Editor Listing Page Redirect Pages",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderDemoContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPageBodyNotContains: []string{"Page Builder"},
+		},
+		{
+			Name:  "PageBuilder Editor Listing Container Redirect Home Page",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderDemoContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/headings").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPageBodyNotContains: []string{"Page Builder"},
+		},
+		{
+			Name:  "PageBuilder Editor Listing MediaLibrary Redirect Home Page",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderDemoContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/media-libraries").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPageBodyNotContains: []string{"Page Builder"},
+		},
 	}
 
 	for _, c := range cases {
