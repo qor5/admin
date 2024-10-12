@@ -353,6 +353,9 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		hiddenComps = append(hiddenComps, hf(obj, ctx))
 	}
 
+	if id == "" {
+		ctx = ctx.WithContextValue(ctxKeyForceForCreating{}, true)
+	}
 	formContent := web.Scope(h.Components(
 		VCardText(
 			h.Components(hiddenComps...),

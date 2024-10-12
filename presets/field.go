@@ -749,6 +749,8 @@ func (b *FieldsBuilder) toComponentWithModifiedIndexes(info *ModelInfo, obj inte
 	return b.toComponentWithFormValueKey(info, obj, parentFormValueKey, modifiedIndexes, ctx)
 }
 
+type ctxKeyForceForCreating struct{}
+
 func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interface{}, parentFormValueKey string, modifiedIndexes *ModifiedIndexesBuilder, ctx *web.EventContext) h.HTMLComponent {
 	var comps []h.HTMLComponent
 	if parentFormValueKey == "" {
@@ -760,7 +762,10 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 		vErr = &web.ValidationErrors{}
 	}
 
-	edit := ctx.Param(ParamID) != ""
+	edit := ObjectID(obj) != ""
+	if ctx.ContextValue(ctxKeyForceForCreating{}) == true {
+		edit = false
+	}
 
 	var layout []interface{}
 	if b.fieldsLayout == nil {
