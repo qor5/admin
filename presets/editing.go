@@ -263,7 +263,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 
 	buttonLabel := msgr.Create
 	labelName := b.mb.Info().LabelName(ctx, true)
-	var disableUpdateBtn bool
+	var noPerm bool
 	var title h.HTMLComponent
 	title = h.Text(msgr.CreatingObjectTitle(
 		labelName,
@@ -276,7 +276,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 				panic(err)
 			}
 		}
-		disableUpdateBtn = b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
+		noPerm = b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
 		buttonLabel = msgr.Update
 		editingTitleText := msgr.EditingObjectTitle(
 			labelName,
@@ -286,6 +286,8 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		} else {
 			title = h.Text(editingTitleText)
 		}
+	} else {
+		noPerm = b.mb.Info().Verifier().Do(PermCreate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
 	}
 
 	if obj == nil {
@@ -326,23 +328,20 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 	if b.mb.singleton {
 		queries.Set(ParamID, id)
 	}
-	updateBtn := VBtn(buttonLabel).
-		Color("primary").
-		Variant(VariantFlat).
-		Attr("@click", web.Plaid().
-			EventFunc(actions.Update).
-			Queries(queries).
-			URL(b.mb.Info().ListingHref()).
-			Go())
-	if disableUpdateBtn {
-		updateBtn = updateBtn.Disabled(disableUpdateBtn)
-	} else {
-		updateBtn = updateBtn.Attr(":disabled", "isFetching").
-			Attr(":loading", "isFetching")
-	}
 	var actionButtons h.HTMLComponent = h.Components(
 		VSpacer(),
-		updateBtn,
+		h.Iff(!noPerm, func() h.HTMLComponent {
+			return VBtn(buttonLabel).
+				Color("primary").
+				Variant(VariantFlat).
+				Attr(":disabled", "isFetching").
+				Attr(":loading", "isFetching").
+				Attr("@click", web.Plaid().
+					EventFunc(actions.Update).
+					Queries(queries).
+					URL(b.mb.Info().ListingHref()).
+					Go())
+		}),
 	)
 
 	if b.actionsFunc != nil {

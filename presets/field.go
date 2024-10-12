@@ -760,8 +760,7 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 		vErr = &web.ValidationErrors{}
 	}
 
-	id := ObjectID(obj)
-	edit := id != ""
+	edit := ctx.Param(ParamID) != ""
 
 	var layout []interface{}
 	if b.fieldsLayout == nil {
