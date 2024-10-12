@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"path"
 	"reflect"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -1295,12 +1296,22 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			mb.preview.ServeHTTP(w, r)
 			return
 		}
+		if r.RequestURI == mb.editor.Info().ListingHref() {
+			http.Redirect(w, r, mb.mb.Info().ListingHref(), http.StatusFound)
+			return
+		}
 	}
 	if b.images != nil {
 		if strings.Index(r.RequestURI, path.Join(b.prefix, b.imagesPrefix)) >= 0 {
 			b.images.ServeHTTP(w, r)
 			return
 		}
+	}
+	pattern := fmt.Sprintf("^%s/[\\w-]+(-[\\w-]+)?$", b.prefix)
+	ok, _ := regexp.MatchString(pattern, r.RequestURI)
+	if ok {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
 	}
 	b.ps.ServeHTTP(w, r)
 }
