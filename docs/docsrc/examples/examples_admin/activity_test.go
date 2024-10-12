@@ -80,6 +80,29 @@ func TestActivity(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"WithActivityProduct 13", ">Add Note</v-btn>", "John", "Added a note", "The newest model of the off-legacy Air Jordans is ready to burst onto to the scene.", "John", "Created"},
 		},
 		{
+			Name:  "Activity Model details (without PermListNotes)",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				pb := presets.New()
+				pb.Permission(
+					perm.New().Policies(
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(activity.PermListNotes).On("*:presets:with_activity_products:*"),
+					),
+				)
+				activityExample(pb, TestDB, nil)
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				activityData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/with-activity-products?__execute_event__=presets_DetailingDrawer&id=13").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0NotContains: []string{">Add Note</v-btn>", "Added a note", "The newest model of the off-legacy Air Jordans is ready to burst onto to the scene."},
+		},
+		{
 			Name:  "view all (with admin used)",
 			Debug: true,
 			HandlerMaker: func() http.Handler {

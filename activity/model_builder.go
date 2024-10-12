@@ -88,6 +88,10 @@ func (amb *ModelBuilder) NewTimelineCompo(evCtx *web.EventContext, obj any, idSu
 	}
 	mb := amb.presetModel
 
+	if mb.Info().Verifier().Do(PermListNotes).ObjectOn(obj).WithReq(evCtx.R).IsAllowed() != nil {
+		return nil
+	}
+
 	injectorName := injectorName(mb)
 	dc := mb.GetPresetsBuilder().GetDependencyCenter()
 	modelName := ParseModelName(obj)
