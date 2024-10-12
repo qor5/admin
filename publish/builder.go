@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"slices"
+	"sort"
 	"strings"
 	"sync"
 
@@ -17,10 +18,15 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/sunfmin/reflectutils"
-	"github.com/theplant/htmlgo"
+	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
+)
+
+type (
+	PublishFunc   func(ctx context.Context, record any) error
+	UnPublishFunc func(ctx context.Context, record any) error
 )
 
 type Builder struct {
@@ -30,15 +36,21 @@ type Builder struct {
 	ctxValueProviders []ContextValueFunc
 	afterInstallFuncs []func()
 	autoSchedule      bool
+
+	publish   PublishFunc
+	unpublish UnPublishFunc
 }
 
 type ContextValueFunc func(ctx context.Context) context.Context
 
 func New(db *gorm.DB, storage oss.StorageInterface) *Builder {
-	return &Builder{
+	b := &Builder{
 		db:      db,
 		storage: storage,
 	}
+	b.publish = b.defaultPublish
+	b.unpublish = b.defaultUnPublish
+	return b
 }
 
 func (b *Builder) Activity(v *activity.Builder) (r *Builder) {
@@ -82,6 +94,14 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 	}
 
 	if _, ok := obj.(StatusInterface); ok {
+		m.Editing().WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+			return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+				if status := EmbedStatus(obj); status.Status == "" {
+					status.Status = StatusDraft
+				}
+				return in(obj, id, ctx)
+			}
+		})
 		if m.HasDetailing() {
 			detailFields := m.Detailing().GetSections()
 			for _, detailField := range detailFields {
@@ -103,36 +123,36 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 }
 
 func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.ModelBuilder, db *gorm.DB) {
-	ed := mb.Editing()
-	ed.Creating().Except(VersionsPublishBar)
-	// On demand, currently only supported detailing
+	eb := mb.Editing()
+	eb.Creating().Except(VersionsPublishBar)
+	// On demand, currently only supported dp
 	// var fb *presets.FieldBuilder
 	// if !mb.HasDetailing() {
-	// 	fb = ed.GetField(VersionsPublishBar)
+	// 	fb = eb.GetField(VersionsPublishBar)
 	// } else {
 	// 	fb = mb.Detailing().GetField(VersionsPublishBar)
 	// }
-	var detailing *presets.DetailingBuilder
+	var dp *presets.DetailingBuilder
 	if !mb.HasDetailing() {
-		detailing = mb.Detailing().Drawer(true)
+		dp = mb.Detailing().Drawer(true)
 	} else {
-		detailing = mb.Detailing()
+		dp = mb.Detailing()
 	}
 
-	fb := detailing.GetField(VersionsPublishBar)
+	fb := dp.GetField(VersionsPublishBar)
 	if fb != nil && fb.GetCompFunc() == nil {
 		fb.ComponentFunc(DefaultVersionComponentFunc(mb))
 	}
 
 	lb := mb.Listing()
 	lb.WrapSearchFunc(makeSearchFunc(mb, db))
-	lb.RowMenu().RowMenuItem("Delete").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) htmlgo.HTMLComponent {
+	lb.RowMenu().RowMenuItem("Delete").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
 		// DeleteRowMenu should be disabled when using the version interface
 		return nil
 	})
 
 	setter := makeSetVersionSetterFunc(db)
-	ed.WrapSetterFunc(setter)
+	eb.WrapSetterFunc(setter)
 
 	lb.Field(ListingFieldDraftCount).ComponentFunc(draftCountFunc(mb, db))
 	lb.Field(ListingFieldLive).ComponentFunc(liveFunc(db))
@@ -143,14 +163,58 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.Model
 			ListingFieldLive:       msgr.HeaderLive,
 		}, nil
 	}))
+	lb.WrapColumns(presets.CustomizeColumnHeader(func(evCtx *web.EventContext, col *presets.Column, th h.MutableAttrHTMLComponent) (h.MutableAttrHTMLComponent, error) {
+		th.SetAttr("style", "min-width: 200px;")
+		return th, nil
+	}, ListingFieldLive))
+
+	slugDecoder := mb.NewModel().(presets.SlugDecoder)
+	uniqueWithoutVersion := func(id string) string {
+		var kvsWithoutVersion []string
+		for k, v := range slugDecoder.PrimaryColumnValuesBySlug(id) {
+			if k == SlugVersion {
+				continue
+			}
+			kvsWithoutVersion = append(kvsWithoutVersion, fmt.Sprintf(`%s:%s`, k, v))
+		}
+		sort.Strings(kvsWithoutVersion)
+		return strings.Join(kvsWithoutVersion, ",")
+	}
+	wrapIdCurrentActive := func(in presets.IdCurrentActiveProcessor) presets.IdCurrentActiveProcessor {
+		return func(ctx *web.EventContext, current string) (string, error) {
+			current, err := in(ctx, current)
+			if err != nil {
+				return "", err
+			}
+			if current == "" {
+				return "", nil
+			}
+			return uniqueWithoutVersion(current), nil
+		}
+	}
+	eb.WrapIdCurrentActive(wrapIdCurrentActive)
+	eb.Creating().WrapIdCurrentActive(wrapIdCurrentActive)
+	dp.WrapIdCurrentActive(wrapIdCurrentActive)
+	lb.WrapRow(func(in presets.RowProcessor) presets.RowProcessor {
+		return func(evCtx *web.EventContext, row h.MutableAttrHTMLComponent, id string, obj any) (h.MutableAttrHTMLComponent, error) {
+			unique := uniqueWithoutVersion(id)
+			if unique == "" {
+				return in(evCtx, row, id, obj)
+			}
+			row.SetAttr(":class", fmt.Sprintf(`{ %q: vars.%s === %q }`,
+				presets.ListingCompo_CurrentActiveClass, presets.ListingCompo_GetVarCurrentActive(evCtx), unique,
+			))
+			return in(evCtx, row, id, obj)
+		}
+	})
 	configureVersionListDialog(db, b, pb, mb)
 }
 
 func makeSearchFunc(mb *presets.ModelBuilder, db *gorm.DB) func(searcher presets.SearchFunc) presets.SearchFunc {
 	return func(searcher presets.SearchFunc) presets.SearchFunc {
-		return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+		return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 			stmt := &gorm.Statement{DB: db}
-			stmt.Parse(model)
+			stmt.Parse(params.Model)
 			tn := stmt.Schema.Table
 
 			var pks []string
@@ -206,7 +270,7 @@ func makeSearchFunc(mb *presets.ModelBuilder, db *gorm.DB) func(searcher presets
 			}
 			params.SQLConditions = append(params.SQLConditions, &con)
 
-			return searcher(model, params, ctx)
+			return searcher(ctx, params)
 		}
 	}
 }
@@ -233,7 +297,7 @@ func makeSetVersionSetterFunc(db *gorm.DB) func(presets.SetterFunc) presets.Sett
 func (b *Builder) Install(pb *presets.Builder) error {
 	if b.autoSchedule {
 		defer func() {
-			go RunPublisher(b.db, b.storage, b)
+			go RunPublisher(context.Background(), b.db, b.storage, b)
 		}()
 	}
 	pb.FieldDefaults(presets.LIST).
@@ -278,7 +342,7 @@ func (b *Builder) getPublishContent(ctx context.Context, obj interface{}) (r str
 	return
 }
 
-func (b *Builder) getObjectLiveUrl(db *gorm.DB, ctx context.Context, obj interface{}) (url string) {
+func (b *Builder) getObjectLiveUrl(ctx context.Context, db *gorm.DB, obj interface{}) (url string) {
 	builder := ctx.Value(utils.GetObjectName(obj))
 	mb, ok := builder.(PreviewBuilderInterface)
 	if !ok {
@@ -295,7 +359,7 @@ func (b *Builder) getObjectLiveUrl(db *gorm.DB, ctx context.Context, obj interfa
 	return
 }
 
-func (b *Builder) defaultPublishActions(_ *gorm.DB, ctx context.Context, _ oss.StorageInterface, obj interface{}) (actions []*PublishAction, err error) {
+func (b *Builder) defaultPublishActions(ctx context.Context, _ *gorm.DB, _ oss.StorageInterface, obj interface{}) (actions []*PublishAction, err error) {
 	var (
 		content string
 		p       PublishModelInterface
@@ -315,7 +379,7 @@ func (b *Builder) defaultPublishActions(_ *gorm.DB, ctx context.Context, _ oss.S
 			Content:  content,
 			IsDelete: false,
 		})
-		if liveUrl := b.getObjectLiveUrl(b.db, ctx, obj); liveUrl != "" && liveUrl != publishUrl {
+		if liveUrl := b.getObjectLiveUrl(ctx, b.db, obj); liveUrl != "" && liveUrl != publishUrl {
 			actions = append(actions, &PublishAction{
 				Url:      liveUrl,
 				IsDelete: true,
@@ -333,16 +397,16 @@ func (b *Builder) getPublishActions(ctx context.Context, obj interface{}) (actio
 	)
 	p, ok = obj.(PublishInterface)
 	if ok {
-		return p.GetPublishActions(b.db, ctx, b.storage)
+		return p.GetPublishActions(ctx, b.db, b.storage)
 	}
 	if m, ok = obj.(WrapPublishInterface); ok {
-		return m.WrapPublishActions(b.defaultPublishActions)(b.db, ctx, b.storage, obj)
+		return m.WrapPublishActions(b.defaultPublishActions)(ctx, b.db, b.storage, obj)
 	}
-	return b.defaultPublishActions(b.db, ctx, b.storage, obj)
+	return b.defaultPublishActions(ctx, b.db, b.storage, obj)
 }
 
-func (b *Builder) defaultUnPublishActions(_ *gorm.DB, ctx context.Context, _ oss.StorageInterface, obj interface{}) (actions []*PublishAction, err error) {
-	if liveUrl := b.getObjectLiveUrl(b.db, ctx, obj); liveUrl != "" {
+func (b *Builder) defaultUnPublishActions(ctx context.Context, _ *gorm.DB, _ oss.StorageInterface, obj interface{}) (actions []*PublishAction, err error) {
+	if liveUrl := b.getObjectLiveUrl(ctx, b.db, obj); liveUrl != "" {
 		actions = append(actions, &PublishAction{
 			Url:      liveUrl,
 			IsDelete: true,
@@ -360,16 +424,25 @@ func (b *Builder) getUnPublishActions(ctx context.Context, obj interface{}) (act
 
 	p, ok = obj.(UnPublishInterface)
 	if ok {
-		return p.GetUnPublishActions(b.db, ctx, b.storage)
+		return p.GetUnPublishActions(ctx, b.db, b.storage)
 	}
 	if m, ok = obj.(WrapUnPublishInterface); ok {
-		return m.WrapUnPublishActions(b.defaultUnPublishActions)(b.db, ctx, b.storage, obj)
+		return m.WrapUnPublishActions(b.defaultUnPublishActions)(ctx, b.db, b.storage, obj)
 	}
-	return b.defaultUnPublishActions(b.db, ctx, b.storage, obj)
+	return b.defaultUnPublishActions(ctx, b.db, b.storage, obj)
+}
+
+func (b *Builder) WrapPublish(w func(in PublishFunc) PublishFunc) *Builder {
+	b.publish = w(b.publish)
+	return b
+}
+
+func (b *Builder) Publish(ctx context.Context, record any) (err error) {
+	return b.publish(ctx, record)
 }
 
 // 幂等
-func (b *Builder) Publish(record interface{}, ctx context.Context) (err error) {
+func (b *Builder) defaultPublish(ctx context.Context, record any) (err error) {
 	err = utils.Transact(b.db, func(tx *gorm.DB) (err error) {
 		// publish content
 		var objs []*PublishAction
@@ -423,7 +496,7 @@ func (b *Builder) Publish(record interface{}, ctx context.Context) (err error) {
 
 		// publish callback
 		if r, ok := record.(AfterPublishInterface); ok {
-			if err = r.AfterPublish(b.db, b.storage, ctx); err != nil {
+			if err = r.AfterPublish(ctx, b.db, b.storage); err != nil {
 				return
 			}
 		}
@@ -432,7 +505,17 @@ func (b *Builder) Publish(record interface{}, ctx context.Context) (err error) {
 	return
 }
 
-func (b *Builder) UnPublish(record interface{}, ctx context.Context) (err error) {
+func (b *Builder) WrapUnPublish(w func(in UnPublishFunc) UnPublishFunc) *Builder {
+	b.unpublish = w(b.unpublish)
+	return b
+}
+
+func (b *Builder) UnPublish(ctx context.Context, record any) (err error) {
+	return b.unpublish(ctx, record)
+}
+
+// 幂等
+func (b *Builder) defaultUnPublish(ctx context.Context, record any) (err error) {
 	err = utils.Transact(b.db, func(tx *gorm.DB) (err error) {
 		// unpublish content
 		var objs []*PublishAction
@@ -464,7 +547,7 @@ func (b *Builder) UnPublish(record interface{}, ctx context.Context) (err error)
 
 		// unpublish callback
 		if r, ok := record.(AfterUnPublishInterface); ok {
-			if err = r.AfterUnPublish(b.db, b.storage, ctx); err != nil {
+			if err = r.AfterUnPublish(ctx, b.db, b.storage); err != nil {
 				return
 			}
 		}
@@ -490,8 +573,8 @@ func UploadOrDelete(objs []*PublishAction, storage oss.StorageInterface) (err er
 }
 
 func setPrimaryKeysConditionWithoutVersion(db *gorm.DB, record interface{}, s *schema.Schema) *gorm.DB {
-	querys := []string{}
-	args := []interface{}{}
+	var querys []string
+	var args []interface{}
 	for _, p := range s.PrimaryFields {
 		if p.Name == "Version" {
 			continue
@@ -504,8 +587,8 @@ func setPrimaryKeysConditionWithoutVersion(db *gorm.DB, record interface{}, s *s
 }
 
 func setPrimaryKeysConditionWithoutFields(db *gorm.DB, record interface{}, s *schema.Schema, ignoreFields ...string) *gorm.DB {
-	querys := []string{}
-	args := []interface{}{}
+	var querys []string
+	var args []interface{}
 	for _, p := range s.PrimaryFields {
 		if slices.Contains(ignoreFields, p.Name) {
 			continue

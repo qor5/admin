@@ -2,17 +2,18 @@ package examples
 
 import (
 	"fmt"
-	"github.com/qor5/admin/v3/autocomplete"
 	"net/http"
 	"strings"
 
-	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/examples"
 	"github.com/theplant/osenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"github.com/qor5/admin/v3/autocomplete"
+	"github.com/qor5/admin/v3/presets"
 )
 
 var db *gorm.DB
@@ -57,9 +58,20 @@ func AddPresetExample(mux examples.Muxer, f func(*presets.Builder, *gorm.DB) htt
 	mux.Handle(path, f(p, ExampleDB()))
 }
 
-func AddPresetAutocompleteExample(mux examples.Muxer, ab *autocomplete.Builder, f func(*presets.Builder, *autocomplete.Builder, *gorm.DB) http.Handler) {
+func AddPresetAutocompleteExample(mux examples.Muxer, f func(*presets.Builder, *autocomplete.Builder, *gorm.DB) http.Handler) {
+	ab := autocomplete.New().Prefix("/examples/api/complete")
+	// mux.Handle("/examples/api/complete", ab)
 	path := examples.URLPathByFunc(f)
 	fmt.Println("Examples mounting path:", path)
 	p := presets.New().AssetFunc(AddGA).URIPrefix(path)
 	mux.Handle(path, f(p, ab, ExampleDB()))
+	// mux after models add
+	ab.Mux(mux)
+}
+
+func AddPresetsLinkageSelectFilterItemRemoteExample(mux examples.Muxer, f func(*presets.Builder, examples.Muxer, *gorm.DB) http.Handler) {
+	path := examples.URLPathByFunc(f)
+	fmt.Println("Examples mounting path:", path)
+	p := presets.New().AssetFunc(AddGA).URIPrefix(path)
+	mux.Handle(path, f(p, mux, ExampleDB()))
 }

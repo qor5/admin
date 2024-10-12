@@ -6,6 +6,7 @@ import (
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
+	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/ui/vuetifyx"
 	"gorm.io/gorm"
@@ -45,8 +46,8 @@ func PresetsBasicFilter(b *presets.Builder, db *gorm.DB) (
 	listing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
 		// Prepare filter options, it is a two dimension array: [][]string{"text", "value"}
 		options := []*vuetifyx.SelectItem{
-			{Text: "Draft", Value: "draft"},
-			{Text: "Online", Value: "online"},
+			{Text: "Draft", Value: publish.StatusDraft},
+			{Text: "Online", Value: publish.StatusOnline},
 		}
 
 		return []*vuetifyx.FilterItem{
@@ -74,7 +75,7 @@ func PresetsBasicFilter(b *presets.Builder, db *gorm.DB) (
 				Modifier:     vuetifyx.ModifierEquals,
 				SQLCondition: `body = ?`,
 				Options:      options,
-				WarpInput: func(val string) string {
+				WrapInput: func(val string) interface{} {
 					return val + "wrap"
 				},
 			},

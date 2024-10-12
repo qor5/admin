@@ -13,7 +13,6 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
-	v "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
@@ -22,12 +21,16 @@ import (
 )
 
 const (
-	I18nActivityKey    i18n.ModuleKey = "I18nActivityKey"
-	paramHideDetailTop                = "hideDetailTop"
+	I18nActivityKey i18n.ModuleKey = "I18nActivityKey"
+
+	paramHideDetailTop = "hideDetailTop"
 )
 
 func (ab *Builder) Install(b *presets.Builder) error {
-	if actual, loaded := ab.installedPresets.LoadOrStore(b, true); loaded && actual.(bool) {
+	ab.mu.Lock()
+	defer ab.mu.Unlock()
+	lmb, ok := ab.logModelBuilders[b]
+	if ok && lmb != nil {
 		return errors.Errorf("activity: preset %q already installed", b.GetURIPrefix())
 	}
 
@@ -40,17 +43,24 @@ func (ab *Builder) Install(b *presets.Builder) error {
 		permB.CreatePolicies(ab.permPolicy)
 	}
 
-	mb := b.Model(&ActivityLog{}).MenuIcon("mdi-book-edit")
-	return ab.logModelInstall(b, mb)
+	lmb = b.Model(&ActivityLog{}).MenuIcon("mdi-book-edit")
+	err := ab.logModelInstall(b, lmb)
+	if err != nil {
+		return err
+	}
+
+	ab.logModelBuilders[b] = lmb
+	return err
 }
 
-func (ab *Builder) IsPresetInstalled(pb *presets.Builder) bool {
-	installed := false
-	valInstalled, ok := ab.installedPresets.Load(pb)
-	if ok {
-		installed = valInstalled.(bool)
+func (ab *Builder) GetLogModelBuilder(pb *presets.Builder) *presets.ModelBuilder {
+	ab.mu.RLock()
+	defer ab.mu.RUnlock()
+	val, ok := ab.logModelBuilders[pb]
+	if !ok {
+		return nil
 	}
-	return installed
+	return val
 }
 
 func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelBuilder) error {
@@ -90,20 +100,20 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		return errors.New("should not be used")
 	})
 
-	lb.SearchFunc(func(model any, params *presets.SearchParams, ctx *web.EventContext) (r any, totalCount int, err error) {
+	lb.SearchFunc(func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 		params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
 			Query: "hidden = ?",
 			Args:  []any{false},
 		})
-		r, totalCount, err = op.Search(model, params, ctx)
-		if totalCount <= 0 {
-			return
+		result, err = op.Search(ctx, params)
+		if err != nil {
+			return nil, err
 		}
-		logs := r.([]*ActivityLog)
+		logs := result.Nodes.([]*ActivityLog)
 		if err := ab.supplyUsers(ctx.R.Context(), logs); err != nil {
-			return nil, 0, err
+			return nil, err
 		}
-		return logs, totalCount, nil
+		return result, nil
 	})
 
 	// use mb.LabelName handle this now
@@ -166,7 +176,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 				Value: action,
 			})
 		}
-		actions := []string{}
+		var actions []string
 		err := ab.db.Model(&ActivityLog{}).Select("DISTINCT action AS action").Pluck("action", &actions).Error
 		if err != nil {
 			panic(err)
@@ -187,7 +197,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		}
 		actionOptions = lo.UniqBy(actionOptions, func(item *vuetifyx.SelectItem) string { return item.Value })
 
-		userIDs := []string{}
+		var userIDs []string
 		err = ab.db.Model(&ActivityLog{}).Select("DISTINCT user_id AS id").Pluck("id", &userIDs).Error
 		if err != nil {
 			panic(err)
@@ -204,7 +214,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			})
 		}
 
-		modelNames := []string{}
+		var modelNames []string
 		err = ab.db.Model(&ActivityLog{}).Select("DISTINCT model_name AS model_name").Pluck("model_name", &modelNames).Error
 		if err != nil {
 			panic(err)
@@ -242,13 +252,21 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			})
 		}
 		if len(modelNameOptions) > 0 {
-			filterData = append(filterData, &vuetifyx.FilterItem{
-				Key:          "model_name",
-				Label:        msgr.FilterModel,
-				ItemType:     vuetifyx.ItemTypeSelect,
-				SQLCondition: `model_name %s ?`,
-				Options:      modelNameOptions,
-			})
+			filterData = append(
+				filterData,
+				&vuetifyx.FilterItem{
+					Key:          "model_name",
+					Label:        msgr.FilterModel,
+					ItemType:     vuetifyx.ItemTypeSelect,
+					SQLCondition: `model_name %s ?`,
+					Options:      modelNameOptions,
+				},
+				&vuetifyx.FilterItem{
+					Key:          "model_keys",
+					Label:        msgr.FilterModelKeys,
+					ItemType:     vuetifyx.ItemTypeString,
+					SQLCondition: `model_keys %s ?`,
+				})
 		}
 		return filterData
 	})
@@ -305,8 +323,8 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 								h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td().Attr("v-pre", true).Text(log.ModelKeys)),
 								h.Iff(log.ModelLink != "", func() h.HTMLComponent {
 									return h.Tr(h.Td(h.Text(msgr.ModelLink)), h.Td(
-										v.VBtn(msgr.MoreInfo).Class("text-none text-overline d-flex align-center").
-											Variant(v.VariantTonal).Color(v.ColorPrimary).Size(v.SizeXSmall).PrependIcon("mdi-open-in-new").
+										VBtn(msgr.MoreInfo).Class("text-none text-overline d-flex align-center").
+											Variant(VariantTonal).Color(ColorPrimary).Size(SizeXSmall).PrependIcon("mdi-open-in-new").
 											Attr("@click", web.POST().
 												EventFunc(actions.DetailingDrawer).
 												Query(presets.ParamOverlay, actions.Dialog).
@@ -337,7 +355,7 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 						),
 						VCardText().Class("mt-3 pa-3 border-thin rounded").Children(
 							h.Div().Class("d-flex flex-column").Children(
-								h.Pre(note.Note).Attr("v-pre", true).Style("white-space: pre-wrap"),
+								h.Pre(note.Note).Attr("v-pre", true).Class("text-body-2").Style("white-space: pre-wrap"),
 								h.Iff(!note.LastEditedAt.IsZero(), func() h.HTMLComponent {
 									return h.Div().Class("text-caption font-italic").Style("color: #757575").Children(
 										h.Text(msgr.LastEditedAt(pmsgr.HumanizeTime(note.LastEditedAt))),

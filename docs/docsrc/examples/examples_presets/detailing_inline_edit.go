@@ -1,14 +1,16 @@
 package examples_presets
 
 import (
+	"database/sql/driver"
+	"encoding/json"
 	"fmt"
-	v "github.com/qor5/x/v3/ui/vuetify"
 	"log"
 
 	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3"
+	v "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
@@ -51,6 +53,143 @@ func PresetsDetailInlineEditDetails(b *presets.Builder, db *gorm.DB) (
 	dp = cust.Detailing("Details").Drawer(true)
 	dp.Section("Details").
 		Editing("Name", "Email", "Description", "Avatar")
+
+	return
+}
+
+func PresetsDetailSectionView(b *presets.Builder, db *gorm.DB) (
+	cust *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	err := db.AutoMigrate(&Customer{}, &CreditCard{}, &Note{})
+	if err != nil {
+		panic(err)
+	}
+	mediaBuilder := media.New(db)
+	b.DataOperator(gorm2op.DataOperator(db)).Use(mediaBuilder)
+
+	cust = b.Model(&Customer{})
+	dp = cust.Detailing("Details").Drawer(true)
+	dp.Section("Details").
+		Editing("Name").ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return v.VSwitch().Label("Prevent components covering the Edit button and making it unclickable").Color("primary").
+			Attr(web.VField(fmt.Sprintf("%s.%s", field.FormKey, "Invalid"), true)...).
+			Density(v.DensityCompact).
+			Readonly(true)
+	})
+
+	return
+}
+
+func PresetsDetailTabsSection(b *presets.Builder, db *gorm.DB) (
+	cust *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	err := db.AutoMigrate(&Customer{}, &CreditCard{}, &Note{})
+	if err != nil {
+		panic(err)
+	}
+	mediaBuilder := media.New(db)
+	b.DataOperator(gorm2op.DataOperator(db)).Use(mediaBuilder)
+
+	cust = b.Model(&Customer{})
+	dp = cust.Detailing("tabs").Drawer(true)
+
+	tb := presets.NewTabsFieldBuilder()
+	dp.Field("tabs").Tab(tb)
+
+	dp.Section("name").
+		Editing("Name").
+		EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			custom := obj.(*Customer)
+			return h.Div(
+				v.VTextField().Attr(web.VField("name.Name", custom.Name)...).Label("Name"),
+			)
+		}).ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		custom := obj.(*Customer)
+		return h.Div(
+			h.Text(custom.Name),
+		)
+	})
+
+	dp.Section("email").
+		Editing("Email").
+		EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			custom := obj.(*Customer)
+			return h.Div(
+				v.VTextField().Attr(web.VField("email.Email", custom.Email)...).Label("Email"),
+			)
+		}).ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		custom := obj.(*Customer)
+		return h.Div(
+			h.Text(custom.Email),
+		)
+	})
+
+	dp.Section("name").Tabs("tabs")
+	dp.Section("email").Tabs("tabs")
+
+	return
+}
+
+func PresetsDetailTabsSectionOrder(b *presets.Builder, db *gorm.DB) (
+	cust *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	err := db.AutoMigrate(&Customer{}, &CreditCard{}, &Note{})
+	if err != nil {
+		panic(err)
+	}
+	mediaBuilder := media.New(db)
+	b.DataOperator(gorm2op.DataOperator(db)).Use(mediaBuilder)
+
+	cust = b.Model(&Customer{})
+	dp = cust.Detailing("tabs").Drawer(true)
+
+	const (
+		nameSection  = "name"
+		emailSection = "email"
+	)
+	tb := presets.NewTabsFieldBuilder().
+		TabsOrderFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) []string {
+			return []string{emailSection, nameSection}
+		})
+	dp.Field("tabs").Tab(tb)
+
+	dp.Section(nameSection).Label("name_label").
+		Editing("Name").
+		EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			custom := obj.(*Customer)
+			key := fmt.Sprintf("%s.Name", nameSection)
+			return h.Div(
+				v.VTextField().Attr(web.VField(key, custom.Name)...).Label("Name"),
+			)
+		}).ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		custom := obj.(*Customer)
+		return h.Div(
+			h.Text(custom.Name),
+		)
+	}).Tabs("tabs")
+
+	dp.Section(emailSection).
+		Editing("Email").
+		EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			custom := obj.(*Customer)
+			return h.Div(
+				v.VTextField().Attr(web.VField("email.Email", custom.Email)...).Label("Email"),
+			)
+		}).ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		custom := obj.(*Customer)
+		return h.Div(
+			h.Text(custom.Email),
+		)
+	}).Tabs("tabs")
 
 	return
 }
@@ -193,21 +332,22 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 	b.DataOperator(gorm2op.DataOperator(db))
 
 	cust = b.Model(&Customer{})
-	// This should inspect Notes attributes, When it is a list, It should show a standard table in detail page
-	dp = cust.Detailing("name_section").Drawer(true)
-	dp.Section("name_section").Label("name must not be empty, no longer than 6").
-		Editing("Name").ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+	// section will use Editing().ValidateFunc() as validateFunc default
+	cust.Editing().ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		customer := obj.(*Customer)
-		if customer.Name == "" {
-			err.GlobalError("customer name must not be empty")
-		}
 		if len(customer.Name) > 6 {
 			err.FieldError("name_section.Name", "customer name must no longer than 6")
 		}
+		if len(customer.Name) > 20 {
+			err.GlobalError("customer name must no longer than 20")
+		}
 		return
-	}).EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	})
+	// This should inspect Notes attributes, When it is a list, It should show a standard table in detail page
+	dp = cust.Detailing("name_section", "email_section", "CreditCards").Drawer(true)
+	dp.Section("name_section").Label("name must not be empty, no longer than 6").
+		Editing("Name").EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		customer := obj.(*Customer)
-
 		var vErr web.ValidationErrors
 		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
 			vErr = *ve
@@ -217,8 +357,71 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 			Density(v.DensityCompact).
 			Attr(web.VField("name_section.Name", customer.Name)...).
 			ErrorMessages(vErr.GetFieldErrors("name_section.Name")...)
+	}).WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		return in
+	}).WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
+		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			err = in(obj, ctx)
+			customer := obj.(*Customer)
+			if customer.Name == "" {
+				err.GlobalError("customer name must not be empty")
+			}
+			return err
+		}
 	})
 
+	dp.Section("email_section").
+		Label("email must not be empty, must longer than 6").
+		Editing("Email").
+		ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			customer := obj.(*Customer)
+			if customer.Email == "" {
+				err.GlobalError("customer email must not be empty")
+			}
+			if len(customer.Email) < 6 {
+				err.FieldError("email_section.Email", "customer email must longer than 6")
+			}
+			return
+		}).EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		customer := obj.(*Customer)
+		var vErr web.ValidationErrors
+		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+			vErr = *ve
+		}
+		return v.VTextField().
+			Variant(v.VariantOutlined).
+			Density(v.DensityCompact).
+			Attr(web.VField("email_section.Email", customer.Name)...).
+			ErrorMessages(vErr.GetFieldErrors("email_section.Email")...)
+	}).SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		return cust.Editing().Saver(obj, id, ctx)
+	})
+
+	dp.Section("CreditCards").IsList(&CreditCard{}).Editing("Name").
+		ElementEditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			card := obj.(*CreditCard)
+			var errText []string
+			if vErr, ok := ctx.Flash.(*web.ValidationErrors); ok {
+				errText = vErr.GetFieldErrors("card")
+			}
+			return vx.VXField().ErrorMessages(errText...).
+				Attr(web.VField(fmt.Sprintf("%s.Name", field.FormKey), card.Name)...)
+		}).
+		ElementShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			card := obj.(*CreditCard)
+			return vx.VXTextField().Text(card.Name)
+		}).ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		customer := obj.(*Customer)
+		for index, card := range customer.CreditCards {
+			if card.Name == "" {
+				err.GlobalError("credit card name must not be empty")
+			}
+			if card.Name == "" {
+				err.FieldError("card", fmt.Sprintf("credit card %d name must not be empty", index))
+			}
+		}
+		return
+	})
 	return
 }
 
@@ -239,6 +442,7 @@ func PresetsDetailNestedMany(b *presets.Builder, db *gorm.DB) (
 
 	ccmb := mb.NestedMany(&CreditCard{}, "CustomerID")
 	dp.Field("CreditCards").Use(ccmb)
+	ccmb.Detailing("Detail").Drawer(true).Section("Detail").Editing("Name", "Phone")
 
 	ccmb2 := mb.NestedMany(&CreditCard{}, "CustomerID")
 	// force ignore ExpireYearMonth column if you need
@@ -261,7 +465,70 @@ func PresetsDetailNestedMany(b *presets.Builder, db *gorm.DB) (
 			return columns, nil
 		}
 	})
+	// You can also wrap the table if you need
+	ccmb2.Listing().WrapTable(func(in presets.TableProcessor) presets.TableProcessor {
+		return func(evCtx *web.EventContext, table *vx.DataTableBuilder) (*vx.DataTableBuilder, error) {
+			table.Hover(false)
+			return in(evCtx, table)
+		}
+	})
 
 	dp.Field("CreditCards2").Use(ccmb2)
+	return
+}
+
+type UserCreditCard struct {
+	gorm.Model
+	Name         string
+	CreditCards  creditCards `gorm:"type:text"`
+	CreditCards2 creditCards `gorm:"type:text"`
+}
+type creditCards []*CreditCard
+
+func (creditCard creditCards) Value() (driver.Value, error) {
+	json, err := json.Marshal(creditCard)
+	if err != nil {
+		return nil, err
+	}
+	return json, nil
+}
+
+func (creditCard *creditCards) Scan(data interface{}) (err error) {
+	switch values := data.(type) {
+	case []byte:
+		return json.Unmarshal(values, &creditCard)
+	case string:
+		return creditCard.Scan([]byte(values))
+	}
+	return nil
+}
+
+func PresetsDetailListSection(b *presets.Builder, db *gorm.DB) (cust *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	err := db.AutoMigrate(&UserCreditCard{})
+	if err != nil {
+		panic(err)
+	}
+	b.DataOperator(gorm2op.DataOperator(db))
+	cust = b.Model(&UserCreditCard{})
+	dp = cust.Detailing("CreditCards", "CreditCards2").Drawer(true)
+	dp.WrapFetchFunc(func(in presets.FetchFunc) presets.FetchFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
+			o, _ := in(obj, id, ctx)
+			us := o.(*UserCreditCard)
+			if len(us.CreditCards2) == 0 {
+				us.CreditCards2 = nil
+			}
+			return us, nil
+		}
+	})
+	dp.Section("CreditCards").Label("cards").IsList(&CreditCard{}).AlwaysShowListLabel().
+		Editing("Name", "Phone").Viewing("Name", "Phone")
+
+	dp.Section("CreditCards2").Label("cards2").IsList(&CreditCard{}).AlwaysShowListLabel().
+		Editing("Name", "Phone").Viewing("Name", "Phone")
 	return
 }

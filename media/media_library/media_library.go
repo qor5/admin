@@ -8,10 +8,10 @@ import (
 	"path"
 	"strings"
 
-	"github.com/qor5/admin/v3/media/base"
-
-	"github.com/qor5/admin/v3/media/oss"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/media/base"
+	"github.com/qor5/admin/v3/media/oss"
 )
 
 var (
@@ -77,7 +77,7 @@ type MediaLibraryStorage struct {
 	Description  string
 }
 
-func (mediaLibraryStorage MediaLibraryStorage) GetSizes() map[string]*base.Size {
+func (mediaLibraryStorage *MediaLibraryStorage) GetSizes() map[string]*base.Size {
 	if len(mediaLibraryStorage.Sizes) == 0 && !(mediaLibraryStorage.GetFileHeader() != nil || mediaLibraryStorage.Crop) {
 		return map[string]*base.Size{}
 	}
@@ -112,7 +112,7 @@ func (mediaLibraryStorage *MediaLibraryStorage) Scan(data interface{}) (err erro
 		// cropOptions := mediaLibraryStorage.CropOptions
 		sizeOptions := mediaLibraryStorage.Sizes
 
-		if string(values) != "" {
+		if len(values) != 0 {
 			mediaLibraryStorage.Base.Scan(values)
 			if err = json.Unmarshal(values, mediaLibraryStorage); err == nil {
 				if mediaLibraryStorage.CropOptions == nil {
@@ -147,7 +147,9 @@ func (mediaLibraryStorage *MediaLibraryStorage) Scan(data interface{}) (err erro
 			}
 		}
 	case string:
-		err = mediaLibraryStorage.Scan([]byte(values))
+		if err = mediaLibraryStorage.Scan([]byte(values)); err != nil {
+			return err
+		}
 	case []string:
 		for _, str := range values {
 			if err = mediaLibraryStorage.Scan(str); err != nil {
@@ -165,7 +167,7 @@ func (mediaLibraryStorage MediaLibraryStorage) Value() (driver.Value, error) {
 	return string(results), err
 }
 
-func (mediaLibraryStorage MediaLibraryStorage) URL(styles ...string) string {
+func (mediaLibraryStorage *MediaLibraryStorage) URL(styles ...string) string {
 	if mediaLibraryStorage.Url != "" && len(styles) > 0 {
 		ext := path.Ext(mediaLibraryStorage.Url)
 		return fmt.Sprintf("%v.%v%v", strings.TrimSuffix(mediaLibraryStorage.Url, ext), styles[0], ext)

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/qor5/admin/v3/media/base"
 )
@@ -80,6 +81,14 @@ func (mediaBox *MediaBox) URL(styles ...string) string {
 		return fmt.Sprintf("%v.%v%v", strings.TrimSuffix(mediaBox.Url, ext), styles[0], ext)
 	}
 	return mediaBox.Url
+}
+
+func (mediaBox *MediaBox) URLNoCached(styles ...string) string {
+	i := mediaBox.URL(styles...)
+	if i != "" {
+		return i + "?" + fmt.Sprint(time.Now().Nanosecond())
+	}
+	return i
 }
 
 func (mediaBox MediaBox) WebpURL(styles ...string) string {

@@ -442,7 +442,7 @@ var Messages_ja_JP_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	SharedContainers:         "共有コンテナ",
 	DemoContainers:           "デモ用コン店た",
 	Templates:                "テンプレート",
-	PageCategories:           "カテゴリー",
+	PageCategories:           "カテゴリ",
 	ECManagement:             "ECマネジメント",
 	ECDashboard:              "ECダッシュボード",
 	Orders:                   "注文",
@@ -478,7 +478,7 @@ var Messages_ja_JP_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	Page:                   "ページ",
 	PagesStatus:            "状態",
 	PagesSchedule:          "スケジュール",
-	PagesCategoryID:        "カテゴリーID",
+	PagesCategoryID:        "カテゴリID",
 	PagesTemplateSelection: "テンプレート選択",
 	PagesEditContainer:     "コンテナ編集",
 

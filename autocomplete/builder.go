@@ -10,26 +10,33 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
-	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 )
 
 type (
 	Builder struct {
-		prefix  string
-		db      *gorm.DB
-		logger  *zap.Logger
-		handler http.Handler
-		models  []*ModelBuilder
+		prefix           string
+		db               *gorm.DB
+		logger           *zap.Logger
+		handler          http.Handler
+		models           []*ModelBuilder
+		allowCrossOrigin bool
+	}
+
+	Handler interface {
+		Handle(pattern string, handler http.Handler)
 	}
 )
 
 func New() *Builder {
 	l, _ := zap.NewDevelopment()
 	return &Builder{
-		prefix: "",
-		logger: l,
+		prefix:           "",
+		logger:           l,
+		allowCrossOrigin: true,
 	}
 }
 
@@ -69,23 +76,26 @@ func (b *Builder) Prefix(v string) *Builder {
 	return b
 }
 
+func (b *Builder) AllowCrossOrigin(v bool) *Builder {
+	b.allowCrossOrigin = v
+	return b
+}
+
 func (b *Builder) Logger(v *zap.Logger) *Builder {
 	b.logger = v
 	return b
 }
 
-func (b *Builder) Build() {
+func (b *Builder) Mux(mux Handler) {
 	mns := b.modelNames()
 	if len(lo.Uniq(mns)) != len(mns) {
 		panic(fmt.Sprintf("Duplicated model names registered %v", mns))
 	}
-	b.initMux()
+	b.initMux(mux)
 }
 
-func (b *Builder) initMux() {
+func (b *Builder) initMux(mux Handler) {
 	b.logger.Info("initializing mux for", zap.Reflect("models", b.modelNames()), zap.String("prefix", b.prefix))
-	mux := http.NewServeMux()
-
 	for _, m := range b.models {
 		path := m.JsonHref()
 		mux.Handle(
@@ -94,33 +104,32 @@ func (b *Builder) initMux() {
 		)
 		b.logger.Info(fmt.Sprintf("mounted url: %s\n", path))
 	}
-	b.handler = mux
 }
 
 func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if b.handler == nil {
-		b.Build()
+		mux := http.NewServeMux()
+		b.Mux(mux)
+		b.handler = mux
 	}
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 	b.handler.ServeHTTP(w, r)
 }
 
 func NewDefaultAutocompleteDataSource(v string) *vx.AutocompleteDataSource {
 	return &vx.AutocompleteDataSource{
-		RemoteURL:   v,
-		IsPaging:    true,
-		ItemTitle:   "title",
-		ItemValue:   "id",
-		PageKey:     ParamPage,
-		PageSizeKey: ParamPageSize,
-		CurrentKey:  ResponseCurrent,
-		PagesKey:    ResponsePages,
-		TotalKey:    ResponseTotal,
-		SearchKey:   ParamSearch,
-		ItemsKey:    ResponseItems,
-		Page:        1,
-		PageSize:    5,
+		RemoteURL:     v,
+		IsPaging:      true,
+		ItemTitle:     "title",
+		ItemValue:     "id",
+		PageField:     ParamPage,
+		PageSizeField: ParamPageSize,
+		CurrentField:  ResponseCurrent,
+		PagesField:    ResponsePages,
+		TotalField:    ResponseTotal,
+		SearchField:   ParamSearch,
+		ItemsField:    ResponseItems,
+		Page:          1,
+		PageSize:      5,
+		Separator:     "__",
 	}
 }

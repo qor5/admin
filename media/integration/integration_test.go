@@ -2,17 +2,20 @@ package integration_test
 
 import (
 	"embed"
-	"github.com/qor5/admin/v3/media"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/qor/oss/filesystem"
-	"github.com/qor5/admin/v3/media/base"
-	"github.com/qor5/admin/v3/media/media_library"
-	"github.com/qor5/admin/v3/media/oss"
+	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/testenv"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/media"
+	"github.com/qor5/admin/v3/media/base"
+	"github.com/qor5/admin/v3/media/media_library"
+	"github.com/qor5/admin/v3/media/oss"
 )
 
 //go:embed *.png
@@ -63,7 +66,7 @@ func TestUpload(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = base.SaveUploadAndCropImage(db, &m)
+	err = base.SaveUploadAndCropImage(db, &m, "", &web.EventContext{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +87,7 @@ func TestCrop(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = base.SaveUploadAndCropImage(db, &m)
+	err = base.SaveUploadAndCropImage(db, &m, "", &web.EventContext{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,7 +109,7 @@ func TestCrop(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = base.SaveUploadAndCropImage(db, &m1)
+	err = base.SaveUploadAndCropImage(db, &m1, "", &web.EventContext{})
 	if err != nil {
 		t.Fatal(err)
 		return
@@ -136,7 +139,7 @@ func TestCopy(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-
+	mb := media.New(db)
 	fh := multipartestutils.CreateMultipartFileHeader("test.png", f)
 	m := media_library.MediaLibrary{}
 
@@ -145,14 +148,14 @@ func TestCopy(t *testing.T) {
 		t.Fatal(err)
 		return
 	}
-	err = base.SaveUploadAndCropImage(db, &m)
+	err = base.SaveUploadAndCropImage(db, &m, "", &web.EventContext{})
 	if err != nil {
 		t.Fatal(err)
 		return
 	}
 	oldID := m.ID
 	oldCreatedTime := m.CreatedAt
-	if m, err = media.CopyMediaLiMediaLibrary(db, int(oldID)); err != nil {
+	if m, err = media.CopyMediaLiMediaLibrary(mb, db, int(oldID), &web.EventContext{}); err != nil {
 		t.Fatalf("copy error :%v", err)
 		return
 	}
@@ -173,5 +176,30 @@ func TestCopy(t *testing.T) {
 		t.Fatalf("crop file time error  %v :%v", m.CreatedAt, oldCreatedTime)
 		return
 	}
+}
 
+func TestUnCachedURL(t *testing.T) {
+	b := media_library.MediaBox{
+		Url: "test.jpg",
+	}
+	if !strings.Contains(b.URLNoCached(), "test.jpg?") {
+		t.Fatalf("set uncached url error %v", b.URLNoCached())
+		return
+	}
+	b.Url = ""
+	if b.URLNoCached() != "" {
+		t.Fatalf("set uncached url empty error %v", b.URLNoCached())
+		return
+	}
+	m := media_library.MediaLibrary{}
+	m.File.Url = "test2.jpg"
+	if !strings.Contains(m.File.URLNoCached(), "test2.jpg?") {
+		t.Fatalf("set uncached url error %v", m.File.URLNoCached())
+		return
+	}
+	m.File.Url = ""
+	if m.File.URLNoCached() != "" {
+		t.Fatalf("set uncached url empty error %v", m.File.URLNoCached())
+		return
+	}
 }

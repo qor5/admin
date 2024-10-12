@@ -8,11 +8,11 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/i18n"
-	. "github.com/qor5/x/v3/ui/vuetify"
-	"github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
+
+	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/ui/vuetifyx"
 )
 
 type FieldDefaultBuilder struct {
@@ -175,7 +175,7 @@ func cfTextTd(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTM
 }
 
 func cfCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	return VCheckbox().
+	return vuetifyx.VXCheckbox().
 		Attr(web.VField(field.FormKey, reflectutils.MustGet(obj, field.Name).(bool))...).
 		Label(field.Label).
 		ErrorMessages(field.Errors...).
@@ -183,9 +183,8 @@ func cfCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) h.H
 }
 
 func cfNumber(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	return VTextField().
+	return vuetifyx.VXField().
 		Type("number").
-		Variant(FieldVariantUnderlined).
 		Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
 		Label(field.Label).
 		ErrorMessages(field.Errors...).
@@ -213,9 +212,9 @@ func cfTime(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLC
 			Format:     "24hr",
 			Scrollable: true,
 		}).
-		DialogWidth(640).
 		ClearText(msgr.Clear).
-		OkText(msgr.OK)
+		OkText(msgr.OK).
+		Disabled(field.Disabled)
 }
 
 func cfTimeSetter(obj interface{}, field *FieldContext, ctx *web.EventContext) (err error) {
@@ -231,31 +230,50 @@ func cfTimeSetter(obj interface{}, field *FieldContext, ctx *web.EventContext) (
 }
 
 func cfTextField(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	return h.Div(
-		h.Span(field.Label).Class("text-subtitle-2 text-high-emphasis section-filed-label mb-1 d-sm-inline-block"),
-		VTextField().
-		Density(DensityComfortable).
-		Class("section-field").
-		Type("text").
-		Variant(FieldVariantOutlined).
-		BgColor(ColorBackground).
-		Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
-		ErrorMessages(field.Errors...).
-		Disabled(field.Disabled),
-	).Class("section-field-wrap")
+	return TextField(obj, field, ctx)
 }
 
-func cfReadonlyText(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+func TextField(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXFieldBuilder {
+	return vuetifyx.VXField().Label(field.Label).
+		Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
+		ErrorMessages(field.Errors...).
+		Disabled(field.Disabled)
+}
+
+func SelectField(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXSelectBuilder {
+	return vuetifyx.VXSelect().
+		Label(field.Label).
+		Disabled(field.Disabled).
+		Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
+		ErrorMessages(field.Errors...)
+}
+
+func ReadonlyText(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXReadonlyFieldBuilder {
 	return vuetifyx.VXReadonlyField().
 		Label(field.Label).
 		Value(field.StringValue(obj))
 }
 
+func cfReadonlyText(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	return ReadonlyText(obj, field, ctx)
+}
+
+func ReadonlyCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXCheckboxBuilder {
+	msgr := MustGetMessages(ctx.R)
+	return vuetifyx.VXCheckbox().
+		Title(field.Label).
+		TrueLabel(msgr.CheckboxTrueLabel).
+		FalseLabel(msgr.CheckboxFalseLabel).
+		TrueIcon("mdi-circle-outline").
+		FalseIcon("mdi-window-close").
+		HideDetails(true).
+		TrueIconColor("primary").
+		ModelValue(reflectutils.MustGet(obj, field.Name)).
+		Readonly(true)
+}
+
 func cfReadonlyCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	return vuetifyx.VXReadonlyField().
-		Label(field.Label).
-		Value(reflectutils.MustGet(obj, field.Name)).
-		Checkbox(true)
+	return ReadonlyCheckbox(obj, field, ctx)
 }
 
 func (b *FieldDefaults) builtInFieldTypes() {
@@ -311,5 +329,4 @@ func (b *FieldDefaults) builtInFieldTypes() {
 	}
 
 	b.Exclude("ID")
-	return
 }

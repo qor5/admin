@@ -45,6 +45,7 @@ func PresetsConfirmDialog(b *presets.Builder, db *gorm.DB) (
 				Attr("@click",
 					web.Plaid().
 						EventFunc(presets.OpenConfirmDialog).
+						Query(presets.ConfirmDialogPromptText, `Are you sure you want to delete this file?`).
 						Query(presets.ConfirmDialogConfirmEvent,
 							`alert("file deleted")`,
 						).

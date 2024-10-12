@@ -14,6 +14,7 @@ import (
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/login"
 	. "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	. "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"golang.org/x/text/language/display"
@@ -365,27 +366,19 @@ func defaultChangePasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.Pa
 
 func changePasswordDialog(_ *login.ViewHelper, ctx *web.EventContext, showVar string, content HTMLComponent) HTMLComponent {
 	pmsgr := presets.MustGetMessages(ctx.R)
-	return web.Scope(VDialog(
-		VCard(
-			content,
-			VCardActions(
-				VSpacer(),
-				VBtn(pmsgr.Cancel).
-					Variant(VariantFlat).
-					Class("ml-2").
-					On("click", fmt.Sprintf("dialogLocals.%s = false", showVar)),
-
-				VBtn(pmsgr.OK).
-					Color("primary").
-					Variant(VariantFlat).
-					Theme(ThemeDark).
-					Attr("@click", web.Plaid().EventFunc("login_changePassword").Go()),
-			),
-		),
-	).MaxWidth("600px").
-		Attr("v-model", fmt.Sprintf("dialogLocals.%s", showVar)).
+	msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
+	return web.Scope(vx.VXDialog(
+		content,
+	).OkText(pmsgr.OK).
+		Title(msgr.ChangePasswordTitle).
+		HideClose(true).
 		Persistent(true).
-		NoClickAnimation(true),
+		NoClickAnimation(true).
+		CancelText(pmsgr.Cancel).
+		Width(400).
+		Attr("@click:ok", web.Plaid().EventFunc("login_changePassword").Go()).
+		Attr("v-model", fmt.Sprintf("dialogLocals.%s", showVar)).
+		Attr("@click:outside", presets.ShowSnackbarScript(pmsgr.LeaveBeforeUnsubmit, ColorWarning)),
 	).VSlot(" { locals : dialogLocals}").Init(fmt.Sprintf(`{%s: true}`, showVar))
 }
 
@@ -393,33 +386,35 @@ func defaultChangePasswordDialogContent(vh *login.ViewHelper, _ *presets.Builder
 	return func(ctx *web.EventContext) HTMLComponent {
 		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
 		return Div(
-			VCardTitle(Text(msgr.ChangePasswordTitle)),
+			// VCardTitle(Text(msgr.ChangePasswordTitle)).Class("pa-6"),
 			VCardText(
-				Div(
-					DefaultViewCommon.PasswordInput("old_password", msgr.ChangePasswordOldPlaceholder, "", true).
-						Label(msgr.ChangePasswordOldLabel).
-						Attr(web.VField("old_password", "")...),
-				),
-				Div(
-					DefaultViewCommon.PasswordInputWithStrengthMeter(
-						DefaultViewCommon.PasswordInput("password", msgr.ChangePasswordNewPlaceholder, "", true).
-							Label(msgr.ChangePasswordNewLabel).
-							Attr(web.VField("password", "")...),
-						"password", ""),
-				).Class("mt-12"),
-				Div(
-					DefaultViewCommon.PasswordInput("confirm_password", msgr.ChangePasswordNewConfirmPlaceholder, "", true).
-						Label(msgr.ChangePasswordNewConfirmLabel).
-						Attr(web.VField("confirm_password", "")...),
-				).Class("mt-12"),
-				If(vh.TOTPEnabled(),
+				Form().Children( // just used to prevent 1password auto submit
 					Div(
-						DefaultViewCommon.Input("otp", msgr.TOTPValidateCodePlaceholder, "").
-							Label(msgr.TOTPValidateCodeLabel).
-							Attr(web.VField("otp", "")...),
-					).Class("mt-12"),
+						DefaultViewCommon.PasswordInput("old_password", msgr.ChangePasswordOldPlaceholder, "", true).
+							Label(msgr.ChangePasswordOldLabel).
+							Attr(web.VField("old_password", "")...),
+					),
+					Div(
+						DefaultViewCommon.PasswordInputWithStrengthMeter(
+							DefaultViewCommon.PasswordInput("password", msgr.ChangePasswordNewPlaceholder, "", true).
+								Label(msgr.ChangePasswordNewLabel).
+								Attr(web.VField("password", "")...),
+							"password", ""),
+					),
+					Div(
+						DefaultViewCommon.PasswordInput("confirm_password", msgr.ChangePasswordNewConfirmPlaceholder, "", true).
+							Label(msgr.ChangePasswordNewConfirmLabel).
+							Attr(web.VField("confirm_password", "")...),
+					),
+					If(vh.TOTPEnabled(),
+						Div(
+							DefaultViewCommon.Input("otp", msgr.TOTPValidateCodePlaceholder, "").
+								Label(msgr.TOTPValidateCodeLabel).
+								Attr(web.VField("otp", "")...),
+						),
+					),
 				),
-			),
+			).Class("pa-0"),
 		)
 	}
 }
@@ -436,7 +431,7 @@ func defaultTOTPSetupPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFun
 		// Generate key from TOTPSecret
 		var key *otp.Key
 		totpSecret := u.GetTOTPSecret()
-		if len(totpSecret) == 0 {
+		if totpSecret == "" {
 			r.Body = DefaultViewCommon.ErrorBody("need setup totp")
 			return
 		}

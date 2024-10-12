@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/qor5/web/v3"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestIsMenuItemActive(t *testing.T) {
@@ -55,9 +57,55 @@ func TestIsMenuItemActive(t *testing.T) {
 
 	for i, io := range toIO {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			if b.isMenuItemActive(io.ctx, io.m) != io.excepted {
-				t.Errorf("isMenuItemActive() = %v, excepted %v", b.isMenuItemActive(io.ctx, io.m), io.excepted)
+			if b.menuOrder.isMenuItemActive(io.m, io.ctx) != io.excepted {
+				t.Errorf("isMenuItemActive() = %v, excepted %v", b.menuOrder.isMenuItemActive(io.m, io.ctx), io.excepted)
 			}
 		})
 	}
+}
+
+func TestLookUpModelBuilder(t *testing.T) {
+	type Order struct {
+		ID      uint
+		Product string
+	}
+	type Customer struct {
+		ID   uint
+		Name string
+	}
+
+	pb := New()
+	mb0 := pb.Model(&Order{})
+	mb1 := pb.Model(&Customer{})
+	assert.Equal(t, mb0, pb.LookUpModelBuilder(mb0.Info().URIName()))
+	assert.Equal(t, mb1, pb.LookUpModelBuilder(mb1.Info().URIName()))
+
+	mb3 := pb.Model(&Customer{})
+	assert.PanicsWithValue(t, `Duplicated model names registered "customers"`, func() {
+		pb.LookUpModelBuilder(mb3.Info().URIName())
+	})
+	mb3.URIName(mb3.Info().URIName() + "-version-list-dialog")
+	assert.Equal(t, mb3, pb.LookUpModelBuilder(mb3.Info().URIName()))
+}
+
+func TestCloneFieldsLayout(t *testing.T) {
+	src := []any{
+		"foo",
+		[]string{"bar"},
+		&FieldsSection{
+			Title: "title",
+			Rows: [][]string{
+				{"a", "b"},
+				{"c", "d"},
+			},
+		},
+	}
+	require.Equal(t, src, CloneFieldsLayout(src))
+}
+
+func TestHumanizeString(t *testing.T) {
+	assert.Equal(t, "Hello World", humanizeString("HelloWorld"))
+	assert.Equal(t, "Hello World", humanizeString("helloWorld"))
+	assert.Equal(t, "Order Item", humanizeString("OrderItem"))
+	assert.Equal(t, "CNN Name", humanizeString("CNNName"))
 }

@@ -36,7 +36,7 @@ type Schedule struct {
 // @snippet_end
 
 // @snippet_begin(PublishStatus)
-const (
+var (
 	StatusDraft   = "draft"
 	StatusOnline  = "online"
 	StatusOffline = "offline"
@@ -58,14 +58,14 @@ type Version struct {
 
 // @snippet_end
 type (
-	PublishActionsFunc func(db *gorm.DB, ctx context.Context, storage oss.StorageInterface, obj any) (actions []*PublishAction, err error)
+	PublishActionsFunc func(ctx context.Context, db *gorm.DB, storage oss.StorageInterface, obj any) (actions []*PublishAction, err error)
 	PublishInterface   interface {
-		GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (actions []*PublishAction, err error)
+		GetPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*PublishAction, err error)
 	}
 )
 
 type UnPublishInterface interface {
-	GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (actions []*PublishAction, err error)
+	GetUnPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*PublishAction, err error)
 }
 
 type WrapPublishInterface interface {
@@ -76,11 +76,11 @@ type WrapUnPublishInterface interface {
 }
 
 type AfterPublishInterface interface {
-	AfterPublish(db *gorm.DB, storage oss.StorageInterface, ctx context.Context) error
+	AfterPublish(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) error
 }
 
 type AfterUnPublishInterface interface {
-	AfterUnPublish(db *gorm.DB, storage oss.StorageInterface, ctx context.Context) error
+	AfterUnPublish(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) error
 }
 
 type StatusInterface interface {

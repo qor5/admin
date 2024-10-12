@@ -8,19 +8,47 @@ import "net/http"
 // right: permPolicy.On("*:media_libraries:*")
 // right: permPolicy.On("*:media_libraries:1")
 const (
-	PermUpload     = "perm_media_library_upload"
-	PermDelete     = "perm_media_library_delete"
-	PermUpdateDesc = "perm_media_library_update_desc"
+	PermUpload      = "perm_media_library_upload"
+	PermDelete      = "perm_media_library_delete"
+	PermUpdateDesc  = "perm_media_library_update_desc"
+	PermUpdateName  = "perm_media_library_update_name"
+	PermMovieTo     = "perm_media_library_move_to"
+	PermCopy        = "perm_media_library_copy"
+	PermNewFolder   = "perm_media_library_new_folder"
+	PermListFolders = "perm_media_library_list_folders"
 )
 
 func (mb *Builder) uploadIsAllowed(r *http.Request) error {
-	return mb.permVerifier.Do(PermUpload).On("media_libraries").WithReq(r).IsAllowed()
+	return mb.mb.Info().Verifier().Do(PermUpload).WithReq(r).IsAllowed()
+}
+
+func (mb *Builder) copyIsAllowed(r *http.Request) error {
+	return mb.mb.Info().Verifier().Do(PermCopy).WithReq(r).IsAllowed()
+}
+
+func (mb *Builder) moveToIsAllowed(r *http.Request) error {
+	return mb.mb.Info().Verifier().Do(PermMovieTo).WithReq(r).IsAllowed()
 }
 
 func (mb *Builder) deleteIsAllowed(r *http.Request, obj interface{}) error {
-	return mb.permVerifier.Do(PermDelete).ObjectOn(obj).WithReq(r).IsAllowed()
+	if obj == nil {
+		return mb.mb.Info().Verifier().Do(PermDelete).WithReq(r).IsAllowed()
+	}
+	return mb.mb.Info().Verifier().Do(PermDelete).ObjectOn(obj).WithReq(r).IsAllowed()
 }
 
 func (mb *Builder) updateDescIsAllowed(r *http.Request, obj interface{}) error {
-	return mb.permVerifier.Do(PermUpdateDesc).ObjectOn(obj).WithReq(r).IsAllowed()
+	return mb.mb.Info().Verifier().Do(PermUpdateDesc).ObjectOn(obj).WithReq(r).IsAllowed()
+}
+
+func (mb *Builder) updateNameIsAllowed(r *http.Request, obj interface{}) error {
+	return mb.mb.Info().Verifier().Do(PermUpdateName).ObjectOn(obj).WithReq(r).IsAllowed()
+}
+
+func (mb *Builder) newFolderIsAllowed(r *http.Request) error {
+	return mb.mb.Info().Verifier().Do(PermNewFolder).WithReq(r).IsAllowed()
+}
+
+func (mb *Builder) listFoldersIsAllowed(r *http.Request) error {
+	return mb.mb.Info().Verifier().Do(PermListFolders).WithReq(r).IsAllowed()
 }

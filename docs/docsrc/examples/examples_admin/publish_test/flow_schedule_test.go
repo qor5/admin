@@ -140,12 +140,12 @@ func flowSchedule(t *testing.T, f *FlowSchedule) {
 	flowSchedule_Step00_Event_presets_DetailingDrawer(t, f).ThenValidate(testflow.ContainsInOrderAtUpdatePortal(0, "publish_eventSchedulePublishDialog"))
 
 	candidates := []string{
+		fmt.Sprintf(`.query("id", %q)`, f.ID),                                // Ensure the correct project is being operated on
 		fmt.Sprintf(`[form, {"ScheduledStartAt":%q}]`, prevScheduledStartAt), // Ensure the original planned time is correct
 		fmt.Sprintf(`[form, {"ScheduledEndAt":%q}]`, prevScheduledEndAt),
-		fmt.Sprintf(`.query("id", %q)`, f.ID), // Ensure the correct project is being operated on
 	}
 	if prev.Status.Status == publish.StatusOnline {
-		candidates = candidates[1:] // no start at
+		candidates = append(candidates[0:1], candidates[2:]...)
 	}
 	flowSchedule_Step01_Event_publish_eventSchedulePublishDialog(t, f).ThenValidate(
 		testflow.ContainsInOrderAtUpdatePortal(0, candidates...),
@@ -191,7 +191,7 @@ func flowSchedule_Step00_Event_presets_DetailingDrawer(t *testing.T, f *FlowSche
 	assert.Len(t, resp.UpdatePortals, 1)
 	assert.Equal(t, "presets_RightDrawerPortalName", resp.UpdatePortals[0].Name)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, testflow.RemoveTime(`setTimeout(function(){ vars.presetsRightDrawer = true }, 100)`), testflow.RemoveTime(resp.RunScript))
+	assert.Equal(t, testflow.RemoveTime(`setTimeout(function(){ vars.presetsRightDrawer = true,vars.confirmDrawerLeave=false,vars.presetsDataChanged = {} }, 100)`), testflow.RemoveTime(resp.RunScript))
 
 	testflow.Validate(t, w, r,
 		testflow.OpenRightDrawer("WithPublishProduct "+f.ID),

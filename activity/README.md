@@ -40,14 +40,14 @@
   ab.RegisterModel(presetModel).AddTypeHanders(
     time.Time{},
     func(old, new any, prefixField string) []Diff {
-  		oldString := old.(time.Time).Format(time.RFC3339)
-  		newString := new.(time.Time).Format(time.RFC3339)
-  		if oldString != newString {
-  			return []Diff{
-  				{Field: prefixField, Old: oldString, New: newString},
-  			}
-  		}
-  		return []Diff{}
+    oldString := old.(time.Time).Format(time.RFC3339)
+    newString := new.(time.Time).Format(time.RFC3339)
+    if oldString != newString {
+     return []Diff{
+      {Field: prefixField, Old: oldString, New: newString},
+     }
+    }
+    return []Diff{}
     }
     ) // you define your own type handler to record some custom type for update operation
   ```

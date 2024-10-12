@@ -24,7 +24,7 @@ func publishAction(_ *gorm.DB, mb *presets.ModelBuilder, publisher *Builder, act
 		}
 
 		reqCtx := publisher.WithContextValues(ctx.R.Context())
-		err = publisher.Publish(obj, reqCtx)
+		err = publisher.Publish(reqCtx, obj)
 		if err != nil {
 			return
 		}
@@ -38,8 +38,10 @@ func publishAction(_ *gorm.DB, mb *presets.ModelBuilder, publisher *Builder, act
 			web.AppendRunScripts(&r, script)
 		} else {
 			msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
-			presets.ShowMessage(&r, msgr.SuccessfullyPublish, v.ColorSuccess)
-			web.AppendRunScripts(&r, web.Plaid().MergeQuery(true).Go())
+			web.AppendRunScripts(&r, web.Plaid().MergeQuery(true).
+				ThenScript(presets.ShowSnackbarScript(msgr.SuccessfullyPublish, v.ColorSuccess)).
+				Go(),
+			)
 		}
 		return
 	}
@@ -60,7 +62,7 @@ func unpublishAction(_ *gorm.DB, mb *presets.ModelBuilder, publisher *Builder, a
 		}
 
 		reqCtx := publisher.WithContextValues(ctx.R.Context())
-		err = publisher.UnPublish(obj, reqCtx)
+		err = publisher.UnPublish(reqCtx, obj)
 		if err != nil {
 			return
 		}
@@ -71,8 +73,10 @@ func unpublishAction(_ *gorm.DB, mb *presets.ModelBuilder, publisher *Builder, a
 		}
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
-		presets.ShowMessage(&r, msgr.SuccessfullyUnPublish, v.ColorSuccess)
-		web.AppendRunScripts(&r, web.Plaid().MergeQuery(true).Go())
+		web.AppendRunScripts(&r, web.Plaid().MergeQuery(true).
+			ThenScript(presets.ShowSnackbarScript(msgr.SuccessfullyUnPublish, v.ColorSuccess)).
+			Go(),
+		)
 		return
 	}
 }

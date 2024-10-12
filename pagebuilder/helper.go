@@ -1,13 +1,15 @@
 package pagebuilder
 
 import (
-	"github.com/qor5/x/v3/i18n"
 	"path"
 	"regexp"
 
-	"github.com/qor5/admin/v3/l10n"
+	"github.com/qor5/x/v3/i18n"
+
 	"github.com/qor5/web/v3"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/l10n"
 )
 
 var directoryRe = regexp.MustCompile(`^([\/]{1}[a-zA-Z0-9._-]+)+(\/?){1}$|^([\/]{1})$`)
@@ -37,14 +39,14 @@ func pageValidator(ctx *web.EventContext, p *Page, db *gorm.DB, l10nB *l10n.Buil
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
 	if p.Title == "" {
-		err.FieldError("Page.Title", msgr.InvalidTitleMsg)
+		err.FieldError("Title", msgr.InvalidTitleMsg)
 		return
 	}
 
 	if p.Slug != "" {
 		pagePath := path.Clean(p.Slug)
 		if !directoryRe.MatchString(pagePath) {
-			err.FieldError("Page.Slug", msgr.InvalidSlugMsg)
+			err.FieldError("Slug", msgr.InvalidSlugMsg)
 			return
 		}
 	}
@@ -61,21 +63,21 @@ func pageValidator(ctx *web.EventContext, p *Page, db *gorm.DB, l10nB *l10n.Buil
 	currentPagePublishUrl := p.getPublishUrl(localePath, currentPageCategory.Path)
 
 	var pagePathInfos []pagePathInfo
-	if err := db.Raw(queryLocaleCodeCategoryPathSlugSQL).Scan(&pagePathInfos).Error; err != nil {
-		panic(err)
+	if dbErr := db.Raw(queryLocaleCodeCategoryPathSlugSQL).Scan(&pagePathInfos).Error; dbErr != nil {
+		panic(dbErr)
 	}
 
 	for _, info := range pagePathInfos {
 		if info.ID == p.ID && info.LocaleCode == p.LocaleCode {
 			continue
 		}
-		var localePath string
+		var innerLocalePath string
 		if l10nB != nil {
-			localePath = l10nB.GetLocalePath(info.LocaleCode)
+			innerLocalePath = l10nB.GetLocalePath(info.LocaleCode)
 		}
 
-		if generatePublishUrl(localePath, info.CategoryPath, info.Slug) == currentPagePublishUrl {
-			err.FieldError("Page.Slug", msgr.ConflictSlugMsg)
+		if generatePublishUrl(innerLocalePath, info.CategoryPath, info.Slug) == currentPagePublishUrl {
+			err.FieldError("Slug", msgr.ConflictSlugMsg)
 			return
 		}
 	}
@@ -86,13 +88,13 @@ func pageValidator(ctx *web.EventContext, p *Page, db *gorm.DB, l10nB *l10n.Buil
 func categoryValidator(ctx *web.EventContext, category *Category, db *gorm.DB, l10nB *l10n.Builder) (err web.ValidationErrors) {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 	if category.Name == "" {
-		err.FieldError("Category.Name", msgr.InvalidNameMsg)
+		err.FieldError("Name", msgr.InvalidNameMsg)
 		return
 	}
 
 	categoryPath := path.Clean(category.Path)
 	if !directoryRe.MatchString(categoryPath) {
-		err.FieldError("Category.Category", msgr.InvalidPathMsg)
+		err.FieldError("Path", msgr.InvalidPathMsg)
 		return
 	}
 
@@ -103,21 +105,21 @@ func categoryValidator(ctx *web.EventContext, category *Category, db *gorm.DB, l
 
 	currentCategoryPathPublishUrl := generatePublishUrl(localePath, categoryPath, "")
 
-	categories := []*Category{}
-	if err := db.Model(&Category{}).Find(&categories).Error; err != nil {
-		panic(err)
+	var categories []*Category
+	if dbErr := db.Model(&Category{}).Find(&categories).Error; dbErr != nil {
+		panic(dbErr)
 	}
 
 	for _, c := range categories {
 		if c.ID == category.ID && c.LocaleCode == category.LocaleCode {
 			continue
 		}
-		var localePath string
+		var innerLocalePath string
 		if l10nB != nil {
-			localePath = l10nB.GetLocalePath(c.LocaleCode)
+			innerLocalePath = l10nB.GetLocalePath(c.LocaleCode)
 		}
-		if generatePublishUrl(localePath, c.Path, "") == currentCategoryPathPublishUrl {
-			err.FieldError("Category.Category", msgr.ExistingPathMsg)
+		if generatePublishUrl(innerLocalePath, c.Path, "") == currentCategoryPathPublishUrl {
+			err.FieldError("Path", msgr.ExistingPathMsg)
 			return
 		}
 	}

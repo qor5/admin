@@ -17,6 +17,7 @@ type Messages struct {
 	OpenGraphMetadata    string
 	Seo                  string
 	Customize            string
+	SEOPreview           string
 }
 
 var Messages_en_US = &Messages{
@@ -35,6 +36,7 @@ var Messages_en_US = &Messages{
 	OpenGraphMetadata:    "Open Graph Metadata",
 	Seo:                  "SEO",
 	Customize:            "Customize",
+	SEOPreview:           "SEO Preview",
 }
 
 var Messages_zh_CN = &Messages{
@@ -53,4 +55,5 @@ var Messages_zh_CN = &Messages{
 	OpenGraphMetadata:    "OG 元数据",
 	Seo:                  "搜索引擎优化",
 	Customize:            "自定义",
+	SEOPreview:           "SEO 预览",
 }

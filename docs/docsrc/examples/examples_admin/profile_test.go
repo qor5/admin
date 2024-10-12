@@ -50,7 +50,7 @@ func TestProfileExample(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				return httptest.NewRequest("GET", "/", nil)
 			},
-			ExpectPageBodyContainsInOrder: []string{"ProfileCompo", "https://i.pravatar.cc/300", "admin", "Active", "admin@theplant.jp", "The Plant", "ADMIN"},
+			ExpectPageBodyContainsInOrder: []string{"ProfileCompo", "https://i.pravatar.cc/300", "admin", "Active", "admin@theplant.jp", "The Plant", "Admin"},
 		},
 		{
 			Name:  "Rename",
@@ -124,6 +124,101 @@ func TestProfileExample(t *testing.T) {
 				return httptest.NewRequest("GET", "/", nil)
 			},
 			ExpectPageBodyContainsInOrder: []string{"ProfileCompo", "PrependCompos", "ProfileCompoEquals: true"},
+		},
+		{
+			Name:  "Index Page with WrapPrependCompo",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				pb = presets.New()
+				profileExample(pb, TestDB, currentProfileUser, func(pb *plogin.ProfileBuilder) {
+					pb.DisableNotification(true).LogoutURL("auth/logout").
+						WrapPrependCompo(func(in plogin.CustomizeCompoFunc) plogin.CustomizeCompoFunc {
+							return func(ctx context.Context, profileCompo *plogin.ProfileCompo, current h.HTMLComponent) (h.HTMLComponent, error) {
+								// current, err := in(ctx, profileCompo, current)
+								// if err != nil {
+								// 	return nil, err
+								// }
+
+								profileCompoFromCtx := plogin.ProfileCompoFromContext(ctx)
+								return h.Components(
+									h.Div().Text("PrependCompos"),
+									h.Div().Text(fmt.Sprintf("ProfileCompoEquals: %t", profileCompo == profileCompoFromCtx)),
+								), nil
+							}
+						})
+				})
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				return httptest.NewRequest("GET", "/", nil)
+			},
+			ExpectPageBodyContainsInOrder: []string{"ProfileCompo", "PrependCompos", "ProfileCompoEquals: true"},
+		},
+		{
+			Name:  "Index Page with WrapSubtitleCompo",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				pb = presets.New()
+				profileExample(pb, TestDB, currentProfileUser, func(pb *plogin.ProfileBuilder) {
+					pb.DisableNotification(true).LogoutURL("auth/logout").
+						WrapSubtitleCompo(func(in plogin.CustomizeCompoFunc) plogin.CustomizeCompoFunc {
+							return func(ctx context.Context, profileCompo *plogin.ProfileCompo, current h.HTMLComponent) (h.HTMLComponent, error) {
+								// current, err := in(ctx, profileCompo, current)
+								// if err != nil {
+								// 	return nil, err
+								// }
+
+								return h.Div().Class("text-overline text-grey-darken-1 text-truncate").Text("Customize Subtitle"), nil
+							}
+						})
+				})
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				return httptest.NewRequest("GET", "/", nil)
+			},
+			ExpectPageBodyContainsInOrder: []string{"ProfileCompo", "Customize Subtitle"},
+		},
+		{
+			Name:  "Index Page with WrapRenameCallback",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				pb = presets.New()
+				profileExample(pb, TestDB, currentProfileUser, func(pb *plogin.ProfileBuilder) {
+					pb.DisableNotification(true).LogoutURL("auth/logout").
+						WrapRenameCallback(func(in plogin.RenameCallback) plogin.RenameCallback {
+							return func(ctx context.Context, newName string) error {
+								newName += "_suffix"
+								return in(ctx, newName)
+							}
+						})
+				})
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/?__execute_event__=__dispatch_stateful_action__").
+					AddField("__action__", `
+{
+	"compo_type": "*login.ProfileCompo",
+	"compo": {
+		"id": ""
+	},
+	"injector": "__profile__",
+	"sync_query": false,
+	"method": "Rename",
+	"request": {
+		"name": "adminx"
+	}
+}
+`).
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"Successfully renamed"},
+			EventResponseMatch: func(t *testing.T, er *multipartestutils.TestEventResponse) {
+				require.Equal(t, "adminx_suffix", currentProfileUser.Name)
+			},
 		},
 	}
 

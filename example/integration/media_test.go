@@ -1,21 +1,29 @@
 package integration_test
 
 import (
+	"bytes"
 	"net/http"
 	"testing"
 
+	"github.com/qor/oss/filesystem"
+
+	media_oss "github.com/qor5/admin/v3/media/oss"
+
 	"github.com/qor5/admin/v3/media/media_library"
 
-	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/web/v3"
+
+	"github.com/qor5/admin/v3/media"
+
+	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/role"
-	"gorm.io/gorm"
 
-	"github.com/qor5/admin/v3/example/admin"
 	. "github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
+
+	"github.com/qor5/admin/v3/example/admin"
 )
 
 var mediaTestData = gofixtures.Data(gofixtures.Sql(`
@@ -25,6 +33,8 @@ INSERT INTO public.media_libraries (id,user_id, created_at, updated_at, deleted_
 INSERT INTO public.media_libraries (id, created_at, updated_at, deleted_at, selected_type, file, user_id, folder, parent_id) VALUES (4, '2024-07-26 02:17:18.957978 +00:00', '2024-07-26 02:17:18.957978 +00:00', null, '', '{"FileName":"test001","Url":"","Video":"","SelectedType":"","Description":""}', 888, true, 0);
 INSERT INTO public.media_libraries (id, created_at, updated_at, deleted_at, selected_type, file, user_id, folder, parent_id) VALUES (5, '2024-07-26 02:17:18.957978 +00:00', '2024-07-26 02:17:18.957978 +00:00', null, '', '{"FileName":"test001","Url":"","Video":"","SelectedType":"","Description":""}', 888, true, 4);
 INSERT INTO public.media_libraries (id, created_at, updated_at, deleted_at, selected_type, file, user_id, folder, parent_id) VALUES (6, '2024-07-26 02:17:18.957978 +00:00', '2024-07-26 02:17:18.957978 +00:00', null, '', '{"FileName":"test.png","Url":"","Video":"","SelectedType":"","Description":""}', 888, true, 0);
+INSERT INTO public.media_libraries (id, created_at, updated_at, deleted_at, selected_type, file, user_id, folder, parent_id) VALUES (7, '2024-07-26 02:17:18.957978 +00:00', '2024-07-26 02:17:18.957978 +00:00', null, 'video', '{"FileName":"test.mp4","Url":"","Video":"","SelectedType":"","Description":""}', 888, false, 0);
+INSERT INTO public.media_libraries (id, created_at, updated_at, deleted_at, selected_type, file, user_id, folder, parent_id) VALUES (8, '2024-07-26 02:17:18.957978 +00:00', '2024-07-26 02:17:18.957978 +00:00', null, 'file', '{"FileName":"test.txt","Url":"","Video":"","SelectedType":"","Description":""}', 888, false, 0);
 
 `, []string{"media_libraries"}))
 
@@ -53,7 +63,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					AddField("type", "all").
 					AddField("order_by", "created_at_desc").
 					BuildEventFuncRequest()
@@ -62,13 +72,28 @@ func TestMedia(t *testing.T) {
 			ExpectPageBodyContainsInOrder: []string{"test_search1.png", "test_search2.png"},
 		},
 		{
+			Name:  "MediaLibrary Admin Role List asc",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-libraries").
+					AddField("type", "all").
+					AddField("order_by", "created_at").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"test_search2.png", "test_search1.png"},
+		},
+		{
 			Name:  "MediaLibrary Create Folder",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.CreateFolderEvent).
 					AddField(media.ParamName, "test_create_directory").
 					AddField(media.ParamParentID, "0").
@@ -88,18 +113,34 @@ func TestMedia(t *testing.T) {
 			},
 		},
 		{
+			Name:  "MediaLibrary Create Folder Empty ",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-libraries").
+					Query(web.EventFuncIDName, media.CreateFolderEvent).
+					AddField(media.ParamName, "").
+					AddField(media.ParamParentID, "0").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"folder name can`t be empty"},
+		},
+		{
 			Name:  "MediaLibrary New Folder Dialog",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.NewFolderDialogEvent).
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"v-dialog", "New Folder"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"vx-dialog", "New Folder"},
 		},
 		{
 			Name:  "MediaLibrary Move To Folder Dialog",
@@ -108,13 +149,13 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.MoveToFolderDialogEvent).
 					Query(media.ParamSelectIDS, "1,2,3").
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"v-dialog", "Choose Folder", "Root Director", "0_folder_portal_name"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"vx-dialog", "Choose Folder", "Root Directory", "0_folder_portal_name"},
 			ExpectPortalUpdate0NotContains:     []string{"test001"},
 		},
 		{
@@ -124,7 +165,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.NextFolderEvent).
 					Query(media.ParamSelectFolderID, "0").
 					BuildEventFuncRequest()
@@ -141,7 +182,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.MoveToFolderEvent).
 					Query(media.ParamSelectFolderID, "5").
 					Query(media.ParamSelectIDS, "1,2,3").
@@ -167,13 +208,13 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.DeleteConfirmationEvent).
 					Query(media.ParamMediaIDS, "1,2,3").
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"v-dialog", "Are you sure you want to delete"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"vx-dialog", "Are you sure you want to delete"},
 		},
 		{
 			Name:  "MediaLibrary Delete One object",
@@ -182,7 +223,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.DoDeleteEvent).
 					Query(media.ParamMediaIDS, "1").
 					BuildEventFuncRequest()
@@ -190,11 +231,11 @@ func TestMedia(t *testing.T) {
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
 				var count int64
-				if err := TestDB.Model(media_library.MediaLibrary{}).Count(&count).Error; err != nil {
+				if err := TestDB.Model(media_library.MediaLibrary{}).Where("id=1").Count(&count).Error; err != nil {
 					t.Fatalf("delete object err : %v", err)
 					return
 				}
-				if count != 5 {
+				if count != 0 {
 					t.Fatalf("not delete object count : %d", count)
 					return
 				}
@@ -207,7 +248,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.DoDeleteEvent).
 					Query(media.ParamMediaIDS, "4").
 					BuildEventFuncRequest()
@@ -232,7 +273,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.DoDeleteEvent).
 					Query(media.ParamMediaIDS, "1,2,3,4,5,6").
 					BuildEventFuncRequest()
@@ -240,7 +281,7 @@ func TestMedia(t *testing.T) {
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
 				var count int64
-				if err := TestDB.Model(media_library.MediaLibrary{}).Count(&count).Error; err != nil {
+				if err := TestDB.Model(media_library.MediaLibrary{}).Where("id in (1,2,3,4,5,6)").Count(&count).Error; err != nil {
 					t.Fatalf("delete objects err : %v", err)
 					return
 				}
@@ -257,7 +298,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.RenameDialogEvent).
 					Query(media.ParamMediaIDS, "1").
 					BuildEventFuncRequest()
@@ -273,7 +314,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.RenameDialogEvent).
 					Query(media.ParamMediaIDS, "6").
 					BuildEventFuncRequest()
@@ -288,7 +329,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.RenameEvent).
 					Query(media.ParamMediaIDS, "1").
 					AddField(media.ParamName, "1").
@@ -314,7 +355,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.RenameEvent).
 					Query(media.ParamMediaIDS, "6").
 					AddField(media.ParamName, "test").
@@ -340,7 +381,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.UpdateDescriptionDialogEvent).
 					Query(media.ParamMediaIDS, "1").
 					BuildEventFuncRequest()
@@ -355,7 +396,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.UpdateDescriptionEvent).
 					Query(media.ParamMediaIDS, "1").
 					AddField(media.ParamCurrentDescription, "321").
@@ -386,7 +427,7 @@ func TestMedia(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"v-dialog", "Choose a File"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"v-dialog", "Choose File"},
 		},
 		{
 			Name:  "MediaLibrary Search",
@@ -395,7 +436,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(media.ParamField, "media").
 					Query(web.EventFuncIDName, media.ImageSearchEvent).
 					Query("media_file_chooser_search_keyword", "test_search2").
@@ -412,7 +453,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(media.ParamField, "media").
 					Query(web.EventFuncIDName, media.ImageSearchEvent).
 					Query("media_file_chooser_search_keyword", "2").
@@ -429,7 +470,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					Query(media.ParamField, "media").
 					Query("media_file_chooser_current_page", "2").
 					Query(web.EventFuncIDName, media.ImageJumpPageEvent).
@@ -437,6 +478,199 @@ func TestMedia(t *testing.T) {
 				return req
 			},
 			ExpectPortalUpdate0NotContains: []string{"test_search2.png", "test_search1.png"},
+		},
+		{
+			Name:  "MediaLibrary Folder Tab Select Image Type ",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-libraries").
+					Query(media.ParamField, "media").
+					Query("tab", "folders").
+					Query("type", "image").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"test001", "test_search1.png", "test_search2.png"},
+			ExpectPageBodyNotContains:     []string{"test.mp4", "test.txt"},
+		},
+		{
+			Name:  "Pages Folder Tab Cfg Just allow image",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages").
+					Query(web.EventFuncIDName, media.OpenFileChooserEvent).
+					Query(media.ParamField, "media").
+					Query("tab", "folders").
+					Query("cfg", `{"AllowType":"image"}`).
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"test001", "test_search1.png", "test_search2.png"},
+			ExpectPortalUpdate0NotContains:     []string{"test.mp4", "test.txt"},
+		},
+		{
+			Name:  "MediaLibrary Folder Tab Select Video Type",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-libraries").
+					Query(media.ParamField, "media").
+					Query("tab", "folders").
+					Query("type", "video").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"test001", "test.mp4"},
+			ExpectPageBodyNotContains:     []string{"test_search1.png", "test_search2.png", "test.txt"},
+		},
+		{
+			Name:  "Pages Folder Tab Cfg Just allow video",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages").
+					Query(web.EventFuncIDName, media.OpenFileChooserEvent).
+					Query(media.ParamField, "media").
+					Query("tab", "folders").
+					Query("cfg", `{"AllowType":"video"}`).
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"test001", "test.mp4"},
+			ExpectPortalUpdate0NotContains:     []string{"test_search1.png", "test_search2.png", "test.txt"},
+		},
+		{
+			Name:  "MediaLibrary Folder Tab Select file Type ",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-libraries").
+					Query(media.ParamField, "media").
+					Query("tab", "folders").
+					Query("type", "file").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"test001", "test.txt"},
+			ExpectPageBodyNotContains:     []string{"test.mp4", "test_search1.png", "test_search2.png"},
+		},
+		{
+			Name:  "Pages Folder Tab Cfg Just allow file",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages").
+					Query(web.EventFuncIDName, media.OpenFileChooserEvent).
+					Query(media.ParamField, "media").
+					Query("tab", "folders").
+					Query("cfg", `{"AllowType":"file"}`).
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"test001", "test.txt"},
+			ExpectPortalUpdate0NotContains:     []string{"test.mp4", "test_search1.png", "test_search2.png"},
+		},
+		{
+			Name:  "MediaLibrary folders Tab upload file",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				media_oss.Storage = filesystem.New("/tmp/media_test")
+				req := NewMultipartBuilder().
+					PageURL("/media-libraries").
+					Query(web.EventFuncIDName, media.UploadFileEvent).
+					Query(media.ParamField, "media").
+					AddReader("NewFiles", "test2.txt", bytes.NewReader([]byte("test upload file"))).
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var m media_library.MediaLibrary
+				TestDB.Order("id desc").First(&m)
+				media_oss.Storage = filesystem.New("/tmp/media_test")
+				if m.File.FileName != "test2.txt" {
+					t.Fatalf("except filename: test2.txt but got %v", m.File.FileName)
+					return
+				}
+				if m.UserID != 888 {
+					t.Fatalf("except user_id: 888 but got %v", m.UserID)
+				}
+				return
+			},
+		},
+		{
+			Name:  "Pages Folder Tab upload file",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				media_oss.Storage = filesystem.New("/tmp/media_test")
+				req := NewMultipartBuilder().
+					PageURL("/pages").
+					Query(web.EventFuncIDName, media.UploadFileEvent).
+					Query(media.ParamField, "media").
+					AddReader("NewFiles", "test2.txt", bytes.NewReader([]byte("test upload file"))).
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var m media_library.MediaLibrary
+				TestDB.Order("id desc").First(&m)
+				if m.File.FileName != "test2.txt" {
+					t.Fatalf("except filename: test2.txt but got %v", m.File.FileName)
+				}
+				return
+			},
+		},
+		{
+			Name:  "Pages ChooseFileEvent Dialog no selected image",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages").
+					Query(web.EventFuncIDName, media.OpenFileChooserEvent).
+					Query(media.ParamField, "media").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"select_ids:[]", "v-checkbox"},
+			ExpectPageBodyNotContains:          []string{"Save"},
+		},
+
+		{
+			Name:  "MediaLibrary Folder Tab Has Parent Fold",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/media-libraries").
+					Query(web.EventFuncIDName, media.OpenFileChooserEvent).
+					Query(media.ParamField, "media").
+					Query(media.ParamParentID, "4").
+					Query("tab", "folders").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"v-breadcrumbs"},
+			ExpectPortalUpdate0NotContains:     []string{"test.mp4", "test_search1.png", "test_search2.png"},
 		},
 	}
 
@@ -454,7 +688,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/media-library").
+					PageURL("/media-libraries").
 					AddField("type", "all").
 					AddField("order_by", "created_at_desc").
 					BuildEventFuncRequest()

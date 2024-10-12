@@ -1,13 +1,15 @@
 package containers
 
 import (
+	"strings"
+
+	"github.com/qor5/web/v3"
+	. "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
+
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/richeditor"
-	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/ui/vuetify"
-	. "github.com/theplant/htmlgo"
-	"gorm.io/gorm"
 )
 
 const (
@@ -44,29 +46,36 @@ func RegisterHeadingContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 		})
 	ed := vb.Model(&Heading{}).Editing("AddTopSpace", "AddBottomSpace", "AnchorID", "Heading", "FontColor", "BackgroundColor", "Link", "LinkText", "LinkDisplayOption", "Text")
 	ed.Field("Text").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return richeditor.RichEditor(db, "Text").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*Heading).Text).Label(field.Label)
+		return richeditor.RichEditor(db, "Text").Disabled(field.Disabled).Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*Heading).Text).Label(field.Label)
+	})
+	ed.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		p := obj.(*Heading)
+		if p.ID != 0 {
+			if p.LinkText == "" {
+				err.FieldError("LinkText", "LinkText 不能为空")
+			}
+		}
+		return
+	})
+	ed.Field("LinkText").LazyWrapSetterFunc(func(in presets.FieldSetterFunc) presets.FieldSetterFunc {
+		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+			if err = in(obj, field, ctx); err != nil {
+				return
+			}
+			p := obj.(*Heading)
+			p.LinkText = strings.Replace(p.LinkText, "{{Name}}", field.Name, -1)
+			return
+		}
 	})
 
 	ed.Field("FontColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return vuetify.VSelect().
-			Items(FontColors).
-			Label(field.Label).
-			Variant(vuetify.FieldVariantUnderlined).
-			Attr(web.VField(field.FormKey, field.Value(obj))...)
+		return presets.SelectField(obj, field, ctx).Items(FontColors)
 	})
 	ed.Field("BackgroundColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return vuetify.VSelect().
-			Items(BackgroundColors).
-			Label(field.Label).
-			Variant(vuetify.FieldVariantUnderlined).
-			Attr(web.VField(field.FormKey, field.Value(obj))...)
+		return presets.SelectField(obj, field, ctx).Items(BackgroundColors)
 	})
 	ed.Field("LinkDisplayOption").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return vuetify.VSelect().
-			Items(LinkDisplayOptions).
-			Label(field.Label).
-			Variant(vuetify.FieldVariantUnderlined).
-			Attr(web.VField(field.FormKey, field.Value(obj))...)
+		return presets.SelectField(obj, field, ctx).Items(LinkDisplayOptions)
 	})
 }
 

@@ -11,7 +11,6 @@ import (
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/seo"
-	"github.com/qor5/admin/v3/slug"
 	"gorm.io/gorm"
 )
 
@@ -19,7 +18,7 @@ type Post struct {
 	gorm.Model
 
 	Title         string
-	TitleWithSlug slug.Slug
+	TitleWithSlug string
 	Seo           seo.Setting
 	Body          string
 	HeroImage     media_library.MediaBox `sql:"type:text;"`
@@ -48,11 +47,11 @@ func (p *Post) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	}
 }
 
-func (p *Post) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
+func (p *Post) GetPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
 	return
 }
 
-func (p *Post) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
+func (p *Post) GetUnPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
 	return
 }
 

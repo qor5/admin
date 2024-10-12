@@ -54,27 +54,15 @@ const (
 </svg>
 `
 	ZhLanguageIcon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g clip-path="url(#clip0_2047_84604)">
-<g clip-path="url(#clip1_2047_84604)">
-<rect x="2" y="2" width="20" height="20" rx="10" fill="#F93939"/>
-<path d="M27.3333 2H4.66667C3.19391 2 2 3.19391 2 4.66667V19.3333C2 20.8061 3.19391 22 4.66667 22H27.3333C28.8061 22 30 20.8061 30 19.3333V4.66667C30 3.19391 28.8061 2 27.3333 2Z" fill="#F93939"/>
-<path fill-rule="evenodd" clip-rule="evenodd" d="M9.33086 11.64L7.37086 12.6707L7.74419 10.488L6.16019 8.94132L8.35086 8.62532L9.33086 6.63865L10.3095 8.62532L12.5002 8.94132L10.9135 10.488L11.2895 12.6693L9.33086 11.64ZM14.0002 5.99999H15.3335V7.33332H14.0002V5.99999ZM15.3335 8.66665H16.6669V9.99999H15.3335V8.66665ZM15.3335 11.3333H16.6669V12.6667H15.3335V11.3333ZM14.0002 14H15.3335V15.3333H14.0002V14Z" fill="#FFDA2C"/>
-</g>
-<rect x="2.5" y="2.5" width="19" height="19" rx="9.5" stroke="#EEEEEE"/>
-</g>
-<defs>
-<clipPath id="clip0_2047_84604">
-<rect width="20" height="20" fill="white" transform="translate(2 2)"/>
-</clipPath>
-<clipPath id="clip1_2047_84604">
-<rect x="2" y="2" width="20" height="20" rx="10" fill="white"/>
-</clipPath>
-</defs>
+  <rect width="24" height="24" rx="12" fill="#F93939"/>
+  <path d="M14 6h1.333v1.333H14V6zm1.333 2.667h1.334V10H15.333V8.667zm0 2.666h1.334V12.667H15.333v-1.334zm-1.333 2.667h1.333v1.333H14v-1.333z" fill="#FFDA2C"/>
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M9.331 11.64l-1.96 1.031.373-2.183-1.584-1.547 2.191-.316.98-1.986.979 1.986 2.191.316-1.587 1.547.376 2.181-1.958-1.029z" fill="#FFDA2C"/>
+  <rect x="0.5" y="0.5" width="23" height="23" rx="11.5" stroke="#EEEEEE"/>
 </svg>`
 	JPIcon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect x="2.5" y="2.5" width="19" height="19" rx="9.5" fill="white"/>
-<rect x="2.5" y="2.5" width="19" height="19" rx="9.5" stroke="#EEEEEE"/>
-<path d="M11.9997 16.6663C14.577 16.6663 16.6663 14.577 16.6663 11.9997C16.6663 9.42235 14.577 7.33301 11.9997 7.33301C9.42235 7.33301 7.33301 9.42235 7.33301 11.9997C7.33301 14.577 9.42235 16.6663 11.9997 16.6663Z" fill="#F93939"/>
+  <rect x="0.5" y="0.5" width="23" height="23" rx="9.5" stroke="#EEEEEE"/>
+  <rect x="1" y="1" width="22" height="22" rx="10.5" stroke="black" stroke-opacity="0.1"/>
+  <circle cx="12" cy="12" r="4.333" fill="#F93939"/>
 </svg>
 `
 )

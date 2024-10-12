@@ -7,6 +7,7 @@ import (
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
@@ -185,6 +186,7 @@ func PresetsDetailPageDetails(b *presets.Builder, db *gorm.DB) (
 			Updates(map[string]interface{}{"term_agreed_at": time.Now()}).Error
 		if err == nil {
 			r.Emit(presets.NotifModelsUpdated(&Customer{}), presets.PayloadModelsUpdated{Ids: []string{id}})
+			presets.ShowMessage(r, "Terms agreed", ColorSuccess)
 		}
 		return
 	}).ComponentFunc(func(id string, ctx *web.EventContext) h.HTMLComponent {
@@ -201,7 +203,7 @@ func PresetsDetailPageDetails(b *presets.Builder, db *gorm.DB) (
 
 		return h.Components(
 			alert,
-			VCheckbox().Attr(web.VField("Agree", agreedAt != nil && agreedAt.IsZero())...).Label("Agree the terms"),
+			VCheckbox().Attr(web.VField("Agree", agreedAt != nil && !agreedAt.IsZero())...).Label("Agree the terms"),
 		)
 	})
 	return
@@ -299,3 +301,71 @@ func PresetsDetailPageCards(b *presets.Builder, db *gorm.DB) (
 const PresetsDetailPageCardsPath = "/samples/presets-detail-page-cards"
 
 // @snippet_end
+
+func PresetsDetailTabsField(b *presets.Builder, db *gorm.DB) (
+	cust *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	cust, cl, ce, dp = PresetsHelloWorld(b, db)
+
+	dp = cust.RightDrawerWidth("800").Detailing("tab").Drawer(true)
+
+	dp.Only("Name", "Email", "tab")
+	emailField := dp.NewFieldWithName("Email").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		customer := obj.(*Customer)
+		text := fmt.Sprintf("This is Email Tabs, Email: %s", customer.Email)
+		return h.Text(text)
+	})
+	nameField := dp.NewFieldWithName("Name").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		customer := obj.(*Customer)
+		text := fmt.Sprintf("This is Name Tabs, Email: %s", customer.Name)
+		return h.Text(text)
+	})
+	dp.Field("tab").
+		AppendTabs(nameField).
+		AppendTabs(emailField)
+	return
+}
+
+func PresetsDetailAfterTitle(b *presets.Builder, db *gorm.DB) (
+	cust *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	cust, cl, ce, dp = PresetsHelloWorld(b, db)
+
+	dp = cust.Detailing("Name")
+
+	dp.AfterTitleCompFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+		return h.Text("After Title")
+	})
+	return
+}
+
+func PresetsUtilsDialog(b *presets.Builder, db *gorm.DB) (
+	cust *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	cust, cl, ce, dp = PresetsHelloWorld(b, db)
+
+	dp = cust.RightDrawerWidth("800").Detailing("tab").Drawer(true)
+
+	dp.Only("Delected Dialog")
+	dp.Field("Delected Dialog").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		dialogPayload := utils.UtilDialogPayloadType{
+			Title:     "Confirm",
+			TypeField: "error",
+			ContentEl: h.Div(h.Text("are you sure?")),
+			Msgr:      utils.MustGetMessages(ctx.R),
+		}
+
+		return utils.CustomDialog(dialogPayload)
+	})
+
+	return
+}

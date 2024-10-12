@@ -9,10 +9,11 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/stateful"
 	"github.com/qor5/x/v3/perm"
-	. "github.com/qor5/x/v3/ui/vuetify"
+	v "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/samber/lo"
 	h "github.com/theplant/htmlgo"
+	"github.com/theplant/relay"
 )
 
 type ListingStyle string
@@ -26,6 +27,8 @@ const (
 type (
 	ColumnsProcessor func(evCtx *web.EventContext, columns []*Column) ([]*Column, error)
 	CellProcessor    func(evCtx *web.EventContext, cell h.MutableAttrHTMLComponent, id string, obj any) (h.MutableAttrHTMLComponent, error)
+	RowProcessor     func(evCtx *web.EventContext, row h.MutableAttrHTMLComponent, id string, obj any) (h.MutableAttrHTMLComponent, error)
+	TableProcessor   func(evCtx *web.EventContext, table *vx.DataTableBuilder) (*vx.DataTableBuilder, error)
 )
 
 type OrderableField struct {
@@ -46,6 +49,8 @@ type ListingBuilder struct {
 	pageFunc        web.PageFunc
 	cellWrapperFunc vx.CellWrapperFunc
 	cellProcessor   CellProcessor
+	rowProcessor    RowProcessor
+	tableProcessor  TableProcessor
 	Searcher        SearchFunc
 	searchColumns   []string
 	titleFunc       func(evCtx *web.EventContext, style ListingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error)
@@ -63,7 +68,10 @@ type ListingBuilder struct {
 	// 3. all data will be returned in one page.
 	disablePagination bool
 
-	orderBy           string
+	// If empty, regular pagination will be used
+	relayPagination RelayPagination
+
+	defaultOrderBys   []relay.OrderBy
 	orderableFields   []*OrderableField
 	selectableColumns bool
 	conditions        []*SQLCondition
@@ -71,6 +79,7 @@ type ListingBuilder struct {
 	dialogHeight      string
 	keywordSearchOff  bool
 	columnsProcessor  ColumnsProcessor
+
 	FieldsBuilder
 
 	once                  sync.Once
@@ -108,7 +117,7 @@ func (b *ListingBuilder) PageFunc(pf web.PageFunc) (r *ListingBuilder) {
 	return b
 }
 
-// Deprecated: Use WrapCell instead.
+// CellWrapperFunc Deprecated: Use WrapCell instead.
 func (b *ListingBuilder) CellWrapperFunc(cwf vx.CellWrapperFunc) (r *ListingBuilder) {
 	b.cellWrapperFunc = cwf
 	return b
@@ -121,6 +130,28 @@ func (b *ListingBuilder) WrapCell(w func(in CellProcessor) CellProcessor) (r *Li
 		})
 	} else {
 		b.cellProcessor = w(b.cellProcessor)
+	}
+	return b
+}
+
+func (b *ListingBuilder) WrapRow(w func(in RowProcessor) RowProcessor) (r *ListingBuilder) {
+	if b.rowProcessor == nil {
+		b.rowProcessor = w(func(evCtx *web.EventContext, row h.MutableAttrHTMLComponent, id string, obj any) (h.MutableAttrHTMLComponent, error) {
+			return row, nil
+		})
+	} else {
+		b.rowProcessor = w(b.rowProcessor)
+	}
+	return b
+}
+
+func (b *ListingBuilder) WrapTable(w func(in TableProcessor) TableProcessor) (r *ListingBuilder) {
+	if b.tableProcessor == nil {
+		b.tableProcessor = w(func(evCtx *web.EventContext, table *vx.DataTableBuilder) (*vx.DataTableBuilder, error) {
+			return table, nil
+		})
+	} else {
+		b.tableProcessor = w(b.tableProcessor)
 	}
 	return b
 }
@@ -140,7 +171,7 @@ func (b *ListingBuilder) WrapSearchFunc(w func(in SearchFunc) SearchFunc) (r *Li
 	return b
 }
 
-// The title must not return empty, and titleCompo can return nil
+// Title The title must not return empty, and titleCompo can return nil
 func (b *ListingBuilder) Title(f func(evCtx *web.EventContext, style ListingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error)) (r *ListingBuilder) {
 	b.titleFunc = f
 	return b
@@ -172,8 +203,13 @@ func (b *ListingBuilder) PerPage(v int64) (r *ListingBuilder) {
 	return b
 }
 
-func (b *ListingBuilder) OrderBy(v string) (r *ListingBuilder) {
-	b.orderBy = v
+func (b *ListingBuilder) DefaultOrderBys(v ...relay.OrderBy) (r *ListingBuilder) {
+	b.defaultOrderBys = v
+	return b
+}
+
+func (b *ListingBuilder) RelayPagination(v RelayPagination) (r *ListingBuilder) {
+	b.relayPagination = v
 	return b
 }
 
@@ -226,7 +262,7 @@ func (b *ListingBuilder) GetPageFunc() web.PageFunc {
 
 func (b *ListingBuilder) cellComponentFunc(f *FieldBuilder) vx.CellComponentFunc {
 	return func(obj interface{}, fieldName string, ctx *web.EventContext) h.HTMLComponent {
-		return f.compFunc(obj, b.mb.getComponentFuncField(f), ctx)
+		return f.lazyCompFunc()(obj, b.mb.getComponentFuncField(f), ctx)
 	}
 }
 
@@ -268,8 +304,8 @@ func (b *ListingBuilder) defaultPageFunc(evCtx *web.EventContext) (r web.PageRes
 	}
 	evCtx.WithContextValue(ctxActionsComponentTeleportToID, compo.ActionsComponentTeleportToID())
 
-	r.Body = VLayout(
-		VMain(
+	r.Body = v.VLayout(
+		v.VMain(
 			b.mb.p.dc.MustInject(injectorName, stateful.SyncQuery(compo)),
 		),
 	)
@@ -307,24 +343,25 @@ func (b *ListingBuilder) openListingDialog(evCtx *web.EventContext) (r web.Event
 		LongStyleSearchBox: true,
 	}
 
-	compo.OnMounted = fmt.Sprintf(`
-	var listingDialogElem = el.ownerDocument.getElementById(%q); 
-	if (listingDialogElem && listingDialogElem.offsetHeight > parseInt(listingDialogElem.style.minHeight || '0', 10)) {
-		listingDialogElem.style.minHeight = listingDialogElem.offsetHeight+'px';
-	};`, compo.CompoID())
+	compo.OnMounted = fmt.Sprintf(`({el}) => {
+		var listingDialogElem = el.ownerDocument.getElementById(%q); 
+		if (listingDialogElem && listingDialogElem.offsetHeight > parseInt(listingDialogElem.style.minHeight || '0', 10)) {
+			listingDialogElem.style.minHeight = listingDialogElem.offsetHeight+'px';
+		};
+	}`, compo.CompoID())
 
-	content := VCard().Attr("id", compo.CompoID()).Children(
-		VCardTitle().Class("d-flex align-center h-abs-26 py-6 px-6 content-box").Children(
+	content := v.VCard().Attr("id", compo.CompoID()).Children(
+		v.VCardTitle().Class("d-flex align-center h-abs-26 py-6 px-6 content-box").Children(
 			titleCompo,
-			VSpacer(),
+			v.VSpacer(),
 			h.Div().Id(compo.ActionsComponentTeleportToID()),
-			VBtn("").Elevation(0).Size(SizeXSmall).Icon("mdi-close").Class("ml-2 dialog-close-btn").Attr("@click", CloseListingDialogVarScript),
+			v.VBtn("").Elevation(0).Size(v.SizeXSmall).Icon("mdi-close").Class("ml-2 dialog-close-btn").Attr("@click", CloseListingDialogVarScript),
 		),
-		VCardText().Class("pa-0").Children(
+		v.VCardText().Class("pa-0").Children(
 			b.mb.p.dc.MustInject(injectorName, stateful.ParseQuery(compo)),
 		),
 	)
-	dialog := VDialog(content).Attr("v-model", "vars.presetsListingDialog").Scrollable(true)
+	dialog := v.VDialog(content).Attr("v-model", "vars.presetsListingDialog").Scrollable(true)
 	if b.dialogWidth != "" {
 		dialog.Width(b.dialogWidth)
 	}
@@ -341,32 +378,21 @@ func (b *ListingBuilder) openListingDialog(evCtx *web.EventContext) (r web.Event
 
 func (b *ListingBuilder) deleteConfirmation(evCtx *web.EventContext) (r web.EventResponse, err error) {
 	msgr := MustGetMessages(evCtx.R)
-	id := evCtx.R.FormValue(ParamID)
-	promptID := id
-	if v := evCtx.R.FormValue("prompt_id"); v != "" {
-		promptID = v
-	}
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: DeleteConfirmPortalName,
 		Body: web.Scope().VSlot("{ locals }").Init(`{deleteConfirmation:true}`).Children(
-			VDialog().MaxWidth("600px").Attr("v-model", "locals.deleteConfirmation").Children(
-				VCard(
-					VCardTitle(
-						h.Text(msgr.DeleteConfirmationText(promptID)),
-					),
-					VCardActions(
-						VSpacer(),
-						VBtn(msgr.Cancel).Variant(VariantFlat).Class("ml-2").Attr("@click", "locals.deleteConfirmation = false"),
-						VBtn(msgr.Delete).Color("primary").Variant(VariantFlat).Theme(ThemeDark).Attr("@click", web.Plaid().
-							EventFunc(actions.DoDelete).
-							Queries(evCtx.Queries()).
-							URL(b.mb.Info().ListingHref()).
-							Go(),
-						),
-					),
-				),
-			),
+			vx.VXDialog(
+				h.Span(msgr.DeleteConfirmationText),
+			).Title(msgr.DialogTitleDefault).
+				CancelText(msgr.Cancel).
+				OkText(msgr.Delete).
+				Attr("@click:ok", web.Plaid().
+					EventFunc(actions.DoDelete).
+					Queries(evCtx.Queries()).
+					URL(b.mb.Info().ListingHref()).
+					Go()).
+				Attr("v-model", "locals.deleteConfirmation"),
 		),
 	})
 	return

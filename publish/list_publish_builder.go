@@ -97,7 +97,7 @@ type ListPublisher interface {
 
 // model is a empty struct
 // example: Product{}
-func (b *ListPublishBuilder) Run(model interface{}) (err error) {
+func (b *ListPublishBuilder) Run(_ context.Context, model interface{}) (err error) {
 	// If model is Product{}
 	// Generate a records: []*Product{}
 	records := reflect.MakeSlice(reflect.SliceOf(reflect.New(reflect.TypeOf(model)).Type()), 0, 0).Interface()

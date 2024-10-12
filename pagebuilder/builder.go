@@ -9,11 +9,21 @@ import (
 	"reflect"
 	"slices"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/perm"
+	. "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
+	"github.com/sunfmin/reflectutils"
+	h "github.com/theplant/htmlgo"
+	"github.com/theplant/relay"
+	"golang.org/x/text/language"
+	"gorm.io/gorm"
+
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/media"
@@ -23,15 +33,7 @@ import (
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/richeditor"
 	"github.com/qor5/admin/v3/seo"
-	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/i18n"
-	"github.com/qor5/x/v3/perm"
-	. "github.com/qor5/x/v3/ui/vuetify"
-	vx "github.com/qor5/x/v3/ui/vuetifyx"
-	"github.com/sunfmin/reflectutils"
-	h "github.com/theplant/htmlgo"
-	"golang.org/x/text/language"
-	"gorm.io/gorm"
+	"github.com/qor5/admin/v3/utils"
 )
 
 type RenderInput struct {
@@ -70,39 +72,43 @@ type (
 )
 
 type Builder struct {
-	prefix            string
-	wb                *web.Builder
-	db                *gorm.DB
-	containerBuilders []*ContainerBuilder
-	ps                *presets.Builder
-	models            []*ModelBuilder
-	templateModel     *presets.ModelBuilder
-	l10n              *l10n.Builder
-	mediaBuilder      *media.Builder
-	ab                *activity.Builder
-	publisher         *publish.Builder
-	seoBuilder        *seo.Builder
-	pageStyle         h.HTMLComponent
-	pageLayoutFunc    PageLayoutFunc
-	subPageTitleFunc  SubPageTitleFunc
-	images            http.Handler
-	imagesPrefix      string
-	defaultDevice     string
-	publishBtnColor   string
-	duplicateBtnColor string
-	templateEnabled   bool
-	expendContainers  bool
-	pageEnabled       bool
-	previewContainer  bool
-	templateInstall   presets.ModelInstallFunc
-	pageInstall       presets.ModelInstallFunc
-	categoryInstall   presets.ModelInstallFunc
-	devices           []Device
+	prefix                        string
+	wb                            *web.Builder
+	db                            *gorm.DB
+	containerBuilders             []*ContainerBuilder
+	ps                            *presets.Builder
+	models                        []*ModelBuilder
+	templates                     []*TemplateBuilder
+	templateModel                 *presets.ModelBuilder
+	l10n                          *l10n.Builder
+	mediaBuilder                  *media.Builder
+	ab                            *activity.Builder
+	publisher                     *publish.Builder
+	seoBuilder                    *seo.Builder
+	pageStyle                     h.HTMLComponent
+	pageLayoutFunc                PageLayoutFunc
+	subPageTitleFunc              SubPageTitleFunc
+	images                        http.Handler
+	imagesPrefix                  string
+	defaultDevice                 string
+	publishBtnColor               string
+	duplicateBtnColor             string
+	templateEnabled               bool
+	expendContainers              bool
+	pageEnabled                   bool
+	autoSaveReload                bool
+	disabledNormalContainersGroup bool
+	previewOpenNewTab             bool
+	previewContainer              bool
+	templateInstall               presets.ModelInstallFunc
+	pageInstall                   presets.ModelInstallFunc
+	categoryInstall               presets.ModelInstallFunc
+	devices                       []Device
+	fields                        []string
 }
 
 const (
-	openTemplateDialogEvent = "openTemplateDialogEvent"
-	selectTemplateEvent     = "selectTemplateEvent"
+	selectTemplateEvent = "selectTemplateEvent"
 	// clearTemplateEvent               = "clearTemplateEvent"
 	republishRelatedOnlinePagesEvent = "republish_related_online_pages"
 
@@ -111,11 +117,11 @@ const (
 	PageBuilderPreviewCard = "PageBuilderPreviewCard"
 )
 
-func New(prefix string, db *gorm.DB) *Builder {
-	return newBuilder(prefix, db)
+func New(prefix string, db *gorm.DB, b *presets.Builder) *Builder {
+	return newBuilder(prefix, db, b)
 }
 
-func newBuilder(prefix string, db *gorm.DB) *Builder {
+func newBuilder(prefix string, db *gorm.DB, b *presets.Builder) *Builder {
 	r := &Builder{
 		db:                db,
 		wb:                web.New(),
@@ -137,10 +143,9 @@ func newBuilder(prefix string, db *gorm.DB) *Builder {
 		BrandTitle("Page Builder").
 		DataOperator(gorm2op.DataOperator(db)).
 		URIPrefix(prefix).
+		I18n(b.GetI18n()).
 		DetailLayoutFunc(r.pageEditorLayout)
-	r.ps.Permission(perm.New().Policies(
-		perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
-	))
+	r.ps.Permission(b.GetPermission())
 	return r
 }
 
@@ -152,6 +157,11 @@ func (b *Builder) Prefix(v string) (r *Builder) {
 
 func (b *Builder) PageStyle(v h.HTMLComponent) (r *Builder) {
 	b.pageStyle = v
+	return b
+}
+
+func (b *Builder) AutoSaveReload(v bool) (r *Builder) {
+	b.autoSaveReload = v
 	return b
 }
 
@@ -288,10 +298,20 @@ func (b *Builder) ExpendContainers(v bool) (r *Builder) {
 	return b
 }
 
+func (b *Builder) PreviewOpenNewTab(v bool) (r *Builder) {
+	b.previewOpenNewTab = v
+	return b
+}
+
+func (b *Builder) DisabledNormalContainersGroup(v bool) (r *Builder) {
+	b.disabledNormalContainersGroup = v
+	return b
+}
+
 func (b *Builder) Model(mb *presets.ModelBuilder) (r *ModelBuilder) {
 	r = &ModelBuilder{
 		mb:      mb,
-		editor:  b.ps.Model(mb.NewModel()).URIName(mb.Info().URIName() + "-editors"),
+		editor:  b.ps.Model(mb.NewModel()).URIName(mb.Info().URIName()),
 		builder: b,
 		db:      b.db,
 	}
@@ -353,8 +373,8 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 	if b.pageEnabled {
 		var r *ModelBuilder
 		r = b.Model(b.configPageSaver(pb))
-		b.installAsset(pb)
 		b.configEditor(r)
+		b.installAsset(pb)
 		b.configTemplateAndPage(pb, r)
 		b.configSharedContainer(pb, r)
 		b.configDetail(r)
@@ -365,6 +385,12 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 	}
 	b.configDemoContainer(pb)
 	b.preparePlugins()
+	for _, t := range b.templates {
+		t.Install()
+	}
+	for _, t := range b.containerBuilders {
+		t.Install()
+	}
 	return
 }
 
@@ -400,188 +426,21 @@ func (b *Builder) configPublish(r *ModelBuilder) {
 }
 
 func (b *Builder) configTemplateAndPage(pb *presets.Builder, r *ModelBuilder) {
-	templateM := presets.NewModelBuilder(pb, &Template{})
-	if b.ab != nil {
-		templateM.Use(b.ab)
-	}
-	if b.templateEnabled {
-		templateM = pb.Model(&Template{}).URIName("page_templates").Label("Templates")
-		err := b.templateInstall(pb, templateM)
-		if err != nil {
-			panic(err)
-		}
-		b.templateModel = templateM
-	}
 	pm := r.mb
 	err := b.pageInstall(pb, pm)
 	if err != nil {
 		panic(err)
 	}
+	if b.templateEnabled {
+		err = b.templateInstall(pb, pm)
+		if err != nil {
+			panic(err)
+		}
+	}
 	b.configPublish(r)
 	b.useAllPlugin(pm)
 
 	// dp.TabsPanels()
-}
-
-func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuilder) (err error) {
-	db := b.db
-
-	listingFields := []string{"ID", "Title", publish.ListingFieldLive, "Path"}
-	if b.ab != nil {
-		listingFields = append(listingFields, activity.ListFieldNotes)
-	}
-	lb := pm.Listing(listingFields...)
-	pm.LabelName(func(evCtx *web.EventContext, singular bool) string {
-		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		if singular {
-			return msgr.ModelLabelPage
-		}
-		return msgr.ModelLabelPages
-	})
-	lb.WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
-		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		return map[string]string{
-			"ID":    msgr.ListHeaderID,
-			"Title": msgr.ListHeaderTitle,
-			"Path":  msgr.ListHeaderPath,
-		}, nil
-	}))
-	lb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		page := obj.(*Page)
-		category, err := page.GetCategory(db)
-		if err != nil {
-			panic(err)
-		}
-		return h.Td(h.Text(page.getAccessUrl(page.getPublishUrl(b.l10n.GetLocalePath(page.LocaleCode), category.Path))))
-	})
-
-	detailList := []interface{}{"Title", PageBuilderPreviewCard, "Page"}
-	if b.seoBuilder != nil {
-		detailList = append(detailList, seo.SeoDetailFieldName)
-	}
-
-	dp := pm.Detailing(detailList...)
-	dp.Field("Title").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-
-		var versionBadge *VChipBuilder
-		if v, ok := obj.(PrimarySlugInterface); ok {
-			ps := v.PrimaryColumnValuesBySlug(v.PrimarySlug())
-			versionBadge = VChip(h.Text(fmt.Sprintf("%d %s", versionCount(b.db, pm.NewModel(), ps["id"], ps["localCode"]), msgr.Versions))).
-				Color(ColorPrimary).Size(SizeSmall).Class("px-1 mx-1").Attr("style", "height:20px")
-		}
-
-		return h.Div(
-			VBtn("").Size(SizeXSmall).Icon("mdi-arrow-left").Tile(true).Variant(VariantOutlined).Attr("@click",
-				web.GET().URL(pm.Info().ListingHref()).PushState(true).Go(),
-			),
-			h.H1("{{vars.pageTitle}}").Class("ml-4"),
-			versionBadge.Class("mt-2 ml-2"),
-		).Class("d-inline-flex align-center")
-	})
-	// register modelBuilder
-	eb := pm.Editing("TemplateSelection", "Title", "CategoryID", "Slug")
-	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-		c := obj.(*Page)
-		err = pageValidator(ctx, c, db, b.l10n)
-		return
-	})
-	eb.Field("Title").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		var vErr web.ValidationErrors
-		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
-			vErr = *ve
-		}
-		return VTextField().
-			Label(field.Label).
-			Variant(FieldVariantUnderlined).
-			Attr(web.VField(field.Name, field.Value(obj))...).
-			ErrorMessages(vErr.GetFieldErrors("Page.Title")...)
-	})
-	eb.Field("Slug").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		var vErr web.ValidationErrors
-		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
-			vErr = *ve
-		}
-
-		return VTextField().
-			Variant(FieldVariantUnderlined).
-			Label(field.Label).
-			Attr(web.VField(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"))...).
-			Prefix("/").
-			ErrorMessages(vErr.GetFieldErrors("Page.Slug")...)
-	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
-		m := obj.(*Page)
-		m.Slug = path.Join("/", m.Slug)
-		return nil
-	})
-	eb.Field("CategoryID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		p := obj.(*Page)
-		categories := []*Category{}
-		locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
-		if err := db.Model(&Category{}).Where("locale_code = ?", locale).Find(&categories).Error; err != nil {
-			panic(err)
-		}
-
-		var vErr web.ValidationErrors
-		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
-			vErr = *ve
-		}
-
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-
-		complete := VAutocomplete().
-			Label(msgr.Category).
-			Variant(FieldVariantUnderlined).
-			Multiple(false).Chips(false).
-			Items(categories).ItemTitle("Path").ItemValue("ID").
-			ErrorMessages(vErr.GetFieldErrors("Page.Category")...)
-		if p.CategoryID > 0 {
-			complete.Attr(web.VField(field.Name, p.CategoryID)...)
-		} else {
-			complete.Attr(web.VField(field.Name, "")...)
-		}
-		return complete
-	})
-
-	eb.Field("TemplateSelection").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		if !b.templateEnabled {
-			return nil
-		}
-
-		p := obj.(*Page)
-
-		selectedID := ctx.R.FormValue(templateSelectedID)
-		body, err := getTplPortalComp(ctx, db, selectedID)
-		if err != nil {
-			panic(err)
-		}
-
-		// Display template selection only when creating a new page
-		if p.ID == 0 {
-			return h.Div(
-				web.Portal().Name(templateSelectPortal),
-				web.Portal(
-					body,
-				).Name(selectedTemplatePortal),
-			).Class("my-2").
-				Attr(web.VAssign("vars", `{showTemplateDialog: false}`)...)
-		}
-		return nil
-	})
-
-	// pm detailing page  detail-field
-	detailPageEditor(dp, b)
-	// pm detailing side panel
-	// pm.Detailing().SidePanelFunc(detailingSidePanel(b, pb))
-
-	b.configDetailLayoutFunc(pb, pm, db)
-
-	if b.templateEnabled {
-		pm.RegisterEventFunc(openTemplateDialogEvent, openTemplateDialog(db, b.prefix))
-		pm.RegisterEventFunc(selectTemplateEvent, selectTemplate(db))
-		// pm.RegisterEventFunc(clearTemplateEvent, clearTemplate(db))
-	}
-	return
 }
 
 func (b *Builder) useAllPlugin(pm *presets.ModelBuilder) {
@@ -646,6 +505,7 @@ func (b *Builder) configDetailLayoutFunc(
 			VSpacer(),
 			publish.DefaultVersionBar(db)(obj, ctx),
 		)
+		title = defaultTitle
 		titleCompo = h.Div(
 			pageAppbarContent...,
 		).Class("d-flex align-center  justify-space-between  w-100")
@@ -694,9 +554,9 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 		}, nil
 	}))
 	lb.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
-		return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
-			r, totalCount, err = in(model, params, ctx)
-			cats := r.([]*Category)
+		return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
+			result, err = in(ctx, params)
+			cats := result.Nodes.([]*Category)
 			sort.Slice(cats, func(i, j int) bool {
 				return cats[i].Path < cats[j].Path
 			})
@@ -722,46 +582,19 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 	})
 
 	eb := pm.Editing("Name", "Path", "Description")
-	eb.Field("Name").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		var vErr web.ValidationErrors
-		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
-			vErr = *ve
+	eb.Field("Path").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
+		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			comp := in(obj, field, ctx)
+			if p, ok := comp.(*vx.VXFieldBuilder); ok {
+				p.Attr(web.VField(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"))...).
+					Attr("prefix", "/")
+			}
+			return comp
 		}
-
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		return VTextField().Label(msgr.ListHeaderName).
-			Variant(FieldVariantUnderlined).
-			Attr(web.VField(field.Name, field.Value(obj))...).
-			ErrorMessages(vErr.GetFieldErrors("Category.Name")...)
-	})
-
-	eb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		var vErr web.ValidationErrors
-		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
-			vErr = *ve
-		}
-
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		return VTextField().Label(msgr.ListHeaderPath).
-			Variant(FieldVariantUnderlined).
-			Attr(web.VField(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"))...).
-			Prefix("/").
-			ErrorMessages(vErr.GetFieldErrors("Category.Category")...)
 	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 		m := obj.(*Category)
 		m.Path = path.Join("/", m.Path)
 		return nil
-	})
-
-	eb.Field("Description").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		return VTextField().
-			Type("text").
-			Variant(FieldVariantUnderlined).
-			Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
-			Label(msgr.ListHeaderDescription).
-			ErrorMessages(field.Errors...).
-			Disabled(field.Disabled)
 	})
 
 	eb.DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
@@ -808,219 +641,8 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 }
 
 const (
-	templateSelectPortal   = "templateSelectPortal"
-	selectedTemplatePortal = "selectedTemplatePortal"
-
 	templateSelectedID = "TemplateSelectedID"
-	templateID         = "TemplateID"
-	templateBlankVal   = "blank"
 )
-
-func selectTemplate(db *gorm.DB) web.EventFunc {
-	return func(ctx *web.EventContext) (er web.EventResponse, err error) {
-		defer func() {
-			web.AppendRunScripts(&er, "vars.showTemplateDialog=false")
-		}()
-
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-
-		id := ctx.R.FormValue(templateID)
-		if id == templateBlankVal {
-			er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
-				Name: selectedTemplatePortal,
-				Body: VRow(
-					VCol(
-						h.Input("").Type("hidden").Attr(web.VField(templateSelectedID, "")...),
-						VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).ModelValue(msgr.Blank).Density(DensityCompact).Variant(VariantOutlined),
-					).Cols(5),
-					VCol(
-						VBtn(msgr.ChangeTemplate).Color(ColorPrimary).
-							Attr("@click", web.Plaid().Query(templateSelectedID, "").EventFunc(openTemplateDialogEvent).Go()),
-					).Cols(5),
-				),
-			})
-			return
-		}
-
-		var body h.HTMLComponent
-		if body, err = getTplPortalComp(ctx, db, id); err != nil {
-			return
-		}
-
-		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
-			Name: selectedTemplatePortal,
-			Body: body,
-		})
-
-		return
-	}
-}
-
-func getTplPortalComp(ctx *web.EventContext, db *gorm.DB, selectedID string) (h.HTMLComponent, error) {
-	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-	locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
-
-	name := msgr.Blank
-	if selectedID != "" {
-		if err := db.Model(&Template{}).Where("id = ? AND locale_code = ?", selectedID, locale).Pluck("name", &name).Error; err != nil {
-			return nil, err
-		}
-	}
-
-	return VRow(
-		VCol(
-			h.Input("").Type("hidden").Attr(web.VField(templateSelectedID, selectedID)...),
-			VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).ModelValue(name).Density(DensityCompact).Variant(VariantOutlined),
-		).Cols(5),
-		VCol(
-			VBtn(msgr.ChangeTemplate).Color(ColorPrimary).
-				Attr("@click", web.Plaid().Query(templateSelectedID, selectedID).EventFunc(openTemplateDialogEvent).Go()),
-		).Cols(5),
-	), nil
-}
-
-// Unused
-func clearTemplate(_ *gorm.DB) web.EventFunc {
-	return func(ctx *web.EventContext) (er web.EventResponse, err error) {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
-			Name: selectedTemplatePortal,
-			Body: VRow(
-				VCol(
-					h.Input("").Type("hidden").Attr(web.VField(templateSelectedID, "")...),
-					VTextField().Readonly(true).Label(msgr.SelectedTemplateLabel).ModelValue(msgr.Blank).Density(DensityCompact).Variant(VariantOutlined),
-				).Cols(5),
-				VCol(
-					VBtn(msgr.ChangeTemplate).Color(ColorPrimary).
-						Attr("@click", web.Plaid().Query(templateSelectedID, "").EventFunc(openTemplateDialogEvent).Go()),
-				).Cols(5),
-			),
-		})
-		return
-	}
-}
-
-func openTemplateDialog(db *gorm.DB, prefix string) web.EventFunc {
-	return func(ctx *web.EventContext) (er web.EventResponse, err error) {
-		gmsgr := presets.MustGetMessages(ctx.R)
-		locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
-		selectedID := ctx.R.FormValue(templateSelectedID)
-		if selectedID == "" {
-			selectedID = templateBlankVal
-		}
-
-		tpls := []*Template{}
-		if err := db.Model(&Template{}).Where("locale_code = ?", locale).Find(&tpls).Error; err != nil {
-			panic(err)
-		}
-		msgrPb := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-
-		var tplHTMLComponents []h.HTMLComponent
-		tplHTMLComponents = append(tplHTMLComponents,
-			VCol(
-				VCard(
-					h.Div(
-						h.Iframe().
-							Attr("width", "100%", "height", "150", "frameborder", "no").
-							Style("transform-origin: left top; transform: scale(1, 1); pointer-events: none;"),
-					),
-					VCardTitle(h.Text(msgrPb.Blank)),
-					VCardSubtitle(h.Text("")),
-					h.Div(
-						h.Input(templateID).Type("radio").
-							Value(templateBlankVal).
-							Attr(web.VField(templateID, selectedID)...).
-							AttrIf("checked", "checked", selectedID == "").
-							Style("width: 18px; height: 18px"),
-					).Class("mr-4 float-right"),
-				).Height(280).Class("text-truncate").Variant(VariantOutlined),
-			).Cols(3),
-		)
-		for _, tpl := range tpls {
-			tplHTMLComponents = append(tplHTMLComponents,
-				getTplColComponent(ctx, prefix, tpl, selectedID),
-			)
-		}
-		if len(tpls) == 0 {
-			tplHTMLComponents = append(tplHTMLComponents,
-				h.Div(h.Text(gmsgr.ListingNoRecordToShow)).Class("pl-4 text-center grey--text text--darken-2"),
-			)
-		}
-
-		er.UpdatePortals = append(er.UpdatePortals, &web.PortalUpdate{
-			Name: templateSelectPortal,
-			Body: VDialog(
-				VCard(
-					VCardTitle(
-						h.Text(msgrPb.CreateFromTemplate),
-						VSpacer(),
-						VBtn("").Icon("mdi-close").
-							Size(SizeLarge).
-							On("click", fmt.Sprintf("vars.showTemplateDialog=false")),
-					),
-					VCardActions(
-						VRow(tplHTMLComponents...),
-					),
-					VCardActions(
-						VSpacer(),
-						VBtn(gmsgr.Cancel).Attr("@click", "vars.showTemplateDialog=false"),
-						VBtn(gmsgr.OK).Color(ColorPrimary).
-							Attr("@click", web.Plaid().EventFunc(selectTemplateEvent).
-								Go(),
-							),
-					).Class("pb-4"),
-				).Tile(true),
-			).MaxWidth("80%").
-				Attr(web.VAssign("vars", `{showTemplateDialog: false}`)...).
-				Attr("v-model", fmt.Sprintf("vars.showTemplateDialog")),
-		})
-		er.RunScript = `setTimeout(function(){ vars.showTemplateDialog = true }, 100)`
-		return
-	}
-}
-
-func getTplColComponent(ctx *web.EventContext, prefix string, tpl *Template, selectedID string) h.HTMLComponent {
-	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-
-	// Avoid layout errors
-	var name string
-	var desc string
-	if tpl.Name == "" {
-		name = msgr.Unnamed
-	} else {
-		name = tpl.Name
-	}
-	if tpl.Description == "" {
-		desc = msgr.NotDescribed
-	} else {
-		desc = tpl.Description
-	}
-	id := fmt.Sprintf("%d", tpl.ID)
-
-	src := fmt.Sprintf("./%s/preview?id=%d&tpl=1&locale=%s", prefix, tpl.ID, tpl.LocaleCode)
-
-	return VCol(
-		VCard(
-			h.Div(
-				h.Iframe().Src(src).
-					Attr("width", "100%", "height", "150", "frameborder", "no").
-					Style("transform-origin: left top; transform: scale(1, 1); pointer-events: none;"),
-			),
-			VCardTitle(h.Text(name)),
-			VCardSubtitle(h.Text(desc)),
-			VBtn(msgr.Preview).Variant(VariantText).Size(SizeSmall).Class("ml-2 mb-4").
-				Href(src).
-				Attr("target", "_blank").Color(ColorPrimary),
-			h.Div(
-				h.Input(templateID).Type("radio").
-					Value(id).
-					Attr(web.VField(templateID, selectedID)...).
-					AttrIf("checked", "checked", selectedID == id).
-					Style("width: 18px; height: 18px"),
-			).Class("mr-4 float-right"),
-		).Height(280).Class("text-truncate").Variant(VariantOutlined),
-	).Cols(3)
-}
 
 func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
 	db := b.db
@@ -1072,7 +694,8 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
 					URL(b.ContainerByName(c.ModelName).GetModelBuilder().Info().ListingHref()).
 					Query(presets.ParamID, c.ModelID).
 					Query(paramOpenFromSharedContainer, 1).
-					Go()+fmt.Sprintf(`; locals.current_editing_id=%q"`, id))
+					Query(presets.ParamVarCurrentActive, presets.ListingCompo_GetVarCurrentActive(evCtx)).
+					Go())
 			return in(evCtx, cell, id, obj)
 		}
 	})
@@ -1099,6 +722,14 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 
 		return h.Td(h.Text(modelName))
 	})
+	listing.WrapRow(func(in presets.RowProcessor) presets.RowProcessor {
+		return func(evCtx *web.EventContext, row h.MutableAttrHTMLComponent, id string, obj any) (comp h.MutableAttrHTMLComponent, err error) {
+			c := presets.ListingCompoFromEventContext(evCtx)
+			p := obj.(*DemoContainer)
+			row.SetAttr(":class", fmt.Sprintf(`{ %q: vars.%s === %q }`, presets.ListingCompo_CurrentActiveClass, c.VarCurrentActive(), p.ModelName))
+			return in(evCtx, row, id, obj)
+		}
+	})
 	pm.LabelName(func(evCtx *web.EventContext, singular bool) string {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		if singular {
@@ -1113,9 +744,9 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 		}, nil
 	}))
 	listing.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
-		return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+		return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 			b.firstOrCreateDemoContainers(ctx)
-			return in(model, params, ctx)
+			return in(ctx, params)
 		}
 	})
 	listing.FilterDataFunc(func(ctx *web.EventContext) vx.FilterData {
@@ -1169,7 +800,8 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 					EventFunc(actions.Edit).
 					URL(b.ContainerByName(c.ModelName).GetModelBuilder().Info().ListingHref()).
 					Query(presets.ParamID, c.ModelID).
-					Go()+fmt.Sprintf(`; locals.current_editing_id=%q`, id))
+					Query(presets.ParamVarCurrentActive, presets.ListingCompo_GetVarCurrentActive(evCtx)).
+					Go())
 			return in(evCtx, cell, id, obj)
 		}
 	})
@@ -1198,70 +830,14 @@ func (b *Builder) firstOrCreateDemoContainers(ctx *web.EventContext, cons ...*Co
 	}
 }
 
-func (b *Builder) defaultTemplateInstall(pb *presets.Builder, pm *presets.ModelBuilder) (err error) {
-	db := b.db
-
-	lb := pm.Listing("ID", "Name", "Description")
-	pm.LabelName(func(evCtx *web.EventContext, singular bool) string {
-		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		if singular {
-			return msgr.ModelLabelTemplate
-		}
-		return msgr.ModelLabelTemplates
-	})
-	lb.WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
-		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		return map[string]string{
-			"ID":          msgr.ListHeaderID,
-			"Name":        msgr.ListHeaderName,
-			"Description": msgr.ListHeaderDescription,
-		}, nil
-	}))
-
-	dp := pm.Detailing("Overview")
-	dp.Field("Overview").ComponentFunc(templateSettings(db, pm))
-
-	eb := pm.Editing("Name", "Description")
-
-	eb.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		this := obj.(*Template)
-		err = db.Transaction(func(tx *gorm.DB) (inerr error) {
-			if inerr = gorm2op.DataOperator(tx).Save(obj, id, ctx); inerr != nil {
-				return
-			}
-
-			if b.l10n != nil && strings.Contains(ctx.R.RequestURI, l10n.DoLocalize) {
-				fromID := ctx.R.Context().Value(l10n.FromID).(string)
-				fromLocale := ctx.R.Context().Value(l10n.FromLocale).(string)
-
-				var fromIDInt int
-				fromIDInt, err = strconv.Atoi(fromID)
-				if err != nil {
-					return
-				}
-
-				if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, "tpl", fromLocale, int(this.ID), "tpl", this.LocaleCode); inerr != nil {
-					panic(inerr)
-				}
-				return
-			}
-			return
-		})
-
-		return
-	})
-
-	return
-}
-
 func sharedContainerSearcher(db *gorm.DB, b *ModelBuilder) presets.SearchFunc {
-	return func(obj interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+	return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 		ilike := "ILIKE"
 		if db.Dialector.Name() == "sqlite" {
 			ilike = "LIKE"
 		}
 
-		wh := db.Model(obj)
+		wh := db.Model(params.Model)
 		if len(params.KeywordColumns) > 0 && len(params.Keyword) > 0 {
 			var segs []string
 			var args []interface{}
@@ -1273,15 +849,16 @@ func sharedContainerSearcher(db *gorm.DB, b *ModelBuilder) presets.SearchFunc {
 		}
 
 		for _, cond := range params.SQLConditions {
-			wh = wh.Where(strings.Replace(cond.Query, " ILIKE ", " "+ilike+" ", -1), cond.Args...)
+			wh = wh.Where(strings.ReplaceAll(cond.Query, " ILIKE ", " "+ilike+" "), cond.Args...)
 		}
 
 		locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
 		var c int64
 		if err = wh.Select("count(display_name)").Where("shared = true AND locale_code = ? and page_model_name = ? ", locale, b.name).Group("display_name, model_name, model_id, locale_code").Count(&c).Error; err != nil {
-			return
+			return nil, err
 		}
-		totalCount = int(c)
+
+		totalCount := int(c)
 
 		if params.PerPage > 0 {
 			wh = wh.Limit(int(params.PerPage))
@@ -1293,11 +870,16 @@ func sharedContainerSearcher(db *gorm.DB, b *ModelBuilder) presets.SearchFunc {
 			wh = wh.Offset(int(offset))
 		}
 
-		if err = wh.Select("MIN(id) AS id, display_name, model_name, model_id, locale_code").Find(obj).Error; err != nil {
-			return
+		rtNodes := reflect.New(reflect.SliceOf(reflect.TypeOf(params.Model))).Elem()
+		if err = wh.Select("MIN(id) AS id, display_name, model_name, model_id, locale_code").Find(rtNodes.Addr().Interface()).Error; err != nil {
+			return nil, err
 		}
-		r = reflect.ValueOf(obj).Elem().Interface()
-		return
+
+		return &presets.SearchResult{
+			PageInfo:   relay.PageInfo{},
+			TotalCount: &totalCount,
+			Nodes:      rtNodes.Interface(),
+		}, nil
 	}
 }
 
@@ -1342,23 +924,126 @@ func (b *Builder) RegisterModelContainer(name string, mb *presets.ModelBuilder) 
 	return
 }
 
-func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
-	b.model = m
-	b.mb = b.builder.ps.Model(m)
-	b.mb.Editing().AppendHiddenFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+type TagInterface interface {
+	SetAttr(k string, v interface{})
+}
+
+func (b *ContainerBuilder) setFieldsLazyWrapComponentFunc(fields *presets.FieldsBuilder) {
+	for _, fieldName := range fields.FieldNames() {
+		field := fields.GetField(fieldName.(string))
+		if field.GetNestedFieldsBuilder() != nil {
+			b.setFieldsLazyWrapComponentFunc(field.GetNestedFieldsBuilder())
+			continue
+		}
+		field.LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
+			return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+				comp := in(obj, field, ctx)
+				formKey := field.ModelInfo.URIName() + "_" + field.FormKey
+				if p, ok := comp.(TagInterface); ok {
+					p.SetAttr("ref", formKey)
+					return h.Div(comp).Attr("v-on-mounted", fmt.Sprintf(`({el,window})=>{
+		const refName = "%s";
+		vars.__currentFocusUpdating = false;
+		el.__handleFocusIn=()=>{
+			vars.__currentFocusRefName = refName;
+		};
+		el.__handleFocusOut=(event)=>{
+			if(vars.__currentFocusUpdating){return}
+			vars.__currentFocusRefName ="";
+		};
+
+		el.addEventListener("focusin",el.__handleFocusIn);
+		el.addEventListener("focusout",el.__handleFocusOut);
+	   }`, formKey)).Attr("v-on-unmounted", `({el})=>{
+		el.removeEventListener("focusin",el.__handleFocusIn);
+		el.removeEventListener("focusout",el.__handleFocusOut);
+}`).Attr("v-before-unmount", `({el})=>{
+	vars.__currentFocusUpdating = true;
+}`)
+				}
+				return comp
+			}
+		})
+	}
+}
+
+func (b *ContainerBuilder) Install() {
+	editing := b.mb.Editing()
+	editing.WrapIdCurrentActive(func(in presets.IdCurrentActiveProcessor) presets.IdCurrentActiveProcessor {
+		return func(ctx *web.EventContext, current string) (s string, err error) {
+			s, err = in(ctx, current)
+			if err != nil {
+				return
+			}
+			s = b.name
+			return
+		}
+	})
+	if b.builder.autoSaveReload {
+		b.setFieldsLazyWrapComponentFunc(&editing.FieldsBuilder)
+	}
+	editing.AppendHiddenFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		if portalName := ctx.Param(presets.ParamPortalName); portalName != pageBuilderRightContentPortal {
 			return nil
 		}
-		return web.Listen(
-			b.mb.NotifRowUpdated(),
-			web.Plaid().
-				URL(b.mb.Info().ListingHref()).
-				EventFunc(actions.Update).
-				Query(presets.ParamID, web.Var("payload.id")).
-				ThenScript(web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).Query(paramStatus, ctx.Param(paramStatus)).MergeQuery(true).Go()).
-				Go(),
+		var (
+			fromKey     = ctx.Param(presets.ParamAddRowFormKey)
+			addRowBtnID = ctx.Param(presets.AddRowBtnKey(fromKey))
+		)
+		return h.Components(
+			h.Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf(`({window}) => {
+				if (!!locals.__pageBuilderRightContentKeepScroll) {
+					locals.__pageBuilderRightContentKeepScroll();
+				}	
+				const addRowBtnID = %q;
+				if(addRowBtnID){
+				const newAddRowBtn = window.document.getElementById(addRowBtnID);
+				newAddRowBtn.scrollIntoView({ behavior: 'smooth', block: 'end' });
+				}
+				 const __currentFocusRefName = $refs[vars.__currentFocusRefName];
+                 if(!__currentFocusRefName || typeof __currentFocusRefName.focus != 'function'){return}
+				  __currentFocusRefName.focus();	
+			}`, addRowBtnID)),
+			web.Listen(
+				b.mb.NotifRowUpdated(),
+				web.Plaid().
+					URL(b.mb.Info().ListingHref()).
+					EventFunc(actions.Update).
+					Query(presets.ParamID, web.Var("payload.id")).
+					Query(presets.ParamPortalName, pageBuilderRightContentPortal).
+					Query(presets.ParamOverlay, actions.Content).
+					ThenScript(web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).
+						Query(paramStatus, ctx.Param(paramStatus)).MergeQuery(true).Go()).
+					Go(),
+			),
+			h.If(b.builder.autoSaveReload,
+				web.Listen(
+					b.mb.NotifModelsUpdated(),
+					web.Plaid().
+						URL(b.mb.Info().ListingHref()).
+						EventFunc(actions.Edit).
+						Query(presets.ParamID, web.Var("payload.ids[0]")).
+						Query(presets.ParamPortalName, pageBuilderRightContentPortal).
+						Query(presets.ParamOverlay, actions.Content).Go(),
+				),
+			),
 		)
 	})
+}
+
+func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
+	b.model = m
+
+	mb := b.builder.ps.Model(m)
+	mb.WrapVerifier(func(_ func() *perm.Verifier) func() *perm.Verifier {
+		return func() *perm.Verifier {
+			v := mb.GetPresetsBuilder().GetVerifier().Spawn()
+			v.SnakeOn("demo_containers")
+			return v.SnakeOn(mb.Info().URIName())
+		}
+	})
+	b.mb = mb
+
 	val := reflect.ValueOf(m)
 	if val.Kind() != reflect.Ptr {
 		panic("model pointer type required")
@@ -1376,6 +1061,7 @@ func (b *ContainerBuilder) OnlyPages(v bool) *ContainerBuilder {
 	b.onlyPages = v
 	return b
 }
+
 func (b *ContainerBuilder) uRIName(uri string) *ContainerBuilder {
 	if b.mb == nil {
 		return b
@@ -1605,7 +1291,7 @@ func republishRelatedOnlinePages(pageURL string) web.EventFunc {
 
 func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, mb := range b.models {
-		if strings.Index(r.RequestURI, b.prefix+"/"+mb.name+"/preview") >= 0 {
+		if strings.Index(r.RequestURI, b.prefix+"/"+mb.mb.Info().URIName()+"/preview") >= 0 {
 			mb.preview.ServeHTTP(w, r)
 			return
 		}
@@ -1745,5 +1431,48 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 			Attr("v-model", "toggleLocals.activeDevice").
 			Attr("@update:model-value", web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).
 				PushState(true).MergeQuery(true).Query(paramsDevice, web.Var("toggleLocals.activeDevice")).Go()),
-	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: "%s"}`, device))
+	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %q}`, device))
+}
+
+func (b *Builder) GetModelBuilder(mb *presets.ModelBuilder) *ModelBuilder {
+	for _, modelBuilder := range b.models {
+		if modelBuilder.mb == mb {
+			return modelBuilder
+		}
+	}
+	return nil
+}
+
+func (b *Builder) GetPageModelBuilder() *ModelBuilder {
+	for _, modelBuilder := range b.models {
+		if modelBuilder.name == utils.GetObjectName(&Page{}) {
+			return modelBuilder
+		}
+	}
+	return nil
+}
+
+func (b *Builder) GetTemplateModel() *presets.ModelBuilder {
+	return b.templateModel
+}
+
+func (b *Builder) Only(vs ...string) *Builder {
+	b.fields = vs
+	return b
+}
+
+func (b *Builder) filterFields(names []interface{}) []interface{} {
+	return utils.Filter(names, func(i interface{}) bool {
+		if len(b.fields) == 0 {
+			return true
+		}
+		return slices.Contains(b.fields, i.(string))
+	})
+}
+
+func (b *Builder) expectField(name string) bool {
+	if len(b.fields) == 0 {
+		return true
+	}
+	return slices.Contains(b.fields, name)
 }

@@ -54,7 +54,7 @@ func (mb *NestedManyBuilder) FieldInstall(fb *FieldBuilder) error {
 
 	foreignQuery := strcase.ToSnake(mb.foreignKey) + " = ?"
 	mb.Listing().WrapSearchFunc(func(in SearchFunc) SearchFunc {
-		return func(model any, params *SearchParams, ctx *web.EventContext) (r any, totalCount int, err error) {
+		return func(ctx *web.EventContext, params *SearchParams) (result *SearchResult, err error) {
 			compo := ListingCompoFromContext(ctx.R.Context())
 			if compo == nil || compo.ParentID == "" {
 				err = perm.PermissionDenied
@@ -64,7 +64,7 @@ func (mb *NestedManyBuilder) FieldInstall(fb *FieldBuilder) error {
 				Query: foreignQuery,
 				Args:  []any{compo.ParentID},
 			})
-			return in(model, params, ctx)
+			return in(ctx, params)
 		}
 	})
 	mb.Editing().WrapSaveFunc(func(in SaveFunc) SaveFunc {
@@ -119,7 +119,7 @@ func (b *ListingBuilder) nestedManyComponent(evCtx *web.EventContext,
 		return r, err
 	}
 	if titleCompo == nil {
-		titleCompo = h.Div().Attr("v-pre", true).Text(title)
+		titleCompo = h.H2(title).Attr("v-pre", true).Class("section-title")
 	}
 
 	evCtx.WithContextValue(ctxInDialog, true)
@@ -137,8 +137,8 @@ func (b *ListingBuilder) nestedManyComponent(evCtx *web.EventContext,
 		}
 	}
 	return web.Scope().VSlot("{ form }").Children(
-		VCard().Elevation(0).Children(
-			VCardTitle().Class("d-flex align-center").Children(
+		h.Div(
+			h.Div().Class("d-flex align-center section-title-wrap mb-0").Children(
 				titleCompo,
 				VSpacer(),
 				h.Div().Id(compo.ActionsComponentTeleportToID()),
@@ -146,6 +146,6 @@ func (b *ListingBuilder) nestedManyComponent(evCtx *web.EventContext,
 			VCardText().Class("pa-0").Children(
 				b.mb.p.dc.MustInject(injectorName, compo),
 			),
-		),
+		).Class("section-wrap"),
 	), nil
 }

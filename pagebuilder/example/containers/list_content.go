@@ -5,13 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/qor5/x/v3/ui/vuetify"
-
-	"github.com/qor5/admin/v3/pagebuilder"
-	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/presets"
 )
 
 type ListContent struct {
@@ -65,18 +64,10 @@ func RegisterListContentContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	mb := vb.Model(&ListContent{})
 	eb := mb.Editing("AddTopSpace", "AddBottomSpace", "AnchorID", "BackgroundColor", "Items", "Link", "LinkText", "LinkDisplayOption")
 	eb.Field("BackgroundColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return vuetify.VSelect().
-			Variant(vuetify.FieldVariantUnderlined).
-			Items([]string{"white", "grey"}).
-			Label(field.Label).
-			Attr(web.VField(field.FormKey, field.Value(obj))...)
+		return presets.SelectField(obj, field, ctx).Items([]string{"white", "grey"})
 	})
 	eb.Field("LinkDisplayOption").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return vuetify.VSelect().
-			Items([]string{"desktop", "mobile", "all"}).
-			Variant(vuetify.FieldVariantUnderlined).
-			Label(field.Label).
-			Attr(web.VField(field.FormKey, field.Value(obj))...)
+		return presets.SelectField(obj, field, ctx).Items([]string{"desktop", "mobile", "all"})
 	})
 
 	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&ListItem{}).Only("HeadingIcon", "Heading", "Text", "Link", "LinkText")

@@ -1,11 +1,12 @@
 package examples_admin
 
 import (
-	"gorm.io/gorm"
 	"net/http"
+	"strings"
 
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/ui/vuetifyx"
+	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/autocomplete"
 	"github.com/qor5/admin/v3/presets"
@@ -35,7 +36,7 @@ func AutoCompleteBasicFilterExample(b *presets.Builder, ab *autocomplete.Builder
 	abm1 := ab.Model(&AutoCompletePost{}).SQLCondition("title ilike ? ").
 		Columns("id", "title").Paging(true)
 	abm2 := ab.Model(&AutoCompletePost{}).SQLCondition("body ilike ? ").
-		Columns("id", "body").UriName("body").OrderBy("id desc")
+		Columns("id", "body").UriName("auto-complete-posts-body").OrderBy("id desc")
 
 	// Call FilterDataFunc
 	listing.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
@@ -66,6 +67,9 @@ func AutoCompleteBasicFilterExample(b *presets.Builder, ab *autocomplete.Builder
 				// ? is the value of selected option
 				SQLCondition:           `title ilike ?`,
 				AutocompleteDataSource: titleConfig,
+				WrapInput: func(val string) interface{} {
+					return strings.Split(val, titleConfig.Separator)[0]
+				},
 			},
 			{
 				Key:      "body",
@@ -75,6 +79,9 @@ func AutoCompleteBasicFilterExample(b *presets.Builder, ab *autocomplete.Builder
 				// ? is the value of selected option
 				SQLCondition:           `body ilike ?`,
 				AutocompleteDataSource: bodyConfig,
+				WrapInput: func(val string) interface{} {
+					return strings.Split(val, bodyConfig.Separator)[0]
+				},
 			},
 		}
 	})

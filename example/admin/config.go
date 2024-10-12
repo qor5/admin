@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -17,7 +18,19 @@ import (
 	"github.com/qor/oss"
 	"github.com/qor/oss/filesystem"
 	"github.com/qor/oss/s3"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/login"
+	"github.com/qor5/x/v3/perm"
+	v "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
+	h "github.com/theplant/htmlgo"
+	"github.com/theplant/osenv"
+	"golang.org/x/text/language"
+	"gorm.io/gorm"
+
 	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/autosync"
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/l10n"
 	plogin "github.com/qor5/admin/v3/login"
@@ -34,19 +47,8 @@ import (
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/richeditor"
 	"github.com/qor5/admin/v3/role"
-	"github.com/qor5/admin/v3/slug"
 	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/admin/v3/worker"
-	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/i18n"
-	"github.com/qor5/x/v3/login"
-	"github.com/qor5/x/v3/perm"
-	v "github.com/qor5/x/v3/ui/vuetify"
-	vx "github.com/qor5/x/v3/ui/vuetifyx"
-	h "github.com/theplant/htmlgo"
-	"github.com/theplant/osenv"
-	"golang.org/x/text/language"
-	"gorm.io/gorm"
 )
 
 //go:embed assets
@@ -60,6 +62,10 @@ type Config struct {
 	pageBuilder         *pagebuilder.Builder
 	Publisher           *publish.Builder
 	loginSessionBuilder *plogin.SessionBuilder
+}
+
+func (c *Config) GetPresetsBuilder() *presets.Builder {
+	return c.pb
 }
 
 var (
@@ -109,7 +115,7 @@ func NewConfig(db *gorm.DB) Config {
 					return
 				}
 				mb.Listing().WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
-					return func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+					return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 						u := getCurrentUser(ctx.R)
 						if rs := u.GetRoles(); !slices.Contains(rs, models.RoleAdmin) {
 							params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
@@ -117,7 +123,7 @@ func NewConfig(db *gorm.DB) Config {
 								Args:  []interface{}{fmt.Sprint(u.ID)},
 							})
 						}
-						return in(model, params, ctx)
+						return in(ctx, params)
 					}
 				})
 				return
@@ -233,11 +239,7 @@ func NewConfig(db *gorm.DB) Config {
 			{Text: "Workers", Value: "*:workers:*"},
 		}).
 		AfterInstall(func(pb *presets.Builder, mb *presets.ModelBuilder) error {
-			mb.Listing().SearchFunc(func(
-				model interface{},
-				params *presets.SearchParams,
-				ctx *web.EventContext,
-			) (r interface{}, totalCount int, err error) {
+			mb.Listing().SearchFunc(func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 				u := getCurrentUser(ctx.R)
 				qdb := db
 				// If the current user doesn't has 'admin' role, do not allow them to view admin and manager roles
@@ -245,7 +247,7 @@ func NewConfig(db *gorm.DB) Config {
 				if currentRoles := u.GetRoles(); !slices.Contains(currentRoles, models.RoleAdmin) {
 					qdb = db.Where("name NOT IN (?)", []string{models.RoleAdmin, models.RoleManager})
 				}
-				return gorm2op.DataOperator(qdb).Search(model, params, ctx)
+				return gorm2op.DataOperator(qdb).Search(ctx, params)
 			})
 			return nil
 		})
@@ -273,8 +275,7 @@ func NewConfig(db *gorm.DB) Config {
 	configNestedFieldDemo(b, db)
 
 	b.Use(w.Activity(ab))
-
-	pageBuilder := example.ConfigPageBuilder(db, "/page_builder", ``, b.GetI18n())
+	pageBuilder := example.ConfigPageBuilder(db, "/page_builder", ``, b)
 	pageBuilder.
 		Media(mediab).
 		L10n(l10nBuilder).
@@ -293,7 +294,11 @@ func NewConfig(db *gorm.DB) Config {
 					if err != nil {
 						panic(err)
 					}
-					return []*vx.FilterItem{item}
+					liveFilterItem, err := publish.NewLiveFilterItem(ctx.R.Context(), "")
+					if err != nil {
+						panic(liveFilterItem)
+					}
+					return []*vx.FilterItem{item, liveFilterItem}
 				})
 
 				pmListing.FilterTabsFunc(func(ctx *web.EventContext) []*presets.FilterTab {
@@ -337,6 +342,7 @@ func NewConfig(db *gorm.DB) Config {
 
 	configOrder(b, db)
 	configECDashboard(b, db)
+	configureDemoCase(b, db)
 
 	configUser(b, ab, db, publisher, loginSessionBuilder)
 
@@ -461,6 +467,7 @@ func configMenuOrder(b *presets.Builder) {
 		).Icon("mdi-account-multiple"),
 		b.MenuGroup("Featured Models Management").SubItems(
 			"InputDemo",
+			"DemoCase",
 			"Post",
 			"qor-seo-settings",
 			"List Editor Example",
@@ -565,7 +572,6 @@ func configPost(
 	ab *activity.Builder,
 ) *presets.ModelBuilder {
 	m := b.Model(&models.Post{})
-	m.Use(slug.New())
 	defer func() {
 		m.Use(publisher, ab)
 		m.Detailing().SidePanelFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
@@ -646,8 +652,19 @@ func configPost(
 		}
 	})
 
+	lazyWrapperEditCompoSync := autosync.NewLazyWrapComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) *autosync.Config {
+		return &autosync.Config{
+			SyncFromFromKey: strings.TrimSuffix(field.FormKey, "WithSlug"),
+			InitialChecked:  autosync.InitialCheckedAuto,
+			CheckboxLabel:   "Auto Sync",
+			SyncCall:        autosync.SyncCallSlug,
+		}
+	})
+	m.Editing().Field("TitleWithSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)
+
 	dp := m.Detailing(publish.VersionsPublishBar, "Detail").Drawer(true)
-	sb := dp.Section("Detail").Editing("Title", "HeroImage", "Body", "BodyImage")
+	sb := dp.Section("Detail").Editing("Title", "TitleWithSlug", "HeroImage", "Body", "BodyImage")
+	sb.EditingField("TitleWithSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)
 
 	// TODO: need viewing field setting
 	sb.EditingField("HeroImage").
@@ -671,7 +688,7 @@ func configPost(
 			media.MediaBoxConfig,
 			&media_library.MediaBoxConfig{})
 	sb.EditingField("Body").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label)
+		return richeditor.RichEditor(db, field.FormKey).Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label)
 	})
 	return m
 }

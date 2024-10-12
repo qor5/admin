@@ -3,8 +3,9 @@ package pagebuilder
 import (
 	"net/url"
 
-	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
+
+	"github.com/qor5/admin/v3/presets"
 )
 
 const (
@@ -12,19 +13,10 @@ const (
 	pageBuilderLayerContainerPortal = "pageBuilderLayerContainerPortal"
 )
 
-func (b *ModelBuilder) PreviewHref(ctx *web.EventContext, ps string) string {
-	var (
-		isTpl         = ctx.R.FormValue(paramsTpl) != ""
-		isLocalizable = ctx.R.Form.Has(paramLocale)
-		ur            = url.Values{}
-	)
-	if isTpl {
-		if isLocalizable && b.builder.l10n != nil {
-			ur.Add(paramsTpl, "1")
-		}
-	}
+func (b *ModelBuilder) PreviewHref(_ *web.EventContext, ps string) string {
+	ur := url.Values{}
 	ur.Add(presets.ParamID, ps)
-	return b.builder.prefix + "/" + b.name + "/preview" + "?" + ur.Encode()
+	return b.builder.prefix + "/" + b.mb.Info().URIName() + "/preview" + "?" + ur.Encode()
 }
 
 const previewEmptySvg = `<svg width="120" height="73" viewBox="0 0 120 73" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -135,3 +127,35 @@ const previewIframeEmptySvg = `<svg width="169" height="103" viewBox="0 0 169 10
 </defs>
 </svg>
 `
+
+const previewTemplateEmptySvg = `<svg width="195" height="89" viewBox="0 0 195 89" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M81.6866 32.5202V1.5H153.758V56.4479C153.758 62.1076 149.171 66.6944 143.511 66.6944C137.851 66.6944 133.265 62.1076 133.265 56.4479L133.279 42.8027C133.279 37.143 128.692 32.5562 123.033 32.5562C117.373 32.5562 112.786 37.143 112.786 42.8027L112.8 71.0939C112.8 76.7536 108.214 81.3404 102.554 81.3404C96.8943 81.3404 92.3075 76.7536 92.3075 71.0939L92.3219 61.4379C92.3219 55.7782 87.7351 51.1914 82.0754 51.1914H82.0394C76.3797 51.1914 71.7929 55.7782 71.7929 61.4379L71.8074 74.4782C71.8074 80.1379 67.2206 84.7247 61.5609 84.7247H2.625" fill="white"/>
+<rect x="87.125" y="18.75" width="21.5" height="13.75" rx="1" fill="#F5F5F5"/>
+<rect x="119.375" y="18.75" width="28.5" height="3" rx="0.5" fill="#EBEBEB"/>
+<rect x="89.375" y="22" width="16.75" height="1.5" rx="0.5" fill="#D3D3D3"/>
+<rect x="89.375" y="24.75" width="16.75" height="1.5" rx="0.5" fill="#D3D3D3"/>
+<rect x="89.375" y="27.75" width="10.25" height="1.5" rx="0.5" fill="#D3D3D3"/>
+<rect x="119.375" y="29.5" width="28.5" height="3" rx="0.5" fill="#EBEBEB"/>
+<rect x="132.125" y="38.75" width="15.75" height="3" rx="0.5" fill="#EBEBEB"/>
+<rect x="132.125" y="48.25" width="15.75" height="3" rx="0.5" fill="#EBEBEB"/>
+<path d="M0.125 84.7178C5.78468 84.7178 10.3715 80.131 10.3715 74.4713L10.3571 61.431C10.3571 55.7714 14.9439 51.1846 20.6035 51.1846H20.6396H82.0536" fill="white"/>
+<path d="M41.7385 51.1851C41.7329 47.9007 41.7241 42.7748 41.7241 42.7748C41.7241 37.1151 46.3109 32.5283 51.9706 32.5283H122.681" fill="white"/>
+<path d="M102.625 81.25H69.875H69.125C70.7865 79.44 71.5466 77.0484 71.5466 74.417L71.532 61.4487C71.532 55.8151 76.1725 51.25 81.889 51.25H81.9256C87.6494 51.25 92.2826 55.8151 92.2826 61.4487L92.268 71.0513C92.268 76.6849 96.9085 81.25 102.625 81.25Z" fill="#838383"/>
+<path d="M144.125 66.75H112.745V66.25C112.745 63 112.745 62.0021 112.745 59L112.457 44.1404C112.457 37.7104 117.185 32.5 123.008 32.5H123.045C128.876 32.5 133.596 37.7104 133.596 44.1404L133.581 55.1096C133.574 61.5396 138.294 66.75 144.125 66.75Z" fill="#838383"/>
+<path d="M81.625 2.25C81.625 1.14543 82.5204 0.25 83.625 0.25H151.875C152.98 0.25 153.875 1.14543 153.875 2.25V9.25H81.625V2.25Z" fill="#3E63DD"/>
+<circle cx="88" cy="4.625" r="1.125" fill="white"/>
+<circle cx="92.5" cy="4.625" r="1.125" fill="white"/>
+<circle cx="97" cy="4.625" r="1.125" fill="white"/>
+<path d="M24.375 61.875C24.375 52.075 30.375 51.25 33.625 51.25H66C57.3 51.85 56.5 58.125 56.5 63V66.875C56.5 67.4273 56.0523 67.875 55.5 67.875H26.375C25.2704 67.875 24.375 67.9579 24.375 66.8534L24.375 61.875Z" fill="#F5F5F5"/>
+<rect x="41.875" y="47.25" width="18.75" height="4" fill="white"/>
+<rect x="48.375" y="38.5" width="31" height="3" rx="0.5" fill="#EBEBEB"/>
+<rect x="48.375" y="45" width="31" height="3" rx="0.5" fill="#EBEBEB"/>
+<rect x="86.875" y="38.5" width="21.75" height="3" rx="0.5" fill="#EBEBEB"/>
+<rect x="86.875" y="45" width="21.75" height="3" rx="0.5" fill="#EBEBEB"/>
+<rect x="29.625" y="56" width="23" height="1.5" rx="0.5" fill="#E8E8E8"/>
+<rect x="29.625" y="61.75" width="14" height="1.5" rx="0.5" fill="#E8E8E8"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M147.897 86.9998C146.054 87.6446 144.077 87.9946 142.019 87.9946C132.037 87.9946 123.945 79.7596 123.945 69.6012C123.945 59.6597 131.695 51.5604 141.382 51.2189C145.126 44.3778 152.304 39.75 160.545 39.75C170.975 39.75 179.704 47.1642 181.92 57.0964C189.269 57.9452 194.979 64.294 194.979 72C194.979 80.2843 188.38 87 180.239 87C180.179 87 180.118 86.9996 180.057 86.9989V86.9998H147.897Z" fill="#3E63DD"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M138.221 88.2701C137.554 88.3427 136.876 88.38 136.19 88.38C125.937 88.38 117.625 80.0681 117.625 69.815C117.625 59.5618 125.937 51.25 136.19 51.25C136.641 51.25 137.088 51.2661 137.531 51.2977C141.607 45.5221 148.333 41.75 155.939 41.75C166.292 41.75 175.013 48.7375 177.643 58.2536C185.779 58.431 192.319 65.0817 192.319 73.26C192.319 81.5498 185.599 88.27 177.309 88.27C176.911 88.27 176.516 88.2544 176.125 88.2239V88.2701H138.221Z" fill="#8DA4EF"/>
+<path d="M154.295 54.6913C154.684 54.0504 155.614 54.0504 156.004 54.6913L164.488 68.652C164.893 69.3184 164.414 70.1714 163.634 70.1714H146.665C145.885 70.1714 145.405 69.3185 145.81 68.652L154.295 54.6913Z" fill="white"/>
+<rect x="151.832" y="64.8193" width="6.63599" height="15.168" rx="1" fill="white"/>
+</svg>`

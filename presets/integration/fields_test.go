@@ -8,12 +8,13 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"github.com/theplant/testingutils"
+
+	. "github.com/qor5/admin/v3/presets"
 )
 
 type Company struct {
@@ -106,25 +107,17 @@ func TestFields(t *testing.T) {
 						ctx)
 			},
 			expect: `
-<v-text-field type='number' :variant='"underlined"' v-model='form["Int1"]' v-assign='[form, {"Int1":"2"}]' label='整数1' :disabled='false'></v-text-field>
+<vx-field type='number' v-model='form["Int1"]' v-assign='[form, {"Int1":"2"}]' label='整数1' :error-messages='null' :disabled='false'></vx-field>
 
-<v-text-field type='number' :variant='"underlined"' v-model='form["Float1"]' v-assign='[form, {"Float1":"23.1"}]' label='Float1' :disabled='false'></v-text-field>
+<vx-field type='number' v-model='form["Float1"]' v-assign='[form, {"Float1":"23.1"}]' label='Float1' :error-messages='null' :disabled='false'></vx-field>
 
-<div class='section-field-wrap'>
-<span class='text-subtitle-2 text-high-emphasis section-filed-label mb-1 d-sm-inline-block'>String1</span>
+<vx-field label='String1' v-model='form["String1"]' v-assign='[form, {"String1":"hello"}]' :error-messages='["too small"]' :disabled='false'></vx-field>
 
-<v-text-field :density='"comfortable"' type='text' :variant='"outlined"' bg-color='background' v-model='form["String1"]' v-assign='[form, {"String1":"hello"}]' :error-messages='["too small"]' :disabled='false' class='section-field'></v-text-field>
-</div>
-
-<v-checkbox v-model='form["Bool1"]' v-assign='[form, {"Bool1":true}]' label='Bool1' :disabled='false'></v-checkbox>
+<vx-checkbox v-model='form["Bool1"]' v-assign='[form, {"Bool1":true}]' label='Bool1' :disabled='false'></vx-checkbox>
 
 <div v-model='form["Time1"]' v-assign='[form, {"Time1":"2019-08-29"}]' class='time-control'></div>
 
-<div class='section-field-wrap'>
-<span class='text-subtitle-2 text-high-emphasis section-filed-label mb-1 d-sm-inline-block'>公司名</span>
-
-<v-text-field :density='"comfortable"' type='text' :variant='"outlined"' bg-color='background' v-model='form["Company.Name"]' v-assign='[form, {"Company.Name":"Company1"}]' :disabled='false' class='section-field'></v-text-field>
-</div>
+<vx-field label='公司名' v-model='form["Company.Name"]' v-assign='[form, {"Company.Name":"Company1"}]' :error-messages='null' :disabled='false'></vx-field>
 
 <div v-model='form["Company.FoundedAt"]' v-assign='[form, {"Company.FoundedAt":"2019-08-29"}]' class='time-control'></div>
 `,
@@ -138,15 +131,11 @@ func TestFields(t *testing.T) {
 					ToComponent(mb.Info(), user, ctx)
 			},
 			expect: `
-<v-text-field type='number' :variant='"underlined"' v-model='form["Int1"]' v-assign='[form, {"Int1":"2"}]' label='Int1' :disabled='false'></v-text-field>
+<vx-field type='number' v-model='form["Int1"]' v-assign='[form, {"Int1":"2"}]' label='Int1' :error-messages='null' :disabled='false'></vx-field>
 
-<v-text-field type='number' :variant='"underlined"' v-model='form["Float1"]' v-assign='[form, {"Float1":"23.1"}]' label='Float1' :disabled='false'></v-text-field>
+<vx-field type='number' v-model='form["Float1"]' v-assign='[form, {"Float1":"23.1"}]' label='Float1' :error-messages='null' :disabled='false'></vx-field>
 
-<div class='section-field-wrap'>
-<span class='text-subtitle-2 text-high-emphasis section-filed-label mb-1 d-sm-inline-block'>String1</span>
-
-<v-text-field :density='"comfortable"' type='text' :variant='"outlined"' bg-color='background' v-model='form["String1"]' v-assign='[form, {"String1":"hello"}]' :error-messages='["too small"]' :disabled='false' class='section-field'></v-text-field>
-</div>
+<vx-field label='String1' v-model='form["String1"]' v-assign='[form, {"String1":"hello"}]' :error-messages='["too small"]' :disabled='false'></vx-field>
 
 <div v-model='form["Time1"]' v-assign='[form, {"Time1":"2019-08-29"}]' class='time-control'></div>
 `,
@@ -244,27 +233,15 @@ func addressHTML(v Address, formKeyPrefix string) string {
 <label class='v-label theme--light text-caption'>Address</label>
 
 <v-card :variant='"outlined"' class='mx-0 mt-1 mb-4 px-4 pb-0 pt-4'>
-<div class='section-field-wrap'>
-<span class='text-subtitle-2 text-high-emphasis section-filed-label mb-1 d-sm-inline-block'>City</span>
-
-<v-text-field :density='"comfortable"' type='text' :variant='"outlined"' bg-color='background' v-model='form["%sAddress.City"]' v-assign='[form, {"%sAddress.City":"%s"}]' :disabled='false' class='section-field'></v-text-field>
-</div>
+<vx-field label='City' v-model='form["%sAddress.City"]' v-assign='[form, {"%sAddress.City":"%s"}]' :error-messages='null' :disabled='false'></vx-field>
 
 <div>
 <label class='v-label theme--light text-caption'>Detail</label>
 
 <v-card :variant='"outlined"' class='mx-0 mt-1 mb-4 px-4 pb-0 pt-4'>
-<div class='section-field-wrap'>
-<span class='text-subtitle-2 text-high-emphasis section-filed-label mb-1 d-sm-inline-block'>Address1</span>
+<vx-field label='Address1' v-model='form["%sAddress.Detail.Address1"]' v-assign='[form, {"%sAddress.Detail.Address1":"%s"}]' :error-messages='null' :disabled='false'></vx-field>
 
-<v-text-field :density='"comfortable"' type='text' :variant='"outlined"' bg-color='background' v-model='form["%sAddress.Detail.Address1"]' v-assign='[form, {"%sAddress.Detail.Address1":"%s"}]' :disabled='false' class='section-field'></v-text-field>
-</div>
-
-<div class='section-field-wrap'>
-<span class='text-subtitle-2 text-high-emphasis section-filed-label mb-1 d-sm-inline-block'>Address2</span>
-
-<v-text-field :density='"comfortable"' type='text' :variant='"outlined"' bg-color='background' v-model='form["%sAddress.Detail.Address2"]' v-assign='[form, {"%sAddress.Detail.Address2":"%s"}]' :disabled='false' class='section-field'></v-text-field>
-</div>
+<vx-field label='Address2' v-model='form["%sAddress.Detail.Address2"]' v-assign='[form, {"%sAddress.Detail.Address2":"%s"}]' :error-messages='null' :disabled='false'></vx-field>
 </v-card>
 </div>
 </v-card>
@@ -430,7 +407,7 @@ func TestFieldsBuilder(t *testing.T) {
 
 %s
 
-<v-text-field type='number' :variant='"underlined"' v-model='form["PeopleCount"]' v-assign='[form, {"PeopleCount":"0"}]' label='People Count' :disabled='false'></v-text-field>
+<vx-field type='number' v-model='form["PeopleCount"]' v-assign='[form, {"PeopleCount":"0"}]' label='People Count' :error-messages='null' :disabled='false'></vx-field>
 `,
 				addressHTML(Address{}, "Departments[0].Employees[0]."),
 				addressHTML(Address{}, "Departments[0].Employees[2]."),
@@ -536,7 +513,7 @@ func TestFieldsBuilder(t *testing.T) {
 
 %s
 
-<v-text-field type='number' :variant='"underlined"' v-model='form["PeopleCount"]' v-assign='[form, {"PeopleCount":"0"}]' label='People Count' :disabled='false'></v-text-field>
+<vx-field type='number' v-model='form["PeopleCount"]' v-assign='[form, {"PeopleCount":"0"}]' label='People Count' :error-messages='null' :disabled='false'></vx-field>
 `,
 				addressHTML(Address{}, "Departments[0].Employees[2]."),
 				addressHTML(Address{}, "Departments[0].Employees[0]."),

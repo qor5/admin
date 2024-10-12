@@ -1,13 +1,20 @@
 package gorm2op
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"regexp"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
+	"github.com/samber/lo"
+	"github.com/theplant/relay"
+	"github.com/theplant/relay/cursor"
+	"github.com/theplant/relay/gormrelay"
 	"gorm.io/gorm"
 )
 
@@ -18,17 +25,19 @@ func DataOperator(db *gorm.DB) (r *DataOperatorBuilder) {
 	return
 }
 
+type ctxKeyDB struct{}
+
 type DataOperatorBuilder struct {
 	db *gorm.DB
 }
 
-func (op *DataOperatorBuilder) Search(obj interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+func (op *DataOperatorBuilder) Search(evCtx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 	ilike := "ILIKE"
 	if op.db.Dialector.Name() == "sqlite" {
 		ilike = "LIKE"
 	}
 
-	wh := op.db.Model(obj)
+	wh := op.db.Model(params.Model)
 	if len(params.KeywordColumns) > 0 && len(params.Keyword) > 0 {
 		var segs []string
 		var args []interface{}
@@ -41,37 +50,62 @@ func (op *DataOperatorBuilder) Search(obj interface{}, params *presets.SearchPar
 	}
 
 	for _, cond := range params.SQLConditions {
-		wh = wh.Where(strings.Replace(cond.Query, " ILIKE ", " "+ilike+" ", -1), cond.Args...)
+		wh = wh.Where(strings.ReplaceAll(cond.Query, " ILIKE ", " "+ilike+" "), cond.Args...)
 	}
 
-	var c int64
-	err = wh.Count(&c).Error
-	if err != nil {
-		return
-	}
-	totalCount = int(c)
-
-	if params.PerPage > 0 {
-		wh = wh.Limit(int(params.PerPage))
-		page := params.Page
-		if page == 0 {
-			page = 1
+	var p relay.Pagination[any]
+	var req *relay.PaginateRequest[any]
+	ctx := relay.WithSkipEdges(evCtx.R.Context())
+	if params.RelayPagination != nil {
+		ctx = context.WithValue(ctx, ctxKeyDB{}, wh)
+		p, err = params.RelayPagination(evCtx)
+		if err != nil {
+			return nil, err
 		}
-		offset := (page - 1) * params.PerPage
-		wh = wh.Offset(int(offset))
+		req = params.RelayPaginateRequest
+		if req == nil {
+			return nil, errors.New("RelayPaginateRequest is required")
+		}
+	} else {
+		if params.RelayPaginateRequest != nil {
+			return nil, errors.New("RelayPagination is required")
+		}
+
+		p = relay.New(
+			gormrelay.NewOffsetAdapter[any](wh),
+			relay.EnsureLimits[any](presets.PerPageMax, presets.PerPageDefault),
+		)
+		req = &relay.PaginateRequest[any]{
+			OrderBys: params.OrderBys,
+		}
+		if params.PerPage > 0 {
+			req.First = lo.ToPtr(int(params.PerPage))
+			page := params.Page
+			if page == 0 {
+				page = 1
+			}
+			offset := int((page - 1) * params.PerPage)
+			if offset > 0 {
+				req.After = lo.ToPtr(cursor.EncodeOffsetCursor(offset - 1))
+			}
+		}
 	}
 
-	orderBy := params.OrderBy
-	if len(orderBy) > 0 {
-		wh = wh.Order(orderBy)
-	}
-
-	err = wh.Find(obj).Error
+	resp, err := p.Paginate(ctx, req)
 	if err != nil {
 		return
 	}
-	r = reflect.ValueOf(obj).Elem().Interface()
-	return
+
+	// []any => []modelType
+	nodes := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(params.Model)), len(resp.Nodes), len(resp.Nodes))
+	for i := 0; i < len(resp.Nodes); i++ {
+		nodes.Index(i).Set(reflect.ValueOf(resp.Nodes[i]))
+	}
+	return &presets.SearchResult{
+		PageInfo:   resp.PageInfo,
+		TotalCount: resp.TotalCount,
+		Nodes:      nodes.Interface(),
+	}, nil
 }
 
 func (op *DataOperatorBuilder) primarySluggerWhere(obj interface{}, id string) *gorm.DB {

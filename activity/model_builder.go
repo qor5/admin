@@ -131,7 +131,7 @@ func (amb *ModelBuilder) installPresetModelBuilder(mb *presets.ModelBuilder) {
 	})
 
 	pb := mb.GetPresetsBuilder()
-	if !amb.ab.IsPresetInstalled(pb) {
+	if amb.ab.GetLogModelBuilder(pb) == nil {
 		pb.GetI18n().
 			RegisterForModule(language.English, I18nActivityKey, Messages_en_US).
 			RegisterForModule(language.SimplifiedChinese, I18nActivityKey, Messages_zh_CN).
@@ -238,14 +238,14 @@ func (amb *ModelBuilder) installPresetModelBuilder(mb *presets.ModelBuilder) {
 	listFieldNotes := lb.GetField(ListFieldNotes)
 	if listFieldNotes != nil && listFieldNotes.GetCompFunc() == nil {
 		lb.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
-			return func(model any, params *presets.SearchParams, ctx *web.EventContext) (r any, totalCount int, err error) {
-				r, totalCount, err = in(model, params, ctx)
+			return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
+				result, err = in(ctx, params)
 				if err != nil {
 					return
 				}
 				var modelName string
-				modelKeyses := []string{}
-				reflectutils.ForEach(r, func(obj any) {
+				var modelKeyses []string
+				reflectutils.ForEach(result.Nodes, func(obj any) {
 					if modelName == "" {
 						modelName = ParseModelName(obj)
 					}
@@ -254,7 +254,7 @@ func (amb *ModelBuilder) installPresetModelBuilder(mb *presets.ModelBuilder) {
 				if len(modelKeyses) > 0 {
 					counts, err := amb.ab.GetNotesCounts(ctx.R.Context(), modelName, modelKeyses)
 					if err != nil {
-						return r, totalCount, err
+						return nil, err
 					}
 					m := lo.SliceToMap(counts, func(v *NoteCount) (string, *NoteCount) {
 						return v.ModelKeys, v
@@ -444,12 +444,35 @@ func (mb *ModelBuilder) modelLink(v any) string {
 	return ""
 }
 
+type ctxKeyScope struct{}
+
+func ContextWithScope(ctx context.Context, scope string) context.Context {
+	return context.WithValue(ctx, ctxKeyScope{}, scope)
+}
+
+func ScopeWithOwner(owner string) string {
+	return fmt.Sprintf(",owner:%s,", owner)
+}
+
+type ctxKeyDB struct{}
+
+func ContextWithDB(ctx context.Context, db *gorm.DB) context.Context {
+	return context.WithValue(ctx, ctxKeyDB{}, db)
+}
+
 func (mb *ModelBuilder) create(
 	ctx context.Context,
 	action string,
 	modelName, modelKeys, modelLink string,
 	detail any,
 ) (*ActivityLog, error) {
+	db, ok := ctx.Value(ctxKeyDB{}).(*gorm.DB)
+	if !ok {
+		db = mb.ab.db
+	} else if mb.ab.tablePrefix != "" {
+		db = db.Scopes(ScopeWithTablePrefix(mb.ab.tablePrefix)).Session(&gorm.Session{})
+	}
+
 	user, err := mb.ab.currentUserFunc(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get current user")
@@ -457,14 +480,32 @@ func (mb *ModelBuilder) create(
 
 	if mb.ab.findUsersFunc == nil {
 		user := &ActivityUser{
-			CreatedAt: mb.ab.db.NowFunc(),
+			CreatedAt: db.NowFunc(),
 			ID:        user.ID,
 			Name:      user.Name,
 			Avatar:    user.Avatar,
 		}
-		if mb.ab.db.Where("id = ?", user.ID).Select("*").Omit("created_at").Updates(user).RowsAffected == 0 {
-			if err := mb.ab.db.Create(user).Error; err != nil {
+		if db.Where("id = ?", user.ID).Select("*").Omit("created_at").Updates(user).RowsAffected == 0 {
+			if err := db.Create(user).Error; err != nil {
 				return nil, errors.Wrap(err, "failed to create user")
+			}
+		}
+	}
+
+	scope, _ := ctx.Value(ctxKeyScope{}).(string)
+	if scope == "" {
+		if action == ActionCreate {
+			scope = ScopeWithOwner(user.ID)
+		} else {
+			createdLog := &ActivityLog{}
+			if err := db.Where("model_name = ? AND model_keys = ? AND action = ? ", modelName, modelKeys, ActionCreate).
+				Order("created_at ASC").First(&createdLog).Error; err != nil {
+				if !errors.Is(err, gorm.ErrRecordNotFound) {
+					return nil, errors.Wrap(err, "failed to find created log")
+				}
+			}
+			if createdLog.ID != 0 && createdLog.UserID != "" {
+				scope = createdLog.Scope
 			}
 		}
 	}
@@ -476,11 +517,12 @@ func (mb *ModelBuilder) create(
 		ModelKeys:  modelKeys,
 		ModelLabel: "",
 		ModelLink:  modelLink,
+		Scope:      scope,
 	}
 	if mb.presetModel != nil {
 		log.ModelLabel = cmp.Or(mb.presetModel.Info().URIName(), log.ModelLabel)
 	}
-	log.CreatedAt = mb.ab.db.NowFunc()
+	log.CreatedAt = db.NowFunc()
 
 	detailJson, err := json.Marshal(detail)
 	if err != nil {
@@ -491,7 +533,7 @@ func (mb *ModelBuilder) create(
 	if action == ActionLastView {
 		log.Hidden = true
 		r := &ActivityLog{}
-		if err := mb.ab.db.
+		if err := db.
 			Where("user_id = ? AND model_name = ? AND model_keys = ? AND action = ?", user.ID, modelName, modelKeys, action).
 			Assign(log).FirstOrCreate(r).Error; err != nil {
 			return nil, err
@@ -499,9 +541,9 @@ func (mb *ModelBuilder) create(
 		return r, nil
 
 		// Why not use this ? Because log.id is empty although the record is already created, there is no advance fetch of the original id here .
-		// if mb.ab.db.Where("user_id = ? AND model_name = ? AND model_keys = ? AND action = ?", log.UserID, log.ModelName, log.ModelKeys, log.Action).
+		// if db.Where("user_id = ? AND model_name = ? AND model_keys = ? AND action = ?", log.UserID, log.ModelName, log.ModelKeys, log.Action).
 		// 	Select("*").Updates(log).RowsAffected == 0 {
-		// 	if err := mb.ab.db.Create(log).Error; err != nil {
+		// 	if err := db.Create(log).Error; err != nil {
 		// 		return nil, errors.Wrap(err, "failed to create log")
 		// 	}
 		// }
@@ -509,7 +551,7 @@ func (mb *ModelBuilder) create(
 		// Why not use Upsert ?
 		// https://github.com/go-gorm/gorm/issues/6512
 		// https://github.com/jackc/pgx/issues/1234
-		// if err := mb.ab.db.Clauses(clause.OnConflict{
+		// if err := db.Clauses(clause.OnConflict{
 		// 	Columns: []clause.Column{
 		// 		{Name: "model_name"},
 		// 		{Name: "model_keys"},
@@ -525,7 +567,7 @@ func (mb *ModelBuilder) create(
 		// return log, nil
 	}
 
-	if err := mb.ab.db.Create(log).Error; err != nil {
+	if err := db.Create(log).Error; err != nil {
 		return nil, errors.Wrap(err, "failed to create log")
 	}
 

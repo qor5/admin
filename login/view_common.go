@@ -7,6 +7,7 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/login"
 	. "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	. "github.com/theplant/htmlgo"
 )
 
@@ -90,15 +91,12 @@ func (vc *ViewCommon) Input(
 	id string,
 	placeholder string,
 	val string,
-) *VTextFieldBuilder {
-	return VTextField().
-		Attr("name", id).
+) *vx.VXFieldBuilder {
+	return vx.VXField().
+		Name(id).
 		Id(id).
 		Placeholder(placeholder).
-		ModelValue(val).
-		Variant(VariantOutlined).
-		HideDetails(true).
-		Density(DensityCompact)
+		ModelValue(val)
 }
 
 func (vc *ViewCommon) PasswordInput(
@@ -106,11 +104,11 @@ func (vc *ViewCommon) PasswordInput(
 	placeholder string,
 	val string,
 	canReveal bool,
-) *VTextFieldBuilder {
+) *vx.VXFieldBuilder {
 	in := vc.Input(id, placeholder, val)
 	if canReveal {
 		varName := fmt.Sprintf(`show_%s`, id)
-		in.Attr(":append-inner-icon", fmt.Sprintf(`vars.%s ? "mdi-eye-off" : "mdi-eye"`, varName)).
+		in.Attr(":append-inner-icon", fmt.Sprintf(`vars.%s ? "mdi-eye" : "mdi-eye-off"`, varName)).
 			Attr(":type", fmt.Sprintf(`vars.%s ? "text" : "password"`, varName)).
 			Attr("@click:append-inner", fmt.Sprintf(`vars.%s = !vars.%s`, varName, varName)).
 			Attr(web.VAssign("vars", fmt.Sprintf(`{%s: false}`, varName))...)
@@ -120,7 +118,7 @@ func (vc *ViewCommon) PasswordInput(
 }
 
 // need to import zxcvbn.js
-func (vc *ViewCommon) PasswordInputWithStrengthMeter(in *VTextFieldBuilder, id string, val string) HTMLComponent {
+func (vc *ViewCommon) PasswordInputWithStrengthMeter(in *vx.VXFieldBuilder, id string, val string) HTMLComponent {
 	in.Attr("v-model", fmt.Sprintf(`form.%s`, id))
 	return Components(
 		in,
@@ -144,8 +142,7 @@ func (vc *ViewCommon) FormSubmitBtn(
 		Color("primary").
 		Block(true).
 		Size(SizeLarge).
-		Attr("type", "submit").
-		Class("mt-6")
+		Attr("type", "submit")
 }
 
 // requirements:

@@ -11,21 +11,21 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/qor5/admin/v3/media/base"
-	"github.com/qor5/admin/v3/media/media_library"
-	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
-	"github.com/qor5/x/v3/perm"
 	"github.com/qor5/x/v3/ui/cropper"
 	"github.com/qor5/x/v3/ui/fileicons"
 	. "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/media/base"
+	"github.com/qor5/admin/v3/media/media_library"
+	"github.com/qor5/admin/v3/presets"
 )
 
 type MediaBoxConfigKey int
@@ -50,8 +50,6 @@ func AutoMigrate(db *gorm.DB) (err error) {
 }
 
 func configure(b *presets.Builder, mb *Builder, db *gorm.DB) {
-	mb.permVerifier = perm.NewVerifier("media_library", b.GetPermission())
-
 	b.ExtraAsset("/cropper.js", "text/javascript", cropper.JSComponentsPack())
 	b.ExtraAsset("/cropper.css", "text/css", cropper.CSSComponentsPack())
 
@@ -91,7 +89,8 @@ func MediaBoxComponentFunc(db *gorm.DB, readonly bool) presets.FieldComponentFun
 			Label(field.Label).
 			Config(cfg).
 			Disabled(field.Disabled).
-			Readonly(readonly)
+			Readonly(readonly).
+			ErrorMessages(field.Errors...)
 	}
 }
 
@@ -115,13 +114,14 @@ func MediaBoxSetterFunc(db *gorm.DB) presets.FieldSetterFunc {
 }
 
 type QMediaBoxBuilder struct {
-	fieldName string
-	label     string
-	value     *media_library.MediaBox
-	config    *media_library.MediaBoxConfig
-	db        *gorm.DB
-	disabled  bool
-	readonly  bool
+	fieldName     string
+	label         string
+	value         *media_library.MediaBox
+	config        *media_library.MediaBoxConfig
+	db            *gorm.DB
+	disabled      bool
+	readonly      bool
+	errorMessages []string
 }
 
 func QMediaBox(db *gorm.DB) (r *QMediaBoxBuilder) {
@@ -161,8 +161,13 @@ func (b *QMediaBoxBuilder) Config(v *media_library.MediaBoxConfig) (r *QMediaBox
 	return b
 }
 
+func (b *QMediaBoxBuilder) ErrorMessages(v ...string) (r *QMediaBoxBuilder) {
+	b.errorMessages = v
+	return b
+}
+
 func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) {
-	if len(b.fieldName) == 0 {
+	if b.fieldName == "" {
 		panic("FieldName required")
 	}
 	if b.value == nil {
@@ -182,9 +187,18 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 				mediaBoxThumbnails(ctx, b.value, b.fieldName, b.config, b.disabled, b.readonly),
 			).Name(mediaBoxThumbnailsPortalName(b.fieldName)),
 			web.Portal().Name(portalName),
-		).Class("pb-4").
-			Rounded(true).
-			Attr(web.VAssign("vars", `{showFileChooser: false}`)...),
+			h.Iff(len(b.errorMessages) > 0, func() h.HTMLComponent {
+				var compos []h.HTMLComponent
+				for _, errMsg := range b.errorMessages {
+					compos = append(compos, h.Div().Attr("v-pre", true).Text(errMsg))
+				}
+				return h.Div().Class("d-flex flex-column ps-4 py-1 ga-1 text-caption").
+					ClassIf("text-error", len(b.errorMessages) > 0 && !b.disabled).
+					ClassIf("text-grey", b.disabled).Children(compos...)
+			}),
+		).
+			Class("bg-transparent").
+			Rounded(true),
 	).MarshalHTML(c)
 }
 
@@ -193,13 +207,13 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 ) h.HTMLComponent {
 	size := cfg.Sizes[thumb]
 	fileSize := f.FileSizes[thumb]
-	url := f.URL(thumb)
+	url := f.URLNoCached(thumb)
 	if thumb == base.DefaultSizeKey {
-		url = f.URL()
+		url = f.URLNoCached()
 	}
 	card := VCard(
 		h.If(base.IsImageFormat(f.FileName),
-			VImg().Src(fmt.Sprintf("%s?%d", url, time.Now().UnixNano())).Height(150),
+			VImg().Src(url).Cover(true).Height(150),
 		).Else(
 			h.Div(
 				fileThumb(f.FileName),
@@ -226,7 +240,7 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 
 func fileThumb(filename string) h.HTMLComponent {
 	return h.Div(
-		fileicons.Icon(path.Ext(filename)[1:]).Attr("height", "150").Class("pt-4"),
+		fileicons.Icon(path.Ext(filename)[1:]).Attr("height", cardTitleHeight).Class("pt-4"),
 	).Class("d-flex align-center justify-center")
 }
 
@@ -244,35 +258,24 @@ func deleteConfirmation(mb *Builder) web.EventFunc {
 			presets.ShowMessage(&r, "failed", ColorWarning)
 			return
 		} else if len(ids) == 1 {
-			message = pMsgr.DeleteConfirmationText(ids[0])
+			message = pMsgr.DeleteConfirmationText
 		} else {
 			message = msgr.DeleteObjects(len(ids))
 		}
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: deleteConfirmPortalName(field),
-			Body: VDialog(
-				VCard(
-					VCardTitle(h.Text(message)),
-					VCardActions(
-						VSpacer(),
-						VBtn(pMsgr.Cancel).
-							Variant(VariantFlat).
-							Class("ml-2").
-							On("click", "vars.mediaLibrary_deleteConfirmation = false"),
-
-						VBtn(pMsgr.Delete).
-							Color(ColorPrimary).
-							Variant(VariantFlat).
-							Theme(ThemeDark).
-							Attr("@click", web.Plaid().
-								EventFunc(DoDeleteEvent).
-								Queries(ctx.Queries()).
-								Go()),
-					),
-				),
-			).MaxWidth("600px").
+			Body: vx.VXDialog(
+				h.Span(message),
+			).
+				Title(pMsgr.DialogTitleDefault).
 				Attr("v-model", "vars.mediaLibrary_deleteConfirmation").
-				Attr(web.VAssign("vars", `{mediaLibrary_deleteConfirmation: false}`)...),
+				Attr(web.VAssign("vars", `{mediaLibrary_deleteConfirmation: false}`)...).
+				CancelText(pMsgr.Cancel).
+				OkText(pMsgr.Delete).
+				Attr("@click:ok", web.Plaid().
+					EventFunc(DoDeleteEvent).
+					Queries(ctx.Queries()).
+					Go()),
 		})
 
 		r.RunScript = "setTimeout(function(){ vars.mediaLibrary_deleteConfirmation = true }, 100)"
@@ -352,17 +355,22 @@ func doDelete(mb *Builder) web.EventFunc {
 	}
 }
 
+func ChooseFileButtonID(field string) string {
+	return fmt.Sprintf("btnChooseFile_%s", field)
+}
+
 func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox, field string, cfg *media_library.MediaBoxConfig, disabled, readonly bool) h.HTMLComponent {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
-	c := VContainer().Fluid(true)
+	c := VContainer().Class("media-box-wrap").Fluid(true)
 	if cfg.BackgroundColor != "" {
 		c.Attr("style", fmt.Sprintf("background-color: %s;", cfg.BackgroundColor))
 	}
 	// button
 	btnRow := VRow(
 		VBtn(msgr.ChooseFile).
-			Variant(VariantTonal).Color(ColorPrimary).Size(SizeXSmall).PrependIcon("mdi-upload-outline").
-			Class("rounded-sm").
+			Attr("id", ChooseFileButtonID(field)).
+			Variant(VariantTonal).Color(ColorPrimary).Size(SizeSmall).PrependIcon("mdi-tray-arrow-up").
+			Class("rounded img-upload-btn").
 			Attr("style", "text-transform: none;").
 			Attr("@click", web.Plaid().EventFunc(OpenFileChooserEvent).
 				Query(ParamField, field).
@@ -375,13 +383,14 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 		(cfg.SimpleIMGURL && mediaBox != nil && mediaBox.Url != "") {
 		btnRow.AppendChildren(
 			VBtn(msgr.Delete).
-				Variant(VariantTonal).Color(ColorError).Size(SizeXSmall).PrependIcon("mdi-delete-outline").
-				Class("rounded-sm ml-2").
+				Variant(VariantTonal).Color(ColorError).Size(SizeSmall).PrependIcon("mdi-delete-outline").
+				Class("rounded ml-2 img-delete-btn").
 				Attr("style", "text-transform: none").
 				Attr("@click", web.Plaid().
 					EventFunc(deleteFileEvent).
 					Query(ParamField, field).
 					Query(ParamCfg, h.JSONString(cfg)).
+					Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
 					Go(),
 				).Disabled(disabled),
 		)
@@ -395,10 +404,10 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 
 		fieldName := fmt.Sprintf("%s.Description", field)
 		value := ctx.Param(fieldName)
-		if len(value) == 0 {
+		if value == "" {
 			value = mediaBox.Description
 		}
-		if !(len(value) == 0 && readonly) {
+		if !(value == "" && readonly) {
 			c.AppendChildren(
 				VRow(
 					VCol(
@@ -406,12 +415,9 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 							readonly,
 							h.Span(value),
 						).Else(
-							VTextField().
+							vx.VXField().
 								Attr(web.VField(fieldName, value)...).
 								Placeholder(msgr.DescriptionForAccessibility).
-								Density(DensityCompact).
-								HideDetails(true).
-								Variant(VariantOutlined).
 								Disabled(disabled),
 						),
 					).Cols(12).Class("pl-0 pt-0"),
@@ -441,12 +447,12 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 }
 
 func appendMediaBoxThumb(cfg *media_library.MediaBoxConfig, msgr *Messages, mediaBox *media_library.MediaBox, field string, disabled bool) h.HTMLComponent {
-	row := VRow()
+	row := VRow().Class("mt-n1")
 	if len(cfg.Sizes) == 0 {
 		row.AppendChildren(
 			VCol(
 				mediaBoxThumb(msgr, cfg, mediaBox, field, base.DefaultSizeKey, disabled),
-			).Cols(6).Sm(4).Class("pl-0"),
+			).Cols(6).Sm(4).Class("pl-0 media-box-thumb"),
 		)
 	} else {
 		var keys []string
@@ -514,7 +520,7 @@ func deleteFileField() web.EventFunc {
 
 func stringToCfg(v string) *media_library.MediaBoxConfig {
 	var cfg media_library.MediaBoxConfig
-	if len(v) == 0 {
+	if v == "" {
 		return &cfg
 	}
 	err := json.Unmarshal([]byte(v), &cfg)
@@ -581,6 +587,7 @@ func updateDescription(mb *Builder) web.EventFunc {
 		return
 	}
 }
+
 func rename(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var (
@@ -588,7 +595,7 @@ func rename(mb *Builder) web.EventFunc {
 			msgr = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 		)
 		obj := wrapFirst(mb, ctx, &r)
-		if err = mb.updateDescIsAllowed(ctx.R, &obj); err != nil {
+		if err = mb.updateNameIsAllowed(ctx.R, &obj); err != nil {
 			return
 		}
 		if obj.Folder {
@@ -616,6 +623,9 @@ func createFolder(mb *Builder) web.EventFunc {
 			parentID = ctx.ParamAsInt(ParamParentID)
 			m        = &media_library.MediaLibrary{Folder: true, ParentId: uint(parentID)}
 		)
+		if err = mb.newFolderIsAllowed(ctx.R); err != nil {
+			return
+		}
 		if dirName == "" {
 			presets.ShowMessage(&r, "folder name can`t be empty", ColorWarning)
 			return
@@ -627,7 +637,7 @@ func createFolder(mb *Builder) web.EventFunc {
 		}
 		m.UserID = uid
 		m.ParentId = uint(parentID)
-		if err = mb.db.Save(&m).Error; err != nil {
+		if err = mb.saverFunc(mb.db, m, "", ctx); err != nil {
 			return
 		}
 		r.RunScript = web.Plaid().
@@ -664,8 +674,8 @@ func wrapFirst(mb *Builder, ctx *web.EventContext, r *web.EventResponse) (obj me
 	}
 	return
 }
-func renameDialog(mb *Builder) web.EventFunc {
 
+func renameDialog(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var (
 			obj   = wrapFirst(mb, ctx, &r)
@@ -681,35 +691,22 @@ func renameDialog(mb *Builder) web.EventFunc {
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: renameDialogPortalName,
 			Body: web.Scope(
-				VDialog(
-					VCard(
-						web.Slot(h.Text(msgr.Rename)).Name("title"),
-						web.Slot(
-							VSpacer(),
-							VBtn("").Icon("mdi-close").
-								Variant(VariantText).Attr("@click", "dialogLocals.show=false"),
-						).Name(VSlotAppend),
-						VTextField().Variant(FieldVariantUnderlined).
-							Class("px-6").
-							Label(msgr.Name).Attr(web.VField(ParamName, fileName)...),
-						VCardActions(
-							VSpacer(),
-							VBtn(pMsgr.Cancel).Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
-							VBtn(pMsgr.OK).Color(ColorPrimary).
-								Attr(":disabled", fmt.Sprintf("!form.%s", ParamName)).
-								Attr("@click",
-									web.Plaid().EventFunc(RenameEvent).
-										Queries(ctx.Queries()).
-										Go(),
-								),
-						),
-					),
-				).MaxWidth(300).Attr("v-model", "dialogLocals.show"),
+				vx.VXDialog(
+					vx.VXField().Label(msgr.Name).Attr(web.VField(ParamName, fileName)...),
+				).
+					Attr("v-model", "dialogLocals.show").
+					Title(msgr.Rename).
+					CancelText(pMsgr.Cancel).
+					Width(300).
+					OkText(pMsgr.OK).
+					Attr(":disable-ok", fmt.Sprintf("!form.%s", ParamName)).
+					Attr("@click:ok", web.Plaid().EventFunc(RenameEvent).Queries(ctx.Queries()).Go()),
 			).VSlot("{locals:dialogLocals}").Init("{show:true}"),
 		})
 		return
 	}
 }
+
 func newFolderDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 	r.RunScript = `vars.searchMsg=""`
 	var (
@@ -720,32 +717,20 @@ func newFolderDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: newFolderDialogPortalName,
 		Body: web.Scope(
-			VDialog(
-				VCard(
-					web.Slot(h.Text(msgr.NewFolder)).Name("title"),
-					web.Slot(
-						VSpacer(),
-						VBtn("").Icon("mdi-close").
-							Variant(VariantText).Attr("@click", "dialogLocals.show=false"),
-					).Name(VSlotAppend),
-					VTextField().Variant(FieldVariantUnderlined).
-						Class("px-6").
-						Label(msgr.Name).Attr(web.VField(ParamName, ctx.Param(ParamName))...),
-					VCardActions(
-						VSpacer(),
-						VBtn(pMsgr.Cancel).Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
-						VBtn(pMsgr.OK).Color(ColorPrimary).Attr("@click",
-							web.Plaid().EventFunc(CreateFolderEvent).
-								Queries(ctx.Queries()).
-								Go(),
-						),
-					),
-				),
-			).MaxWidth(300).Attr("v-model", "dialogLocals.show"),
+			vx.VXDialog(
+				vx.VXField().Label(msgr.Name).Attr(web.VField(ParamName, ctx.Param(ParamName))...),
+			).
+				Attr("v-model", "dialogLocals.show").
+				Title(msgr.NewFolder).
+				Width(300).
+				CancelText(pMsgr.Cancel).
+				OkText(pMsgr.OK).
+				Attr("@click:ok", web.Plaid().EventFunc(CreateFolderEvent).Queries(ctx.Queries()).Go()),
 		).VSlot("{locals:dialogLocals}").Init("{show:true}"),
 	})
 	return
 }
+
 func updateDescriptionDialog(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		obj := wrapFirst(mb, ctx, &r)
@@ -756,28 +741,15 @@ func updateDescriptionDialog(mb *Builder) web.EventFunc {
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: updateDescriptionDialogPortalName,
 			Body: web.Scope(
-				VDialog(
-					VCard(
-						web.Slot(h.Text(msgr.UpdateDescription)).Name("title"),
-						web.Slot(
-							VSpacer(),
-							VBtn("").Icon("mdi-close").
-								Variant(VariantText).Attr("@click", "dialogLocals.show=false"),
-						).Name(VSlotAppend),
-						VTextField().Variant(FieldVariantUnderlined).
-							Class("px-6").
-							Label("Description").Attr(web.VField(ParamCurrentDescription, obj.File.Description)...),
-						VCardActions(
-							VSpacer(),
-							VBtn(pMsgr.Cancel).Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
-							VBtn(pMsgr.OK).Color(ColorPrimary).Attr("@click",
-								web.Plaid().EventFunc(UpdateDescriptionEvent).
-									Queries(ctx.Queries()).
-									Go(),
-							),
-						),
-					),
-				).MaxWidth(300).Attr("v-model", "dialogLocals.show"),
+				vx.VXDialog(
+					vx.VXField().Label(msgr.UpdateDescriptionTextFieldPlaceholder).Attr(web.VField(ParamCurrentDescription, obj.File.Description)...),
+				).
+					Attr("v-model", "dialogLocals.show").
+					Title(msgr.UpdateDescription).
+					Width(300).
+					CancelText(pMsgr.Cancel).
+					OkText(pMsgr.OK).
+					Attr("@click:ok", web.Plaid().EventFunc(UpdateDescriptionEvent).Queries(ctx.Queries()).Go()),
 			).VSlot("{locals:dialogLocals}").Init("{show:true}"),
 		})
 		return
@@ -794,34 +766,27 @@ func moveToFolderDialog(mb *Builder) web.EventFunc {
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: moveToFolderDialogPortalName,
 			Body: web.Scope(
-				VDialog(
-					VCard(
-						web.Slot(h.Text(msgr.ChooseFolder)).Name("title"),
-						web.Slot(
-							VSpacer(),
-							VBtn("").Icon("mdi-close").
-								Variant(VariantText).Attr("@click", "dialogLocals.show=false"),
-						).Name(VSlotAppend),
-						VCardItem(
-							VCard(
-								VList(
-									h.Components(folderGroupsComponents(db, ctx, -1)...),
-								).ActiveColor(ColorPrimary).BgColor(ColorGreyLighten5),
-							).Color(ColorGreyLighten5).Height(340).Class("overflow-auto"),
-						),
-
-						VCardActions(
-							VSpacer(),
-							VBtn(pMsgr.Cancel).Color(ColorSecondary).Attr("@click", "dialogLocals.show=false"),
-							VBtn(pMsgr.OK).Color(ColorPrimary).
-								Attr("@click", web.Plaid().
-									EventFunc(MoveToFolderEvent).
-									Queries(ctx.Queries()).
-									Query(ParamParentID, web.Var(fmt.Sprintf("form.%s", ParamSelectFolderID))).
-									Go()),
-						),
-					).Height(571).Width(658).Class("pa-6"),
-				).MaxWidth(658).Attr("v-model", "dialogLocals.show"),
+				vx.VXDialog(
+					VCardItem(
+						VCard(
+							VList(
+								h.Components(folderGroupsComponents(db, ctx, -1)...),
+							).ActiveColor(ColorPrimary).BgColor(ColorGreyLighten5),
+						).Color(ColorGreyLighten5).Height(340).Class("overflow-auto"),
+					),
+				).
+					Attr("v-model", "dialogLocals.show").
+					Title(msgr.ChooseFolder).
+					Size("large").
+					Width(658).
+					ContentHeight(571).
+					CancelText(pMsgr.Cancel).
+					OkText(pMsgr.OK).
+					Attr("@click:ok", web.Plaid().
+						EventFunc(MoveToFolderEvent).
+						Queries(ctx.Queries()).
+						Query(ParamParentID, web.Var(fmt.Sprintf("form.%s", ParamSelectFolderID))).
+						Go()),
 			).VSlot("{locals:dialogLocals,form}").Init("{show:true}").FormInit(fmt.Sprintf("{%s:0}", ParamSelectFolderID)),
 		})
 		return
@@ -837,7 +802,9 @@ func moveToFolder(mb *Builder) web.EventFunc {
 			selectIDs      = strings.Split(ctx.Param(ParamSelectIDS), ",")
 			msgr           = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 		)
-
+		if err = mb.moveToIsAllowed(ctx.R); err != nil {
+			return
+		}
 		queries := ctx.Queries()
 		delete(queries, searchKeywordName(field))
 		var ids []uint
@@ -858,7 +825,7 @@ func moveToFolder(mb *Builder) web.EventFunc {
 		}
 		r.RunScript = web.Plaid().
 			EventFunc(ImageJumpPageEvent).
-			AfterScript(`vars.searchMsg=""`).
+			AfterScript(fmt.Sprintf(`vars.searchMsg="";"vars.media_parent_id=%v"`, selectFolderID)).
 			Queries(queries).
 			Query(ParamSelectIDS, "").
 			Query(ParamParentID, selectFolderID).
@@ -900,7 +867,7 @@ func folderGroupsComponents(db *gorm.DB, ctx *web.EventContext, parentID int) (i
 			Folder: true,
 		}
 		item.ID = 0
-		item.File.FileName = "Root Director"
+		item.File.FileName = "Root Directory"
 		records = append(records, item)
 	} else {
 		db.Where("parent_id = ?  and folder = true", parentID).Find(&records)
@@ -941,8 +908,7 @@ func folderGroupsComponents(db *gorm.DB, ctx *web.EventContext, parentID int) (i
 	return
 }
 
-func CopyMediaLiMediaLibrary(db *gorm.DB, id int) (m media_library.MediaLibrary, err error) {
-
+func CopyMediaLiMediaLibrary(mb *Builder, db *gorm.DB, id int, ctx *web.EventContext) (m media_library.MediaLibrary, err error) {
 	if err = db.First(&m, id).Error; err != nil {
 		return
 	}
@@ -950,7 +916,6 @@ func CopyMediaLiMediaLibrary(db *gorm.DB, id int) (m media_library.MediaLibrary,
 	if !m.Folder {
 		var fi base.FileInterface
 		fi, err = m.File.Retrieve(m.File.URL())
-
 		if err != nil {
 			return
 		}
@@ -967,7 +932,7 @@ func CopyMediaLiMediaLibrary(db *gorm.DB, id int) (m media_library.MediaLibrary,
 		}
 	}
 	m.Model = gorm.Model{ID: 0}
-	err = base.SaveUploadAndCropImage(db, &m)
+	err = mb.saverFunc(db, &m, "", ctx)
 	return
 }
 
@@ -976,8 +941,10 @@ func copyFile(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		id := ctx.ParamAsInt(ParamMediaIDS)
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
-
-		if _, err = CopyMediaLiMediaLibrary(db, id); err != nil {
+		if err = mb.copyIsAllowed(ctx.R); err != nil {
+			return
+		}
+		if _, err = CopyMediaLiMediaLibrary(mb, db, id, ctx); err != nil {
 			return
 		}
 		web.AppendRunScripts(&r,

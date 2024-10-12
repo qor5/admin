@@ -65,6 +65,12 @@ type Category struct {
 }
 
 func ListingExample(b *presets.Builder, db *gorm.DB) http.Handler {
+	return listingExample(b, db, nil)
+}
+
+func listingExample(b *presets.Builder, db *gorm.DB, customize func(mb *presets.ModelBuilder)) http.Handler {
+	db.AutoMigrate(&Post{}, &Category{})
+
 	// Setup the project name, ORM and Homepage
 	b.DataOperator(gorm2op.DataOperator(db))
 
@@ -73,9 +79,9 @@ func ListingExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	postModelBuilder := b.Model(&Post{})
 	postModelBuilder.Listing("ID", "Title", "Body", "CategoryID", "VirtualField")
 
-	postModelBuilder.Listing().SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+	postModelBuilder.Listing().SearchFunc(func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 		qdb := db.Where("disabled != true")
-		return gorm2op.DataOperator(qdb).Search(model, params, ctx)
+		return gorm2op.DataOperator(qdb).Search(ctx, params)
 	})
 
 	rmn := postModelBuilder.Listing().RowMenu()
@@ -90,8 +96,6 @@ func ListingExample(b *presets.Builder, db *gorm.DB) http.Handler {
 				),
 			)
 		})
-	postModelBuilder.Listing().ActionsAsMenu(true)
-	postModelBuilder.Listing().Action("Action0")
 
 	postModelBuilder.Editing().Field("CategoryID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		categories := []Category{}
@@ -119,6 +123,10 @@ func ListingExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	postModelBuilder.Listing().Field("VirtualField").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return h.Td(h.Text("virtual field"))
 	})
+
+	if customize != nil {
+		customize(postModelBuilder)
+	}
 
 	b.Model(&Category{})
 	// Use m to customize the model, Or config more models here.

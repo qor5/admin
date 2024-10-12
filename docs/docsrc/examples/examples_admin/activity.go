@@ -14,6 +14,12 @@ import (
 )
 
 func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
+	return activityExample(b, db, func(mb *presets.ModelBuilder, ab *activity.Builder) {
+		b.Use(ab)
+	})
+}
+
+func activityExample(b *presets.Builder, db *gorm.DB, customize func(mb *presets.ModelBuilder, ab *activity.Builder)) http.Handler {
 	b.GetI18n().SupportLanguages(language.English, language.SimplifiedChinese, language.Japanese)
 
 	// @snippet_begin(NewActivitySample)
@@ -28,16 +34,17 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	}).
 		// TablePrefix("cms_"). // multitentant if needed
 		AutoMigrate()
-	b.Use(ab)
 
 	// @snippet_end
 
 	// @snippet_begin(ActivityRegisterPresetsModelsSample)
 	type WithActivityProduct struct {
 		gorm.Model
-		Title string
-		Code  string
-		Price float64
+		Title    string
+		Code     string
+		Approved bool
+		Edited   bool
+		Price    float64
 	}
 
 	err := db.AutoMigrate(&WithActivityProduct{})
@@ -49,11 +56,14 @@ func ActivityExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	defer func() { ab.RegisterModel(mb) }()
 	mb.Listing("Title", activity.ListFieldNotes, "Code", "Price")
 	dp := mb.Detailing("Content").Drawer(true)
-	dp.Section("Content").Editing("Title", "Code", "Price")
+	dp.Section("Content").Editing("Title", "Code", "Approved", "Edited", "Price")
 	dp.SidePanelFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		return ab.MustGetModelBuilder(mb).NewTimelineCompo(ctx, obj, "_side")
 	})
 	// @snippet_end
 
+	if customize != nil {
+		customize(mb, ab)
+	}
 	return b
 }

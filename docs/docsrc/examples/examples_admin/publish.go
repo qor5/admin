@@ -7,15 +7,16 @@ import (
 	"strings"
 
 	"github.com/qor/oss"
-	"github.com/qor5/admin/v3/activity"
-	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/gorm2op"
-	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/gorm2op"
+	"github.com/qor5/admin/v3/publish"
 )
 
 // @snippet_begin(PublishInjectModules)
@@ -62,12 +63,12 @@ var (
 	_ publish.UnPublishInterface = (*WithPublishProduct)(nil)
 )
 
-func (p *WithPublishProduct) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
+func (p *WithPublishProduct) GetPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
 	// create publish actions
 	return
 }
 
-func (p *WithPublishProduct) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
+func (p *WithPublishProduct) GetUnPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
 	// create unpublish actions
 	return
 }
@@ -82,7 +83,7 @@ func PublishExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	b.DataOperator(gorm2op.DataOperator(db))
 	b.Permission(
 		perm.New().Policies(
-			perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On("*:presets:with_publish_products:*"),
+			perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
 		),
 	)
 	// @snippet_begin(PublishConfigureView)
@@ -112,7 +113,7 @@ func PublishExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	b.Use(publisher)
 	mb.Use(publisher)
 	// run the publisher job if Schedule is used
-	go publish.RunPublisher(db, nil, publisher)
+	go publish.RunPublisher(context.Background(), db, nil, publisher)
 	// @snippet_end
 	return b
 }

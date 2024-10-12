@@ -3,6 +3,8 @@ package containers
 import (
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/presets"
+
 	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
 )
@@ -35,8 +37,12 @@ func RegisterVideoBannerContainer(pb *pagebuilder.Builder) {
 			return VideoBannerBody(v, input)
 		})
 	ed := vb.Model(&VideoBanner{}).Editing("AddTopSpace", "AddBottomSpace", "AnchorID", "Video", "BackgroundVideo", "MobileBackgroundVideo", "VideoCover", "MobileVideoCover", "Heading", "PopupText", "Text", "LinkText", "Link")
-	ed.Field("Heading").ComponentFunc(TextArea)
-	ed.Field("Text").ComponentFunc(TextArea)
+	ed.Field("Heading").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		return presets.TextField(obj, field, ctx).Type("textarea")
+	})
+	ed.Field("Text").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		return presets.TextField(obj, field, ctx).Type("textarea")
+	})
 }
 
 func VideoBannerBody(data *VideoBanner, input *pagebuilder.RenderInput) (body HTMLComponent) {

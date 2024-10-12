@@ -11,19 +11,12 @@ import (
 
 type SchedulePublishBuilder struct {
 	publisher *Builder
-	context   context.Context
 }
 
 func NewSchedulePublishBuilder(publisher *Builder) *SchedulePublishBuilder {
 	return &SchedulePublishBuilder{
 		publisher: publisher,
-		context:   context.Background(),
 	}
-}
-
-func (b *SchedulePublishBuilder) WithValue(key, val interface{}) *SchedulePublishBuilder {
-	b.context = context.WithValue(b.context, key, val)
-	return b
 }
 
 type SchedulePublisher interface {
@@ -32,14 +25,15 @@ type SchedulePublisher interface {
 
 // model is a empty struct
 // example: Product{}
-func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
+func (b *SchedulePublishBuilder) Run(ctx context.Context, model interface{}) (err error) {
+	reqCtx := b.publisher.WithContextValues(ctx)
+
 	var scope *gorm.DB
 	if m, ok := model.(SchedulePublisher); ok {
 		scope = m.SchedulePublisherDBScope(b.publisher.db)
 	} else {
 		scope = b.publisher.db
 	}
-	reqCtx := b.publisher.WithContextValues(context.Background())
 
 	// If model is Product{}
 	// Generate a records: []*Product{}
@@ -63,7 +57,7 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 				}
 			}
 			record := needUnpublishReflectValues.Index(i).Interface()
-			if err2 := b.publisher.UnPublish(record, reqCtx); err2 != nil {
+			if err2 := b.publisher.UnPublish(reqCtx, record); err2 != nil {
 				log.Printf("error: %s\n", err2)
 				err = multierror.Append(err, err2).ErrorOrNil()
 			}
@@ -79,19 +73,17 @@ func (b *SchedulePublishBuilder) Run(model interface{}) (err error) {
 		needPublishReflectValues := reflect.ValueOf(tempRecords)
 		for i := 0; i < needPublishReflectValues.Len(); i++ {
 			record := needPublishReflectValues.Index(i).Interface()
-			if err2 := b.publisher.Publish(record, reqCtx); err2 != nil {
+			if err2 := b.publisher.Publish(reqCtx, record); err2 != nil {
 				log.Printf("error: %s\n", err2)
 				err = multierror.Append(err, err2).ErrorOrNil()
 			}
 		}
 	}
 
-	{
-		for _, record := range unpublishAfterPublishRecords {
-			if err2 := b.publisher.UnPublish(record, reqCtx); err2 != nil {
-				log.Printf("error: %s\n", err2)
-				err = multierror.Append(err, err2).ErrorOrNil()
-			}
+	for _, record := range unpublishAfterPublishRecords {
+		if err2 := b.publisher.UnPublish(reqCtx, record); err2 != nil {
+			log.Printf("error: %s\n", err2)
+			err = multierror.Append(err, err2).ErrorOrNil()
 		}
 	}
 	return

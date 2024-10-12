@@ -6,3 +6,5 @@ coverage:
         target: auto #default
         threshold: 0%
         base: auto
+  ignore:
+    - docs

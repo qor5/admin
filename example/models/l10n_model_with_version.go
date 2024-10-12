@@ -39,11 +39,11 @@ func (lmv *L10nModelWithVersion) PrimaryColumnValuesBySlug(slug string) map[stri
 	}
 }
 
-func (lmv *L10nModelWithVersion) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
+func (lmv *L10nModelWithVersion) GetPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
 	return
 }
 
-func (lmv *L10nModelWithVersion) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {
+func (lmv *L10nModelWithVersion) GetUnPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
 	return
 }
 

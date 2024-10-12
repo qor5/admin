@@ -1,6 +1,7 @@
 package activity
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"reflect"
@@ -20,19 +21,25 @@ type User struct {
 	Avatar string
 }
 
+const DefaultMaxCountShowInTimeline = 10
+
 // @snippet_begin(ActivityBuilder)
 type Builder struct {
 	models            []*ModelBuilder // registered model builders
-	installedPresets  sync.Map        // installed presets builders for admin
 	calledAutoMigrate atomic.Bool     // auto migrate flag
 
-	dbPrimitive     *gorm.DB // primitive db
-	db              *gorm.DB // global db with table prefix scope
-	tablePrefix     string
-	logModelInstall presets.ModelInstallFunc // admin preset install
-	permPolicy      *perm.PolicyBuilder      // permission policy
-	currentUserFunc func(ctx context.Context) (*User, error)
-	findUsersFunc   func(ctx context.Context, ids []string) (map[string]*User, error)
+	dbPrimitive             *gorm.DB // primitive db
+	db                      *gorm.DB // global db with table prefix scope
+	tablePrefix             string
+	logModelInstall         presets.ModelInstallFunc // admin preset install
+	permPolicy              *perm.PolicyBuilder      // permission policy
+	currentUserFunc         func(ctx context.Context) (*User, error)
+	findUsersFunc           func(ctx context.Context, ids []string) (map[string]*User, error)
+	maxCountShowInTimeline  int
+	findLogsForTimelineFunc func(ctx context.Context, db *gorm.DB, modelName, modelKeys string) (logs []*ActivityLog, hasMore bool, err error)
+
+	mu               sync.RWMutex
+	logModelBuilders map[*presets.Builder]*presets.ModelBuilder
 }
 
 // @snippet_end
@@ -57,6 +64,16 @@ func (ab *Builder) FindUsersFunc(v func(ctx context.Context, ids []string) (map[
 	return ab
 }
 
+func (ab *Builder) MaxCountShowInTimeline(v int) *Builder {
+	ab.maxCountShowInTimeline = v
+	return ab
+}
+
+func (ab *Builder) FindLogsForTimelineFunc(v func(ctx context.Context, db *gorm.DB, modelName, modelKeys string) (logs []*ActivityLog, hasMore bool, err error)) *Builder {
+	ab.findLogsForTimelineFunc = v
+	return ab
+}
+
 func New(db *gorm.DB, currentUserFunc func(ctx context.Context) (*User, error)) *Builder {
 	ab := &Builder{
 		dbPrimitive:     db,
@@ -64,7 +81,9 @@ func New(db *gorm.DB, currentUserFunc func(ctx context.Context) (*User, error)) 
 		currentUserFunc: currentUserFunc,
 		permPolicy: perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).
 			ToDo(presets.PermUpdate, presets.PermDelete, presets.PermCreate).
-			On("*:activity_logs").On("*:activity_logs:*"),
+			On("*:presets:activity_logs").On("*:presets:activity_logs:*"),
+		maxCountShowInTimeline: DefaultMaxCountShowInTimeline,
+		logModelBuilders:       map[*presets.Builder]*presets.ModelBuilder{},
 	}
 	ab.logModelInstall = ab.defaultLogModelInstall
 	return ab
@@ -113,9 +132,8 @@ func (ab *Builder) RegisterModel(m any) (amb *ModelBuilder) {
 		ab:  ab,
 	}
 
-	primaryKeys := ParsePrimaryKeys(model)
-	amb.Keys(primaryKeys...)
-	amb.IgnoredFields(primaryKeys...)
+	amb.Keys(ParsePrimaryKeys(model, false)...)
+	amb.IgnoredFields(ParsePrimaryKeys(model, true)...)
 
 	if mb, ok := m.(*presets.ModelBuilder); ok {
 		amb.installPresetModelBuilder(mb)
@@ -201,6 +219,9 @@ func (ab *Builder) findUsers(ctx context.Context, ids []string) (map[string]*Use
 }
 
 func (ab *Builder) supplyUsers(ctx context.Context, logs []*ActivityLog) error {
+	if len(logs) == 0 {
+		return nil
+	}
 	userIDs := lo.Uniq(lo.Map(logs, func(log *ActivityLog, _ int) string {
 		return log.UserID
 	}))
@@ -216,16 +237,43 @@ func (ab *Builder) supplyUsers(ctx context.Context, logs []*ActivityLog) error {
 	return nil
 }
 
-func (ab *Builder) getActivityLogs(ctx context.Context, modelName, modelKeys string) ([]*ActivityLog, error) {
+func (ab *Builder) findLogsForTimeline(ctx context.Context, modelName, modelKeys string) ([]*ActivityLog, bool, error) {
+	if ab.findLogsForTimelineFunc != nil {
+		logs, hasMore, err := ab.findLogsForTimelineFunc(ctx, ab.db, modelName, modelKeys)
+		if err != nil {
+			return nil, false, err
+		}
+		userAllFilled := lo.EveryBy(logs, func(log *ActivityLog) bool {
+			return log.User.ID != ""
+		})
+		if userAllFilled {
+			return logs, hasMore, nil
+		}
+		if err := ab.supplyUsers(ctx, logs); err != nil {
+			return nil, false, err
+		}
+		return logs, hasMore, nil
+	}
+
+	return ab.getActivityLogs(ctx, modelName, modelKeys)
+}
+
+func (ab *Builder) getActivityLogs(ctx context.Context, modelName, modelKeys string) ([]*ActivityLog, bool, error) {
+	maxCountShowInTimeline := cmp.Or(ab.maxCountShowInTimeline, DefaultMaxCountShowInTimeline)
+
 	var logs []*ActivityLog
-	err := ab.db.Where("hidden = FALSE AND model_name = ? AND model_keys = ?", modelName, modelKeys).Order("created_at DESC").Find(&logs).Error
+	err := ab.db.Where("hidden = FALSE AND model_name = ? AND model_keys = ?", modelName, modelKeys).
+		Order("created_at DESC").Limit(maxCountShowInTimeline + 1).Find(&logs).Error
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	if err := ab.supplyUsers(ctx, logs); err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	return logs, nil
+	if len(logs) > maxCountShowInTimeline {
+		return logs[:maxCountShowInTimeline], true, nil
+	}
+	return logs, false, nil
 }
 
 func (ab *Builder) onlyModelBuilder(v any) (*ModelBuilder, error) {

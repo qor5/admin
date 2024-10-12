@@ -81,14 +81,11 @@ func DemoVuetifyLayout(in web.PageFunc) (out web.PageFunc) {
 }
 
 // @snippet_end
-
 func Mux(mux *http.ServeMux) http.Handler {
 	// @snippet_begin(ComponentsPackSample)
 	mux.Handle("/assets/main.js",
 		web.PacksHandler("text/javascript",
 			vuetifyx.JSComponentsPack(),
-			Vuetify(),
-			JSComponentsPack(),
 			web.JSComponentsPack(),
 		),
 	)
@@ -116,7 +113,7 @@ func Mux(mux *http.ServeMux) http.Handler {
 	// @snippet_end
 
 	// @snippet_begin(VuetifyComponentsPackSample)
-	HandleMaterialDesignIcons("", mux)
+	vuetifyx.HandleMaterialDesignIcons("", mux)
 	// @snippet_end
 
 	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {

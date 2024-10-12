@@ -6,17 +6,20 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/qor5/web/v3"
+	h "github.com/theplant/htmlgo"
+	"github.com/theplant/relay/cursor"
+	"golang.org/x/text/language"
+	"gorm.io/gorm"
+
+	"github.com/qor5/x/v3/i18n"
+	v "github.com/qor5/x/v3/ui/vuetify"
+	"github.com/qor5/x/v3/ui/vuetifyx"
+
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/presets/gorm2op"
-	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/i18n"
-	v "github.com/qor5/x/v3/ui/vuetify"
-	"github.com/qor5/x/v3/ui/vuetifyx"
-	h "github.com/theplant/htmlgo"
-	"golang.org/x/text/language"
-	"gorm.io/gorm"
 )
 
 type Customer struct {
@@ -79,6 +82,23 @@ func PresetsKeywordSearchOff(b *presets.Builder, db *gorm.DB) (
 
 // @snippet_begin(PresetsListingCustomizationFieldsSample)
 
+func PresetsRowMenuAction(b *presets.Builder, db *gorm.DB) (
+	mb *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	mb, cl, ce, dp = PresetsHelloWorld(b, db)
+	cl.KeywordSearchOff(true)
+	rmb := cl.RowMenu()
+
+	rmb.RowMenuItem("with-icon").Icon("mdi-close")
+	rmb.RowMenuItem("Delete").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
+		return nil
+	})
+	return
+}
+
 type Company struct {
 	ID   int
 	Name string
@@ -92,7 +112,8 @@ func PresetsListingCustomizationFields(b *presets.Builder, db *gorm.DB) (
 ) {
 	b.GetI18n().
 		SupportLanguages(language.English, language.SimplifiedChinese).
-		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN)
+		RegisterForModule(language.SimplifiedChinese, presets.ModelsI18nModuleKey, Messages_zh_CN).
+		RegisterForModule(language.English, presets.ModelsI18nModuleKey, Messages_en_US)
 
 	mb, cl, ce, dp = PresetsHelloWorld(b, db)
 
@@ -178,6 +199,18 @@ func PresetsListingCustomizationFields(b *presets.Builder, db *gorm.DB) (
 		return
 	})
 
+	gcm, err := cursor.NewGCM([]byte("0123456789abcdef0123456789abcdef"))
+	if err != nil {
+		panic(err)
+	}
+	gcmMiddleware := cursor.GCM[any](gcm)
+	cl.RelayPagination(
+		gorm2op.KeysetBasedPagination(true, gcmMiddleware),
+	)
+	comp.Listing().RelayPagination(
+		gorm2op.KeysetBasedPagination(true, gcmMiddleware),
+	)
+
 	return
 }
 
@@ -233,6 +266,13 @@ func PresetsListingCustomizationFilters(b *presets.Builder, db *gorm.DB) (
 				ItemType: vuetifyx.ItemTypeDatetimeRange,
 				// SQLCondition: `cast(strftime('%%s', created_at) as INTEGER) %s ?`,
 				SQLCondition: `created_at %s ?`,
+				DateOptions:  &[]vuetifyx.DateOption{{Label: "StartAt"}, {Label: "EndAt"}},
+
+				ValidateFunc: func(ctx *web.EventContext, vErr *web.ValidationErrors, it *vuetifyx.FilterItem) {
+					if it.ValueFrom >= it.ValueTo {
+						vErr.GlobalError("CreatedAt Error")
+					}
+				},
 			},
 			{
 				Key:      "approved",
@@ -240,6 +280,12 @@ func PresetsListingCustomizationFilters(b *presets.Builder, db *gorm.DB) (
 				ItemType: vuetifyx.ItemTypeDatetimeRange,
 				// SQLCondition: `cast(strftime('%%s', created_at) as INTEGER) %s ?`,
 				SQLCondition: `created_at %s ?`,
+				DateOptions:  &[]vuetifyx.DateOption{{Label: "Approved_Start_At", ClearText: "Cancel1"}, {Label: "Approved_End_At"}},
+				ValidateFunc: func(ctx *web.EventContext, vErr *web.ValidationErrors, it *vuetifyx.FilterItem) {
+					if it.ValueFrom >= it.ValueTo {
+						vErr.GlobalError("ApprovedAt Error")
+					}
+				},
 			},
 			{
 				Key:          "name",
@@ -373,10 +419,10 @@ func PresetsListingCustomizationSearcher(b *presets.Builder, db *gorm.DB) (
 ) {
 	b.DataOperator(gorm2op.DataOperator(db))
 	mb = b.Model(&Customer{})
-	mb.Listing().SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
+	mb.Listing().SearchFunc(func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 		// only display approved customers
 		qdb := db.Where("approved_at IS NOT NULL")
-		return gorm2op.DataOperator(qdb).Search(model, params, ctx)
+		return gorm2op.DataOperator(qdb).Search(ctx, params)
 	})
 	return
 }

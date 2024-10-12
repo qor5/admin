@@ -6,11 +6,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/qor5/web/v3"
+	"github.com/sunfmin/reflectutils"
+	"gorm.io/gorm"
+
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/seo"
-	"github.com/sunfmin/reflectutils"
-	"gorm.io/gorm"
 )
 
 type Page struct {
@@ -65,14 +67,14 @@ func primarySlugWithoutVersion(v interface{}) string {
 
 func primaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
-	if len(segs) > 3 {
-		panic("wrong slug")
-	}
 	if len(segs) == 2 {
 		return map[string]string{
 			"id":                segs[0],
 			publish.SlugVersion: segs[1],
 		}
+	}
+	if len(segs) != 3 {
+		panic("wrong slug")
 	}
 	return map[string]string{
 		"id":                segs[0],
@@ -83,13 +85,13 @@ func primaryColumnValuesBySlug(slug string) map[string]string {
 
 func primaryColumnValuesBySlugWithoutVersion(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
-	if len(segs) > 2 {
-		panic("wrong slug")
-	}
 	if len(segs) == 1 {
 		return map[string]string{
 			"id": segs[0],
 		}
+	}
+	if len(segs) != 2 {
+		panic("wrong slug")
 	}
 	return map[string]string{
 		"id":                segs[0],
@@ -193,16 +195,26 @@ func (*DemoContainer) TableName() string {
 	return "page_builder_demo_containers"
 }
 
-type Template struct {
-	gorm.Model
-	Name        string
-	Description string
+type (
+	Template struct {
+		gorm.Model
+		Name        string
+		Description string
 
-	l10n.Locale
-}
+		l10n.Locale
+	}
+)
 
 func (t *Template) GetID() uint {
 	return t.ID
+}
+
+func (t *Template) GetName(_ *web.EventContext) string {
+	return t.Name
+}
+
+func (t *Template) GetDescription(_ *web.EventContext) string {
+	return t.Description
 }
 
 func (t *Template) PrimarySlug() string {
@@ -215,25 +227,6 @@ func (t *Template) PrimaryColumnValuesBySlug(slug string) map[string]string {
 
 func (*Template) TableName() string {
 	return "page_builder_templates"
-}
-
-const templateVersion = "tpl"
-
-func (t *Template) Page() *Page {
-	return &Page{
-		Model: t.Model,
-		Title: t.Name,
-		Slug:  "",
-		Status: publish.Status{
-			Status:    publish.StatusDraft,
-			OnlineUrl: "",
-		},
-		Schedule: publish.Schedule{},
-		Version: publish.Version{
-			Version: templateVersion,
-		},
-		Locale: t.Locale,
-	}
 }
 
 type (

@@ -124,7 +124,7 @@ func flowPublish_Step00_Event_presets_DetailingDrawer(t *testing.T, f *FlowPubli
 	assert.Len(t, resp.UpdatePortals, 1)
 	assert.Equal(t, "presets_RightDrawerPortalName", resp.UpdatePortals[0].Name)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, testflow.RemoveTime(`setTimeout(function(){ vars.presetsRightDrawer = true }, 100)`), testflow.RemoveTime(resp.RunScript))
+	assert.Equal(t, testflow.RemoveTime(`setTimeout(function(){ vars.presetsRightDrawer = true,vars.confirmDrawerLeave=false,vars.presetsDataChanged = {} }, 100)`), testflow.RemoveTime(resp.RunScript))
 
 	testflow.Validate(t, w, r,
 		testflow.OpenRightDrawer("WithPublishProduct "+f.ID),
@@ -152,7 +152,7 @@ func flowPublish_Step01_Event_publish_EventPublish(t *testing.T, f *FlowPublish)
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, testflow.RemoveTime(`vars.presetsMessage = { show: true, message: "Successfully Publish", color: "success"}; plaid().vars(vars).locals(locals).form(form).mergeQuery(true).go()`), testflow.RemoveTime(resp.RunScript))
+	assert.Equal(t, testflow.RemoveTime(`plaid().vars(vars).locals(locals).form(form).mergeQuery(true).go().then(function(r){ vars.presetsMessage = { show: true, message: "Successfully Publish", color: "success"} })`), testflow.RemoveTime(resp.RunScript))
 
 	return testflow.NewThen(t, w, r)
 }
@@ -177,7 +177,7 @@ func flowPublish_Step02_Event_presets_DetailingDrawer(t *testing.T, f *FlowPubli
 	assert.Len(t, resp.UpdatePortals, 1)
 	assert.Equal(t, "presets_RightDrawerPortalName", resp.UpdatePortals[0].Name)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, testflow.RemoveTime(`setTimeout(function(){ vars.presetsRightDrawer = true }, 100)`), testflow.RemoveTime(resp.RunScript))
+	assert.Equal(t, testflow.RemoveTime(`setTimeout(function(){ vars.presetsRightDrawer = true,vars.confirmDrawerLeave=false,vars.presetsDataChanged = {} }, 100)`), testflow.RemoveTime(resp.RunScript))
 
 	testflow.Validate(t, w, r,
 		testflow.OpenRightDrawer("WithPublishProduct "+f.ID),
@@ -205,7 +205,7 @@ func flowPublish_Step03_Event_publish_EventRepublish(t *testing.T, f *FlowPublis
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, testflow.RemoveTime(`vars.presetsMessage = { show: true, message: "Successfully Publish", color: "success"}; plaid().vars(vars).locals(locals).form(form).mergeQuery(true).go()`), testflow.RemoveTime(resp.RunScript))
+	assert.Equal(t, testflow.RemoveTime(`plaid().vars(vars).locals(locals).form(form).mergeQuery(true).go().then(function(r){ vars.presetsMessage = { show: true, message: "Successfully Publish", color: "success"} })`), testflow.RemoveTime(resp.RunScript))
 
 	return testflow.NewThen(t, w, r)
 }
@@ -230,7 +230,7 @@ func flowPublish_Step04_Event_presets_DetailingDrawer(t *testing.T, f *FlowPubli
 	assert.Len(t, resp.UpdatePortals, 1)
 	assert.Equal(t, "presets_RightDrawerPortalName", resp.UpdatePortals[0].Name)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, testflow.RemoveTime(`setTimeout(function(){ vars.presetsRightDrawer = true }, 100)`), testflow.RemoveTime(resp.RunScript))
+	assert.Equal(t, testflow.RemoveTime(`setTimeout(function(){ vars.presetsRightDrawer = true,vars.confirmDrawerLeave=false,vars.presetsDataChanged = {} }, 100)`), testflow.RemoveTime(resp.RunScript))
 
 	testflow.Validate(t, w, r,
 		testflow.OpenRightDrawer("WithPublishProduct "+f.ID),
@@ -258,7 +258,7 @@ func flowPublish_Step05_Event_publish_EventUnpublish(t *testing.T, f *FlowPublis
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, testflow.RemoveTime(`vars.presetsMessage = { show: true, message: "Successfully Unpublish", color: "success"}; plaid().vars(vars).locals(locals).form(form).mergeQuery(true).go()`), testflow.RemoveTime(resp.RunScript))
+	assert.Equal(t, testflow.RemoveTime(`plaid().vars(vars).locals(locals).form(form).mergeQuery(true).go().then(function(r){ vars.presetsMessage = { show: true, message: "Successfully Unpublish", color: "success"} })`), testflow.RemoveTime(resp.RunScript))
 
 	return testflow.NewThen(t, w, r)
 }
@@ -283,7 +283,7 @@ func flowPublish_Step06_Event_presets_DetailingDrawer(t *testing.T, f *FlowPubli
 	assert.Len(t, resp.UpdatePortals, 1)
 	assert.Equal(t, "presets_RightDrawerPortalName", resp.UpdatePortals[0].Name)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, testflow.RemoveTime(`setTimeout(function(){ vars.presetsRightDrawer = true }, 100)`), testflow.RemoveTime(resp.RunScript))
+	assert.Equal(t, testflow.RemoveTime(`setTimeout(function(){ vars.presetsRightDrawer = true,vars.confirmDrawerLeave=false,vars.presetsDataChanged = {} }, 100)`), testflow.RemoveTime(resp.RunScript))
 
 	testflow.Validate(t, w, r,
 		testflow.OpenRightDrawer("WithPublishProduct "+f.ID),

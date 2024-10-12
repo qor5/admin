@@ -146,7 +146,7 @@ func generateLines(body string) ([]string, error) {
 		return nil, errors.Wrapf(err, "UnmarshalResponseBody: %s", body)
 	}
 
-	lines := []string{}
+	var lines []string
 
 	assertions := generateAssertions("resp", resp, func(prefix string) bool {
 		return assertIgnoreRegexp.MatchString(prefix)
@@ -162,7 +162,7 @@ func generateLines(body string) ([]string, error) {
 	}
 
 	b := []byte(body)
-	vlines := []string{}
+	var vlines []string
 	for _, validator := range validators {
 		params, err := validator.ParseParams(b)
 		if err != nil {
@@ -188,9 +188,11 @@ func generateLines(body string) ([]string, error) {
 		vlines = append(vlines, fmt.Sprintf("%s(%s)", validator.Name, strings.Join(callParams, ",")))
 	}
 	if len(vlines) > 0 {
-		lines = append(lines, `testflow.Validate(t, w, r,`)
-		lines = append(lines, strings.Join(vlines, ",\n")+",")
-		lines = append(lines, ")")
+		lines = append(lines,
+			`testflow.Validate(t, w, r,`,
+			strings.Join(vlines, ",\n")+",",
+			")",
+		)
 	}
 
 	return lines, nil

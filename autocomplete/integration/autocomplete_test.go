@@ -3,11 +3,12 @@ package integration_test
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/qor5/admin/v3/autocomplete"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
 	"testing"
+
+	"github.com/qor5/admin/v3/autocomplete"
 
 	"github.com/theplant/gofixtures"
 	"github.com/theplant/testenv"
@@ -59,12 +60,11 @@ type (
 func Handler(db *gorm.DB) http.Handler {
 	_ = db.AutoMigrate(Category{}, User{})
 	mux := http.NewServeMux()
-	b := autocomplete.New().DB(db).Prefix("/complete")
-	b.Model(&Category{}).Columns("id", "name", "path")
+	b := autocomplete.New().DB(db).Prefix("/complete").AllowCrossOrigin(true)
+	b.Model(&Category{}).Columns("id", "name", "path").OrderBy("id desc")
 	b.Model(&User{}).Columns("id", "name", "age").SQLCondition("name ilike ?")
 	mux.Handle("/complete/", b)
-	b.Build()
-	return mux
+	return b
 }
 
 func runTest(t *testing.T, r *http.Request, handler http.Handler) *bytes.Buffer {
@@ -77,7 +77,6 @@ func runTest(t *testing.T, r *http.Request, handler http.Handler) *bytes.Buffer 
 	t.Log(w.Header())
 	t.Log(w.Body.String())
 	return w.Body
-
 }
 
 func TestCategory(t *testing.T) {
