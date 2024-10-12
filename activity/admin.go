@@ -79,27 +79,25 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 	})
 
 	// should use own DataOperator
-
 	op := gorm2op.DataOperator(ab.db)
-	dp.FetchFunc(func(obj any, id string, ctx *web.EventContext) (r any, err error) {
-		r, err = op.Fetch(obj, id, ctx)
-		if err != nil {
-			return r, err
-		}
-		log := r.(*ActivityLog)
-		if err := ab.supplyUsers(ctx.R.Context(), []*ActivityLog{log}); err != nil {
-			return nil, err
-		}
-		return log, nil
-	})
+	setupDetailing(dp, op, ab)
+	setupEditing(eb)
+	setupListing(lb, op, ab)
 
+	return nil
+}
+
+func setupEditing(eb *presets.EditingBuilder) {
 	eb.SaveFunc(func(obj any, id string, ctx *web.EventContext) error {
 		return errors.New("should not be used")
 	})
 	eb.DeleteFunc(func(obj any, id string, ctx *web.EventContext) error {
 		return errors.New("should not be used")
 	})
+}
 
+func setupListing(lb *presets.ListingBuilder, op *gorm2op.DataOperatorBuilder, ab *Builder) {
+	lb.RelayPagination(gorm2op.KeysetBasedPagination(true))
 	lb.SearchFunc(func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 		params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
 			Query: "hidden = ?",
@@ -115,12 +113,6 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		}
 		return result, nil
 	})
-
-	// use mb.LabelName handle this now
-	// lb.Title(func(evCtx *web.EventContext, style presets.ListingStyle, title string) (string, h.HTMLComponent, error) {
-	// 	msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
-	// 	return msgr.ActivityLogs, nil, nil
-	// })
 
 	lb.WrapColumns(presets.CustomizeColumnLabel(func(evCtx *web.EventContext) (map[string]string, error) {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
@@ -288,12 +280,20 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 		}
 		return filterTabs
 	})
+}
 
-	// use mb.LabelName handle this now
-	// dp.Title(func(evCtx *web.EventContext, obj any, style presets.DetailingStyle, title string) (string, h.HTMLComponent, error) {
-	// 	msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
-	// 	return msgr.ActivityLog, nil, nil
-	// })
+func setupDetailing(dp *presets.DetailingBuilder, op *gorm2op.DataOperatorBuilder, ab *Builder) {
+	dp.FetchFunc(func(obj any, id string, ctx *web.EventContext) (r any, err error) {
+		r, err = op.Fetch(obj, id, ctx)
+		if err != nil {
+			return r, err
+		}
+		log := r.(*ActivityLog)
+		if err := ab.supplyUsers(ctx.R.Context(), []*ActivityLog{log}); err != nil {
+			return nil, err
+		}
+		return log, nil
+	})
 
 	dp.Field("Detail").ComponentFunc(
 		func(obj any, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
@@ -372,7 +372,6 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 			return h.Div().Class("d-flex flex-column ga-3").Children(children...)
 		},
 	)
-	return nil
 }
 
 func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {

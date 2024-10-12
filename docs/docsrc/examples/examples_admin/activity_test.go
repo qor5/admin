@@ -554,7 +554,9 @@ func TestActivityAdmin(t *testing.T) {
 				"全部", "创建", "编辑", "删除", "备注",
 				"<vx-filter", "操作类型", "操作时间", "操作人", "操作对象", "</vx-filter>",
 				"日期时间", "操作者", "操作", "表的主键值", "菜单名", "表名",
+				"<div", "<v-btn", "mdi-chevron-left", "<v-btn", "mdi-chevron-right", "</div>",
 			},
+			ExpectPageBodyNotContains: []string{"v-pagination"},
 		},
 		{
 			Name:  "Update note",
@@ -564,23 +566,23 @@ func TestActivityAdmin(t *testing.T) {
 				req := multipartestutils.NewMultipartBuilder().
 					PageURL("/with-activity-products?__execute_event__=__dispatch_stateful_action__").
 					AddField("__action__", `
-{
-	"compo_type": "*activity.TimelineCompo",
-	"compo": {
-		"id": "with-activity-products:13",
-		"model_name": "WithActivityProduct",
-		"model_keys": "13",
-		"model_link": "/examples/activity-example/with-activity-products/13"
-	},
-	"injector": "__activity:with-activity-products__",
-	"sync_query": false,
-	"method": "UpdateNote",
-	"request": {
-		"log_id": 45,
-		"note": "A updated note"
-	}
-}
-`).
+		{
+			"compo_type": "*activity.TimelineCompo",
+			"compo": {
+				"id": "with-activity-products:13",
+				"model_name": "WithActivityProduct",
+				"model_keys": "13",
+				"model_link": "/examples/activity-example/with-activity-products/13"
+			},
+			"injector": "__activity:with-activity-products__",
+			"sync_query": false,
+			"method": "UpdateNote",
+			"request": {
+				"log_id": 45,
+				"note": "A updated note"
+			}
+		}
+		`).
 					BuildEventFuncRequest()
 				return req
 			},
