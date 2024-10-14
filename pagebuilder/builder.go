@@ -33,6 +33,7 @@ import (
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
+	"github.com/qor5/admin/v3/richeditor"
 	"github.com/qor5/admin/v3/seo"
 	"github.com/qor5/admin/v3/tiptap"
 	"github.com/qor5/admin/v3/utils"
@@ -344,6 +345,8 @@ func (b *Builder) installAsset(pb *presets.Builder) {
 		RegisterForModule(language.SimplifiedChinese, I18nPageBuilderKey, Messages_zh_CN).
 		RegisterForModule(language.Japanese, I18nPageBuilderKey, Messages_ja_JP)
 
+	pb.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
+	pb.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
 	pb.ExtraAsset("/tiptap.css", "text/css", tiptap.ThemeGithubCSSComponentsPack())
 }
 
