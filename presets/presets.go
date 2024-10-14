@@ -1038,7 +1038,9 @@ func (b *Builder) PlainLayout(in web.PageFunc) (out web.PageFunc) {
 				Height(2).
 				Color(b.progressBarColor),
 			h.Template(
-				VSnackbar(h.Text("{{vars.presetsMessage.message}}")).
+				VSnackbar(
+					h.Div().Style("white-space: pre-wrap").Text("{{vars.presetsMessage.message}}"),
+				).
 					Attr("v-model", "vars.presetsMessage.show").
 					Attr(":color", "vars.presetsMessage.color").
 					Timeout(2000).

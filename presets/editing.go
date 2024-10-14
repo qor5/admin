@@ -315,7 +315,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		if text != "" {
 			notice = web.Scope(
 				VSnackbar(
-					h.Text(text),
+					h.Div().Attr("v-pre", true).Style("white-space: pre-wrap").Text(text),
 				).Location("top").
 					Timeout(2000).
 					Color(color).

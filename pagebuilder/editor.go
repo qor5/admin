@@ -449,7 +449,9 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 			web.Portal().Name(dialogPortalName),
 			web.Portal().Name(addContainerDialogPortal),
 			h.Template(
-				VSnackbar(h.Text("{{vars.presetsMessage.message}}")).
+				VSnackbar(
+					h.Div().Style("white-space: pre-wrap").Text("{{vars.presetsMessage.message}}"),
+				).
 					Attr("v-model", "vars.presetsMessage.show").
 					Attr(":color", "vars.presetsMessage.color").
 					Timeout(1000),
