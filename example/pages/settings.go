@@ -3,10 +3,13 @@ package pages
 import (
 	"log"
 
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
+
 	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/media/base"
 	"github.com/qor5/admin/v3/media/media_library"
-	"github.com/qor5/admin/v3/richeditor"
+	"github.com/qor5/admin/v3/tiptap"
+
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/ui/cropper"
 	. "github.com/qor5/x/v3/ui/vuetify"
@@ -45,8 +48,10 @@ func Settings(db *gorm.DB) web.PageFunc {
 
 				VRow(
 					VCol(
-						richeditor.RichEditor(db, "Body").Plugins([]string{"alignment", "video", "table", "imageinsert"}).Value(`<p>Could you do an actual logo instead of a font I cant pay you? Can we try some other colors maybe? I cant pay you. You might wanna give it another shot, so make it pop and this is just a 5 minutes job the target audience makes and families aged zero and up will royalties in the company do instead of cash.</p>
-						<p>Jazz it up a little I was wondering if my cat could be placed over the logo in the flyer I have printed it out, but the animated gif is not moving I have printed it out, but the animated gif is not moving make it original. Can you make it stand out more? Make it original.</p>`).Label("Body").Placeholder("Place Holder"),
+						tiptap.TiptapEditor(db, "Body").
+							Extensions(vx.TiptapSlackLikeExtensions()).
+							Value(`<p>Could you do an actual logo instead of a font I cant pay you? Can we try some other colors maybe? I cant pay you. You might wanna give it another shot, so make it pop and this is just a 5 minutes job the target audience makes and families aged zero and up will royalties in the company do instead of cash.</p>
+						<p>Jazz it up a little I was wondering if my cat could be placed over the logo in the flyer I have printed it out, but the animated gif is not moving I have printed it out, but the animated gif is not moving make it original. Can you make it stand out more? Make it original.</p>`).Label("Body"),
 					),
 				),
 

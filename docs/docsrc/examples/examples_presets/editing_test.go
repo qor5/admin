@@ -4,13 +4,14 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/qor5/web/v3"
+	"github.com/qor5/web/v3/multipartestutils"
+	"github.com/theplant/gofixtures"
+
 	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
-	"github.com/qor5/web/v3"
-	"github.com/qor5/web/v3/multipartestutils"
-	"github.com/theplant/gofixtures"
 )
 
 var companyData = gofixtures.Data(gofixtures.Sql(`
@@ -106,7 +107,7 @@ func TestPresetsEditingCustomizationDescription(t *testing.T) {
 					PageURL("/customers?__execute_event__=presets_New").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`Customer Name`, `Customer Email`, `Description`, `redactor`},
+			ExpectPortalUpdate0ContainsInOrder: []string{`Customer Name`, `Customer Email`, `Description`, `vx-tiptap-editor`},
 		},
 		{
 			Name:  "do new",

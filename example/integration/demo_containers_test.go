@@ -204,7 +204,7 @@ func TestDemoContainer(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Font Color", "vx-select", "redactor"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Font Color", "vx-select", "vx-tiptap-editor"},
 		},
 		{
 			Name:  "WebHeader Edit View",

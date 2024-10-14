@@ -15,7 +15,7 @@ import (
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/pagebuilder/example/containers"
 	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/richeditor"
+	"github.com/qor5/admin/v3/tiptap"
 )
 
 var dbParamsString = osenv.Get("DB_PARAMS", "page builder example database connection string", "")
@@ -56,9 +56,7 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, b *presets.Builder) *p
 	if style != "" {
 		pb.PageStyle(h.RawHTML(style))
 	}
-	richeditor.Plugins = []string{"alignment", "table", "video", "imageinsert"}
-	pb.GetPresetsBuilder().ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
-	pb.GetPresetsBuilder().ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
+	pb.GetPresetsBuilder().ExtraAsset("/tiptap.css", "text/css", tiptap.ThemeGithubCSSComponentsPack())
 
 	fSys, _ := fs.Sub(containerImages, "assets/images")
 	imagePrefix := "/assets/images"

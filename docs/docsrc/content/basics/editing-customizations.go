@@ -1,13 +1,14 @@
 package basics
 
 import (
-	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_presets"
-	"github.com/qor5/admin/v3/docs/docsrc/generated"
-	"github.com/qor5/admin/v3/docs/docsrc/utils"
 	"github.com/qor5/web/v3/examples"
 	. "github.com/theplant/docgo"
 	"github.com/theplant/docgo/ch"
 	. "github.com/theplant/htmlgo"
+
+	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_presets"
+	"github.com/qor5/admin/v3/docs/docsrc/generated"
+	"github.com/qor5/admin/v3/docs/docsrc/utils"
 )
 
 var EditingCustomizations = Doc(
@@ -26,7 +27,7 @@ And configure the component func on the field:
 	utils.DemoWithSnippetLocation("Presets Editing Customization Description Field", examples.URLPathByFunc(examples_presets.PresetsEditingCustomizationDescription)+"/customers", generated.PresetsEditingCustomizationDescriptionSampleLocation),
 	Markdown(`
 - Added the redactor javascript and css component pack as an extra asset
-- Configure the description field to use the component func that returns the ~richeditor.RichEditor~ component
+- Configure the description field to use the component func that returns the ~tiptap.TipTapEditor~ component
 - Set the field name and value of the component
 `),
 	utils.Anchor(H2(""), "Configure field type for all models"),
