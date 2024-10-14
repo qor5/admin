@@ -12,7 +12,7 @@ plantbuild push ./plantbuild/build.jsonnet
 # https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#create-a-repository-dispatch-event
 
 build_json=$(plantbuild show ./plantbuild/build.jsonnet | jq -r .services)
-output_json='{"event_type": "deploy-docs-test"}'
+output_json='{"event_type": "deploy-test"}'
 for key in $(echo  "$build_json" | jq -r keys[]); do
   app_name=$(echo "$key" | sed 's/build_image_//')
   image=$( echo "$build_json" | jq -r --arg key "$key" '.[$key].image')
