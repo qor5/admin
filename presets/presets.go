@@ -941,7 +941,8 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				Color(b.progressBarColor),
 			h.Template(
 				VSnackbar(
-					h.Text("{{vars.presetsMessage.message}}")).
+					h.Div().Style("white-space: pre-wrap").Text("{{vars.presetsMessage.message}}"),
+				).
 					Attr("v-model", "vars.presetsMessage.show").
 					Attr(":color", "vars.presetsMessage.color").
 					Attr("style", "bottom: 48px;").
