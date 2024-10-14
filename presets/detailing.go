@@ -209,7 +209,7 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 	var notice h.HTMLComponent
 	if msg, ok := ctx.Flash.(string); ok {
 		notice = VSnackbar(
-			h.Div().Attr("v-pre", true).Style("white-space: pre-wrap").Text(msg),
+			h.Div().Style("white-space: pre-wrap").Text(fmt.Sprintf(`{{%q}}`, msg)),
 		).ModelValue(true).Location("top").Color("success")
 	}
 
