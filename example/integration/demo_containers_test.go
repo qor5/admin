@@ -81,6 +81,21 @@ func TestDemoContainer(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Items", "Add Row", "Background Color", "vx-select"},
 		},
 		{
+			Name:  "ListContentLite Edit View Add Row",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				demoContainerData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/list-content-lites").
+					EventFunc(actions.AddRowEvent).
+					Query(presets.ParamID, "1").
+					Query("listEditor_AddRowFormKey", "Items").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Heading", "vx-field", "vx-tiptap-editor"},
+		},
+		{
 			Name:  "ContactForm Edit View",
 			Debug: true,
 			ReqFunc: func() *http.Request {
