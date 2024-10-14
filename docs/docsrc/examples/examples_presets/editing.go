@@ -32,7 +32,6 @@ func PresetsEditingCustomizationDescription(b *presets.Builder, db *gorm.DB) (
 	ce *presets.EditingBuilder,
 	dp *presets.DetailingBuilder,
 ) {
-
 	mb, cl, ce, _ = PresetsListingCustomizationBulkActions(b, db)
 
 	ce.Only("Name", "Email", "CompanyID", "Description")
