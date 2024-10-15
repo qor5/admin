@@ -660,9 +660,6 @@ func configPost(
 	m.Editing().Field("TitleWithSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)
 
 	dp := m.Detailing(publish.VersionsPublishBar, "Detail").Drawer(true)
-	sb := dp.Section("Detail").Editing("Title", "TitleWithSlug", "HeroImage", "Body", "BodyImage")
-	sb.EditingField("TitleWithSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)
-
 	detailSection := presets.NewSectionBuilder(m, "Detail").
 		Editing("Title", "TitleWithSlug", "HeroImage", "Body", "BodyImage")
 	detailSection.EditingField("TitleWithSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)

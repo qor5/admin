@@ -85,10 +85,10 @@ func configureDemoCase(b *presets.Builder, db *gorm.DB) {
 	mb.Editing("Name")
 	mb.Listing("ID", "Name")
 	detailing := mb.Detailing("FieldSection", "SelectSection", "CheckboxSection", "DialogSection")
-	configVxField(detailing)
-	configVxSelect(detailing)
-	configVxCheckBox(detailing)
-	configVxDialog(detailing)
+	configVxField(detailing, mb)
+	configVxSelect(detailing, mb)
+	configVxCheckBox(detailing, mb)
+	configVxDialog(detailing, mb)
 	return
 }
 
@@ -121,11 +121,11 @@ func DemoCaseCheckBox(obj interface{}, section, editField, field, label string) 
 		Attr(web.VField(formKey, reflectutils.MustGet(obj, fieldName))...)
 }
 
-func configVxField(detailing *presets.DetailingBuilder) {
-	section := "FieldSection"
+func configVxField(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder) {
+	sectionName := "FieldSection"
 	editField := "FieldData"
 	label := "vx-field"
-	generateSection(detailing, section, editField, label).
+	section := generateSection(detailing, mb, sectionName, editField, label).
 		EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			var vErr web.ValidationErrors
 			if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
@@ -134,21 +134,21 @@ func configVxField(detailing *presets.DetailingBuilder) {
 			return h.Components(
 				v.VRow(
 					v.VCol(
-						DemoCaseTextField(obj, section, editField, "Text", "Text", vErr).
+						DemoCaseTextField(obj, sectionName, editField, "Text", "Text", vErr).
 							Tips("This is Tips").
 							Autofocus(true),
 					),
 					v.VCol(
-						DemoCaseTextField(obj, section, editField, "Textarea", "Textarea", vErr).
+						DemoCaseTextField(obj, sectionName, editField, "Textarea", "Textarea", vErr).
 							Type("textarea"),
 					),
 				),
 				v.VRow(
 					v.VCol(
-						DemoCaseTextField(obj, section, editField, "TextValidate", "TextValidate(input more than 5 chars)", vErr),
+						DemoCaseTextField(obj, sectionName, editField, "TextValidate", "TextValidate(input more than 5 chars)", vErr),
 					),
 					v.VCol(
-						DemoCaseTextField(obj, section, editField, "TextareaValidate", "TextareaValidate(input more than 10 chars)", vErr).
+						DemoCaseTextField(obj, sectionName, editField, "TextareaValidate", "TextareaValidate(input more than 10 chars)", vErr).
 							Type("textarea"),
 					),
 				),
@@ -158,21 +158,22 @@ func configVxField(detailing *presets.DetailingBuilder) {
 			in(obj, ctx)
 			p := obj.(*DemoCase)
 			if len(p.FieldData.TextValidate) < 5 {
-				err.FieldError(fmt.Sprintf("%s.%s.TextValidate", section, editField), "input more than 5 chars")
+				err.FieldError(fmt.Sprintf("%s.%s.TextValidate", sectionName, editField), "input more than 5 chars")
 			}
 			if len(p.FieldData.TextareaValidate) < 10 {
-				err.FieldError(fmt.Sprintf("%s.%s.TextareaValidate", section, editField), "input more than 10 chars")
+				err.FieldError(fmt.Sprintf("%s.%s.TextareaValidate", sectionName, editField), "input more than 10 chars")
 			}
 			return
 		}
 	})
+	detailing.Section(section)
 }
 
-func configVxSelect(detailing *presets.DetailingBuilder) {
-	section := "SelectSection"
+func configVxSelect(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder) {
+	sectionName := "SelectSection"
 	editField := "SelectData"
 	label := "vx-select"
-	generateSection(detailing, section, editField, label).
+	section := generateSection(detailing, mb, sectionName, editField, label).
 		EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			var vErr web.ValidationErrors
 			if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
@@ -191,13 +192,13 @@ func configVxSelect(detailing *presets.DetailingBuilder) {
 			return h.Components(
 				v.VRow(
 					v.VCol(
-						DemoCaseSelect(obj, section, editField, "AutoComplete", "AutoComplete(select more than 1 item)", vErr, items).
+						DemoCaseSelect(obj, sectionName, editField, "AutoComplete", "AutoComplete(select more than 1 item)", vErr, items).
 							Type("autocomplete").Multiple(true).Chips(true),
 					),
 				),
 				v.VRow(
 					v.VCol(
-						DemoCaseSelect(obj, section, editField, "NormalSelect", "NormalSelect(can`t select Trevor)", vErr, items).
+						DemoCaseSelect(obj, sectionName, editField, "NormalSelect", "NormalSelect(can`t select Trevor)", vErr, items).
 							Type("autocomplete"),
 					),
 				),
@@ -207,26 +208,27 @@ func configVxSelect(detailing *presets.DetailingBuilder) {
 			in(obj, ctx)
 			p := obj.(*DemoCase)
 			if len(p.SelectData.AutoComplete) == 1 {
-				err.FieldError(fmt.Sprintf("%s.%s.AutoComplete", section, editField), "select more than 1 item")
+				err.FieldError(fmt.Sprintf("%s.%s.AutoComplete", sectionName, editField), "select more than 1 item")
 			}
 			if p.SelectData.NormalSelect == 8 {
-				err.FieldError(fmt.Sprintf("%s.%s.NormalSelect", section, editField), "can`t select Trevor")
+				err.FieldError(fmt.Sprintf("%s.%s.NormalSelect", sectionName, editField), "can`t select Trevor")
 			}
 			return
 		}
 	})
+	detailing.Section(section)
 }
 
-func configVxCheckBox(detailing *presets.DetailingBuilder) {
-	section := "CheckboxSection"
+func configVxCheckBox(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder) {
+	sectionName := "CheckboxSection"
 	editField := "CheckboxData"
 	label := "vx-checkbox"
-	generateSection(detailing, section, editField, label).
+	section := generateSection(detailing, mb, sectionName, editField, label).
 		EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return h.Components(
 				v.VRow(
 					v.VCol(
-						DemoCaseCheckBox(obj, section, editField, "Checkbox", "Checkbox").
+						DemoCaseCheckBox(obj, sectionName, editField, "Checkbox", "Checkbox").
 							TrueLabel("True").
 							TrueIconColor(v.ColorPrimary).
 							FalseLabel("False").
@@ -237,12 +239,12 @@ func configVxCheckBox(detailing *presets.DetailingBuilder) {
 				),
 			)
 		})
+	detailing.Section(section)
 }
 
-func configVxDialog(detailing *presets.DetailingBuilder) {
-	section := "DialogSection"
+func configVxDialog(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder) {
 	label := "vx-dialog"
-	detailing.Section(section).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	section := presets.NewSectionBuilder(mb, "DialogSection").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		text := "This is an info description line This is an info description lineThis is an info description lineThis is an info description lineThis is an info description line"
 		return web.Scope(
 			h.Div(
@@ -273,10 +275,11 @@ func configVxDialog(detailing *presets.DetailingBuilder) {
 			).Class("section-wrap with-border-b"),
 		).VSlot("{locals}").Init("{dialogVisible:false}")
 	})
+	detailing.Section(section)
 }
 
-func generateSection(detailing *presets.DetailingBuilder, section, editField, label string) *presets.SectionBuilder {
-	return detailing.Section(section).Label(label).Editing(editField).
+func generateSection(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder, section, editField, label string) *presets.SectionBuilder {
+	presets.NewSectionBuilder(mb, section).Label(label).Editing(editField).
 		ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			p := obj.(*DemoCase)
 			return vx.VXReadonlyField().Value(h.JSONString(reflectutils.MustGet(p, editField))).Label(editField)
