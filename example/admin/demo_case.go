@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/qor5/web/v3"
-	v "github.com/qor5/x/v3/ui/vuetify"
-	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
+
+	v "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 
 	"github.com/qor5/admin/v3/presets"
 )
@@ -135,8 +137,7 @@ func configVxField(detailing *presets.DetailingBuilder) {
 				v.VRow(
 					v.VCol(
 						DemoCaseTextField(obj, section, editField, "Text", "Text", vErr).
-							Tips("This is Tips").
-							Autofocus(true),
+							Tips("This is Tips"),
 					),
 					v.VCol(
 						DemoCaseTextField(obj, section, editField, "Textarea", "Textarea", vErr).
@@ -279,6 +280,11 @@ func generateSection(detailing *presets.DetailingBuilder, section, editField, la
 	return detailing.Section(section).Label(label).Editing(editField).
 		ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			p := obj.(*DemoCase)
-			return vx.VXReadonlyField().Value(h.JSONString(reflectutils.MustGet(p, editField))).Label(editField)
+			j := jsoniter.Config{
+				EscapeHTML: false,
+			}.Froze()
+			data := reflectutils.MustGet(p, editField)
+			jsonBytes, _ := j.MarshalIndent(data, "", "    ")
+			return vx.VXReadonlyField().Value(string(jsonBytes)).Label(editField)
 		})
 }
