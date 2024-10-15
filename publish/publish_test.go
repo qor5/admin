@@ -319,10 +319,10 @@ func TestPublishList(t *testing.T) {
 	var expected string
 	expected = "product:1 product:3 pageNumber:1"
 	if storage.Objects["/product_without_version/list/1.html"] != expected {
-		t.Error(fmt.Errorf(`
+		t.Errorf(`
 want: %v
 get: %v
-`, expected, storage.Objects["/product_without_version/list/1.html"]))
+`, expected, storage.Objects["/product_without_version/list/1.html"])
 	}
 
 	publisher.Publish(context.Background(), &productV2)
@@ -332,7 +332,7 @@ get: %v
 
 	expected = "product:1 product:2 product:3 pageNumber:1"
 	if storage.Objects["/product_without_version/list/1.html"] != expected {
-		fmt.Errorf(`
+		t.Errorf(`
 want: %v
 get: %v
 `, expected, storage.Objects["/product_without_version/list/1.html"])
@@ -345,7 +345,7 @@ get: %v
 
 	expected = "product:1 product:3 pageNumber:1"
 	if storage.Objects["/product_without_version/list/1.html"] != expected {
-		fmt.Errorf(`
+		t.Errorf(`
 want: %v
 get: %v
 `, expected, storage.Objects["/product_without_version/list/1.html"])
@@ -358,11 +358,27 @@ get: %v
 
 	expected = "product:1 pageNumber:1"
 	if storage.Objects["/product_without_version/list/1.html"] != expected {
-		fmt.Errorf(`
+		t.Errorf(`
 want: %v
 get: %v
 `, expected, storage.Objects["/product_without_version/list/1.html"])
 	}
+}
+
+type ProductWithSchedulePublisherDBScope struct {
+	Product
+}
+
+func (p ProductWithSchedulePublisherDBScope) TableName() string {
+	return "products"
+}
+
+func (p ProductWithSchedulePublisherDBScope) SchedulePublishDBScope(db *gorm.DB) *gorm.DB {
+	return db.Where("name <> ?", "should_ignored_by_publish")
+}
+
+func (p ProductWithSchedulePublisherDBScope) ScheduleUnPublishDBScope(db *gorm.DB) *gorm.DB {
+	return db.Where("name <> ?", "should_ignored_by_unpublish")
 }
 
 func TestSchedulePublish(t *testing.T) {
@@ -387,7 +403,7 @@ func TestSchedulePublish(t *testing.T) {
 	var expected string
 	expected = "11"
 	if storage.Objects["test/product/1/index.html"] != expected {
-		fmt.Errorf(`
+		t.Errorf(`
 	want: %v
 	get: %v
 	`, expected, storage.Objects["test/product/1/index.html"])
@@ -405,7 +421,7 @@ func TestSchedulePublish(t *testing.T) {
 	}
 	expected = "12"
 	if storage.Objects["test/product/1/index.html"] != expected {
-		fmt.Errorf(`
+		t.Errorf(`
 	want: %v
 	get: %v
 	`, expected, storage.Objects["test/product/1/index.html"])
@@ -421,10 +437,73 @@ func TestSchedulePublish(t *testing.T) {
 	}
 	expected = ""
 	if storage.Objects["test/product/1/index.html"] != expected {
-		fmt.Errorf(`
+		t.Errorf(`
 	want: %v
 	get: %v
 	`, expected, storage.Objects["test/product/1/index.html"])
+	}
+
+	productV1.ScheduledEndAt = nil
+	// expect ignored
+	{
+		productV1.Name = "should_ignored_by_publish"
+		startAt := db.NowFunc().Add(-24 * time.Hour)
+		productV1.ScheduledStartAt = &startAt
+
+		err := db.Save(&productV1).Error
+		require.NoError(t, err)
+
+		err = schedulePublisher.Run(context.Background(), ProductWithSchedulePublisherDBScope{
+			Product: productV1,
+		})
+		require.NoError(t, err)
+		require.Equal(t, "", storage.Objects["test/product/1/index.html"])
+	}
+	// expect ok
+	{
+		productV1.Name = "3"
+		startAt := db.NowFunc().Add(-24 * time.Hour)
+		productV1.ScheduledStartAt = &startAt
+
+		err := db.Save(&productV1).Error
+		require.NoError(t, err)
+
+		err = schedulePublisher.Run(context.Background(), ProductWithSchedulePublisherDBScope{
+			Product: productV1,
+		})
+		require.NoError(t, err)
+		require.Equal(t, "13", storage.Objects["test/product/1/index.html"])
+	}
+	productV1.ScheduledStartAt = nil
+	// expect ignored
+	{
+		productV1.Name = "should_ignored_by_unpublish"
+		endAt := startAt.Add(time.Second * 2)
+		productV1.ScheduledEndAt = &endAt
+
+		err := db.Save(&productV1).Error
+		require.NoError(t, err)
+
+		err = schedulePublisher.Run(context.Background(), ProductWithSchedulePublisherDBScope{
+			Product: productV1,
+		})
+		require.NoError(t, err)
+		require.Equal(t, "13", storage.Objects["test/product/1/index.html"])
+	}
+	// expect ok
+	{
+		productV1.Name = "3"
+		endAt := startAt.Add(time.Second * 2)
+		productV1.ScheduledEndAt = &endAt
+
+		err := db.Save(&productV1).Error
+		require.NoError(t, err)
+
+		err = schedulePublisher.Run(context.Background(), ProductWithSchedulePublisherDBScope{
+			Product: productV1,
+		})
+		require.NoError(t, err)
+		require.Equal(t, "", storage.Objects["test/product/1/index.html"])
 	}
 }
 
