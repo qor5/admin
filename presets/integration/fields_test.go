@@ -155,6 +155,8 @@ func TestFields(t *testing.T) {
 <td>hello</td>
 
 <td>true</td>
+
+<td>2019-08-29 11:09:29</td>
 `,
 		},
 
