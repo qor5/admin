@@ -1,9 +1,9 @@
 package examples_admin
 
 import (
-	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/richeditor"
 	"github.com/qor5/web/v3"
+
+	"github.com/qor5/admin/v3/presets"
 )
 
 func layoutPieces() {
@@ -30,11 +30,6 @@ func layoutPieces() {
             },
         }
     `)
-	// @snippet_end
-
-	// @snippet_begin(InjectAssetViaExtraAsset)
-	presetsBuilder.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
-	presetsBuilder.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
 	// @snippet_end
 
 	// @snippet_begin(InjectAssetViaAssetFunc)

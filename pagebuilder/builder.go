@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"path"
 	"reflect"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -14,15 +15,16 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/i18n"
-	"github.com/qor5/x/v3/perm"
-	. "github.com/qor5/x/v3/ui/vuetify"
-	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"github.com/theplant/relay"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
+
+	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/perm"
+	. "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/l10n"
@@ -33,6 +35,7 @@ import (
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/richeditor"
 	"github.com/qor5/admin/v3/seo"
+	"github.com/qor5/admin/v3/tiptap"
 	"github.com/qor5/admin/v3/utils"
 )
 
@@ -344,6 +347,7 @@ func (b *Builder) installAsset(pb *presets.Builder) {
 
 	pb.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	pb.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
+	pb.ExtraAsset("/tiptap.css", "text/css", tiptap.ThemeGithubCSSComponentsPack())
 }
 
 func (b *Builder) configPageSaver(pb *presets.Builder) (mb *presets.ModelBuilder) {
@@ -1295,12 +1299,22 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			mb.preview.ServeHTTP(w, r)
 			return
 		}
+		if r.RequestURI == mb.editor.Info().ListingHref() {
+			http.Redirect(w, r, mb.mb.Info().ListingHref(), http.StatusFound)
+			return
+		}
 	}
 	if b.images != nil {
 		if strings.Index(r.RequestURI, path.Join(b.prefix, b.imagesPrefix)) >= 0 {
 			b.images.ServeHTTP(w, r)
 			return
 		}
+	}
+	pattern := fmt.Sprintf("^%s/[\\w-]+(-[\\w-]+)?$", b.prefix)
+	ok, _ := regexp.MatchString(pattern, r.RequestURI)
+	if ok {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
 	}
 	b.ps.ServeHTTP(w, r)
 }
