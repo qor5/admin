@@ -18,6 +18,18 @@ import (
 	"github.com/qor/oss"
 	"github.com/qor/oss/filesystem"
 	"github.com/qor/oss/s3"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/login"
+	"github.com/qor5/x/v3/perm"
+	v "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
+	"github.com/sunfmin/reflectutils"
+	h "github.com/theplant/htmlgo"
+	"github.com/theplant/osenv"
+	"golang.org/x/text/language"
+	"gorm.io/gorm"
+
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/autosync"
 	"github.com/qor5/admin/v3/example/models"
@@ -34,20 +46,10 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
-	"github.com/qor5/admin/v3/richeditor"
 	"github.com/qor5/admin/v3/role"
+	"github.com/qor5/admin/v3/tiptap"
 	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/admin/v3/worker"
-	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/i18n"
-	"github.com/qor5/x/v3/login"
-	"github.com/qor5/x/v3/perm"
-	v "github.com/qor5/x/v3/ui/vuetify"
-	vx "github.com/qor5/x/v3/ui/vuetifyx"
-	h "github.com/theplant/htmlgo"
-	"github.com/theplant/osenv"
-	"golang.org/x/text/language"
-	"gorm.io/gorm"
 )
 
 //go:embed assets
@@ -61,6 +63,10 @@ type Config struct {
 	pageBuilder         *pagebuilder.Builder
 	Publisher           *publish.Builder
 	loginSessionBuilder *plogin.SessionBuilder
+}
+
+func (c *Config) GetPresetsBuilder() *presets.Builder {
+	return c.pb
 }
 
 var (
@@ -148,11 +154,7 @@ func NewConfig(db *gorm.DB) Config {
 	b := presets.New().DataOperator(gorm2op.DataOperator(db)).RightDrawerWidth("700")
 	defer b.Build()
 
-	js, _ := assets.ReadFile("assets/fontcolor.min.js")
-	richeditor.Plugins = []string{"alignment", "table", "video", "imageinsert", "fontcolor"}
-	richeditor.PluginsJS = [][]byte{js}
-	b.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
-	b.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
+	b.ExtraAsset("/tiptap.css", "text/css", tiptap.ThemeGithubCSSComponentsPack())
 
 	initPermission(b, db)
 
@@ -270,8 +272,7 @@ func NewConfig(db *gorm.DB) Config {
 	configNestedFieldDemo(b, db)
 
 	b.Use(w.Activity(ab))
-
-	pageBuilder := example.ConfigPageBuilder(db, "/page_builder", ``, b.GetI18n())
+	pageBuilder := example.ConfigPageBuilder(db, "/page_builder", ``, b)
 	pageBuilder.
 		Media(mediab).
 		L10n(l10nBuilder).
@@ -338,6 +339,7 @@ func NewConfig(db *gorm.DB) Config {
 
 	configOrder(b, db)
 	configECDashboard(b, db)
+	configureDemoCase(b, db)
 
 	configUser(b, ab, db, publisher, loginSessionBuilder)
 
@@ -462,6 +464,7 @@ func configMenuOrder(b *presets.Builder) {
 		).Icon("mdi-account-multiple"),
 		b.MenuGroup("Featured Models Management").SubItems(
 			"InputDemo",
+			"DemoCase",
 			"Post",
 			"qor-seo-settings",
 			"List Editor Example",
@@ -657,6 +660,8 @@ func configPost(
 	m.Editing().Field("TitleWithSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)
 
 	dp := m.Detailing(publish.VersionsPublishBar, "Detail").Drawer(true)
+	sb := dp.Section("Detail").Editing("Title", "TitleWithSlug", "HeroImage", "Body", "BodyImage")
+	sb.EditingField("TitleWithSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)
 
 	detailSection := presets.NewSectionBuilder(m, "Detail").
 		Editing("Title", "TitleWithSlug", "HeroImage", "Body", "BodyImage")
@@ -683,7 +688,14 @@ func configPost(
 			media.MediaBoxConfig,
 			&media_library.MediaBoxConfig{})
 	detailSection.EditingField("Body").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return richeditor.RichEditor(db, field.FormKey).Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).Value(obj.(*models.Post).Body).Label(field.Label)
+		extensions := tiptap.TiptapExtensions()
+		return tiptap.TiptapEditor(db, field.Name).
+			Extensions(extensions).
+			MarkdownTheme("github"). // Match tiptap.ThemeGithubCSSComponentsPack
+			Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
+			Label(field.Label).
+			Disabled(field.Disabled).
+			ErrorMessages(field.Errors...)
 	})
 	dp.Section(detailSection)
 	return m

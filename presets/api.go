@@ -33,7 +33,6 @@ type (
 
 type MessagesFunc func(r *http.Request) *Messages
 
-// Data Layer
 type DataOperator interface {
 	Search(ctx *web.EventContext, params *SearchParams) (result *SearchResult, err error)
 	// return ErrRecordNotFound if record not found
@@ -83,8 +82,9 @@ type (
 )
 
 type SearchResult struct {
-	PageInfo relay.PageInfo
-	Nodes    interface{}
+	PageInfo   relay.PageInfo
+	TotalCount *int
+	Nodes      interface{}
 }
 
 type SlugDecoder interface {

@@ -656,7 +656,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 }
 
 func (c *ListingCompo) buildDataTableAdditions(ctx context.Context, searchParams *SearchParams, searchResult *SearchResult) h.HTMLComponent {
-	if searchResult.PageInfo.TotalCount <= 0 && searchResult.PageInfo.StartCursor == nil {
+	if (searchResult.TotalCount != nil && *searchResult.TotalCount == 0) || searchResult.PageInfo.StartCursor == nil {
 		_, msgr := c.MustGetEventContext(ctx)
 		return h.Div().Class("mt-10 text-center grey--text text--darken-2").Children(
 			h.Text(msgr.ListingNoRecordToShow),
@@ -678,9 +678,13 @@ func (c *ListingCompo) regularPagination(ctx context.Context, searchParams *Sear
 		return nil
 	}
 	_, msgr := c.MustGetEventContext(ctx)
+	totalCount := int64(0)
+	if searchResult.TotalCount != nil {
+		totalCount = int64(*searchResult.TotalCount)
+	}
 	return h.Div().Style("margin-top:26px").Children(
 		vx.VXTablePagination().
-			Total(int64(searchResult.PageInfo.TotalCount)).
+			Total(totalCount).
 			CurrPage(searchParams.Page).
 			PerPage(searchParams.PerPage).
 			CustomPerPages([]int64{c.lb.perPage}).

@@ -256,6 +256,9 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface
 	if status != publish.StatusDraft && isEditor {
 		isReadonly = true
 	}
+	if !isReadonly && b.mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil {
+		isReadonly = true
+	}
 	var comps []h.HTMLComponent
 	comps, err = b.renderContainers(ctx, obj, pageID, pageVersion, locale, isEditor, isReadonly)
 	if err != nil {
@@ -290,10 +293,10 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			IsPreview:  !isEditor,
 			SeoTags:    seoTags,
 		}
-		cookieHightName := iframePreviewHeightName
+		cookieHeightName := iframePreviewHeightName
 
 		if isEditor {
-			cookieHightName = iframeHeightName
+			cookieHeightName = iframeHeightName
 			input.EditorCss = append(input.EditorCss, h.RawHTML(`<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">`))
 			input.EditorCss = append(input.EditorCss, h.Style(`
 			.wrapper-shadow{
@@ -412,7 +415,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 		}
 
 		if isIframe {
-			iframeHeightCookie, _ := ctx.R.Cookie(cookieHightName)
+			iframeHeightCookie, _ := ctx.R.Cookie(cookieHeightName)
 			iframeValue := "1000px"
 			if iframeHeightCookie != nil {
 				iframeValue = iframeHeightCookie.Value
@@ -442,7 +445,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 
 			scrollIframe := vx.VXScrollIframe().
 				Srcdoc(h.MustString(r, ctx.R.Context())).
-				IframeHeightName(cookieHightName).
+				IframeHeightName(cookieHeightName).
 				IframeHeight(iframeValue).
 				Width(width).Attr("ref", "scrollIframe").VirtualElementText(msgr.NewContainer)
 			if isEditor {
@@ -580,6 +583,9 @@ func (b *ModelBuilder) previewContent(ctx *web.EventContext) (r web.PageResponse
 	obj := b.mb.NewModel()
 	r.Body, err = b.renderPageOrTemplate(ctx, obj, false, false)
 	if err != nil {
+		return
+	}
+	if b.builder.seoBuilder != nil && b.builder.seoBuilder.GetSEO(obj) != nil {
 		return
 	}
 	if p, ok := obj.(PageTitleInterface); ok {

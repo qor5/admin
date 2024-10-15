@@ -88,13 +88,13 @@ func pageValidator(ctx *web.EventContext, p *Page, db *gorm.DB, l10nB *l10n.Buil
 func categoryValidator(ctx *web.EventContext, category *Category, db *gorm.DB, l10nB *l10n.Builder) (err web.ValidationErrors) {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 	if category.Name == "" {
-		err.FieldError("Category.Name", msgr.InvalidNameMsg)
+		err.FieldError("Name", msgr.InvalidNameMsg)
 		return
 	}
 
 	categoryPath := path.Clean(category.Path)
 	if !directoryRe.MatchString(categoryPath) {
-		err.FieldError("Category.Category", msgr.InvalidPathMsg)
+		err.FieldError("Path", msgr.InvalidPathMsg)
 		return
 	}
 
@@ -119,7 +119,7 @@ func categoryValidator(ctx *web.EventContext, category *Category, db *gorm.DB, l
 			innerLocalePath = l10nB.GetLocalePath(c.LocaleCode)
 		}
 		if generatePublishUrl(innerLocalePath, c.Path, "") == currentCategoryPathPublishUrl {
-			err.FieldError("Category.Category", msgr.ExistingPathMsg)
+			err.FieldError("Path", msgr.ExistingPathMsg)
 			return
 		}
 	}

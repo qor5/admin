@@ -193,7 +193,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/campaigns-editors/1_2024-05-20-v01").
+					PageURL("/page_builder/campaigns/1_2024-05-20-v01").
 					EventFunc(pagebuilder.AddContainerEvent).
 					Query("modelName", "MyContent").
 					BuildEventFuncRequest()
@@ -220,7 +220,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/campaigns-editors/1_2024-05-20-v01").
+					PageURL("/page_builder/campaigns/1_2024-05-20-v01").
 					EventFunc(pagebuilder.AddContainerEvent).
 					Query("modelName", "CampaignContent").
 					BuildEventFuncRequest()
@@ -295,7 +295,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/campaigns-editors/1_2024-05-20-v01").
+					PageURL("/page_builder/campaigns/1_2024-05-20-v01").
 					EventFunc(publish.EventDuplicateVersion).
 					BuildEventFuncRequest()
 
@@ -396,7 +396,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/campaign-products-editors/1_2024-05-20-v01").
+					PageURL("/page_builder/campaign-products/1_2024-05-20-v01").
 					EventFunc(publish.EventPublish).
 					Query(presets.ParamID, "1_2024-05-20-v01").
 					BuildEventFuncRequest()
@@ -431,7 +431,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderDemoData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/campaign-products-editors/1_2024-05-20-v01").
+					PageURL("/page_builder/campaign-products/1_2024-05-20-v01").
 					EventFunc(pagebuilder.AddContainerEvent).
 					AddField("modelName", "ProductContent").
 					AddField("id", "1").
@@ -559,8 +559,9 @@ func TestPageBuilderCampaign(t *testing.T) {
 					PageURL("/pages/1_2024-05-20-v01").
 					BuildEventFuncRequest()
 			},
-			ExpectPageBodyContainsInOrder: []string{"Title", "Slug"},
-			ExpectPageBodyNotContains:     []string{"Category"},
+			ExpectPageBodyContainsInOrder: []string{"Title", "Slug", `<div id='display_preview' style='display:none;'>
+<iframe src='<!DOCTYPE html>`},
+			ExpectPageBodyNotContains: []string{"Category"},
 		},
 		{
 			Name:  "Pages New Dialog Expect Without Category",
@@ -681,7 +682,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/campaigns-editors/1_2024-05-20-v01").
+					PageURL("/page_builder/campaigns/1_2024-05-20-v01").
 					BuildEventFuncRequest()
 
 				return req
@@ -695,7 +696,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/campaign-products-editors/1_2024-05-20-v01").
+					PageURL("/page_builder/campaign-products/1_2024-05-20-v01").
 					BuildEventFuncRequest()
 
 				return req
@@ -709,7 +710,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderPageData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages-editors/1_2024-05-20-v01").
+					PageURL("/page_builder/pages/1_2024-05-20-v01").
 					BuildEventFuncRequest()
 
 				return req
@@ -723,7 +724,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderPageData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages-editors/1_2024-05-20-v01").
+					PageURL("/page_builder/pages/1_2024-05-20-v01").
 					BuildEventFuncRequest()
 
 				return req
@@ -737,7 +738,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/campaigns-editors/1_2024-05-20-v01").
+					PageURL("/page_builder/campaigns/1_2024-05-20-v01").
 					BuildEventFuncRequest()
 
 				return req
@@ -751,7 +752,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/campaign-products-editors/1_2024-05-20-v01").
+					PageURL("/page_builder/campaign-products/1_2024-05-20-v01").
 					BuildEventFuncRequest()
 
 				return req
@@ -765,7 +766,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/campaign-templates-editors/1").
+					PageURL("/page_builder/campaign-templates/1").
 					BuildEventFuncRequest()
 
 				return req
@@ -779,7 +780,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderTemplateData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/page_templates-editors/1").
+					PageURL("/page_builder/page_templates/1").
 					BuildEventFuncRequest()
 
 				return req
@@ -793,7 +794,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/campaign-product-templates-editors/1").
+					PageURL("/page_builder/campaign-product-templates/1").
 					BuildEventFuncRequest()
 
 				return req
@@ -944,6 +945,34 @@ func TestPageBuilderCampaign(t *testing.T) {
 
 				}
 			},
+		},
+		{
+			Name:  "Campaign Preview",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/campaigns/preview").
+					Query(presets.ParamID, "1_2024-05-20-v01").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"Hello Campaign", "my-contents"},
+		},
+		{
+			Name:  "Page Preview",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderPageData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages/preview").
+					Query(presets.ParamID, "1_2024-05-20-v01").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"12312", "my-contents", "my-contents2"},
 		},
 	}
 	for _, c := range cases {

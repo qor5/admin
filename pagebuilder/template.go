@@ -163,7 +163,7 @@ func (b *TemplateBuilder) configModelWithTemplate() {
 					if b.builder.l10n == nil {
 						localeCode = ""
 					}
-					if err = b.builder.getModelBuilder(b.mb).copyContainersToAnotherPage(b.builder.db, tplID, "", localeCode, int(pageID.(uint)), version, localeCode, b.model.name, b.builder.getModelBuilder(b.mb).name); err != nil {
+					if err = b.builder.GetModelBuilder(b.mb).copyContainersToAnotherPage(b.builder.db, tplID, "", localeCode, int(pageID.(uint)), version, localeCode, b.model.name, b.builder.GetModelBuilder(b.mb).name); err != nil {
 						panic(err)
 					}
 				}
@@ -210,8 +210,12 @@ func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent
 	if err != nil {
 		panic(errors.Wrap(err, "searcher error"))
 	}
-	pagesCount := int64(result.PageInfo.TotalCount)/perPage + 1
-	if int64(result.PageInfo.TotalCount)%(perPage) == 0 {
+	totalCount := int64(0)
+	if result.TotalCount != nil {
+		totalCount = int64(*result.TotalCount)
+	}
+	pagesCount := totalCount/perPage + 1
+	if totalCount%(perPage) == 0 {
 		pagesCount--
 	}
 
@@ -251,21 +255,24 @@ func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent
 			panic(err)
 		}
 		cardClickEvent, cols = b.getEventCols(inDialog, ps)
-		menus = append(menus,
-			VListItem(h.Text(pMsgr.Delete)).Attr("@click", web.Plaid().
-				URL(mb.Info().ListingHref()).
-				EventFunc(actions.DeleteConfirmation).
-				Query(presets.ParamID, ojID).
-				Go(),
-			))
-		menus = append(menus,
-			VListItem(h.Text(pMsgr.Edit)).Attr("@click", web.Plaid().
-				URL(mb.Info().ListingHref()).
-				EventFunc(actions.Edit).
-				Query(presets.ParamID, ojID).
-				Go(),
-			))
-
+		if mb.Info().Verifier().Do(presets.PermDelete).WithReq(ctx.R).IsAllowed() == nil {
+			menus = append(menus,
+				VListItem(h.Text(pMsgr.Delete)).Attr("@click", web.Plaid().
+					URL(mb.Info().ListingHref()).
+					EventFunc(actions.DeleteConfirmation).
+					Query(presets.ParamID, ojID).
+					Go(),
+				))
+		}
+		if mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() == nil {
+			menus = append(menus,
+				VListItem(h.Text(pMsgr.Edit)).Attr("@click", web.Plaid().
+					URL(mb.Info().ListingHref()).
+					EventFunc(actions.Edit).
+					Query(presets.ParamID, ojID).
+					Go(),
+				))
+		}
 		rows.AppendChildren(
 			VCol(
 				VCard(
@@ -292,7 +299,7 @@ func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent
 									),
 									h.Div(
 										h.Div(),
-										h.If(!inDialog,
+										h.If(!inDialog && len(menus) > 0,
 											VMenu(
 												web.Slot(
 													VBtn("").Children(
@@ -323,17 +330,19 @@ func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent
 					VCol(
 						h.Div(
 							b.searchComponent(ctx),
-							VBtn(msgr.AddPageTemplate).
-								Color(ColorPrimary).
-								Variant(VariantElevated).
-								Theme("light").
-								Attr("@click", web.Plaid().URL(mb.Info().ListingHref()).EventFunc(actions.New).Go()),
+							h.If(mb.Info().Verifier().Do(presets.PermCreate).WithReq(ctx.R).IsAllowed() == nil,
+								VBtn(msgr.AddPageTemplate).
+									Color(ColorPrimary).
+									Variant(VariantElevated).
+									Theme("light").
+									Attr("@click", web.Plaid().URL(mb.Info().ListingHref()).EventFunc(actions.New).Go()),
+							),
 						).Class("d-flex justify-space-between align-center"),
 					).Cols(12),
 				).Class("position-sticky top-0", "bg-"+ColorBackground).Attr("style", "z-index:2"),
 			),
 			rows,
-			h.If(int64(result.PageInfo.TotalCount) > perPage,
+			h.If(totalCount > perPage,
 				VRow(
 					VCol(
 						VPagination().
@@ -460,7 +469,7 @@ func (b *TemplateBuilder) Install() {
 		tm = builder.templateModel
 	}
 	defer builder.useAllPlugin(tm)
-	model := builder.getModelBuilder(tm)
+	model := builder.GetModelBuilder(tm)
 	if model == nil {
 		model = builder.Model(tm)
 		if _, ok := tm.NewModel().(publish.VersionInterface); ok {

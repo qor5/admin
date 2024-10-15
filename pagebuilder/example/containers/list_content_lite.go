@@ -4,14 +4,16 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"fmt"
+
+	"github.com/qor5/web/v3"
+	"github.com/sunfmin/reflectutils"
+	. "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/richeditor"
-	"github.com/qor5/web/v3"
-	v "github.com/qor5/x/v3/ui/vuetify"
-	. "github.com/theplant/htmlgo"
-	"gorm.io/gorm"
+	"github.com/qor5/admin/v3/tiptap"
 )
 
 type ListContentLite struct {
@@ -64,18 +66,19 @@ func RegisterListContentLiteContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	)
 
 	eb.Field("BackgroundColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return v.VAutocomplete().
-			Attr(web.VField(field.Name, field.Value(obj))...).
-			Variant(v.FieldVariantUnderlined).
-			Label(field.Label).
-			Items([]string{White, Grey})
+		return presets.SelectField(obj, field, ctx).Items([]string{White, Grey})
 	})
 
 	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&ListItemLite{}).Only("Heading", "Text")
 	fb.Field("Text").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return richeditor.RichEditor(db, field.FormKey).
-			Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).
-			Value(obj.(*ListItemLite).Text).Label(field.Label)
+		extensions := tiptap.TiptapExtensions()
+		return tiptap.TiptapEditor(db, field.Name).
+			Extensions(extensions).
+			MarkdownTheme("github"). // Match tiptap.ThemeGithubCSSComponentsPack
+			Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
+			Label(field.Label).
+			Disabled(field.Disabled).
+			ErrorMessages(field.Errors...)
 	})
 	eb.Field("Items").Nested(fb, &presets.DisplayFieldInSorter{Field: "Heading"})
 }

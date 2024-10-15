@@ -131,6 +131,9 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			ctx.R.Form.Set(paramStatus, p.EmbedStatus().Status)
 			isStag = p.EmbedStatus().Status == publish.StatusOnline || p.EmbedStatus().Status == publish.StatusOffline
 		}
+		if !isStag && m.mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil {
+			isStag = true
+		}
 		afterLeaveEvent := removeVirtualElement() + "vars.emptyIframe = true;" + scrollToContainer(fmt.Sprintf("vars.%s", paramContainerDataID))
 		addOverlay := vx.VXOverlay(m.newContainerContent(ctx)).
 			MaxWidth(665).
@@ -275,15 +278,17 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 					Attr(":width", "vars.$pbLeftDrawerWidth"),
 
 				VNavigationDrawer(
-					h.Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf(`({el}) => {
+					h.Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf(`({el,window}) => {
 							el.__handleScroll = (event) => {
 								locals.__pageBuilderRightContentScrollTop = event.target.scrollTop;
 							}
 							el.parentElement.addEventListener('scroll', el.__handleScroll)
 	
 							locals.__pageBuilderRightContentKeepScroll = () => {
-								el.parentElement.scrollTop = locals.__pageBuilderRightContentScrollTop;
-							}
+							const scrollTop = locals.__pageBuilderRightContentScrollTop;
+							window.setTimeout(()=>{
+  							el.parentElement.scrollTop = scrollTop;	
+							},0)							}
 						}`)).Attr("v-on-unmounted", `({el}) => {
 							el.parentElement.removeEventListener('scroll', el.__handleScroll);
 						}`),
@@ -444,7 +449,9 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 			web.Portal().Name(dialogPortalName),
 			web.Portal().Name(addContainerDialogPortal),
 			h.Template(
-				VSnackbar(h.Text("{{vars.presetsMessage.message}}")).
+				VSnackbar(
+					h.Div().Style("white-space: pre-wrap").Text("{{vars.presetsMessage.message}}"),
+				).
 					Attr("v-model", "vars.presetsMessage.show").
 					Attr(":color", "vars.presetsMessage.color").
 					Timeout(1000),

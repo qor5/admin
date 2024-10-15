@@ -306,6 +306,10 @@ func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *Field
 	return b
 }
 
+func (b *FieldBuilder) GetNestedFieldsBuilder() *FieldsBuilder {
+	return b.nestedFieldsBuilder
+}
+
 func (b *FieldBuilder) AppendTabs(fb *FieldBuilder) (r *FieldBuilder) {
 	if b.tabFieldsBuilders == nil {
 		b.tabFieldsBuilders = NewTabsFieldBuilder()
@@ -769,6 +773,8 @@ func (b *FieldsBuilder) toComponentWithModifiedIndexes(info *ModelInfo, obj inte
 	return b.toComponentWithFormValueKey(info, obj, parentFormValueKey, modifiedIndexes, ctx)
 }
 
+type ctxKeyForceForCreating struct{}
+
 func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interface{}, parentFormValueKey string, modifiedIndexes *ModifiedIndexesBuilder, ctx *web.EventContext) h.HTMLComponent {
 	var comps []h.HTMLComponent
 	if parentFormValueKey == "" {
@@ -780,8 +786,10 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 		vErr = &web.ValidationErrors{}
 	}
 
-	id := ObjectID(obj)
-	edit := id != ""
+	edit := ObjectID(obj) != ""
+	if ctx.ContextValue(ctxKeyForceForCreating{}) == true {
+		edit = false
+	}
 
 	var layout []interface{}
 	if b.fieldsLayout == nil {

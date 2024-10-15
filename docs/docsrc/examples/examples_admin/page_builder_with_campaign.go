@@ -256,7 +256,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	}
 	b.Use(puBuilder)
 
-	pb := pagebuilder.New(b.GetURIPrefix()+"/page_builder", db).
+	pb := pagebuilder.New(b.GetURIPrefix()+"/page_builder", db, b).
 		Activity(ab).
 		Only("Title", "Slug").
 		DisabledNormalContainersGroup(true).
@@ -287,6 +287,19 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 			}
 		})
 
+	pb.WrapPageInstall(func(installFunc presets.ModelInstallFunc) presets.ModelInstallFunc {
+		return func(innerPb *presets.Builder, mb *presets.ModelBuilder) (err error) {
+			if err = installFunc(innerPb, mb); err != nil {
+				return
+			}
+			mb.Detailing().Field("hide").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+				return Div(
+					Iframe().Src(pb.GetPageModelBuilder().PreviewHTML(obj)),
+				).Style("display:none").Id("display_preview")
+			})
+			return
+		}
+	})
 	if err = pagebuilder.AutoMigrate(db); err != nil {
 		panic(err)
 	}

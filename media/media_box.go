@@ -12,12 +12,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/qor5/admin/v3/media/base"
-	"github.com/qor5/admin/v3/media/media_library"
-	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
-	"github.com/qor5/x/v3/perm"
 	"github.com/qor5/x/v3/ui/cropper"
 	"github.com/qor5/x/v3/ui/fileicons"
 	. "github.com/qor5/x/v3/ui/vuetify"
@@ -26,6 +22,10 @@ import (
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/media/base"
+	"github.com/qor5/admin/v3/media/media_library"
+	"github.com/qor5/admin/v3/presets"
 )
 
 type MediaBoxConfigKey int
@@ -50,8 +50,6 @@ func AutoMigrate(db *gorm.DB) (err error) {
 }
 
 func configure(b *presets.Builder, mb *Builder, db *gorm.DB) {
-	mb.permVerifier = perm.NewVerifier("media_library", b.GetPermission())
-
 	b.ExtraAsset("/cropper.js", "text/javascript", cropper.JSComponentsPack())
 	b.ExtraAsset("/cropper.css", "text/css", cropper.CSSComponentsPack())
 

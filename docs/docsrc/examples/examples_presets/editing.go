@@ -7,16 +7,18 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/qor5/web/v3"
+	v "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
+	"github.com/sunfmin/reflectutils"
+	h "github.com/theplant/htmlgo"
+	"golang.org/x/text/language"
+	"gorm.io/gorm"
+
 	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
-	"github.com/qor5/admin/v3/richeditor"
 	"github.com/qor5/admin/v3/tiptap"
-	"github.com/qor5/web/v3"
-	v "github.com/qor5/x/v3/ui/vuetify"
-	"github.com/sunfmin/reflectutils"
-	h "github.com/theplant/htmlgo"
-	"gorm.io/gorm"
 )
 
 // @snippet_begin(PresetsEditingCustomizationDescriptionSample)
@@ -30,12 +32,6 @@ func PresetsEditingCustomizationDescription(b *presets.Builder, db *gorm.DB) (
 	ce *presets.EditingBuilder,
 	dp *presets.DetailingBuilder,
 ) {
-	js, _ := assets.ReadFile("assets/fontcolor.min.js")
-	richeditor.Plugins = []string{"alignment", "table", "video", "imageinsert", "fontcolor"}
-	richeditor.PluginsJS = [][]byte{js}
-	b.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
-	b.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
-
 	mb, cl, ce, _ = PresetsListingCustomizationBulkActions(b, db)
 
 	ce.Only("Name", "Email", "CompanyID", "Description")
@@ -55,9 +51,10 @@ func PresetsEditingCustomizationDescription(b *presets.Builder, db *gorm.DB) (
 	})
 
 	ce.Field("Description").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return richeditor.RichEditor(db, "Body").
-			Plugins([]string{"alignment", "video", "imageinsert", "fontcolor"}).
-			Value(obj.(*Customer).Description).
+		extensions := vx.TiptapSlackLikeExtensions()
+		return tiptap.TiptapEditor(db, field.Name).
+			Extensions(extensions).
+			Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
 			Label(field.Label).
 			Disabled(field.Disabled).
 			ErrorMessages(field.Errors...)

@@ -6,15 +6,16 @@ import (
 	"net/http"
 	"path"
 
-	"github.com/qor5/admin/v3/pagebuilder"
-	"github.com/qor5/admin/v3/pagebuilder/example/containers"
-	"github.com/qor5/admin/v3/richeditor"
-	"github.com/qor5/x/v3/i18n"
 	h "github.com/theplant/htmlgo"
 	"github.com/theplant/osenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/pagebuilder/example/containers"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/tiptap"
 )
 
 var dbParamsString = osenv.Get("DB_PARAMS", "page builder example database connection string", "")
@@ -33,7 +34,7 @@ func ConnectDB() (db *gorm.DB) {
 //go:embed assets/images
 var containerImages embed.FS
 
-func ConfigPageBuilder(db *gorm.DB, prefix, style string, i18nB *i18n.Builder) *pagebuilder.Builder {
+func ConfigPageBuilder(db *gorm.DB, prefix, style string, b *presets.Builder) *pagebuilder.Builder {
 	err := db.AutoMigrate(
 		&containers.WebHeader{},
 		&containers.WebFooter{},
@@ -51,14 +52,11 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, i18nB *i18n.Builder) *
 	if err != nil {
 		panic(err)
 	}
-	pb := pagebuilder.New(prefix, db).AutoMigrate()
+	pb := pagebuilder.New(prefix, db, b).AutoMigrate().AutoSaveReload(true)
 	if style != "" {
 		pb.PageStyle(h.RawHTML(style))
 	}
-
-	richeditor.Plugins = []string{"alignment", "table", "video", "imageinsert"}
-	pb.GetPresetsBuilder().ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
-	pb.GetPresetsBuilder().ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
+	pb.GetPresetsBuilder().ExtraAsset("/tiptap.css", "text/css", tiptap.ThemeGithubCSSComponentsPack())
 
 	fSys, _ := fs.Sub(containerImages, "assets/images")
 	imagePrefix := "/assets/images"

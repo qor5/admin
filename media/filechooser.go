@@ -583,7 +583,7 @@ func (mb *Builder) mediaLibraryTopOperations(clickTabEvent, field, tab, typeVal,
 ) h.HTMLComponent {
 	var (
 		msgr           = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
-		inMediaLibrary = strings.Contains(ctx.R.RequestURI, "/"+MediaLibraryURIName)
+		inMediaLibrary = strings.Contains(ctx.R.RequestURI, "/"+mb.mb.Info().URIName())
 
 		fileAccept string
 	)
@@ -772,7 +772,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 		tab            = cmp.Or(ctx.Param(paramTab), tabFiles)
 		parentID       = ctx.ParamAsInt(ParamParentID)
 		msgr           = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
-		inMediaLibrary = strings.Contains(ctx.R.RequestURI, "/"+MediaLibraryURIName)
+		inMediaLibrary = strings.Contains(ctx.R.RequestURI, "/"+mb.mb.Info().URIName())
 		files          []*media_library.MediaLibrary
 		bc             h.HTMLComponent
 		hasFolders     = false

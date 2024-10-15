@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"path"
 	"reflect"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -14,14 +15,16 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/qor5/web/v3"
+	"github.com/sunfmin/reflectutils"
+	h "github.com/theplant/htmlgo"
+	"github.com/theplant/relay"
+	"golang.org/x/text/language"
+	"gorm.io/gorm"
+
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
-	"github.com/sunfmin/reflectutils"
-	h "github.com/theplant/htmlgo"
-	"golang.org/x/text/language"
-	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/l10n"
@@ -32,8 +35,8 @@ import (
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/richeditor"
 	"github.com/qor5/admin/v3/seo"
+	"github.com/qor5/admin/v3/tiptap"
 	"github.com/qor5/admin/v3/utils"
-	"github.com/theplant/relay"
 )
 
 type RenderInput struct {
@@ -96,6 +99,7 @@ type Builder struct {
 	templateEnabled               bool
 	expendContainers              bool
 	pageEnabled                   bool
+	autoSaveReload                bool
 	disabledNormalContainersGroup bool
 	previewOpenNewTab             bool
 	previewContainer              bool
@@ -116,11 +120,11 @@ const (
 	PageBuilderPreviewCard = "PageBuilderPreviewCard"
 )
 
-func New(prefix string, db *gorm.DB) *Builder {
-	return newBuilder(prefix, db)
+func New(prefix string, db *gorm.DB, b *presets.Builder) *Builder {
+	return newBuilder(prefix, db, b)
 }
 
-func newBuilder(prefix string, db *gorm.DB) *Builder {
+func newBuilder(prefix string, db *gorm.DB, b *presets.Builder) *Builder {
 	r := &Builder{
 		db:                db,
 		wb:                web.New(),
@@ -142,10 +146,9 @@ func newBuilder(prefix string, db *gorm.DB) *Builder {
 		BrandTitle("Page Builder").
 		DataOperator(gorm2op.DataOperator(db)).
 		URIPrefix(prefix).
+		I18n(b.GetI18n()).
 		DetailLayoutFunc(r.pageEditorLayout)
-	r.ps.Permission(perm.New().Policies(
-		perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
-	))
+	r.ps.Permission(b.GetPermission())
 	return r
 }
 
@@ -157,6 +160,11 @@ func (b *Builder) Prefix(v string) (r *Builder) {
 
 func (b *Builder) PageStyle(v h.HTMLComponent) (r *Builder) {
 	b.pageStyle = v
+	return b
+}
+
+func (b *Builder) AutoSaveReload(v bool) (r *Builder) {
+	b.autoSaveReload = v
 	return b
 }
 
@@ -306,7 +314,7 @@ func (b *Builder) DisabledNormalContainersGroup(v bool) (r *Builder) {
 func (b *Builder) Model(mb *presets.ModelBuilder) (r *ModelBuilder) {
 	r = &ModelBuilder{
 		mb:      mb,
-		editor:  b.ps.Model(mb.NewModel()).URIName(mb.Info().URIName() + "-editors"),
+		editor:  b.ps.Model(mb.NewModel()).URIName(mb.Info().URIName()),
 		builder: b,
 		db:      b.db,
 	}
@@ -339,6 +347,7 @@ func (b *Builder) installAsset(pb *presets.Builder) {
 
 	pb.ExtraAsset("/redactor.js", "text/javascript", richeditor.JSComponentsPack())
 	pb.ExtraAsset("/redactor.css", "text/css", richeditor.CSSComponentsPack())
+	pb.ExtraAsset("/tiptap.css", "text/css", tiptap.ThemeGithubCSSComponentsPack())
 }
 
 func (b *Builder) configPageSaver(pb *presets.Builder) (mb *presets.ModelBuilder) {
@@ -381,6 +390,9 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 	b.configDemoContainer(pb)
 	b.preparePlugins()
 	for _, t := range b.templates {
+		t.Install()
+	}
+	for _, t := range b.containerBuilders {
 		t.Install()
 	}
 	return
@@ -574,42 +586,19 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 	})
 
 	eb := pm.Editing("Name", "Path", "Description")
-	eb.Field("Name").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		var vErr web.ValidationErrors
-		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
-			vErr = *ve
+	eb.Field("Path").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
+		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			comp := in(obj, field, ctx)
+			if p, ok := comp.(*vx.VXFieldBuilder); ok {
+				p.Attr(web.VField(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"))...).
+					Attr("prefix", "/")
+			}
+			return comp
 		}
-
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		return vx.VXField().Label(msgr.ListHeaderName).
-			Attr(web.VField(field.Name, field.Value(obj))...).
-			ErrorMessages(vErr.GetFieldErrors("Category.Name")...)
-	})
-
-	eb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		var vErr web.ValidationErrors
-		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
-			vErr = *ve
-		}
-
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		return vx.VXField().Label(msgr.ListHeaderPath).
-			Attr(web.VField(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"))...).
-			Attr("prefix", "/").
-			ErrorMessages(vErr.GetFieldErrors("Category.Category")...)
 	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 		m := obj.(*Category)
 		m.Path = path.Join("/", m.Path)
 		return nil
-	})
-
-	eb.Field("Description").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		return vx.VXField().
-			Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
-			Label(msgr.ListHeaderDescription).
-			ErrorMessages(field.Errors...).
-			Disabled(field.Disabled)
 	})
 
 	eb.DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
@@ -864,7 +853,7 @@ func sharedContainerSearcher(db *gorm.DB, b *ModelBuilder) presets.SearchFunc {
 		}
 
 		for _, cond := range params.SQLConditions {
-			wh = wh.Where(strings.Replace(cond.Query, " ILIKE ", " "+ilike+" ", -1), cond.Args...)
+			wh = wh.Where(strings.ReplaceAll(cond.Query, " ILIKE ", " "+ilike+" "), cond.Args...)
 		}
 
 		locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
@@ -891,10 +880,9 @@ func sharedContainerSearcher(db *gorm.DB, b *ModelBuilder) presets.SearchFunc {
 		}
 
 		return &presets.SearchResult{
-			PageInfo: relay.PageInfo{
-				TotalCount: totalCount,
-			},
-			Nodes: rtNodes.Interface(),
+			PageInfo:   relay.PageInfo{},
+			TotalCount: &totalCount,
+			Nodes:      rtNodes.Interface(),
 		}, nil
 	}
 }
@@ -940,10 +928,52 @@ func (b *Builder) RegisterModelContainer(name string, mb *presets.ModelBuilder) 
 	return
 }
 
-func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
-	b.model = m
-	b.mb = b.builder.ps.Model(m)
-	b.mb.Editing().WrapIdCurrentActive(func(in presets.IdCurrentActiveProcessor) presets.IdCurrentActiveProcessor {
+type TagInterface interface {
+	SetAttr(k string, v interface{})
+}
+
+func (b *ContainerBuilder) setFieldsLazyWrapComponentFunc(fields *presets.FieldsBuilder) {
+	for _, fieldName := range fields.FieldNames() {
+		field := fields.GetField(fieldName.(string))
+		if field.GetNestedFieldsBuilder() != nil {
+			b.setFieldsLazyWrapComponentFunc(field.GetNestedFieldsBuilder())
+			continue
+		}
+		field.LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
+			return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+				comp := in(obj, field, ctx)
+				formKey := field.ModelInfo.URIName() + "_" + field.FormKey
+				if p, ok := comp.(TagInterface); ok {
+					p.SetAttr("ref", formKey)
+					return h.Div(comp).Attr("v-on-mounted", fmt.Sprintf(`({el,window})=>{
+		const refName = "%s";
+		vars.__currentFocusUpdating = false;
+		el.__handleFocusIn=()=>{
+			vars.__currentFocusRefName = refName;
+		};
+		el.__handleFocusOut=(event)=>{
+			if(vars.__currentFocusUpdating){return}
+			vars.__currentFocusRefName ="";
+		};
+
+		el.addEventListener("focusin",el.__handleFocusIn);
+		el.addEventListener("focusout",el.__handleFocusOut);
+	   }`, formKey)).Attr("v-on-unmounted", `({el})=>{
+		el.removeEventListener("focusin",el.__handleFocusIn);
+		el.removeEventListener("focusout",el.__handleFocusOut);
+}`).Attr("v-before-unmount", `({el})=>{
+	vars.__currentFocusUpdating = true;
+}`)
+				}
+				return comp
+			}
+		})
+	}
+}
+
+func (b *ContainerBuilder) Install() {
+	editing := b.mb.Editing()
+	editing.WrapIdCurrentActive(func(in presets.IdCurrentActiveProcessor) presets.IdCurrentActiveProcessor {
 		return func(ctx *web.EventContext, current string) (s string, err error) {
 			s, err = in(ctx, current)
 			if err != nil {
@@ -953,7 +983,10 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 			return
 		}
 	})
-	b.mb.Editing().AppendHiddenFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+	if b.builder.autoSaveReload {
+		b.setFieldsLazyWrapComponentFunc(&editing.FieldsBuilder)
+	}
+	editing.AppendHiddenFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		if portalName := ctx.Param(presets.ParamPortalName); portalName != pageBuilderRightContentPortal {
 			return nil
 		}
@@ -971,6 +1004,9 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 				const newAddRowBtn = window.document.getElementById(addRowBtnID);
 				newAddRowBtn.scrollIntoView({ behavior: 'smooth', block: 'end' });
 				}
+				 const __currentFocusRefName = $refs[vars.__currentFocusRefName];
+                 if(!__currentFocusRefName || typeof __currentFocusRefName.focus != 'function'){return}
+				  __currentFocusRefName.focus();	
 			}`, addRowBtnID)),
 			web.Listen(
 				b.mb.NotifRowUpdated(),
@@ -984,8 +1020,34 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 						Query(paramStatus, ctx.Param(paramStatus)).MergeQuery(true).Go()).
 					Go(),
 			),
+			h.If(b.builder.autoSaveReload,
+				web.Listen(
+					b.mb.NotifModelsUpdated(),
+					web.Plaid().
+						URL(b.mb.Info().ListingHref()).
+						EventFunc(actions.Edit).
+						Query(presets.ParamID, web.Var("payload.ids[0]")).
+						Query(presets.ParamPortalName, pageBuilderRightContentPortal).
+						Query(presets.ParamOverlay, actions.Content).Go(),
+				),
+			),
 		)
 	})
+}
+
+func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
+	b.model = m
+
+	mb := b.builder.ps.Model(m)
+	mb.WrapVerifier(func(_ func() *perm.Verifier) func() *perm.Verifier {
+		return func() *perm.Verifier {
+			v := mb.GetPresetsBuilder().GetVerifier().Spawn()
+			v.SnakeOn("demo_containers")
+			return v.SnakeOn(mb.Info().URIName())
+		}
+	})
+	b.mb = mb
+
 	val := reflect.ValueOf(m)
 	if val.Kind() != reflect.Ptr {
 		panic("model pointer type required")
@@ -1237,12 +1299,22 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			mb.preview.ServeHTTP(w, r)
 			return
 		}
+		if r.RequestURI == mb.editor.Info().ListingHref() {
+			http.Redirect(w, r, mb.mb.Info().ListingHref(), http.StatusFound)
+			return
+		}
 	}
 	if b.images != nil {
 		if strings.Index(r.RequestURI, path.Join(b.prefix, b.imagesPrefix)) >= 0 {
 			b.images.ServeHTTP(w, r)
 			return
 		}
+	}
+	pattern := fmt.Sprintf("^%s/[\\w-]+(-[\\w-]+)?$", b.prefix)
+	ok, _ := regexp.MatchString(pattern, r.RequestURI)
+	if ok {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
 	}
 	b.ps.ServeHTTP(w, r)
 }
@@ -1376,9 +1448,18 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %q}`, device))
 }
 
-func (b *Builder) getModelBuilder(mb *presets.ModelBuilder) *ModelBuilder {
+func (b *Builder) GetModelBuilder(mb *presets.ModelBuilder) *ModelBuilder {
 	for _, modelBuilder := range b.models {
 		if modelBuilder.mb == mb {
+			return modelBuilder
+		}
+	}
+	return nil
+}
+
+func (b *Builder) GetPageModelBuilder() *ModelBuilder {
+	for _, modelBuilder := range b.models {
+		if modelBuilder.name == utils.GetObjectName(&Page{}) {
 			return modelBuilder
 		}
 	}
