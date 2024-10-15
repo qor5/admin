@@ -145,9 +145,11 @@ func (op *DataOperatorBuilder) Fetch(obj interface{}, id string, ctx *web.EventC
 	return
 }
 func (op *DataOperatorBuilder) getDB(ctx *web.EventContext) *gorm.DB {
-	db, ok := ctx.ContextValue(ctxKeyDBForRelay{}).(*gorm.DB)
-	if ok {
-		return db
+	if ctx.R != nil {
+		db, ok := ctx.ContextValue(ctxKeyDBForRelay{}).(*gorm.DB)
+		if ok {
+			return db
+		}
 	}
 	return op.db
 }
