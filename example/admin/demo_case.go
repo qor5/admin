@@ -279,7 +279,7 @@ func configVxDialog(detailing *presets.DetailingBuilder, mb *presets.ModelBuilde
 }
 
 func generateSection(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder, section, editField, label string) *presets.SectionBuilder {
-	presets.NewSectionBuilder(mb, section).Label(label).Editing(editField).
+	return presets.NewSectionBuilder(mb, section).Label(label).Editing(editField).
 		ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			p := obj.(*DemoCase)
 			return vx.VXReadonlyField().Value(h.JSONString(reflectutils.MustGet(p, editField))).Label(editField)
