@@ -373,8 +373,8 @@ func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.Event
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr    = presets.MustGetMessages(ctx.R)
 		okAction = web.Plaid().
-			URL(b.editorURL()).
-			EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
+				URL(b.editorURL()).
+				EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
 		portalName = dialogPortalName
 	)
 
@@ -642,6 +642,7 @@ func (b *ModelBuilder) containerPreview(ctx *web.EventContext) (r web.EventRespo
 	r.RunScript = "vars.containerPreview = true"
 	return
 }
+
 func (b *ModelBuilder) replicateContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var (
 		container   Container
@@ -659,7 +660,7 @@ func (b *ModelBuilder) replicateContainer(ctx *web.EventContext) (r web.EventRes
 		)
 		if container.Shared {
 			container.Shared = false
-			//presets.ShowMessage(&r, "", ColorWarning)
+			// presets.ShowMessage(&r, "", ColorWarning)
 		}
 		container.ID = 0
 		if dbErr = tx.First(&model, container.ModelID).Error; dbErr != nil {
