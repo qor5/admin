@@ -996,6 +996,37 @@ func TestPageBuilder(t *testing.T) {
 			},
 			ExpectPageBodyNotContains: []string{"Page Builder"},
 		},
+		{
+			Name:  "PageBuilder Editor Replicate Container",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					EventFunc(pagebuilder.ReplicateContainerEvent).
+					Query("containerID", "10_International").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var (
+					container pagebuilder.Container
+					m         containers.ListContent
+				)
+				TestDB.Order("id desc").First(&container)
+				if container.ID <= 11 || container.ModelID == 10 || container.ModelName != "ListContent" {
+					t.Fatalf("Replicate Container Faield %#+v", container)
+					return
+				}
+				TestDB.Order("id desc").First(&m, container.ModelID)
+				if m.Link != "ijuhuheweq" {
+					t.Fatalf("Replicate Container Model Faield %#+v", m)
+					return
+				}
+				return
+			},
+		},
 	}
 
 	for _, c := range cases {

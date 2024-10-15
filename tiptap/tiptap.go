@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/qor5/admin/v3/media"
-	"github.com/qor5/admin/v3/media/media_library"
-	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/samber/lo"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
+
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
+
+	"github.com/qor5/admin/v3/media"
+	"github.com/qor5/admin/v3/media/media_library"
 )
 
 type TiptapEditorBuilder struct {
@@ -45,6 +47,10 @@ func (b *TiptapEditorBuilder) ErrorMessages(v ...string) (r *TiptapEditorBuilder
 func (b *TiptapEditorBuilder) Attr(vs ...any) (r *TiptapEditorBuilder) {
 	b.editor.Attr(vs...)
 	return b
+}
+
+func (b *TiptapEditorBuilder) SetAttr(k string, v interface{}) {
+	b.editor.SetAttr(k, v)
 }
 
 func (b *TiptapEditorBuilder) Disabled(v bool) (r *TiptapEditorBuilder) {
