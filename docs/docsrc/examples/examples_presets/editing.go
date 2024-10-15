@@ -12,7 +12,6 @@ import (
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
-	"golang.org/x/text/language"
 	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/media"

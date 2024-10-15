@@ -458,19 +458,11 @@ func (b *DetailingBuilder) Section(sections ...*SectionBuilder) *DetailingBuilde
 				return err
 			}
 		})
-		if sb.isList {
-			sb.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-				return web.Portal(
-					sb.listComponent(obj, ctx, -1, -1, -1, false),
-				).Name(sb.FieldPortalName())
+		b.Field(sb.name).Component(sb).
+			SetterFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) (err error) {
+				err = sb.unmarshalFunc(ctx, obj)
+				return err
 			})
-		} else {
-			b.Field(sb.name).Component(sb).
-				SetterFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) (err error) {
-					err = sb.unmarshalFunc(ctx, obj)
-					return err
-				})
-		}
 	}
 	return b
 }
