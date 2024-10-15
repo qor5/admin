@@ -137,8 +137,7 @@ func configVxField(detailing *presets.DetailingBuilder) {
 				v.VRow(
 					v.VCol(
 						DemoCaseTextField(obj, section, editField, "Text", "Text", vErr).
-							Tips("This is Tips").
-							Autofocus(true),
+							Tips("This is Tips"),
 					),
 					v.VCol(
 						DemoCaseTextField(obj, section, editField, "Textarea", "Textarea", vErr).
