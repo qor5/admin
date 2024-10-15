@@ -9,6 +9,8 @@ import (
 	"github.com/theplant/gofixtures"
 
 	"github.com/qor5/admin/v3/example/admin"
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/pagebuilder/example/containers"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
 )
@@ -58,6 +60,37 @@ func TestPageBuilderShareContainer(t *testing.T) {
 				return req
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"ListContent"},
+		},
+		{
+			Name:  "PageBuilder Editor Replicate  Shared Container",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerShareTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					EventFunc(pagebuilder.ReplicateContainerEvent).
+					Query("containerID", "10_International").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var (
+					container pagebuilder.Container
+					m         containers.ListContent
+				)
+				TestDB.Order("id desc").First(&container)
+				if container.ID <= 11 || container.ModelID == 10 || container.ModelName != "ListContent" || container.Shared {
+					t.Fatalf("Replicate Container Faield %#+v", container)
+					return
+				}
+				TestDB.Order("id desc").First(&m, container.ModelID)
+				if m.Link != "ijuhuheweq" {
+					t.Fatalf("Replicate Container Model Faield %#+v", m)
+					return
+				}
+				return
+			},
 		},
 	}
 	for _, c := range cases {
