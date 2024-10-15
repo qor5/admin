@@ -14,7 +14,7 @@ import (
 )
 
 var demoCaseData = gofixtures.Data(gofixtures.Sql(`
-INSERT INTO public.demo_cases (id, created_at, updated_at, deleted_at, name) VALUES (1, '2024-10-10 03:18:50.316417 +00:00', '2024-10-10 03:18:50.316417 +00:00', null, '12313');
+INSERT INTO public.demo_cases (id, created_at, updated_at, deleted_at, name,field_data) VALUES (1, '2024-10-10 03:18:50.316417 +00:00', '2024-10-10 03:18:50.316417 +00:00', null, '12313','{"Text":"121231321\u0026\u0026","Textarea":"1231","TextValidate":"21312","TextareaValidate":"1😋11231"}');
 `, []string{`demo_cases`}))
 
 func TestDemoCase(t *testing.T) {
@@ -62,7 +62,7 @@ func TestDemoCase(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPageBodyContainsInOrder: []string{"vx-field", "vx-select", "vx-checkbox"},
+			ExpectPageBodyContainsInOrder: []string{"vx-field", "&#34;121231321&amp;&amp;&#34;", "vx-select", "vx-checkbox"},
 		},
 		{
 			Name:  "Demo Case Field Save",

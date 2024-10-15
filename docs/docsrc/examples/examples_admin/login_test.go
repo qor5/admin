@@ -94,3 +94,34 @@ func TestChangePassword(t *testing.T) {
 		})
 	}
 }
+
+func TestPasswordWithVisibleToggle(t *testing.T) {
+	current := &User{
+		Model:   gorm.Model{ID: 1},
+		Name:    "admin",
+		Address: "admin address",
+		UserPass: login.UserPass{
+			Account:  "qor@theplant.jp",
+			Password: "$2a$10$N7gloPSgJtB23hYTO9Ww8uBqpAcLn7KOGFcYQFkg5IA92EG8LIZFu",
+		},
+	}
+
+	h := changePasswordExample(presets.New(), TestDB, current)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "password field with visible toggle",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return httptest.NewRequest("GET", "/auth/login", nil)
+			},
+			ExpectPageBodyContainsInOrder: []string{`:password-visible-toggle='true'`},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, h)
+		})
+	}
+}
