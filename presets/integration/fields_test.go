@@ -147,7 +147,7 @@ func TestFields(t *testing.T) {
 				return ftRead.InspectFields(&User{}).
 					Except("Float*").ToComponent(mb.Info(), user, ctx)
 			},
-			expect: `
+			expect: fmt.Sprintf(`
 <td>1</td>
 
 <td>2</td>
@@ -156,8 +156,8 @@ func TestFields(t *testing.T) {
 
 <td>true</td>
 
-<td>2019-08-29 11:09:29</td>
-`,
+<td>%s</td>
+`, time1LocalFormat),
 		},
 
 		{
