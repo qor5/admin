@@ -443,71 +443,67 @@ func TestSchedulePublish(t *testing.T) {
 	`, expected, storage.Objects["test/product/1/index.html"])
 	}
 
+	productV1.ScheduledEndAt = nil
+	// expect ignored
 	{
-		productV1.ScheduledEndAt = nil
-		// expect ignored
-		{
-			productV1.Name = "should_ignored_by_publish"
-			startAt := db.NowFunc().Add(-24 * time.Hour)
-			productV1.ScheduledStartAt = &startAt
+		productV1.Name = "should_ignored_by_publish"
+		startAt := db.NowFunc().Add(-24 * time.Hour)
+		productV1.ScheduledStartAt = &startAt
 
-			err := db.Save(&productV1).Error
-			require.NoError(t, err)
+		err := db.Save(&productV1).Error
+		require.NoError(t, err)
 
-			err = schedulePublisher.Run(context.Background(), ProductWithSchedulePublisherDBScope{
-				Product: productV1,
-			})
-			require.NoError(t, err)
-			require.Equal(t, "", storage.Objects["test/product/1/index.html"])
-		}
-		// expect ok
-		{
-			productV1.Name = "3"
-			startAt := db.NowFunc().Add(-24 * time.Hour)
-			productV1.ScheduledStartAt = &startAt
-
-			err := db.Save(&productV1).Error
-			require.NoError(t, err)
-
-			err = schedulePublisher.Run(context.Background(), ProductWithSchedulePublisherDBScope{
-				Product: productV1,
-			})
-			require.NoError(t, err)
-			require.Equal(t, "13", storage.Objects["test/product/1/index.html"])
-		}
+		err = schedulePublisher.Run(context.Background(), ProductWithSchedulePublisherDBScope{
+			Product: productV1,
+		})
+		require.NoError(t, err)
+		require.Equal(t, "", storage.Objects["test/product/1/index.html"])
 	}
+	// expect ok
 	{
-		productV1.ScheduledStartAt = nil
-		// expect ignored
-		{
-			productV1.Name = "should_ignored_by_unpublish"
-			endAt := startAt.Add(time.Second * 2)
-			productV1.ScheduledEndAt = &endAt
+		productV1.Name = "3"
+		startAt := db.NowFunc().Add(-24 * time.Hour)
+		productV1.ScheduledStartAt = &startAt
 
-			err := db.Save(&productV1).Error
-			require.NoError(t, err)
+		err := db.Save(&productV1).Error
+		require.NoError(t, err)
 
-			err = schedulePublisher.Run(context.Background(), ProductWithSchedulePublisherDBScope{
-				Product: productV1,
-			})
-			require.NoError(t, err)
-			require.Equal(t, "13", storage.Objects["test/product/1/index.html"])
-		}
-		// expect ok
-		{
-			productV1.Name = "3"
-			endAt := startAt.Add(time.Second * 2)
-			productV1.ScheduledEndAt = &endAt
+		err = schedulePublisher.Run(context.Background(), ProductWithSchedulePublisherDBScope{
+			Product: productV1,
+		})
+		require.NoError(t, err)
+		require.Equal(t, "13", storage.Objects["test/product/1/index.html"])
+	}
+	productV1.ScheduledStartAt = nil
+	// expect ignored
+	{
+		productV1.Name = "should_ignored_by_unpublish"
+		endAt := startAt.Add(time.Second * 2)
+		productV1.ScheduledEndAt = &endAt
 
-			err := db.Save(&productV1).Error
-			require.NoError(t, err)
+		err := db.Save(&productV1).Error
+		require.NoError(t, err)
 
-			err = schedulePublisher.Run(context.Background(), ProductWithSchedulePublisherDBScope{
-				Product: productV1,
-			})
-			require.NoError(t, err)
-			require.Equal(t, "", storage.Objects["test/product/1/index.html"])
-		}
+		err = schedulePublisher.Run(context.Background(), ProductWithSchedulePublisherDBScope{
+			Product: productV1,
+		})
+		require.NoError(t, err)
+		require.Equal(t, "13", storage.Objects["test/product/1/index.html"])
+	}
+	// expect ok
+	{
+		productV1.Name = "3"
+		endAt := startAt.Add(time.Second * 2)
+		productV1.ScheduledEndAt = &endAt
+
+		err := db.Save(&productV1).Error
+		require.NoError(t, err)
+
+		err = schedulePublisher.Run(context.Background(), ProductWithSchedulePublisherDBScope{
+			Product: productV1,
+		})
+		require.NoError(t, err)
+		require.Equal(t, "", storage.Objects["test/product/1/index.html"])
 	}
 }
 
