@@ -147,10 +147,10 @@ func configVxField(detailing *presets.DetailingBuilder) {
 				),
 				v.VRow(
 					v.VCol(
-						DemoCaseTextField(obj, section, editField, "TextValidate", "TextValidate(input more than 5 chars)", vErr),
+						DemoCaseTextField(obj, section, editField, "TextValidate", "TextValidate(input more than 5 chars)", vErr).Required(true),
 					),
 					v.VCol(
-						DemoCaseTextField(obj, section, editField, "TextareaValidate", "TextareaValidate(input more than 10 chars)", vErr).
+						DemoCaseTextField(obj, section, editField, "TextareaValidate", "TextareaValidate(input more than 10 chars)", vErr).Required(true).
 							Type("textarea"),
 					),
 				),
