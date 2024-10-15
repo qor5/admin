@@ -56,7 +56,8 @@ func activityExample(b *presets.Builder, db *gorm.DB, customize func(mb *presets
 	defer func() { ab.RegisterModel(mb) }()
 	mb.Listing("Title", activity.ListFieldNotes, "Code", "Price")
 	dp := mb.Detailing("Content").Drawer(true)
-	dp.Section("Content").Editing("Title", "Code", "Approved", "Edited", "Price")
+	contentSection := presets.NewSectionBuilder(mb, "Content").Editing("Title", "Code", "Approved", "Edited", "Price")
+	dp.Section(contentSection)
 	dp.SidePanelFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		return ab.MustGetModelBuilder(mb).NewTimelineCompo(ctx, obj, "_side")
 	})

@@ -162,7 +162,7 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 		})
 	}
 
-	detailPageEditor(dp, b)
+	detailPageEditor(dp, pm, b)
 
 	b.configDetailLayoutFunc(pb, pm, db)
 

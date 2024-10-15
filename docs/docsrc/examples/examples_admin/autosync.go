@@ -46,9 +46,9 @@ func autoSyncExample(b *presets.Builder, db *gorm.DB, customize func(mb *presets
 
 	mb.Editing().Field("TitleSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)
 	dp := mb.Detailing("Detail").Drawer(true)
-	dp.Section("Detail").
-		Editing("Title", "TitleSlug", "Description").
-		EditingField("TitleSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)
+	detailSection := presets.NewSectionBuilder(mb, "Detail").Editing("Title", "TitleSlug", "Description")
+	detailSection.EditingField("TitleSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)
+	dp.Section(detailSection)
 
 	if customize != nil {
 		customize(mb)

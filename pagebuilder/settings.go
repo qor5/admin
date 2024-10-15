@@ -123,10 +123,10 @@ transform-origin: 0 0; transform:scale(0.5);width:200%;height:200%`),
 	}
 }
 
-func detailPageEditor(dp *presets.DetailingBuilder, b *Builder) {
+func detailPageEditor(dp *presets.DetailingBuilder, mb *presets.ModelBuilder, b *Builder) {
 	db := b.db
 	fields := b.filterFields([]interface{}{"Title", "CategoryID", "Slug"})
-	section := dp.Section("Page").
+	section := presets.NewSectionBuilder(mb, "Page").
 		Editing(fields...).
 		WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
 			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
@@ -207,5 +207,6 @@ func detailPageEditor(dp *presets.DetailingBuilder, b *Builder) {
 			return complete
 		})
 	}
+	dp.Section(section)
 	return
 }

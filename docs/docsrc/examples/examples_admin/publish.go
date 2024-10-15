@@ -88,7 +88,7 @@ func PublishExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	// @snippet_begin(PublishConfigureView)
 	mb := b.Model(&WithPublishProduct{})
 	dp := mb.Detailing(publish.VersionsPublishBar, "Details").Drawer(true)
-	dp.Section("Details").
+	detailSection := presets.NewSectionBuilder(mb, "Details").
 		ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			product := obj.(*WithPublishProduct)
 			detail := vx.DetailInfo(
@@ -100,7 +100,7 @@ func PublishExample(b *presets.Builder, db *gorm.DB) http.Handler {
 			return detail
 		}).
 		Editing("Name", "Price")
-
+	dp.Section(detailSection)
 	ab := activity.New(db, func(ctx context.Context) (*activity.User, error) {
 		return &activity.User{
 			ID:   "1",

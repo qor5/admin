@@ -206,3 +206,39 @@ func TestPresetsEditingTiptap(t *testing.T) {
 		})
 	}
 }
+
+func TestPresetsEditingSection(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsEditingSection(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "new drawer",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/companies?__execute_event__=presets_New").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`section1`, "Name", "Create"},
+			ExpectPortalUpdate0NotContains:     []string{"Save", "Edit"},
+		},
+		{
+			Name:  "do new",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/companies?__execute_event__=presets_Update").
+					AddField("section1.Name", "Terry").
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{"Terry"},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}

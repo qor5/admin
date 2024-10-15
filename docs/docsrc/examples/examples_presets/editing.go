@@ -287,3 +287,24 @@ func PresetsEditingSetter(b *presets.Builder, db *gorm.DB) (
 
 	return
 }
+
+func PresetsEditingSection(b *presets.Builder, db *gorm.DB) (
+	mb *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	b.DataOperator(gorm2op.DataOperator(db))
+	db.AutoMigrate(&Company{})
+	mb = b.Model(&Company{})
+	section := presets.NewSectionBuilder(mb, "section1").
+		Editing("Name").Viewing("Name")
+
+	detail := mb.Detailing("section1").Drawer(true)
+	detail.Section(section)
+
+	edit := mb.Editing("section1")
+
+	edit.Section(section.Clone())
+	return
+}

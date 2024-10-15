@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/qor5/admin/v3/presets/actions"
@@ -41,7 +40,7 @@ type DetailingBuilder struct {
 	drawer                   bool
 	layouts                  []DetailingLayout
 	idCurrentActiveProcessor IdCurrentActiveProcessor
-	SectionsBuilder
+	FieldsBuilder
 }
 
 type pageTitle interface {
@@ -418,357 +417,6 @@ func (b *DetailingBuilder) actionForm(action *ActionBuilder, ctx *web.EventConte
 	).Fluid(true)
 }
 
-// EditDetailField EventFunc: click detail field component edit button
-func (b *DetailingBuilder) EditDetailField(ctx *web.EventContext) (r web.EventResponse, err error) {
-	key := ctx.Queries().Get(SectionFieldName)
-
-	f := b.Section(key)
-
-	obj := b.mb.NewModel()
-	obj, err = b.GetFetchFunc()(obj, ctx.Param(ParamID), ctx)
-	if err != nil {
-		return
-	}
-	if f.setter != nil {
-		f.setter(obj, ctx)
-	}
-
-	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
-		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
-		return
-	}
-
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-		Name: f.FieldPortalName(),
-		Body: f.editComponent(obj, &FieldContext{
-			ModelInfo: b.mb.modelInfo,
-			FormKey:   f.name,
-			Name:      f.name,
-			Label:     f.label,
-		}, ctx),
-	})
-	return r, nil
-}
-
-// SaveDetailField EventFunc: click save button
-func (b *DetailingBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResponse, err error) {
-	key := ctx.Param(SectionFieldName)
-	id := ctx.Param(ParamID)
-	isCancel := ctx.ParamAsBool(SectionIsCancel)
-
-	f := b.Section(key)
-
-	field := &FieldContext{
-		ModelInfo: b.mb.modelInfo,
-		FormKey:   f.name,
-		Name:      f.name,
-		Label:     f.label,
-	}
-
-	obj := b.mb.NewModel()
-	obj, err = b.GetFetchFunc()(obj, id, ctx)
-	if err != nil {
-		return
-	}
-	if f.setter != nil {
-		f.setter(obj, ctx)
-	}
-
-	if isCancel {
-		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: f.FieldPortalName(),
-			Body: f.viewComponent(obj, field, ctx),
-		})
-		return
-	}
-
-	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
-		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
-		return
-	}
-
-	if err = f.unmarshalFunc(ctx, obj); err != nil {
-		ShowMessage(&r, err.Error(), "warning")
-		return r, nil
-	}
-
-	needSave := true
-	if vErr := f.validator(obj, ctx); vErr.HaveErrors() {
-		ctx.Flash = &vErr
-		needSave = false
-		if vErr.GetGlobalError() != "" {
-			ShowMessage(&r, vErr.GetGlobalError(), "warning")
-		}
-	}
-
-	if needSave {
-		err = f.saver(obj, id, ctx)
-		if err != nil {
-			ShowMessage(&r, err.Error(), "warning")
-			return r, nil
-		}
-	}
-
-	if _, ok := ctx.Flash.(*web.ValidationErrors); ok {
-		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: f.FieldPortalName(),
-			Body: f.editComponent(obj, field, ctx),
-		})
-		return
-	}
-
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-		Name: f.FieldPortalName(),
-		Body: f.viewComponent(obj, field, ctx),
-	})
-
-	r.Emit(b.mb.NotifModelsUpdated(), PayloadModelsUpdated{
-		Ids:    []string{id},
-		Models: map[string]any{id: obj},
-	})
-	return r, nil
-}
-
-// EditDetailListField Event: click detail list field element edit button
-func (b *DetailingBuilder) EditDetailListField(ctx *web.EventContext) (r web.EventResponse, err error) {
-	var (
-		fieldName          string
-		index, deleteIndex int64
-	)
-
-	fieldName = ctx.Queries().Get(SectionFieldName)
-	f := b.Section(fieldName)
-
-	unsaved := ctx.ParamAsBool(f.elementUnsavedKey())
-	index, err = strconv.ParseInt(ctx.Queries().Get(f.EditBtnKey()), 10, 64)
-	if err != nil {
-		return
-	}
-	deleteIndex = -1
-	if ctx.Queries().Get(f.DeleteBtnKey()) != "" {
-		deleteIndex, err = strconv.ParseInt(ctx.Queries().Get(f.EditBtnKey()), 10, 64)
-		if err != nil {
-			return
-		}
-	}
-
-	obj := b.mb.NewModel()
-	obj, err = b.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
-	if err != nil {
-		return
-	}
-	if f.setter != nil {
-		f.setter(obj, ctx)
-	}
-
-	if unsaved {
-		if _, err := f.appendElement(obj); err != nil {
-			panic(err)
-		}
-	}
-
-	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
-		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
-		return
-	}
-
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-		Name: f.FieldPortalName(),
-		Body: f.listComponent(obj, ctx, int(deleteIndex), int(index), -1, unsaved),
-	})
-
-	return
-}
-
-// SaveDetailListField Event: click detail list field element Save button
-func (b *DetailingBuilder) SaveDetailListField(ctx *web.EventContext) (r web.EventResponse, err error) {
-	var (
-		fieldName string
-		index     int
-		isCancel  bool
-	)
-
-	isCancel = ctx.ParamAsBool(SectionIsCancel)
-	fieldName = ctx.Param(SectionFieldName)
-
-	f := b.Section(fieldName)
-
-	unsaved := ctx.ParamAsBool(f.elementUnsavedKey())
-	index = ctx.ParamAsInt(f.SaveBtnKey())
-
-	obj := b.mb.NewModel()
-	obj, err = b.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
-	if err != nil {
-		return
-	}
-	if f.setter != nil {
-		f.setter(obj, ctx)
-	}
-
-	if isCancel {
-		if unsaved {
-			if _, err = f.appendElement(obj); err != nil {
-				panic(err)
-			}
-		}
-
-		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: f.FieldPortalName(),
-			Body: f.listComponent(obj, ctx, -1, -1, index, unsaved),
-		})
-		return
-	}
-
-	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
-		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
-		return
-	}
-
-	if err = f.unmarshalFunc(ctx, obj); err != nil {
-		ShowMessage(&r, err.Error(), "warning")
-		return r, nil
-	}
-
-	needSave := true
-	if vErr := f.validator(obj, ctx); vErr.HaveErrors() {
-		ctx.Flash = &vErr
-		needSave = false
-		if vErr.GetGlobalError() != "" {
-			ShowMessage(&r, vErr.GetGlobalError(), "warning")
-		}
-	}
-
-	if needSave {
-		err = f.saver(obj, ctx.Queries().Get(ParamID), ctx)
-		if err != nil {
-			ShowMessage(&r, err.Error(), "warning")
-			return r, nil
-		}
-	}
-
-	if ctx.ParamAsBool(f.elementUnsavedKey()) {
-		if _, err := f.appendElement(obj); err != nil {
-			panic(err)
-		}
-	}
-
-	if _, ok := ctx.Flash.(*web.ValidationErrors); ok {
-		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: f.FieldPortalName(),
-			Body: f.listComponent(obj, ctx, -1, index, -1, unsaved),
-		})
-		return
-	}
-
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-		Name: f.FieldPortalName(),
-		Body: f.listComponent(obj, ctx, -1, -1, index, unsaved),
-	})
-
-	return
-}
-
-// DeleteDetailListField Event: click detail list field element Delete button
-func (b *DetailingBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.EventResponse, err error) {
-	var (
-		fieldName string
-		index     int64
-	)
-
-	fieldName = ctx.Queries().Get(SectionFieldName)
-	f := b.Section(fieldName)
-
-	unsaved := ctx.ParamAsBool(f.elementUnsavedKey())
-	index, err = strconv.ParseInt(ctx.Queries().Get(f.DeleteBtnKey()), 10, 64)
-	if err != nil {
-		return
-	}
-
-	obj := b.mb.NewModel()
-	obj, err = b.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
-	if err != nil {
-		return
-	}
-	if f.setter != nil {
-		f.setter(obj, ctx)
-	}
-
-	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
-		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
-		return
-	}
-
-	err = f.removeElement(obj, int(index))
-	if err != nil {
-		ShowMessage(&r, err.Error(), "warning")
-		return r, nil
-	}
-
-	needSave := true
-	if vErr := f.validator(obj, ctx); vErr.HaveErrors() {
-		ctx.Flash = &vErr
-		needSave = false
-		if vErr.GetGlobalError() != "" {
-			ShowMessage(&r, vErr.GetGlobalError(), "warning")
-		}
-	}
-
-	if needSave {
-		err = f.saver(obj, ctx.Queries().Get(ParamID), ctx)
-		if err != nil {
-			ShowMessage(&r, err.Error(), "warning")
-			return r, nil
-		}
-	}
-
-	if unsaved {
-		if _, err := f.appendElement(obj); err != nil {
-			panic(err)
-		}
-	}
-
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-		Name: f.FieldPortalName(),
-		Body: f.listComponent(obj, ctx, int(index), -1, -1, unsaved),
-	})
-
-	return
-}
-
-// CreateDetailListField Event: click detail list field element Add row button
-func (b *DetailingBuilder) CreateDetailListField(ctx *web.EventContext) (r web.EventResponse, err error) {
-	fieldName := ctx.Queries().Get(SectionFieldName)
-	f := b.Section(fieldName)
-
-	obj := b.mb.NewModel()
-	obj, err = b.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
-	if err != nil {
-		return
-	}
-	if f.setter != nil {
-		f.setter(obj, ctx)
-	}
-
-	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
-		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
-		return
-	}
-
-	var listLen int
-	if ctx.ParamAsBool(f.elementUnsavedKey()) {
-		if listLen, err = f.appendElement(obj); err != nil {
-			panic(err)
-		}
-	}
-
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-		Name: f.FieldPortalName(),
-		Body: f.listComponent(obj, ctx, -1, listLen-1, -1, true),
-	})
-
-	return
-}
-
 const fieldRefreshOnUpdate = "__RefreshOnUpdate__"
 
 func (b *DetailingBuilder) EnableRefreshOnUpdate() *DetailingBuilder {
@@ -785,5 +433,42 @@ func (b *DetailingBuilder) EnableRefreshOnUpdate() *DetailingBuilder {
 		}
 		return web.Listen(b.mb.NotifModelsUpdated(), fmt.Sprintf(`payload.ids.includes(%q) && %s`, slug, refresh.Go()))
 	})
+	return b
+}
+
+func (b *DetailingBuilder) Section(sections ...*SectionBuilder) *DetailingBuilder {
+	for _, sb := range sections {
+		if sb.isUsed.Load() {
+			panic("section is used")
+		}
+		sb.isUsed.Store(true)
+		sb.registerEvent()
+		sb.isEdit = false
+
+		sb.WrapValidateFunc(func(in ValidateFunc) ValidateFunc {
+			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+				if err := in(obj, ctx); err.HaveErrors() {
+					return err
+				}
+				if sb.mb.editing.Validator != nil {
+					return sb.mb.editing.Validator(obj, ctx)
+				}
+				return err
+			}
+		})
+		if sb.isList {
+			sb.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+				return web.Portal(
+					sb.listComponent(obj, ctx, -1, -1, -1, false),
+				).Name(sb.FieldPortalName())
+			})
+		} else {
+			b.Field(sb.name).Component(sb).
+				SetterFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) (err error) {
+					err = sb.unmarshalFunc(ctx, obj)
+					return err
+				})
+		}
+	}
 	return b
 }

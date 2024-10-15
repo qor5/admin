@@ -599,9 +599,8 @@ func TestPageBuilder(t *testing.T) {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				return NewMultipartBuilder().
 					PageURL("/pages/10_2024-05-21-v01_International").
-					EventFunc(actions.DoSaveDetailingField).
+					EventFunc("section_save_Page").
 					Query(presets.ParamID, "10_2024-05-21-v01_International").
-					Query("section", "Page").
 					AddField("Page.Title", "123").
 					AddField("Page.Slug", "123").
 					AddField("Page.CategoryID", "0").
@@ -659,8 +658,7 @@ func TestPageBuilder(t *testing.T) {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/pages/10_2024-05-21-v01_International").
-					Query(web.EventFuncIDName, actions.DoEditDetailingField).
-					Query("section", "Page").
+					Query(web.EventFuncIDName, "section_edit_Page").
 					Query("id", "10_2024-05-21-v01_International").
 					BuildEventFuncRequest()
 				return req
@@ -674,8 +672,7 @@ func TestPageBuilder(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/pages/1_2024-05-18-v01_International").
-					Query(web.EventFuncIDName, actions.DoEditDetailingField).
-					Query("section", "Page").
+					Query(web.EventFuncIDName, "section_edit_Page").
 					Query("id", "1_2024-05-18-v01_International").
 					BuildEventFuncRequest()
 				return req

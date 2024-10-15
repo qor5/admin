@@ -6,22 +6,20 @@ import (
 	"mime/multipart"
 	"net/http"
 	"reflect"
-	"slices"
 	"strconv"
 	"strings"
+	"sync/atomic"
 
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/perm"
+	. "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
-
-	"github.com/qor5/admin/v3/presets/actions"
-	"github.com/qor5/x/v3/i18n"
-	. "github.com/qor5/x/v3/ui/vuetify"
 )
 
 const (
-	SectionFieldName = "section"
-	SectionIsCancel  = "isCancel"
+	SectionIsCancel = "isCancel"
 
 	sectionListUnsavedKey        = "sectionListUnsaved"
 	sectionListEditBtnKey        = "sectionListEditBtn"
@@ -31,38 +29,22 @@ const (
 	sectionListFieldEditing = "sectionListEditing"
 )
 
-type SectionsBuilder struct {
-	mb       *ModelBuilder
-	sections []*SectionBuilder
-	FieldsBuilder
-}
-
-func (d *SectionsBuilder) Section(name string) *SectionBuilder {
-	for _, v := range d.sections {
-		if v.name == name {
-			return v
-		}
-	}
-	return d.appendNewSection(name)
-}
-
-func (d *SectionsBuilder) GetSections() []*SectionBuilder {
-	return slices.Clone(d.sections)
-}
-
-func (d *SectionsBuilder) appendNewSection(name string) (r *SectionBuilder) {
+func NewSectionBuilder(mb *ModelBuilder, name string) (r *SectionBuilder) {
 	r = &SectionBuilder{
 		NameLabel: NameLabel{
 			name:  name,
 			label: name,
 		},
+		mb:                mb,
 		validator:         nil,
 		setter:            nil,
 		componentViewFunc: nil,
 		componentEditFunc: nil,
-		father:            d,
-		elementViewFunc:   nil,
-		elementEditFunc:   nil,
+		saveBtnFunc: func(obj interface{}, ctx *web.EventContext) bool {
+			return true
+		},
+		elementViewFunc: nil,
+		elementEditFunc: nil,
 		componentEditBtnFunc: func(obj interface{}, ctx *web.EventContext) bool {
 			return true
 		},
@@ -83,22 +65,20 @@ func (d *SectionsBuilder) appendNewSection(name string) (r *SectionBuilder) {
 		isList:              false,
 		disableLabel:        false,
 	}
-	r.editingFB.Model(d.mb.model)
-	r.editingFB.defaults = d.mb.writeFields.defaults
-	r.viewingFB.Model(d.mb.model)
-	r.viewingFB.defaults = d.mb.p.detailFieldDefaults
+	r.editingFB.Model(mb.model)
+	r.editingFB.defaults = mb.writeFields.defaults
+	r.viewingFB.Model(mb.model)
+	r.viewingFB.defaults = mb.p.detailFieldDefaults
 	r.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		return r.father.mb.editing.Saver(obj, id, ctx)
+		return mb.editing.Saver(obj, id, ctx)
 	})
 	r.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-		if r.father.mb.editing.Validator != nil {
-			return r.father.mb.editing.Validator(obj, ctx)
+		if mb.editing.Validator != nil {
+			return mb.editing.Validator(obj, ctx)
 		}
 		return err
 	})
 	r.UnmarshalFunc(r.DefaultUnmarshalFunc)
-	d.sections = append(d.sections, r)
-
 	// d.Field(name).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	// 	panic("you must set ViewComponentFunc and EditComponentFunc if you want to use SectionsBuilder")
 	// })
@@ -106,19 +86,29 @@ func (d *SectionsBuilder) appendNewSection(name string) (r *SectionBuilder) {
 	return
 }
 
+// func (b *SectionsBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
+// 	return b.comp
+// }
+
 // SectionBuilder is a builder for a section in the detail page.
 // save: 	   fetcher => setter => saver
 // show, edit: fetcher => setter
 type SectionBuilder struct {
 	NameLabel
+	mb                *ModelBuilder
+	isUsed            atomic.Bool
+	isRegistered      bool
+	isEdit            bool
 	unmarshalFunc     func(ctx *web.EventContext, obj interface{}) error
+	comp              FieldComponentFunc
 	saver             SaveFunc
 	setter            SetterFunc
 	validator         ValidateFunc
 	hiddenFuncs       []ObjectComponentFunc
 	componentViewFunc FieldComponentFunc
 	componentEditFunc FieldComponentFunc
-	father            *SectionsBuilder
+	saveBtnFunc       ObjectBoolFunc
+	// father            *SectionsBuilder
 
 	isList       bool
 	disableLabel bool
@@ -154,14 +144,20 @@ type SectionBuilder struct {
 
 type ObjectBoolFunc func(obj interface{}, ctx *web.EventContext) bool
 
-func (b *SectionBuilder) Tabs(tabName string) *SectionBuilder {
-	tabField := b.father.GetField(tabName)
-	if tabField == nil {
-		panic(fmt.Sprintf("field named %s required", tabName))
+func (s *SectionBuilder) Clone() *SectionBuilder {
+	newSection := *s
+	newSection.isUsed.Store(false)
+
+	if s.hiddenFuncs != nil {
+		newSection.hiddenFuncs = make([]ObjectComponentFunc, len(s.hiddenFuncs))
+		copy(newSection.hiddenFuncs, s.hiddenFuncs)
 	}
-	tabField.AppendTabs(b.father.Field(b.name))
-	b.father.GetField(b.name).hidden = true
-	return b
+
+	return &newSection
+}
+
+func (b *SectionBuilder) FieldComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	return b.comp(obj, field, ctx)
 }
 
 func (b *SectionBuilder) ComponentEditBtnFunc(v ObjectBoolFunc) *SectionBuilder {
@@ -187,6 +183,11 @@ func (b *SectionBuilder) ComponentHoverFunc(v ObjectBoolFunc) *SectionBuilder {
 
 func (b *SectionBuilder) WrapComponentHoverFunc(w func(in ObjectBoolFunc) ObjectBoolFunc) (r *SectionBuilder) {
 	b.componentHoverFunc = w(b.componentHoverFunc)
+	return b
+}
+
+func (b *SectionBuilder) WrapSaveBtnFunc(w func(in ObjectBoolFunc) ObjectBoolFunc) (r *SectionBuilder) {
+	b.saveBtnFunc = w(b.componentHoverFunc)
 	return b
 }
 
@@ -232,10 +233,10 @@ func (b *SectionBuilder) AlwaysShowListLabel() *SectionBuilder {
 }
 
 func (b *SectionBuilder) IsList(v interface{}) (r *SectionBuilder) {
-	if b.father.model == nil {
+	if b.mb == nil {
 		panic("model must be provided")
 	}
-	rt := reflectutils.GetType(b.father.model, b.name)
+	rt := reflectutils.GetType(b.mb.model, b.name)
 	if rt.Kind() != reflect.Slice {
 		panic("field kind must be slice")
 	}
@@ -393,8 +394,16 @@ func (b *SectionBuilder) EditComponentFunc(v FieldComponentFunc) (r *SectionBuil
 	return b
 }
 
+func (b *SectionBuilder) defaultEdit() (r *SectionBuilder) {
+	b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return web.Portal(
+			b.editComponent(obj, field, ctx),
+		).Name(b.FieldPortalName())
+	})
+	return b
+}
+
 func (b *SectionBuilder) Label(label string) (r *SectionBuilder) {
-	b.father.Field(b.name).Label(label)
 	b.label = label
 	return b
 }
@@ -437,13 +446,40 @@ func (b *SectionBuilder) ElementEditComponentFunc(v FieldComponentFunc) (r *Sect
 }
 
 // ComponentFunc set FieldBuilder compFunc
-func (b *SectionBuilder) ComponentFunc(v FieldComponentFunc) (r *FieldBuilder) {
-	r = b.father.Field(b.name)
-	return r.ComponentFunc(v)
+func (b *SectionBuilder) ComponentFunc(v FieldComponentFunc) *SectionBuilder {
+	b.comp = v
+	return b
 }
 
 func (b *SectionBuilder) ListFieldPrefix(index int) string {
 	return fmt.Sprintf("%s[%b]", b.name, index)
+}
+
+func (b *SectionBuilder) registerEvent() {
+	if b.isRegistered {
+		return
+	}
+	b.isRegistered = true
+	b.mb.RegisterEventFunc(b.EventSave(), b.SaveDetailField)
+	b.mb.RegisterEventFunc(b.EventEdit(), b.EditDetailField)
+	b.mb.RegisterEventFunc(b.EventDelete(), b.DeleteDetailListField)
+	b.mb.RegisterEventFunc(b.EventCreate(), b.CreateDetailListField)
+}
+
+func (b *SectionBuilder) EventEdit() string {
+	return fmt.Sprintf("section_edit_%s", b.name)
+}
+
+func (b *SectionBuilder) EventSave() string {
+	return fmt.Sprintf("section_save_%s", b.name)
+}
+
+func (b *SectionBuilder) EventDelete() string {
+	return fmt.Sprintf("section_delete_%s", b.name)
+}
+
+func (b *SectionBuilder) EventCreate() string {
+	return fmt.Sprintf("section_create_%s", b.name)
 }
 
 func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -454,14 +490,14 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 		}
 	}
 
-	disableEditBtn := b.father.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
+	disableEditBtn := b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
 	btn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Edit")).Variant(VariantFlat).Size(SizeXSmall).
 		PrependIcon("mdi-pencil-outline").
 		Attr("v-show", fmt.Sprintf("%t&&%t", b.componentEditBtnFunc(obj, ctx), !disableEditBtn)).
 		Attr("@click", web.Plaid().
 			URL(ctx.R.URL.Path).
-			EventFunc(actions.DoEditDetailingField).
-			Query(SectionFieldName, b.name).
+			EventFunc(b.EventEdit()).
+			// Query(SectionFieldName, b.name).
 			Query(ParamID, id).
 			Go())
 
@@ -473,7 +509,7 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 	}
 	content := h.Div().Class("section-wrap with-border-b").ClassIf("can-edit", b.componentEditBtnFunc(obj, ctx) && !disableEditBtn)
 	if b.label != "" {
-		lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.father.mb.label, b.label)
+		lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.mb.label, b.label)
 		content.AppendChildren(
 			h.Div(
 				h.If(!b.disableLabel, h.H2(lb).Class("section-title")),
@@ -520,19 +556,19 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 		Attr("style", "text-transform: none;").
 		Attr("@click", cancelChangeEvent+web.Plaid().
 			URL(ctx.R.URL.Path).
-			EventFunc(actions.DoSaveDetailingField).
-			Query(SectionFieldName, b.name).
+			EventFunc(b.EventSave()).
+			// Query(SectionFieldName, b.name).
 			Query(ParamID, id).
 			Query(SectionIsCancel, true).
 			Go())
 
-	disableEditBtn := b.father.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
+	disableEditBtn := b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
 	saveBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Save")).PrependIcon("mdi-check").Size(SizeSmall).Variant(VariantFlat).Color(ColorPrimary).Disabled(disableEditBtn).
 		Attr("style", "text-transform: none;").
 		Attr("@click", cancelChangeEvent+web.Plaid().
 			URL(ctx.R.URL.Path).
-			EventFunc(actions.DoSaveDetailingField).
-			Query(SectionFieldName, b.name).
+			EventFunc(b.EventSave()).
+			// Query(SectionFieldName, b.name).
 			Query(ParamID, id).
 			Go())
 
@@ -546,7 +582,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 	content := h.Div().Class("section-wrap edit-view with-border-b")
 
 	if b.label != "" && !b.disableLabel {
-		lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.father.mb.label, b.label)
+		lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.mb.label, b.label)
 		content.AppendChildren(
 			h.Div(
 				h.H2(lb).Class("section-title"),
@@ -554,6 +590,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 		)
 	}
 
+	disableSaveBtn := !b.saveBtnFunc(obj, ctx)
 	if b.componentEditFunc != nil {
 		content.AppendChildren(
 			h.Div(
@@ -563,14 +600,25 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 							// detailFields
 							h.Div(b.componentEditFunc(obj, field, ctx)).
 								Class("flex-grow-1 pb-6"),
-							h.Div(
-								cancelBtn,
-								saveBtn.Class("ml-2"),
-							).Class("section-edit-area bottom-area"),
+							h.If(
+								!disableSaveBtn,
+								h.Div(
+									cancelBtn,
+									saveBtn.Class("ml-2"),
+								).Class("section-edit-area bottom-area"),
+							),
 						).Class("d-flex flex-column"),
 					),
 				).Variant(VariantOutlined),
 			).Class("section-body"),
+		)
+	}
+	if b.isEdit {
+		return h.Div(
+			web.Scope(
+				content,
+				hiddenComp,
+			).OnChange(onChangeEvent).UseDebounce(150),
 		)
 	}
 	return h.Div(
@@ -622,7 +670,7 @@ func (b *SectionBuilder) listComponent(obj interface{}, ctx *web.EventContext, d
 		b.elementEditBtn = b.elementEditBtnFunc(obj, ctx)
 	}
 	if b.elementEditBtn {
-		b.elementEditBtn = b.father.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() == nil
+		b.elementEditBtn = b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() == nil
 	}
 
 	id := ctx.Param(ParamID)
@@ -641,7 +689,7 @@ func (b *SectionBuilder) listComponent(obj interface{}, ctx *web.EventContext, d
 		listLen = reflect.ValueOf(list).Len()
 	}
 
-	lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.father.mb.label, b.label)
+	lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.mb.label, b.label)
 	label := h.Div(h.H2(lb).Class("section-title")).Class("section-title-wrap")
 	rows := h.Div()
 
@@ -689,16 +737,16 @@ func (b *SectionBuilder) listComponent(obj interface{}, ctx *web.EventContext, d
 		})
 	}
 
-	disableCreateBtn := b.father.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
+	disableCreateBtn := b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
 	disableCreateBtn = disableCreateBtn || (ctx.ParamAsBool(b.elementUnsavedKey()))
 	if !b.disableElementCreateBtn && !disableCreateBtn {
 		addBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "AddRow")).PrependIcon("mdi-plus-circle").Color("primary").Variant(VariantText).
 			Class("mb-2 ml-4").
 			Attr("@click", "locals.show=false;"+web.Plaid().
 				URL(ctx.R.URL.Path).
-				EventFunc(actions.DoCreateDetailingListField).
+				EventFunc(b.EventCreate()).
 				Query(b.elementUnsavedKey(), true).
-				Query(SectionFieldName, b.name).
+				// Query(SectionFieldName, b.name).
 				Query(ParamID, id).
 				Go())
 		rows.AppendChildren(addBtn)
@@ -711,6 +759,13 @@ func (b *SectionBuilder) listComponent(obj interface{}, ctx *web.EventContext, d
 		}
 	}
 
+	if b.isEdit {
+		return h.Div(
+			// element and addBtn have mb-2, so the real effect is mb-6
+			h.Div(rows).Class("mb-4"),
+			hiddenComp,
+		)
+	}
 	return h.Div(
 		web.Scope(
 			// element and addBtn have mb-2, so the real effect is mb-6
@@ -754,15 +809,15 @@ func (b *SectionBuilder) showElement(obj any, index int, ctx *web.EventContext) 
 		Attr("v-show", fmt.Sprintf("%t", b.elementEditBtn)).
 		Attr("@click", web.Plaid().
 			URL(ctx.R.URL.Path).
-			EventFunc(actions.DoEditDetailingListField).
+			EventFunc(b.EventEdit()).
 			Query(b.elementUnsavedKey(), ctx.Param(b.elementUnsavedKey())).
-			Query(SectionFieldName, b.name).
+			// Query(SectionFieldName, b.name).
 			Query(ParamID, ctx.Param(ParamID)).
 			Query(b.EditBtnKey(), strconv.Itoa(index)).
 			Go())
 
 	content := b.elementViewFunc(obj, &FieldContext{
-		ModelInfo: b.father.mb.modelInfo,
+		ModelInfo: b.mb.modelInfo,
 		Name:      b.name,
 		FormKey:   fmt.Sprintf("%s[%b]", b.name, index),
 		Label:     b.label,
@@ -794,8 +849,8 @@ func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, ctx *we
 
 	deleteEvent := web.Plaid().
 		URL(ctx.R.URL.Path).
-		EventFunc(actions.DoDeleteDetailingListField).
-		Query(SectionFieldName, b.name).
+		EventFunc(b.EventDelete()).
+		// Query(SectionFieldName, b.name).
 		Query(ParamID, ctx.Param(ParamID)).
 		Query(b.elementUnsavedKey(), unsaved).
 		Query(b.DeleteBtnKey(), index).
@@ -805,8 +860,8 @@ func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, ctx *we
 	}
 	cancelEvent := web.Plaid().
 		URL(ctx.R.URL.Path).
-		EventFunc(actions.DoSaveDetailingListField).
-		Query(SectionFieldName, b.name).
+		EventFunc(b.EventSave()).
+		// Query(SectionFieldName, b.name).
 		Query(b.elementUnsavedKey(), unsaved).
 		Query(SectionIsCancel, true).
 		Query(ParamID, ctx.Param(ParamID)).
@@ -826,7 +881,7 @@ func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, ctx *we
 	contentDiv := h.Div(
 		h.Div(
 			b.elementEditFunc(obj, &FieldContext{
-				ModelInfo: b.father.mb.modelInfo,
+				ModelInfo: b.mb.modelInfo,
 				Name:      fmt.Sprintf("%s[%b]", b.name, index),
 				FormKey:   fmt.Sprintf("%s[%b]", b.name, index),
 				Label:     fmt.Sprintf("%s[%b]", b.label, index),
@@ -841,8 +896,8 @@ func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, ctx *we
 
 	saveEvent := web.Plaid().
 		URL(ctx.R.URL.Path).
-		EventFunc(actions.DoSaveDetailingListField).
-		Query(SectionFieldName, b.name).
+		EventFunc(b.EventSave()).
+		// Query(SectionFieldName, b.name).
 		Query(b.elementUnsavedKey(), unsaved).
 		Query(ParamID, ctx.Param(ParamID)).
 		Query(b.SaveBtnKey(), strconv.Itoa(index)).
@@ -895,7 +950,7 @@ func (b *SectionBuilder) DefaultElementUnmarshal() func(toObj, formObj any, pref
 		_ = ctx2.UnmarshalForm(formObj)
 		for _, f := range b.editingFB.fields {
 			name := f.name
-			info := b.father.mb.modelInfo
+			info := b.mb.modelInfo
 			if info != nil {
 				if info.Verifier().Do(PermCreate).ObjectOn(formObj).SnakeOn("f_"+name).WithReq(ctx.R).IsAllowed() != nil && info.Verifier().Do(PermUpdate).ObjectOn(formObj).SnakeOn("f_"+name).WithReq(ctx.R).IsAllowed() != nil {
 					continue
@@ -962,4 +1017,333 @@ func (b *SectionBuilder) removeElement(obj interface{}, index int) (err error) {
 	}
 
 	return reflectutils.Set(obj, b.name, newList.Interface())
+}
+
+// EditDetailField EventFunc: click detail field component edit button
+func (b *SectionBuilder) EditDetailField(ctx *web.EventContext) (r web.EventResponse, err error) {
+	if b.isList {
+		return b.EditDetailListField(ctx)
+	}
+	obj := b.mb.NewModel()
+	obj, err = b.mb.detailing.GetFetchFunc()(obj, ctx.Param(ParamID), ctx)
+	if err != nil {
+		return
+	}
+	if b.setter != nil {
+		b.setter(obj, ctx)
+	}
+
+	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
+		return
+	}
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: b.FieldPortalName(),
+		Body: b.editComponent(obj, &FieldContext{
+			ModelInfo: b.mb.modelInfo,
+			FormKey:   b.name,
+			Name:      b.name,
+			Label:     b.label,
+		}, ctx),
+	})
+	return r, nil
+}
+
+// SaveDetailField EventFunc: click save button
+func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResponse, err error) {
+	if b.isList {
+		return b.SaveDetailListField(ctx)
+	}
+	id := ctx.Param(ParamID)
+	isCancel := ctx.ParamAsBool(SectionIsCancel)
+	field := &FieldContext{
+		ModelInfo: b.mb.modelInfo,
+		FormKey:   b.name,
+		Name:      b.name,
+		Label:     b.label,
+	}
+
+	obj := b.mb.NewModel()
+	obj, err = b.mb.detailing.GetFetchFunc()(obj, id, ctx)
+	if err != nil {
+		return
+	}
+	if b.setter != nil {
+		b.setter(obj, ctx)
+	}
+
+	if isCancel {
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: b.FieldPortalName(),
+			Body: b.viewComponent(obj, field, ctx),
+		})
+		return
+	}
+
+	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
+		return
+	}
+
+	if err = b.unmarshalFunc(ctx, obj); err != nil {
+		ShowMessage(&r, err.Error(), "warning")
+		return r, nil
+	}
+
+	needSave := true
+	if vErr := b.validator(obj, ctx); vErr.HaveErrors() {
+		ctx.Flash = &vErr
+		needSave = false
+		if vErr.GetGlobalError() != "" {
+			ShowMessage(&r, vErr.GetGlobalError(), "warning")
+		}
+	}
+
+	if needSave {
+		err = b.saver(obj, id, ctx)
+		if err != nil {
+			ShowMessage(&r, err.Error(), "warning")
+			return r, nil
+		}
+	}
+
+	if _, ok := ctx.Flash.(*web.ValidationErrors); ok {
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: b.FieldPortalName(),
+			Body: b.editComponent(obj, field, ctx),
+		})
+		return
+	}
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: b.FieldPortalName(),
+		Body: b.viewComponent(obj, field, ctx),
+	})
+
+	r.Emit(b.mb.NotifModelsUpdated(), PayloadModelsUpdated{
+		Ids:    []string{id},
+		Models: map[string]any{id: obj},
+	})
+	return r, nil
+}
+
+// EditDetailListField Event: click detail list field element edit button
+func (b *SectionBuilder) EditDetailListField(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var index, deleteIndex int64
+	unsaved := ctx.ParamAsBool(b.elementUnsavedKey())
+	index, err = strconv.ParseInt(ctx.Queries().Get(b.EditBtnKey()), 10, 64)
+	if err != nil {
+		return
+	}
+	deleteIndex = -1
+	if ctx.Queries().Get(b.DeleteBtnKey()) != "" {
+		deleteIndex, err = strconv.ParseInt(ctx.Queries().Get(b.EditBtnKey()), 10, 64)
+		if err != nil {
+			return
+		}
+	}
+
+	obj := b.mb.NewModel()
+	obj, err = b.mb.detailing.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
+	if err != nil {
+		return
+	}
+	if b.setter != nil {
+		b.setter(obj, ctx)
+	}
+
+	if unsaved {
+		if _, err := b.appendElement(obj); err != nil {
+			panic(err)
+		}
+	}
+
+	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
+		return
+	}
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: b.FieldPortalName(),
+		Body: b.listComponent(obj, ctx, int(deleteIndex), int(index), -1, unsaved),
+	})
+
+	return
+}
+
+// SaveDetailListField Event: click detail list field element Save button
+func (b *SectionBuilder) SaveDetailListField(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var (
+		index    int
+		isCancel bool
+	)
+
+	isCancel = ctx.ParamAsBool(SectionIsCancel)
+
+	unsaved := ctx.ParamAsBool(b.elementUnsavedKey())
+	index = ctx.ParamAsInt(b.SaveBtnKey())
+
+	obj := b.mb.NewModel()
+	obj, err = b.mb.detailing.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
+	if err != nil {
+		return
+	}
+	if b.setter != nil {
+		b.setter(obj, ctx)
+	}
+
+	if isCancel {
+		if unsaved {
+			if _, err = b.appendElement(obj); err != nil {
+				panic(err)
+			}
+		}
+
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: b.FieldPortalName(),
+			Body: b.listComponent(obj, ctx, -1, -1, index, unsaved),
+		})
+		return
+	}
+
+	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
+		return
+	}
+
+	if err = b.unmarshalFunc(ctx, obj); err != nil {
+		ShowMessage(&r, err.Error(), "warning")
+		return r, nil
+	}
+
+	needSave := true
+	if vErr := b.validator(obj, ctx); vErr.HaveErrors() {
+		ctx.Flash = &vErr
+		needSave = false
+		if vErr.GetGlobalError() != "" {
+			ShowMessage(&r, vErr.GetGlobalError(), "warning")
+		}
+	}
+
+	if needSave {
+		err = b.saver(obj, ctx.Queries().Get(ParamID), ctx)
+		if err != nil {
+			ShowMessage(&r, err.Error(), "warning")
+			return r, nil
+		}
+	}
+
+	if ctx.ParamAsBool(b.elementUnsavedKey()) {
+		if _, err := b.appendElement(obj); err != nil {
+			panic(err)
+		}
+	}
+
+	if _, ok := ctx.Flash.(*web.ValidationErrors); ok {
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: b.FieldPortalName(),
+			Body: b.listComponent(obj, ctx, -1, index, -1, unsaved),
+		})
+		return
+	}
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: b.FieldPortalName(),
+		Body: b.listComponent(obj, ctx, -1, -1, index, unsaved),
+	})
+
+	return
+}
+
+// DeleteDetailListField Event: click detail list field element Delete button
+func (b *SectionBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var index int64
+
+	unsaved := ctx.ParamAsBool(b.elementUnsavedKey())
+	index, err = strconv.ParseInt(ctx.Queries().Get(b.DeleteBtnKey()), 10, 64)
+	if err != nil {
+		return
+	}
+
+	obj := b.mb.NewModel()
+	obj, err = b.mb.detailing.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
+	if err != nil {
+		return
+	}
+	if b.setter != nil {
+		b.setter(obj, ctx)
+	}
+
+	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
+		return
+	}
+
+	err = b.removeElement(obj, int(index))
+	if err != nil {
+		ShowMessage(&r, err.Error(), "warning")
+		return r, nil
+	}
+
+	needSave := true
+	if vErr := b.validator(obj, ctx); vErr.HaveErrors() {
+		ctx.Flash = &vErr
+		needSave = false
+		if vErr.GetGlobalError() != "" {
+			ShowMessage(&r, vErr.GetGlobalError(), "warning")
+		}
+	}
+
+	if needSave {
+		err = b.saver(obj, ctx.Queries().Get(ParamID), ctx)
+		if err != nil {
+			ShowMessage(&r, err.Error(), "warning")
+			return r, nil
+		}
+	}
+
+	if unsaved {
+		if _, err := b.appendElement(obj); err != nil {
+			panic(err)
+		}
+	}
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: b.FieldPortalName(),
+		Body: b.listComponent(obj, ctx, int(index), -1, -1, unsaved),
+	})
+
+	return
+}
+
+// CreateDetailListField Event: click detail list field element Add row button
+func (b *SectionBuilder) CreateDetailListField(ctx *web.EventContext) (r web.EventResponse, err error) {
+	obj := b.mb.NewModel()
+	obj, err = b.mb.detailing.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
+	if err != nil {
+		return
+	}
+	if b.setter != nil {
+		b.setter(obj, ctx)
+	}
+
+	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
+		return
+	}
+
+	var listLen int
+	if ctx.ParamAsBool(b.elementUnsavedKey()) {
+		if listLen, err = b.appendElement(obj); err != nil {
+			panic(err)
+		}
+	}
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: b.FieldPortalName(),
+		Body: b.listComponent(obj, ctx, -1, listLen-1, -1, true),
+	})
+
+	return
 }

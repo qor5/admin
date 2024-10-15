@@ -19,7 +19,7 @@ func TestPost(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				admin.PostsExampleData.TruncatePut(dbr)
 				req := multipartestutils.NewMultipartBuilder().
-					PageURL("/posts?__execute_event__=presets_Detailing_Field_Save&id=1_2023-01-05-v01").
+					PageURL("/posts?__execute_event__=section_save_Detail&id=1_2023-01-05-v01").
 					Query("section", "Detail").
 					AddField("Detail.Title", "Demo").
 					AddField("Detail.Body", "<p>test edit</p>").
