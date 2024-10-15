@@ -31,6 +31,7 @@ const (
 	ShowSortedContainerDrawerEvent   = "page_builder_ShowSortedContainerDrawerEvent"
 	ReloadRenderPageOrTemplateEvent  = "page_builder_ReloadRenderPageOrTemplateEvent"
 	ContainerPreviewEvent            = "page_builder_ContainerPreviewEvent"
+	ReplicateContainerEvent          = "page_builder_ReplicateContainerEvent"
 
 	paramPageID          = "pageID"
 	paramPageVersion     = "pageVersion"
