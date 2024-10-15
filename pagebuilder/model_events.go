@@ -11,14 +11,18 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/i18n"
-	. "github.com/qor5/x/v3/ui/vuetify"
-	vx "github.com/qor5/x/v3/ui/vuetifyx"
+	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 
+	"github.com/qor5/x/v3/i18n"
+	. "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
+
+	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/utils"
 )
@@ -36,6 +40,7 @@ func (b *ModelBuilder) registerFuncs() {
 	b.editor.RegisterEventFunc(ReloadRenderPageOrTemplateEvent, b.reloadRenderPageOrTemplate)
 	b.editor.RegisterEventFunc(MarkAsSharedContainerEvent, b.markAsSharedContainer)
 	b.editor.RegisterEventFunc(ContainerPreviewEvent, b.containerPreview)
+	b.editor.RegisterEventFunc(ReplicateContainerEvent, b.replicateContainer)
 	b.preview = web.Page(b.previewContent)
 }
 
@@ -368,8 +373,8 @@ func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.Event
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr    = presets.MustGetMessages(ctx.R)
 		okAction = web.Plaid().
-				URL(b.editorURL()).
-				EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
+			URL(b.editorURL()).
+			EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
 		portalName = dialogPortalName
 	)
 
@@ -635,5 +640,47 @@ func (b *ModelBuilder) containerPreview(ctx *web.EventContext) (r web.EventRespo
 		Body: VCard(body).MaxHeight(200).Elevation(0).Flat(true).Tile(true).Color(ColorGreyLighten3),
 	})
 	r.RunScript = "vars.containerPreview = true"
+	return
+}
+func (b *ModelBuilder) replicateContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var (
+		container   Container
+		cs          = container.PrimaryColumnValuesBySlug(ctx.Param(paramContainerID))
+		containerID = cs[presets.ParamID]
+		locale      = cs[l10n.SlugLocaleCode]
+	)
+	if err = b.db.Transaction(func(tx *gorm.DB) (dbErr error) {
+		if dbErr = tx.Where("id = ? AND locale_code = ?", containerID, locale).First(&container).Error; dbErr != nil {
+			return
+		}
+		var (
+			containerMb = b.builder.ContainerByName(container.ModelName)
+			model       = containerMb.NewModel()
+		)
+		if container.Shared {
+			container.Shared = false
+			//presets.ShowMessage(&r, "", ColorWarning)
+		}
+		container.ID = 0
+		if dbErr = tx.First(&model, container.ModelID).Error; dbErr != nil {
+			return
+		}
+		if dbErr = reflectutils.Set(model, "ID", uint(0)); dbErr != nil {
+			return
+		}
+		ctx.WithContextValue(gorm2op.CtxKeyDB{}, tx)
+		defer ctx.WithContextValue(gorm2op.CtxKeyDB{}, nil)
+		if dbErr = containerMb.Editing().Creating().Saver(model, "", ctx); dbErr != nil {
+			return
+		}
+		container.ModelID = reflectutils.MustGet(model, "ID").(uint)
+		if dbErr = tx.Save(&container).Error; dbErr != nil {
+			return
+		}
+		return
+	}); err != nil {
+		return
+	}
+	r.RunScript = web.Plaid().PushState(true).Go()
 	return
 }

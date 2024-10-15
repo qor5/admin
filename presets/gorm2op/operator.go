@@ -9,13 +9,14 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/samber/lo"
 	"github.com/theplant/relay"
 	"github.com/theplant/relay/cursor"
 	"github.com/theplant/relay/gormrelay"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/presets"
 )
 
 var wildcardReg = regexp.MustCompile(`[%_]`)
@@ -25,7 +26,10 @@ func DataOperator(db *gorm.DB) (r *DataOperatorBuilder) {
 	return
 }
 
-type ctxKeyDB struct{}
+type (
+	ctxKeyDBForRelay struct{}
+	CtxKeyDB         struct{}
+)
 
 type DataOperatorBuilder struct {
 	db *gorm.DB
@@ -33,11 +37,12 @@ type DataOperatorBuilder struct {
 
 func (op *DataOperatorBuilder) Search(evCtx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 	ilike := "ILIKE"
-	if op.db.Dialector.Name() == "sqlite" {
+	db := op.getDB(evCtx)
+	if db.Dialector.Name() == "sqlite" {
 		ilike = "LIKE"
 	}
 
-	wh := op.db.Model(params.Model)
+	wh := db.Model(params.Model)
 	if len(params.KeywordColumns) > 0 && len(params.Keyword) > 0 {
 		var segs []string
 		var args []interface{}
@@ -57,7 +62,7 @@ func (op *DataOperatorBuilder) Search(evCtx *web.EventContext, params *presets.S
 	var req *relay.PaginateRequest[any]
 	ctx := relay.WithSkipEdges(evCtx.R.Context())
 	if params.RelayPagination != nil {
-		ctx = context.WithValue(ctx, ctxKeyDB{}, wh)
+		ctx = context.WithValue(ctx, ctxKeyDBForRelay{}, wh)
 		p, err = params.RelayPagination(evCtx)
 		if err != nil {
 			return nil, err
@@ -108,8 +113,8 @@ func (op *DataOperatorBuilder) Search(evCtx *web.EventContext, params *presets.S
 	}, nil
 }
 
-func (op *DataOperatorBuilder) primarySluggerWhere(obj interface{}, id string) *gorm.DB {
-	wh := op.db.Model(obj)
+func (op *DataOperatorBuilder) primarySluggerWhere(db *gorm.DB, obj interface{}, id string) *gorm.DB {
+	wh := db.Model(obj)
 
 	if id == "" {
 		return wh
@@ -128,9 +133,10 @@ func (op *DataOperatorBuilder) primarySluggerWhere(obj interface{}, id string) *
 }
 
 func (op *DataOperatorBuilder) Fetch(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
-	err = op.primarySluggerWhere(obj, id).First(obj).Error
+	db := op.getDB(ctx)
+	err = op.primarySluggerWhere(db, obj, id).First(obj).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, presets.ErrRecordNotFound
 		}
 		return
@@ -138,28 +144,38 @@ func (op *DataOperatorBuilder) Fetch(obj interface{}, id string, ctx *web.EventC
 	r = obj
 	return
 }
+func (op *DataOperatorBuilder) getDB(ctx *web.EventContext) *gorm.DB {
+	db, ok := ctx.ContextValue(ctxKeyDBForRelay{}).(*gorm.DB)
+	if ok {
+		return db
+	}
+	return op.db
+}
 
 func (op *DataOperatorBuilder) Save(obj interface{}, id string, ctx *web.EventContext) (err error) {
+	db := op.getDB(ctx)
 	if id == "" {
-		err = op.db.Create(obj).Error
+		err = db.Create(obj).Error
 		return
 	}
-	err = op.saveOrUpdate(obj, id)
+	err = op.saveOrUpdate(db, obj, id)
 	return
 }
 
-func (op *DataOperatorBuilder) saveOrUpdate(obj interface{}, id string) (err error) {
+func (op *DataOperatorBuilder) saveOrUpdate(db *gorm.DB, obj interface{}, id string) (err error) {
 	var count int64
-	if op.primarySluggerWhere(obj, id).Count(&count).Error != nil {
+	if op.primarySluggerWhere(db, obj, id).Count(&count).Error != nil {
 		return
 	}
 	if count > 0 {
-		return op.primarySluggerWhere(obj, id).Select("*").Updates(obj).Error
+		return op.primarySluggerWhere(db, obj, id).Select("*").Updates(obj).Error
 	}
-	return op.primarySluggerWhere(obj, id).Save(obj).Error
+	return op.primarySluggerWhere(db, obj, id).Save(obj).Error
 }
 
 func (op *DataOperatorBuilder) Delete(obj interface{}, id string, ctx *web.EventContext) (err error) {
-	err = op.primarySluggerWhere(obj, id).Delete(obj).Error
+	db := op.getDB(ctx)
+
+	err = op.primarySluggerWhere(db, obj, id).Delete(obj).Error
 	return
 }
