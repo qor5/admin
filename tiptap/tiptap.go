@@ -51,7 +51,6 @@ func (b *TiptapEditorBuilder) Attr(vs ...any) (r *TiptapEditorBuilder) {
 
 func (b *TiptapEditorBuilder) SetAttr(k string, v interface{}) {
 	b.editor.SetAttr(k, v)
-	return
 }
 
 func (b *TiptapEditorBuilder) Disabled(v bool) (r *TiptapEditorBuilder) {
