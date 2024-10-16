@@ -629,7 +629,7 @@ func (b *SectionBuilder) DefaultUnmarshalFunc(ctx *web.EventContext, obj interfa
 
 func (b *SectionBuilder) DefaultListUnmarshalFunc(ctx *web.EventContext, obj interface{}) (err error) {
 	var index int64
-	index, err = strconv.ParseInt(ctx.Queries().Get(b.SaveBtnKey()), 10, 64)
+	index, err = strconv.ParseInt(ctx.Queries().Get(b.SaveBtnKey()), 10, 32)
 	if err != nil {
 		return
 	}
@@ -1118,13 +1118,13 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 func (b *SectionBuilder) EditDetailListField(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var index, deleteIndex int64
 	unsaved := ctx.ParamAsBool(b.elementUnsavedKey())
-	index, err = strconv.ParseInt(ctx.Queries().Get(b.EditBtnKey()), 10, 64)
+	index, err = strconv.ParseInt(ctx.Queries().Get(b.EditBtnKey()), 10, 32)
 	if err != nil {
 		return
 	}
 	deleteIndex = -1
 	if ctx.Queries().Get(b.DeleteBtnKey()) != "" {
-		deleteIndex, err = strconv.ParseInt(ctx.Queries().Get(b.EditBtnKey()), 10, 64)
+		deleteIndex, err = strconv.ParseInt(ctx.Queries().Get(b.EditBtnKey()), 10, 32)
 		if err != nil {
 			return
 		}
@@ -1247,7 +1247,7 @@ func (b *SectionBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.Eve
 	var index int64
 
 	unsaved := ctx.ParamAsBool(b.elementUnsavedKey())
-	index, err = strconv.ParseInt(ctx.Queries().Get(b.DeleteBtnKey()), 10, 64)
+	index, err = strconv.ParseInt(ctx.Queries().Get(b.DeleteBtnKey()), 10, 32)
 	if err != nil {
 		return
 	}
