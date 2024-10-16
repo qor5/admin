@@ -121,6 +121,58 @@ func (amb *ModelBuilder) NewTimelineCompo(evCtx *web.EventContext, obj any, idSu
 	})
 }
 
+func (amb *ModelBuilder) WrapperSaveFunc(in presets.SaveFunc) presets.SaveFunc {
+	mb := amb.presetModel
+	eb := mb.Editing()
+	return func(obj any, id string, ctx *web.EventContext) (err error) {
+		if amb.skip&Create != 0 && amb.skip&Edit != 0 {
+			return in(obj, id, ctx)
+		}
+
+		fetchOld := func(id string) (_ any, xerr error) {
+			if id == "" {
+				return nil, gorm.ErrRecordNotFound
+			}
+			defer func() {
+				if r := recover(); r != nil {
+					err, ok := r.(error)
+					if !ok {
+						err = fmt.Errorf("%v", r)
+					}
+					xerr = errors.Wrap(err, "Panic")
+				}
+			}()
+			return eb.Fetcher(mb.NewModel(), id, ctx)
+		}
+		old, err := fetchOld(id)
+		edit := err == nil && old != nil
+
+		if err := in(obj, id, ctx); err != nil {
+			return err
+		}
+
+		if !edit && amb.skip&Create == 0 {
+			log, err := amb.OnCreate(ctx.R.Context(), obj)
+			if err != nil {
+				return err
+			}
+			emitLogCreated(ctx, log)
+			return nil
+		}
+
+		if edit && amb.skip&Edit == 0 {
+			log, err := amb.OnEdit(ctx.R.Context(), old, obj)
+			if err != nil {
+				return err
+			}
+			emitLogCreated(ctx, log)
+			return nil
+		}
+
+		return nil
+	}
+}
+
 func (amb *ModelBuilder) installPresetModelBuilder(mb *presets.ModelBuilder) {
 	amb.presetModel = mb
 	amb.LinkFunc(func(a any) string {
@@ -149,55 +201,7 @@ func (amb *ModelBuilder) installPresetModelBuilder(mb *presets.ModelBuilder) {
 	})
 
 	eb := mb.Editing()
-	eb.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
-		return func(obj any, id string, ctx *web.EventContext) (err error) {
-			if amb.skip&Create != 0 && amb.skip&Edit != 0 {
-				return in(obj, id, ctx)
-			}
-
-			fetchOld := func(id string) (_ any, xerr error) {
-				if id == "" {
-					return nil, gorm.ErrRecordNotFound
-				}
-				defer func() {
-					if r := recover(); r != nil {
-						err, ok := r.(error)
-						if !ok {
-							err = fmt.Errorf("%v", r)
-						}
-						xerr = errors.Wrap(err, "Panic")
-					}
-				}()
-				return eb.Fetcher(mb.NewModel(), id, ctx)
-			}
-			old, err := fetchOld(id)
-			edit := err == nil && old != nil
-
-			if err := in(obj, id, ctx); err != nil {
-				return err
-			}
-
-			if !edit && amb.skip&Create == 0 {
-				log, err := amb.OnCreate(ctx.R.Context(), obj)
-				if err != nil {
-					return err
-				}
-				emitLogCreated(ctx, log)
-				return nil
-			}
-
-			if edit && amb.skip&Edit == 0 {
-				log, err := amb.OnEdit(ctx.R.Context(), old, obj)
-				if err != nil {
-					return err
-				}
-				emitLogCreated(ctx, log)
-				return nil
-			}
-
-			return nil
-		}
-	})
+	eb.WrapSaveFunc(amb.WrapperSaveFunc)
 
 	eb.WrapDeleteFunc(func(in presets.DeleteFunc) presets.DeleteFunc {
 		return func(obj any, id string, ctx *web.EventContext) (err error) {
