@@ -355,9 +355,9 @@ func NewConfig(db *gorm.DB) Config {
 	)
 
 	if resetAndImportInitialData {
-		tbs := GetNonIgnoredTableNames(db)
-		EmptyDB(db, tbs)
-		InitDB(db, tbs)
+		//tbs := GetNonIgnoredTableNames(db)
+		//EmptyDB(db, tbs)
+		//InitDB(db, tbs)
 	}
 
 	return Config{

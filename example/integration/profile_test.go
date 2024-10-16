@@ -7,23 +7,25 @@ import (
 	"github.com/theplant/gofixtures"
 	"gorm.io/gorm"
 
+	"github.com/qor5/web/v3/multipartestutils"
+
 	"github.com/qor5/admin/v3/example/admin"
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/role"
-	"github.com/qor5/web/v3/multipartestutils"
 )
 
 var profileData = gofixtures.Data(gofixtures.Sql(`
-INSERT INTO public.users (id, created_at, updated_at, deleted_at, name, company, status, favor_post_id, registration_date, account, password, pass_updated_at, login_retry_count, locked, locked_at, reset_password_token, reset_password_token_created_at, reset_password_token_expired_at, totp_secret, is_totp_setup, last_used_totp_code, last_totp_code_used_at, o_auth_provider, o_auth_user_id, o_auth_identifier, session_secure) VALUES (1, '2024-06-18 03:24:28.001791 +00:00', '2024-06-19 07:07:18.502134 +00:00', null, 'qor@theplant.jp', '', 'Available', 0, '0001-01-01', 'qor@theplant.jp', '$2a$10$XKsTcchE1r1X5MyTD0k1keyUwub23DXsjSIQW73MtXfoiqrqbXAnu', '1718681068001453000', 0, false, null, '', null, null, '', false, '', null, '', '', '', 'cdedfb408d634c7240384e00203baf47');
+INSERT INTO public.users (id, created_at, updated_at, deleted_at, name, company, status, favor_post_id, registration_date, account, password, pass_updated_at, login_retry_count, locked, locked_at, reset_password_token, reset_password_token_created_at, reset_password_token_expired_at, totp_secret, is_totp_setup, last_used_totp_code, last_totp_code_used_at, o_auth_provider, o_auth_user_id, o_auth_identifier, session_secure) VALUES (1, '2024-06-18 03:24:28.001791 +00:00', '2024-06-19 07:07:18.502134 +00:00', null, 'test@theplant.jp', '', 'Available', 0, '0001-01-01', 'test@theplant.jp', '$2a$10$XKsTcchE1r1X5MyTD0k1keyUwub23DXsjSIQW73MtXfoiqrqbXAnu', '1718681068001453000', 0, false, null, '', null, null, '', false, '', null, '', '', '', 'cdedfb408d634c7240384e00203baf47');
 `, []string{"users"}))
 
 func TestProfile(t *testing.T) {
 	h := admin.TestHandler(TestDB, &models.User{
 		Model: gorm.Model{ID: 1},
-		Name:  "qor@theplant.jp",
+		Name:  "test@theplant.jp",
 		Roles: []role.Role{
 			{
-				Name: models.RoleAdmin,
+				Model: gorm.Model{ID: 1},
+				Name:  models.RoleAdmin,
 			},
 		},
 	})
@@ -41,7 +43,7 @@ func TestProfile(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPageBodyContainsInOrder: []string{`portal-name='ProfileCompo:`, `<v-avatar`, `text='Q'`, `/v-avatar>`, `qor@theplant.jp`, `Admin`},
+			ExpectPageBodyContainsInOrder: []string{`portal-name='ProfileCompo:`, `<v-avatar`, `text='T'`, `/v-avatar>`, `test@theplant.jp`, `Admin`},
 		},
 		{
 			Name:  "rename",

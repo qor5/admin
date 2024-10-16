@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	plogin "github.com/qor5/admin/v3/login"
-	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/login"
@@ -13,6 +11,9 @@ import (
 	. "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"golang.org/x/text/language/display"
+
+	plogin "github.com/qor5/admin/v3/login"
+	"github.com/qor5/admin/v3/presets"
 )
 
 type languageItem struct {
@@ -23,7 +24,7 @@ type languageItem struct {
 func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 	return pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		// i18n start
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
+		//msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
 		loginMsgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
 		i18nBuilder := vh.I18n()
 		var langs []languageItem
@@ -138,22 +139,22 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 			),
 		).Class(plogin.DefaultViewCommon.WrapperClass).Style(plogin.DefaultViewCommon.WrapperStyle)
 
-		username := loginInitialUserEmail
-		password := loginInitialUserPassword
-		isDemo := username != "" && password != ""
-		demoTips := Div(
-			Div(
-				P(Text(msgr.DemoUsernameLabel), B(username)),
-				P(Text(msgr.DemoPasswordLabel), B(password)),
-				P(B(msgr.DemoTips)),
-			).Class(plogin.DefaultViewCommon.WrapperClass).Style(plogin.DefaultViewCommon.WrapperStyle).
-				Style("border: 1px solid #d0d0d0; border-radius: 8px; width: 530px; padding: 0px 24px 0px 24px; padding-top: 16px!important;"),
-		).Class("py-12")
+		//username := loginInitialUserEmail
+		//password := loginInitialUserPassword
+		//isDemo := username != "" && password != ""
+		//demoTips := Div(
+		//	Div(
+		//		P(Text(msgr.DemoUsernameLabel), B(username)),
+		//		P(Text(msgr.DemoPasswordLabel), B(password)),
+		//		P(B(msgr.DemoTips)),
+		//	).Class(plogin.DefaultViewCommon.WrapperClass).Style(plogin.DefaultViewCommon.WrapperStyle).
+		//		Style("border: 1px solid #d0d0d0; border-radius: 8px; width: 530px; padding: 0px 24px 0px 24px; padding-top: 16px!important;"),
+		//).Class("py-12")
 
 		r.Body = Div(
 			plogin.DefaultViewCommon.Notice(vh, loginMsgr, ctx.W, ctx.R),
 			bodyForm,
-			If(isDemo, demoTips),
+			//If(isDemo, demoTips),
 		)
 
 		return

@@ -10,15 +10,16 @@ import (
 	"github.com/markbates/goth/providers/github"
 	"github.com/markbates/goth/providers/google"
 	"github.com/markbates/goth/providers/microsoftonline"
+	"github.com/qor5/x/v3/login"
+	. "github.com/theplant/htmlgo"
+	"github.com/theplant/osenv"
+	"gorm.io/gorm"
+
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/example/models"
 	plogin "github.com/qor5/admin/v3/login"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/role"
-	"github.com/qor5/x/v3/login"
-	. "github.com/theplant/htmlgo"
-	"github.com/theplant/osenv"
-	"gorm.io/gorm"
 )
 
 var (
@@ -163,39 +164,39 @@ func initLoginSessionBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Buil
 }
 
 func genInitialUser(db *gorm.DB) {
-	email := loginInitialUserEmail
-	password := loginInitialUserPassword
-	if email == "" || password == "" {
-		return
-	}
-
-	var count int64
-	if err := db.Model(&models.User{}).Where("account = ?", email).Count(&count).Error; err != nil {
-		panic(err)
-	}
-
-	if count > 0 {
-		return
-	}
+	//email := loginInitialUserEmail
+	//password := loginInitialUserPassword
+	//if email == "" || password == "" {
+	//	return
+	//}
+	//
+	//var count int64
+	//if err := db.Model(&models.User{}).Where("account = ?", email).Count(&count).Error; err != nil {
+	//	panic(err)
+	//}
+	//
+	//if count > 0 {
+	//	return
+	//}
 	if err := initDefaultRoles(db); err != nil {
 		panic(err)
 	}
 
-	user := &models.User{
-		Name:   email,
-		Status: models.StatusActive,
-		UserPass: login.UserPass{
-			Account:  email,
-			Password: password,
-		},
-	}
-	user.EncryptPassword()
-	if err := db.Create(user).Error; err != nil {
-		panic(err)
-	}
-	if err := grantUserRole(db, user.ID, models.RoleManager); err != nil {
-		panic(err)
-	}
+	//user := &models.User{
+	//	Name:   email,
+	//	Status: models.StatusActive,
+	//	UserPass: login.UserPass{
+	//		Account:  email,
+	//		Password: password,
+	//	},
+	//}
+	//user.EncryptPassword()
+	//if err := db.Create(user).Error; err != nil {
+	//	panic(err)
+	//}
+	//if err := grantUserRole(db, user.ID, models.RoleManager); err != nil {
+	//	panic(err)
+	//}
 }
 
 func grantUserRole(db *gorm.DB, userID uint, roleName string) error {
