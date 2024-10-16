@@ -107,12 +107,16 @@ func (p *Page) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	return primaryColumnValuesBySlug(slug)
 }
 
-func (p *Page) PermissionRN() []string {
+var PagePermissionRN = func(p *Page) []string {
 	rn := []string{"pages", strconv.Itoa(int(p.ID)), p.Version.Version}
 	if len(p.LocaleCode) > 0 {
 		rn = append(rn, p.LocaleCode)
 	}
 	return rn
+}
+
+func (p *Page) PermissionRN() []string {
+	return PagePermissionRN(p)
 }
 
 func (p *Page) GetCategory(db *gorm.DB) (category Category, err error) {
