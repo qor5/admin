@@ -24,7 +24,7 @@ type languageItem struct {
 func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 	return pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		// i18n start
-		//msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
+		// msgr := i18n.MustGetModuleMessages(ctx.R, I18nExampleKey, Messages_en_US).(*Messages)
 		loginMsgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
 		i18nBuilder := vh.I18n()
 		var langs []languageItem
@@ -154,7 +154,7 @@ func loginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 		r.Body = Div(
 			plogin.DefaultViewCommon.Notice(vh, loginMsgr, ctx.W, ctx.R),
 			bodyForm,
-			//If(isDemo, demoTips),
+			// If(isDemo, demoTips),
 		)
 
 		return
