@@ -235,6 +235,18 @@ func TestPresetsEditingSection(t *testing.T) {
 			},
 			ExpectRunScriptContainsInOrder: []string{"Terry"},
 		},
+		{
+			Name:  "detailing section use editing validator",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				companyData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/companies?__execute_event__=section_save_section1").
+					AddField("section1.Name", "terryterryterry").
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{`too long name`},
+		},
 	}
 
 	for _, c := range cases {

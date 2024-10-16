@@ -299,7 +299,13 @@ func PresetsEditingSection(b *presets.Builder, db *gorm.DB) (
 	detail := mb.Detailing("section1").Drawer(true)
 	detail.Section(section)
 
-	edit := mb.Editing("section1")
+	edit := mb.Editing("section1").ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		c := obj.(*Company)
+		if len(c.Name) > 10 {
+			err.GlobalError("too long name")
+		}
+		return
+	})
 
 	edit.Section(section.Clone())
 	return

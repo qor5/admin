@@ -35,8 +35,13 @@ func NewSectionBuilder(mb *ModelBuilder, name string) (r *SectionBuilder) {
 			name:  name,
 			label: name,
 		},
-		mb:                mb,
-		validator:         nil,
+		mb: mb,
+		validator: func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			if mb.editing.Validator != nil {
+				return mb.editing.Validator(obj, ctx)
+			}
+			return err
+		},
 		setter:            nil,
 		componentViewFunc: nil,
 		componentEditFunc: nil,
@@ -71,12 +76,6 @@ func NewSectionBuilder(mb *ModelBuilder, name string) (r *SectionBuilder) {
 	r.viewingFB.defaults = mb.p.detailFieldDefaults
 	r.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		return mb.editing.Saver(obj, id, ctx)
-	})
-	r.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-		if mb.editing.Validator != nil {
-			return mb.editing.Validator(obj, ctx)
-		}
-		return err
 	})
 	r.UnmarshalFunc(r.DefaultUnmarshalFunc)
 	// d.Field(name).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -330,19 +329,6 @@ func (b *SectionBuilder) SetterFunc(v SetterFunc) (r *SectionBuilder) {
 		panic("value required")
 	}
 	b.setter = v
-	return b
-}
-
-func (b *SectionBuilder) ValidateFunc(v ValidateFunc) (r *SectionBuilder) {
-	if v == nil {
-		panic("value required")
-	}
-	b.validator = v
-	return b
-}
-
-func (b *SectionBuilder) WrapValidateFunc(w func(in ValidateFunc) ValidateFunc) (r *SectionBuilder) {
-	b.validator = w(b.validator)
 	return b
 }
 

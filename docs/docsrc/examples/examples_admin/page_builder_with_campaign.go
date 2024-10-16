@@ -359,20 +359,20 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 			return
 		}
 	})
+	cmbCreating.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		c := obj.(*Campaign)
+		if c.Title == "" {
+			err.GlobalError("title could not be empty")
+		}
+		return
+	})
 	pb.RegisterModelBuilderTemplate(campaignModelBuilder, ct)
 	campaignModelBuilder.Listing("Title")
 	detail := campaignModelBuilder.Detailing(
 		pagebuilder.PageBuilderPreviewCard,
 		"CampaignDetail",
 	)
-	campaignDetailSection := presets.NewSectionBuilder(campaignModelBuilder, "CampaignDetail").Editing("Title").
-		ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-			c := obj.(*Campaign)
-			if c.Title == "" {
-				err.GlobalError("title could not be empty")
-			}
-			return
-		})
+	campaignDetailSection := presets.NewSectionBuilder(campaignModelBuilder, "CampaignDetail").Editing("Title")
 	detail.Section(campaignDetailSection)
 	pb.RegisterModelContainer("CampaignContent", campaignModelBuilder).Group("Campaign").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {

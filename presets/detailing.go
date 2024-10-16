@@ -447,17 +447,12 @@ func (b *DetailingBuilder) Section(sections ...*SectionBuilder) *DetailingBuilde
 		sb.registerEvent()
 		sb.isEdit = false
 
-		sb.WrapValidateFunc(func(in ValidateFunc) ValidateFunc {
-			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-				if err := in(obj, ctx); err.HaveErrors() {
-					return err
-				}
-				if sb.mb.editing.Validator != nil {
-					return sb.mb.editing.Validator(obj, ctx)
-				}
-				return err
+		sb.validator = func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			if sb.mb.editing.Validator != nil {
+				return sb.mb.editing.Validator(obj, ctx)
 			}
-		})
+			return err
+		}
 		b.Field(sb.name).Component(sb).
 			SetterFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) (err error) {
 				err = sb.unmarshalFunc(ctx, obj)

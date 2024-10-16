@@ -127,17 +127,7 @@ func detailPageEditor(dp *presets.DetailingBuilder, mb *presets.ModelBuilder, b 
 	db := b.db
 	fields := b.filterFields([]interface{}{"Title", "CategoryID", "Slug"})
 	section := presets.NewSectionBuilder(mb, "Page").
-		Editing(fields...).
-		WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
-			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-				p := obj.(*Page)
-				if err = pageValidator(ctx, p, db, b.l10n); err.HaveErrors() {
-					return
-				}
-				err = in(obj, ctx)
-				return
-			}
-		})
+		Editing(fields...)
 	if b.expectField("Title") {
 		section.ViewingField("Title").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
 			return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {

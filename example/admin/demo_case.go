@@ -84,7 +84,25 @@ func configureDemoCase(b *presets.Builder, db *gorm.DB) {
 		panic(err)
 	}
 	mb := b.Model(&DemoCase{})
-	mb.Editing("Name")
+	mb.Editing("Name").WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
+		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			in(obj, ctx)
+			p := obj.(*DemoCase)
+			if len(p.FieldData.TextValidate) < 5 {
+				err.FieldError(fmt.Sprintf("%s.%s.TextValidate", "FieldSection", "FieldData"), "input more than 5 chars")
+			}
+			if len(p.FieldData.TextareaValidate) < 10 {
+				err.FieldError(fmt.Sprintf("%s.%s.TextareaValidate", "FieldSection", "FieldData"), "input more than 10 chars")
+			}
+			if len(p.SelectData.AutoComplete) == 1 {
+				err.FieldError(fmt.Sprintf("%s.%s.AutoComplete", "SelectSection", "SelectData"), "select more than 1 item")
+			}
+			if p.SelectData.NormalSelect == 8 {
+				err.FieldError(fmt.Sprintf("%s.%s.NormalSelect", "SelectSection", "SelectData"), "can`t select Trevor")
+			}
+			return
+		}
+	})
 	mb.Listing("ID", "Name")
 	detailing := mb.Detailing("FieldSection", "SelectSection", "CheckboxSection", "DialogSection")
 	configVxField(detailing, mb)
@@ -154,19 +172,7 @@ func configVxField(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder
 					),
 				),
 			)
-		}).WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
-		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-			in(obj, ctx)
-			p := obj.(*DemoCase)
-			if len(p.FieldData.TextValidate) < 5 {
-				err.FieldError(fmt.Sprintf("%s.%s.TextValidate", sectionName, editField), "input more than 5 chars")
-			}
-			if len(p.FieldData.TextareaValidate) < 10 {
-				err.FieldError(fmt.Sprintf("%s.%s.TextareaValidate", sectionName, editField), "input more than 10 chars")
-			}
-			return
-		}
-	})
+		})
 	detailing.Section(section)
 }
 
@@ -204,19 +210,7 @@ func configVxSelect(detailing *presets.DetailingBuilder, mb *presets.ModelBuilde
 					),
 				),
 			)
-		}).WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
-		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-			in(obj, ctx)
-			p := obj.(*DemoCase)
-			if len(p.SelectData.AutoComplete) == 1 {
-				err.FieldError(fmt.Sprintf("%s.%s.AutoComplete", sectionName, editField), "select more than 1 item")
-			}
-			if p.SelectData.NormalSelect == 8 {
-				err.FieldError(fmt.Sprintf("%s.%s.NormalSelect", sectionName, editField), "can`t select Trevor")
-			}
-			return
-		}
-	})
+		})
 	detailing.Section(section)
 }
 
