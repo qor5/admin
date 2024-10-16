@@ -8,7 +8,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"sync/atomic"
 
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
@@ -95,7 +94,7 @@ func NewSectionBuilder(mb *ModelBuilder, name string) (r *SectionBuilder) {
 type SectionBuilder struct {
 	NameLabel
 	mb                *ModelBuilder
-	isUsed            atomic.Bool
+	isUsed            bool
 	isRegistered      bool
 	isEdit            bool
 	unmarshalFunc     func(ctx *web.EventContext, obj interface{}) error
@@ -145,7 +144,7 @@ type ObjectBoolFunc func(obj interface{}, ctx *web.EventContext) bool
 
 func (s *SectionBuilder) Clone() *SectionBuilder {
 	newSection := *s
-	newSection.isUsed.Store(false)
+	newSection.isUsed = false
 
 	if s.hiddenFuncs != nil {
 		newSection.hiddenFuncs = make([]ObjectComponentFunc, len(s.hiddenFuncs))

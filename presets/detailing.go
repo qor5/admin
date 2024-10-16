@@ -440,10 +440,10 @@ func (b *DetailingBuilder) EnableRefreshOnUpdate() *DetailingBuilder {
 
 func (b *DetailingBuilder) Section(sections ...*SectionBuilder) *DetailingBuilder {
 	for _, sb := range sections {
-		if sb.isUsed.Load() {
+		if sb.isUsed {
 			panic("section is used")
 		}
-		sb.isUsed.Store(true)
+		sb.isUsed = true
 		sb.registerEvent()
 		sb.isEdit = false
 

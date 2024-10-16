@@ -608,10 +608,10 @@ func (b *EditingBuilder) Section(sections ...*SectionBuilder) *EditingBuilder {
 		if sb.isList {
 			panic("list section can not in edit")
 		}
-		if sb.isUsed.Load() {
+		if sb.isUsed {
 			panic("section is used")
 		}
-		sb.isUsed.Store(true)
+		sb.isUsed = true
 		sb.registerEvent()
 		sb.isEdit = true
 
