@@ -192,14 +192,22 @@ func cfNumber(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTM
 }
 
 func cfTime(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	return DateTimePicker(obj, field, ctx)
+}
+
+func DateTimePicker(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXDateTimePickerBuilder {
 	msgr := i18n.MustGetModuleMessages(ctx.R, CoreI18nModuleKey, Messages_en_US).(*Messages)
 	val := ""
 	if v := field.Value(obj); v != nil {
 		switch vt := v.(type) {
 		case time.Time:
-			val = vt.Format("2006-01-02 15:04")
+			if !vt.IsZero() {
+				val = vt.Format("2006-01-02 15:04")
+			}
 		case *time.Time:
-			val = vt.Format("2006-01-02 15:04")
+			if !vt.IsZero() {
+				val = vt.Format("2006-01-02 15:04")
+			}
 		default:
 			panic(fmt.Sprintf("unknown time type: %T\n", v))
 		}
@@ -214,10 +222,15 @@ func cfTime(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLC
 		}).
 		ClearText(msgr.Clear).
 		OkText(msgr.OK).
-		Disabled(field.Disabled)
+		Disabled(field.Disabled).
+		ErrorMessages(field.Errors...)
 }
 
 func cfTimeSetter(obj interface{}, field *FieldContext, ctx *web.EventContext) (err error) {
+	return DateTimeSetter(obj, field, ctx)
+}
+
+func DateTimeSetter(obj interface{}, field *FieldContext, ctx *web.EventContext) (err error) {
 	v := ctx.R.Form.Get(field.FormKey)
 	if v == "" {
 		return reflectutils.Set(obj, field.Name, nil)
@@ -290,6 +303,11 @@ func (b *FieldDefaults) builtInFieldTypes() {
 			b.FieldType(v).
 				ComponentFunc(cfTextTd)
 		}
+
+		for _, v := range timeVals {
+			b.FieldType(v).
+				ComponentFunc(cfTextTd)
+		}
 		return
 	}
 
@@ -303,6 +321,11 @@ func (b *FieldDefaults) builtInFieldTypes() {
 		}
 
 		for _, v := range stringVals {
+			b.FieldType(v).
+				ComponentFunc(cfReadonlyText)
+		}
+
+		for _, v := range timeVals {
 			b.FieldType(v).
 				ComponentFunc(cfReadonlyText)
 		}

@@ -58,6 +58,7 @@ func TestFields(t *testing.T) {
 
 	time1 := time.Unix(1567048169, 0)
 	time1LocalFormat := time1.Local().Format("2006-01-02 15:04:05")
+	time1LocalFormatMinute := time1.Local().Format("2006-01-02 15:04")
 	user := &User{
 		ID:      1,
 		Int1:    2,
@@ -147,7 +148,7 @@ func TestFields(t *testing.T) {
 				return ftRead.InspectFields(&User{}).
 					Except("Float*").ToComponent(mb.Info(), user, ctx)
 			},
-			expect: `
+			expect: fmt.Sprintf(`
 <td>1</td>
 
 <td>2</td>
@@ -155,7 +156,9 @@ func TestFields(t *testing.T) {
 <td>hello</td>
 
 <td>true</td>
-`,
+
+<td>%s</td>
+`, time1LocalFormat),
 		},
 
 		{
@@ -183,6 +186,138 @@ func TestFields(t *testing.T) {
 			},
 			expect: `context value1, context value2`,
 		},
+		{
+			name: "Display default time component",
+			toComponentFun: func() h.HTMLComponent {
+				vd := &web.ValidationErrors{}
+				vd.FieldError("Time1", "err time1")
+
+				return NewFieldDefaults(WRITE).Exclude("ID").InspectFields(&User{}).
+					Labels("Company.FoundedAt", "公司创立于").
+					Only("Time1", "Company.FoundedAt").
+					ToComponent(
+						mb.Info(),
+						user,
+						&web.EventContext{R: r, Flash: vd})
+			},
+			expect: fmt.Sprintf(`
+<vx-datetimepicker :label='"Time1"' v-model='form["Time1"]' v-assign='[form, {"Time1":%q}]' :value='%q' :timePickerProps='{"format":"24hr","scrollable":true,"use-seconds":false,"no-title":false}' :clearText='"Clear"' :okText='"OK"' :disabled='false' :error-messages='["err time1"]'></vx-datetimepicker>
+
+<vx-datetimepicker :label='"公司创立于"' v-model='form["Company.FoundedAt"]' v-assign='[form, {"Company.FoundedAt":%q}]' :value='%q' :timePickerProps='{"format":"24hr","scrollable":true,"use-seconds":false,"no-title":false}' :clearText='"Clear"' :okText='"OK"' :disabled='false' :error-messages='null'></vx-datetimepicker>
+`, time1LocalFormatMinute, time1LocalFormatMinute, time1LocalFormatMinute, time1LocalFormatMinute),
+		},
+		{
+			name: "Display zero time with default time component",
+			toComponentFun: func() h.HTMLComponent {
+				vd := &web.ValidationErrors{}
+				vd.FieldError("Time1", "err time1")
+
+				type WithTime struct {
+					Time1 time.Time
+					Time2 *time.Time
+				}
+				return NewFieldDefaults(WRITE).InspectFields(&WithTime{}).ToComponent(
+					mb.Info(),
+					&WithTime{
+						Time1: time.Time{},
+						Time2: &time.Time{},
+					},
+					&web.EventContext{R: r, Flash: vd})
+			},
+			expect: fmt.Sprintf(`
+<vx-datetimepicker :label='"Time1"' v-model='form["Time1"]' v-assign='[form, {"Time1":%q}]' :value='%q' :timePickerProps='{"format":"24hr","scrollable":true,"use-seconds":false,"no-title":false}' :clearText='"Clear"' :okText='"OK"' :disabled='false' :error-messages='["err time1"]'></vx-datetimepicker>
+
+<vx-datetimepicker :label='"Time2"' v-model='form["Time2"]' v-assign='[form, {"Time2":%q}]' :value='%q' :timePickerProps='{"format":"24hr","scrollable":true,"use-seconds":false,"no-title":false}' :clearText='"Clear"' :okText='"OK"' :disabled='false' :error-messages='null'></vx-datetimepicker>
+`, "", "", "", ""),
+		},
+		{
+			name: "Display nil time with default time component",
+			toComponentFun: func() h.HTMLComponent {
+				vd := &web.ValidationErrors{}
+				vd.FieldError("Time1", "err time1")
+
+				type WithTime struct {
+					Time1 time.Time
+					Time2 *time.Time
+				}
+				return NewFieldDefaults(WRITE).InspectFields(&WithTime{}).ToComponent(
+					mb.Info(),
+					&WithTime{
+						Time1: time.Time{},
+						Time2: nil,
+					},
+					&web.EventContext{R: r, Flash: vd})
+			},
+			expect: fmt.Sprintf(`
+<vx-datetimepicker :label='"Time1"' v-model='form["Time1"]' v-assign='[form, {"Time1":%q}]' :value='%q' :timePickerProps='{"format":"24hr","scrollable":true,"use-seconds":false,"no-title":false}' :clearText='"Clear"' :okText='"OK"' :disabled='false' :error-messages='["err time1"]'></vx-datetimepicker>
+
+<vx-datetimepicker :label='"Time2"' v-model='form["Time2"]' v-assign='[form, {"Time2":%q}]' :value='%q' :timePickerProps='{"format":"24hr","scrollable":true,"use-seconds":false,"no-title":false}' :clearText='"Clear"' :okText='"OK"' :disabled='false' :error-messages='null'></vx-datetimepicker>
+`, "", "", "", ""),
+		},
+		{
+			name: "Display zero time with default time component(READ)",
+			toComponentFun: func() h.HTMLComponent {
+				vd := &web.ValidationErrors{}
+				vd.FieldError("Time1", "err time1")
+
+				type WithTime struct {
+					Time1 time.Time
+					Time2 *time.Time
+				}
+				return NewFieldDefaults(DETAIL).InspectFields(&WithTime{}).ToComponent(
+					mb.Info(),
+					&WithTime{
+						Time1: time.Time{},
+						Time2: &time.Time{},
+					},
+					&web.EventContext{R: r, Flash: vd})
+			},
+			expect: `
+<div class='mb-4'>
+<label class='v-label theme--light text-caption'>Time1</label>
+
+<div class='pt-1'></div>
+</div>
+
+<div class='mb-4'>
+<label class='v-label theme--light text-caption'>Time2</label>
+
+<div class='pt-1'></div>
+</div>
+`,
+		},
+		{
+			name: "Display nil time with default time component(READ)",
+			toComponentFun: func() h.HTMLComponent {
+				vd := &web.ValidationErrors{}
+				vd.FieldError("Time1", "err time1")
+
+				type WithTime struct {
+					Time1 time.Time
+					Time2 *time.Time
+				}
+				return NewFieldDefaults(DETAIL).InspectFields(&WithTime{}).ToComponent(
+					mb.Info(),
+					&WithTime{
+						Time1: time.Time{},
+						Time2: nil,
+					},
+					&web.EventContext{R: r, Flash: vd})
+			},
+			expect: `
+<div class='mb-4'>
+<label class='v-label theme--light text-caption'>Time1</label>
+
+<div class='pt-1'></div>
+</div>
+
+<div class='mb-4'>
+<label class='v-label theme--light text-caption'>Time2</label>
+
+<div class='pt-1'>&lt;nil&gt;</div>
+</div>
+`,
+		},
 	}
 
 	for _, c := range cases {
@@ -191,6 +326,7 @@ func TestFields(t *testing.T) {
 			diff := testingutils.PrettyJsonDiff(c.expect, output)
 			if len(diff) > 0 {
 				t.Error(c.name, diff)
+				t.Logf("\nexpected: %s\noutput: %s", c.expect, output)
 			}
 		})
 	}
