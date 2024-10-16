@@ -359,7 +359,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 			return
 		}
 	})
-	cmbCreating.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+	campaignModelBuilder.Editing().ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		c := obj.(*Campaign)
 		if c.Title == "" {
 			err.GlobalError("title could not be empty")

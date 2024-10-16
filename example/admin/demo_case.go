@@ -86,8 +86,13 @@ func configureDemoCase(b *presets.Builder, db *gorm.DB) {
 	mb := b.Model(&DemoCase{})
 	mb.Editing("Name").WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
 		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-			in(obj, ctx)
+			if in != nil {
+				in(obj, ctx)
+			}
 			p := obj.(*DemoCase)
+			if p.ID == 0 {
+				return
+			}
 			if len(p.FieldData.TextValidate) < 5 {
 				err.FieldError(fmt.Sprintf("%s.%s.TextValidate", "FieldSection", "FieldData"), "input more than 5 chars")
 			}
