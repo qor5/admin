@@ -3,6 +3,7 @@ package examples_admin
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
@@ -40,11 +41,13 @@ func activityExample(b *presets.Builder, db *gorm.DB, customize func(mb *presets
 	// @snippet_begin(ActivityRegisterPresetsModelsSample)
 	type WithActivityProduct struct {
 		gorm.Model
-		Title    string
-		Code     string
-		Approved bool
-		Edited   bool
-		Price    float64
+		Title     string
+		Code      string
+		Approved  bool
+		Edited    bool
+		Price     float64
+		StockedAt time.Time
+		AppovedAt *time.Time
 	}
 
 	err := db.AutoMigrate(&WithActivityProduct{})
@@ -54,9 +57,9 @@ func activityExample(b *presets.Builder, db *gorm.DB, customize func(mb *presets
 
 	mb := b.Model(&WithActivityProduct{})
 	defer func() { ab.RegisterModel(mb) }()
-	mb.Listing("Title", activity.ListFieldNotes, "Code", "Price")
+	mb.Listing("Title", activity.ListFieldNotes, "Code", "Price", "StockedAt", "AppovedAt")
 	dp := mb.Detailing("Content").Drawer(true)
-	dp.Section("Content").Editing("Title", "Code", "Approved", "Edited", "Price")
+	dp.Section("Content").Editing("Title", "Code", "Approved", "Edited", "Price", "StockedAt", "AppovedAt")
 	dp.SidePanelFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		return ab.MustGetModelBuilder(mb).NewTimelineCompo(ctx, obj, "_side")
 	})

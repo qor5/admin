@@ -32,6 +32,8 @@ type Messages struct {
 	FilterTabNamedVersions         string
 
 	Rename                    string
+	Hide                      string
+	Show                      string
 	PageOverView              string
 	Others                    string
 	Add                       string
@@ -117,6 +119,8 @@ var Messages_en_US = &Messages{
 	PageBuilder:                    "Page Builder",
 	PageTemplate:                   "Page Template",
 	Rename:                         "Rename",
+	Hide:                           "Hide",
+	Show:                           "Show",
 	PageOverView:                   "Page Overview",
 
 	Others:                    "Others",
@@ -201,6 +205,8 @@ var Messages_zh_CN = &Messages{
 	FilterTabOnlineVersion:         "在线版本",
 	FilterTabNamedVersions:         "已命名版本",
 	Rename:                         "重命名",
+	Hide:                           "隐藏",
+	Show:                           "显示",
 	PageOverView:                   "页面概览",
 
 	Others:                    "其他",
@@ -287,6 +293,8 @@ var Messages_ja_JP = &Messages{
 	FilterTabOnlineVersion:         "オンラインバージョン",
 	FilterTabNamedVersions:         "名前付きバージョン",
 	Rename:                         "名前の変更",
+	Hide:                           "隠す",
+	Show:                           "表示",
 	PageOverView:                   "ページの概要",
 	PageBuilder:                    "ページビルダー",
 	PageTemplate:                   "ページテンプレート",

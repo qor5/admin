@@ -35,18 +35,23 @@ type FieldContext struct {
 
 func (fc *FieldContext) StringValue(obj interface{}) (r string) {
 	val := fc.Value(obj)
-	switch vt := val.(type) {
-	case []rune:
-		return string(vt)
-	case []byte:
-		return string(vt)
-	case time.Time:
-		return vt.Format("2006-01-02 15:04:05")
-	case *time.Time:
-		if vt == nil {
-			return ""
+	if val != nil {
+		switch vt := val.(type) {
+		case []rune:
+			return string(vt)
+		case []byte:
+			return string(vt)
+		case time.Time:
+			if vt.IsZero() {
+				return ""
+			}
+			return vt.Format("2006-01-02 15:04:05")
+		case *time.Time:
+			if vt.IsZero() {
+				return ""
+			}
+			return vt.Format("2006-01-02 15:04:05")
 		}
-		return vt.Format("2006-01-02 15:04:05")
 	}
 	return fmt.Sprint(val)
 }
