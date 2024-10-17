@@ -232,10 +232,3 @@ func (t *Template) PrimaryColumnValuesBySlug(slug string) map[string]string {
 func (*Template) TableName() string {
 	return "page_builder_templates"
 }
-
-type (
-	PrimarySlugInterface interface {
-		PrimarySlug() string
-		PrimaryColumnValuesBySlug(slug string) map[string]string
-	}
-)
