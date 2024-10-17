@@ -135,7 +135,6 @@ func withLocale(builder *Builder, wh *gorm.DB, locale string) *gorm.DB {
 }
 
 func (b *ModelBuilder) addContainerToPage(ctx *web.EventContext, pageID int, containerID, pageVersion, locale, modelName string) (modelID uint, newContainerID string, err error) {
-
 	var (
 		dc          DemoContainer
 		containerMb = b.builder.ContainerByName(modelName)

@@ -121,41 +121,40 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 		EventFunc(RenameContainerEvent).Query(paramStatus, status).Query(paramContainerID, web.Var("element.param_id")).Go()
 
 	// container functions
-	containerOperations :=
-		h.Div(
-			VBtn("").Variant(VariantText).Icon("mdi-content-copy").Size(SizeSmall).Attr("@click",
-				web.Plaid().
-					EventFunc(ReplicateContainerEvent).
-					Query(paramContainerID, web.Var("element.param_id")).
-					Go(),
-			).Attr("v-show", "isHovering"),
-			VMenu(
-				web.Slot(
-					VBtn("").Children(
-						VIcon("mdi-dots-horizontal"),
-					).Attr("v-bind", "props").Variant(VariantText).Size(SizeSmall),
-				).Name("activator").Scope("{ props }"),
-				VList(
-					VListItem(h.Text(msgr.Rename)).PrependIcon("mdi-pencil").Attr("@click",
-						"element.editShow=!element.editShow",
-					),
-					VListItem(h.Text(fmt.Sprintf("{{element.hidden?%q:%q}}", msgr.Show, msgr.Hide))).Attr(":prepend-icon", "element.visibility_icon").Attr("@click",
-						web.Plaid().
-							EventFunc(ToggleContainerVisibilityEvent).
-							Query(paramContainerID, web.Var("element.param_id")).
-							Query(paramStatus, status).
-							Go(),
-					),
-					VListItem(h.Text(pMsgr.Delete)).PrependIcon("mdi-delete").Attr("@click",
-						web.Plaid().
-							URL(ctx.R.URL.Path).
-							EventFunc(DeleteContainerConfirmationEvent).
-							Query(paramContainerID, web.Var("element.param_id")).
-							Query(paramContainerName, web.Var("element.display_name")).
-							Go(),
-					)),
-			),
-		).Attr("v-show", "!element.editShow")
+	containerOperations := h.Div(
+		VBtn("").Variant(VariantText).Icon("mdi-content-copy").Size(SizeSmall).Attr("@click",
+			web.Plaid().
+				EventFunc(ReplicateContainerEvent).
+				Query(paramContainerID, web.Var("element.param_id")).
+				Go(),
+		).Attr("v-show", "isHovering"),
+		VMenu(
+			web.Slot(
+				VBtn("").Children(
+					VIcon("mdi-dots-horizontal"),
+				).Attr("v-bind", "props").Variant(VariantText).Size(SizeSmall),
+			).Name("activator").Scope("{ props }"),
+			VList(
+				VListItem(h.Text(msgr.Rename)).PrependIcon("mdi-pencil").Attr("@click",
+					"element.editShow=!element.editShow",
+				),
+				VListItem(h.Text(fmt.Sprintf("{{element.hidden?%q:%q}}", msgr.Show, msgr.Hide))).Attr(":prepend-icon", "element.visibility_icon").Attr("@click",
+					web.Plaid().
+						EventFunc(ToggleContainerVisibilityEvent).
+						Query(paramContainerID, web.Var("element.param_id")).
+						Query(paramStatus, status).
+						Go(),
+				),
+				VListItem(h.Text(pMsgr.Delete)).PrependIcon("mdi-delete").Attr("@click",
+					web.Plaid().
+						URL(ctx.R.URL.Path).
+						EventFunc(DeleteContainerConfirmationEvent).
+						Query(paramContainerID, web.Var("element.param_id")).
+						Query(paramContainerName, web.Var("element.display_name")).
+						Go(),
+				)),
+		),
+	).Attr("v-show", "!element.editShow")
 	r = web.Scope(
 		VSheet(
 			VList(
@@ -392,8 +391,8 @@ func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.Event
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr    = presets.MustGetMessages(ctx.R)
 		okAction = web.Plaid().
-			URL(b.editorURL()).
-			EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
+				URL(b.editorURL()).
+				EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
 		portalName = dialogPortalName
 	)
 
@@ -677,9 +676,7 @@ func (b *ModelBuilder) replicateContainer(ctx *web.EventContext) (r web.EventRes
 			return
 		}
 		containerMb = b.builder.ContainerByName(container.ModelName)
-		var (
-			model = containerMb.NewModel()
-		)
+		model := containerMb.NewModel()
 		if container.Shared {
 			container.Shared = false
 			// presets.ShowMessage(&r, "", ColorWarning)
