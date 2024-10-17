@@ -58,12 +58,16 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 	dp := pm.Detailing(detailList...)
 	dp.Field("Title").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-
-		var versionBadge *VChipBuilder
-		if v, ok := obj.(PrimarySlugInterface); ok {
-			ps := v.PrimaryColumnValuesBySlug(v.PrimarySlug())
-
-			versionBadge = VChip(h.Text(fmt.Sprintf("%d %s", versionCount(b.db, pm.NewModel(), ps["id"], ps[l10n.SlugLocaleCode]), msgr.Versions))).
+		var (
+			versionBadge *VChipBuilder
+			ps           string
+		)
+		if v, ok := obj.(presets.SlugEncoder); ok {
+			ps = v.PrimarySlug()
+		}
+		if v, ok := obj.(presets.SlugDecoder); ok && ps != "" {
+			cs := v.PrimaryColumnValuesBySlug(ps)
+			versionBadge = VChip(h.Text(fmt.Sprintf("%d %s", versionCount(b.db, pm.NewModel(), cs[presets.ParamID], cs[l10n.SlugLocaleCode]), msgr.Versions))).
 				Color(ColorPrimary).Size(SizeSmall).Class("px-1 mx-1").Attr("style", "height:20px")
 		}
 

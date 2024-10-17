@@ -23,6 +23,7 @@ import (
 
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/utils"
 )
@@ -69,57 +70,60 @@ func (b *ModelBuilder) setName() {
 
 func (b *ModelBuilder) addSharedContainerToPage(pageID int, containerID, pageVersion, locale, modelName string, modelID uint) (newContainerID string, err error) {
 	var c Container
-	err = b.db.First(&c, "model_name = ? AND model_id = ? AND shared = true and page_model_name = ? ", modelName, modelID, b.name).Error
-	if err != nil {
-		return
-	}
-	var (
-		maxOrder     sql.NullFloat64
-		displayOrder float64
-	)
-	err = b.db.Model(&Container{}).Select("MAX(display_order)").
-		Where("page_id = ? and page_version = ? and locale_code = ? and page_model_name = ?", pageID, pageVersion, locale, b.name).Scan(&maxOrder).Error
-	if err != nil {
-		return
-	}
-	err = b.db.Model(&Container{}).Select("MAX(display_order)").
-		Where("page_id = ? and page_version = ? and locale_code = ? and page_model_name = ? ", pageID, pageVersion, locale, b.name).Scan(&maxOrder).Error
-	if err != nil {
-		return
-	}
-	if containerID != "" {
-		var lastContainer Container
-		cs := lastContainer.PrimaryColumnValuesBySlug(containerID)
-		if dbErr := b.db.Where("id = ? AND locale_code = ? and page_model_name = ? ", cs["id"], locale, b.name).First(&lastContainer).Error; dbErr == nil {
-			displayOrder = lastContainer.DisplayOrder
-			if err = b.db.Model(&Container{}).Where("page_id = ? and page_version = ? and locale_code = ? and page_model_name = ? and display_order > ? ", pageID, pageVersion, locale, b.name, displayOrder).
-				UpdateColumn("display_order", gorm.Expr("display_order + ? ", 1)).Error; err != nil {
-				return
-			}
+
+	err = b.db.Transaction(func(tx *gorm.DB) (dbErr error) {
+		if dbErr = tx.First(&c, "model_name = ? AND model_id = ? AND shared = true and page_model_name = ? ", modelName, modelID, b.name).Error; dbErr != nil {
+			return
 		}
 
-	} else {
-		displayOrder = maxOrder.Float64
-	}
-	container := Container{
-		PageID:        uint(pageID),
-		PageVersion:   pageVersion,
-		ModelName:     modelName,
-		PageModelName: b.name,
-		DisplayName:   c.DisplayName,
-		ModelID:       modelID,
-		Shared:        true,
-		DisplayOrder:  displayOrder + 1,
-		Locale: l10n.Locale{
-			LocaleCode: locale,
-		},
-	}
-	err = b.db.Create(&container).Error
-	if err != nil {
-		return
-	}
-	containerID = container.PrimarySlug()
+		var (
+			maxOrder     sql.NullFloat64
+			displayOrder float64
+		)
+		dbErr = tx.Model(&Container{}).Select("MAX(display_order)").
+			Where("page_id = ? and page_version = ? and locale_code = ? and page_model_name = ?", pageID, pageVersion, locale, b.name).Scan(&maxOrder).Error
+		if dbErr != nil {
+			return
+		}
+		dbErr = tx.Model(&Container{}).Select("MAX(display_order)").
+			Where("page_id = ? and page_version = ? and locale_code = ? and page_model_name = ? ", pageID, pageVersion, locale, b.name).Scan(&maxOrder).Error
+		if dbErr != nil {
+			return
+		}
+		if containerID != "" {
+			var lastContainer Container
+			cs := lastContainer.PrimaryColumnValuesBySlug(containerID)
+			tx.Where("id = ? AND locale_code = ? and page_model_name = ? ", cs["id"], locale, b.name).First(&lastContainer)
+			if lastContainer.ID > 0 {
+				displayOrder = lastContainer.DisplayOrder
+				if dbErr = tx.Model(&Container{}).Where("page_id = ? and page_version = ? and locale_code = ? and page_model_name = ? and display_order > ? ", pageID, pageVersion, locale, b.name, displayOrder).
+					UpdateColumn("display_order", gorm.Expr("display_order + ? ", 1)).Error; dbErr != nil {
+					return
+				}
+			}
 
+		} else {
+			displayOrder = maxOrder.Float64
+		}
+		container := Container{
+			PageID:        uint(pageID),
+			PageVersion:   pageVersion,
+			ModelName:     modelName,
+			PageModelName: b.name,
+			DisplayName:   c.DisplayName,
+			ModelID:       modelID,
+			Shared:        true,
+			DisplayOrder:  displayOrder + 1,
+			Locale: l10n.Locale{
+				LocaleCode: locale,
+			},
+		}
+		if dbErr = tx.Create(&container).Error; dbErr != nil {
+			return
+		}
+		newContainerID = container.PrimarySlug()
+		return
+	})
 	return
 }
 
@@ -131,68 +135,77 @@ func withLocale(builder *Builder, wh *gorm.DB, locale string) *gorm.DB {
 }
 
 func (b *ModelBuilder) addContainerToPage(ctx *web.EventContext, pageID int, containerID, pageVersion, locale, modelName string) (modelID uint, newContainerID string, err error) {
-	containerMb := b.builder.ContainerByName(modelName)
-	model := containerMb.NewModel()
-	var dc DemoContainer
-	b.db.Where("model_name = ? AND locale_code = ?", modelName, locale).First(&dc)
-	if dc.ID != 0 && dc.ModelID != 0 {
-		b.db.Where("id = ?", dc.ModelID).First(model)
-		reflectutils.Set(model, "ID", uint(0))
-	}
-	err = containerMb.Editing().Creating().Saver(model, "", ctx)
-	if err != nil {
-		return
-	}
-
 	var (
-		maxOrder     sql.NullFloat64
-		displayOrder float64
+		dc          DemoContainer
+		containerMb = b.builder.ContainerByName(modelName)
+		model       = containerMb.NewModel()
 	)
-	wh := b.db.Model(&Container{}).Select("MAX(display_order)").
-		Where("page_id = ? and page_version = ? and page_model_name = ? ", pageID, pageVersion, b.name)
 
-	err = withLocale(b.builder, wh, locale).Scan(&maxOrder).Error
-	if err != nil {
-		return
-	}
-	if containerID != "" {
-		var lastContainer Container
-		cs := lastContainer.PrimaryColumnValuesBySlug(containerID)
-		if dbErr := b.db.Where("id = ? AND locale_code = ? and page_model_name = ?", cs["id"], locale, b.name).First(&lastContainer).Error; dbErr == nil {
-			displayOrder = lastContainer.DisplayOrder
-			if err = withLocale(
-				b.builder,
-				b.db.Model(&Container{}).
-					Where("page_id = ? and page_version = ? and page_model_name = ? and display_order > ? ", pageID, pageVersion, b.name, displayOrder),
-				locale,
-			).
-				UpdateColumn("display_order", gorm.Expr("display_order + ? ", 1)).Error; err != nil {
-				return
-			}
+	err = b.db.Transaction(func(tx *gorm.DB) (dbErr error) {
+		tx.Where("model_name = ? AND locale_code = ?", modelName, locale).First(&dc)
+		if dc.ID != 0 && dc.ModelID != 0 {
+			tx.Where("id = ?", dc.ModelID).First(model)
+			reflectutils.Set(model, "ID", uint(0))
+		}
+		ctx.WithContextValue(gorm2op.CtxKeyDB{}, tx)
+		defer ctx.WithContextValue(gorm2op.CtxKeyDB{}, nil)
+		if dbErr = containerMb.Editing().Creating().Saver(model, "", ctx); dbErr != nil {
+			return
 		}
 
-	} else {
-		displayOrder = maxOrder.Float64
-	}
-	modelID = reflectutils.MustGet(model, "ID").(uint)
-	displayName := modelName
-	if b.builder.ps.GetI18n() != nil {
-		displayName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, modelName)
-	}
-	container := Container{
-		PageID:        uint(pageID),
-		PageVersion:   pageVersion,
-		ModelName:     modelName,
-		PageModelName: b.name,
-		DisplayName:   displayName,
-		ModelID:       modelID,
-		DisplayOrder:  displayOrder + 1,
-		Locale: l10n.Locale{
-			LocaleCode: locale,
-		},
-	}
-	err = b.db.Create(&container).Error
-	newContainerID = container.PrimarySlug()
+		var (
+			maxOrder     sql.NullFloat64
+			displayOrder float64
+		)
+		wh := tx.Model(&Container{}).Select("MAX(display_order)").
+			Where("page_id = ? and page_version = ? and page_model_name = ? ", pageID, pageVersion, b.name)
+
+		if dbErr = withLocale(b.builder, wh, locale).Scan(&maxOrder).Error; dbErr != nil {
+			return
+		}
+		if containerID != "" {
+			var lastContainer Container
+			cs := lastContainer.PrimaryColumnValuesBySlug(containerID)
+			tx.Where("id = ? AND locale_code = ? and page_model_name = ?", cs["id"], locale, b.name).First(&lastContainer)
+			if lastContainer.ID > 0 {
+				displayOrder = lastContainer.DisplayOrder
+				if dbErr = withLocale(
+					b.builder,
+					tx.Model(&Container{}).
+						Where("page_id = ? and page_version = ? and page_model_name = ? and display_order > ? ", pageID, pageVersion, b.name, displayOrder),
+					locale,
+				).
+					UpdateColumn("display_order", gorm.Expr("display_order + ? ", 1)).Error; dbErr != nil {
+					return
+				}
+			}
+
+		} else {
+			displayOrder = maxOrder.Float64
+		}
+		modelID = reflectutils.MustGet(model, "ID").(uint)
+		displayName := modelName
+		if b.builder.ps.GetI18n() != nil {
+			displayName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, modelName)
+		}
+		container := Container{
+			PageID:        uint(pageID),
+			PageVersion:   pageVersion,
+			ModelName:     modelName,
+			PageModelName: b.name,
+			DisplayName:   displayName,
+			ModelID:       modelID,
+			DisplayOrder:  displayOrder + 1,
+			Locale: l10n.Locale{
+				LocaleCode: locale,
+			},
+		}
+		err = tx.Create(&container).Error
+		newContainerID = container.PrimarySlug()
+
+		return
+	})
+
 	return
 }
 
@@ -218,7 +231,7 @@ func (b *ModelBuilder) primaryColumnValuesBySlug(slug string) (pageID int, pageV
 
 		obj = b.mb.NewModel()
 	)
-	if p, ok := obj.(PrimarySlugInterface); ok {
+	if p, ok := obj.(presets.SlugDecoder); ok {
 		ps = p.PrimaryColumnValuesBySlug(slug)
 	}
 	pageVersion = ps[publish.SlugVersion]
@@ -814,7 +827,7 @@ func (b *ModelBuilder) configDuplicate(mb *presets.ModelBuilder) {
 }
 
 func (b *ModelBuilder) PreviewHTML(obj interface{}) (r string) {
-	p, ok := obj.(PrimarySlugInterface)
+	p, ok := obj.(presets.SlugEncoder)
 	if !ok {
 		return
 	}

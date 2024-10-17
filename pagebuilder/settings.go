@@ -7,12 +7,11 @@ import (
 	"strings"
 
 	"github.com/qor5/web/v3"
-	"github.com/sunfmin/reflectutils"
-	h "github.com/theplant/htmlgo"
-
 	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
+	"github.com/sunfmin/reflectutils"
+	h "github.com/theplant/htmlgo"
 
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
@@ -33,7 +32,7 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 		)
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		versionComponent := publish.DefaultVersionComponentFunc(pm)(obj, field, ctx)
-		if v, ok := obj.(PrimarySlugInterface); ok {
+		if v, ok := obj.(presets.SlugEncoder); ok {
 			ps = v.PrimarySlug()
 		}
 
