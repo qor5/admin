@@ -67,7 +67,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 		"page_version":    pageVersion,
 	}
 	if locale != "" {
-		wc["locale_code"] = locale
+		wc[l10n.SlugLocaleCode] = locale
 	}
 	err = b.db.Order("display_order ASC").Where(wc).Find(&cons).Error
 	if err != nil {
@@ -282,13 +282,12 @@ func (b *ModelBuilder) moveUpDownContainer(ctx *web.EventContext) (r web.EventRe
 	var (
 		container    Container
 		preContainer Container
+		paramID      = ctx.R.FormValue(paramContainerID)
+		direction    = ctx.R.FormValue(paramMoveDirection)
+		cs           = container.PrimaryColumnValuesBySlug(paramID)
+		containerID  = cs[presets.ParamID]
+		locale       = cs[l10n.SlugLocaleCode]
 	)
-	paramID := ctx.R.FormValue(paramContainerID)
-	direction := ctx.R.FormValue(paramMoveDirection)
-
-	cs := container.PrimaryColumnValuesBySlug(paramID)
-	containerID := cs["id"]
-	locale := cs["locale_code"]
 
 	err = b.db.Transaction(func(tx *gorm.DB) (inerr error) {
 		if inerr = tx.Where("id = ? AND locale_code = ?", containerID, locale).First(&container).Error; inerr != nil {
@@ -324,8 +323,8 @@ func (b *ModelBuilder) toggleContainerVisibility(ctx *web.EventContext) (r web.E
 	var (
 		paramID     = ctx.R.FormValue(paramContainerID)
 		cs          = container.PrimaryColumnValuesBySlug(paramID)
-		containerID = cs["id"]
-		locale      = cs["locale_code"]
+		containerID = cs[presets.ParamID]
+		locale      = cs[l10n.SlugLocaleCode]
 	)
 
 	err = b.db.Exec("UPDATE page_builder_containers SET hidden = NOT(coalesce(hidden,FALSE)) WHERE id = ? AND locale_code = ?", containerID, locale).Error
@@ -371,10 +370,12 @@ func (b *ModelBuilder) deleteContainerConfirmation(ctx *web.EventContext) (r web
 }
 
 func (b *ModelBuilder) deleteContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
-	var container Container
-	cs := container.PrimaryColumnValuesBySlug(ctx.Param(paramContainerID))
-	containerID := cs["id"]
-	locale := cs["locale_code"]
+	var (
+		container   Container
+		cs          = container.PrimaryColumnValuesBySlug(ctx.Param(paramContainerID))
+		containerID = cs[presets.ParamID]
+		locale      = cs[l10n.SlugLocaleCode]
+	)
 
 	err = b.db.Delete(&Container{}, "id = ? AND locale_code = ?", containerID, locale).Error
 	if err != nil {
@@ -391,8 +392,8 @@ func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.Event
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr    = presets.MustGetMessages(ctx.R)
 		okAction = web.Plaid().
-				URL(b.editorURL()).
-				EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
+			URL(b.editorURL()).
+			EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
 		portalName = dialogPortalName
 	)
 
@@ -588,8 +589,8 @@ func (b *ModelBuilder) renameContainer(ctx *web.EventContext) (r web.EventRespon
 	var (
 		paramID     = ctx.R.FormValue(paramContainerID)
 		cs          = container.PrimaryColumnValuesBySlug(paramID)
-		containerID = cs["id"]
-		locale      = cs["locale_code"]
+		containerID = cs[presets.ParamID]
+		locale      = cs[l10n.SlugLocaleCode]
 		name        = ctx.R.FormValue(paramsDisplayName)
 	)
 	err = b.db.First(&container, "id = ? AND locale_code = ?  ", containerID, locale).Error

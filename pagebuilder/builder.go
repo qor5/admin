@@ -111,7 +111,6 @@ type Builder struct {
 }
 
 const (
-	selectTemplateEvent = "selectTemplateEvent"
 	// clearTemplateEvent               = "clearTemplateEvent"
 	republishRelatedOnlinePagesEvent = "republish_related_online_pages"
 
@@ -1284,8 +1283,6 @@ func (b *ContainerBuilder) firstOrCreate(localeCodes []string) (err error) {
 		}
 		return
 	})
-
-	return
 }
 
 func republishRelatedOnlinePages(pageURL string) web.EventFunc {

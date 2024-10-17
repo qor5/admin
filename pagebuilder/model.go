@@ -231,7 +231,7 @@ func (b *ModelBuilder) primaryColumnValuesBySlug(slug string) (pageID int, pageV
 
 		obj = b.mb.NewModel()
 	)
-	if p, ok := obj.(PrimarySlugInterface); ok {
+	if p, ok := obj.(presets.SlugDecoder); ok {
 		ps = p.PrimaryColumnValuesBySlug(slug)
 	}
 	pageVersion = ps[publish.SlugVersion]
@@ -827,7 +827,7 @@ func (b *ModelBuilder) configDuplicate(mb *presets.ModelBuilder) {
 }
 
 func (b *ModelBuilder) PreviewHTML(obj interface{}) (r string) {
-	p, ok := obj.(PrimarySlugInterface)
+	p, ok := obj.(presets.SlugEncoder)
 	if !ok {
 		return
 	}
