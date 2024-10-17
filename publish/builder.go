@@ -449,19 +449,16 @@ func (b *Builder) defaultPublish(ctx context.Context, record any) (err error) {
 		if objs, err = b.getPublishActions(ctx, record); err != nil {
 			return
 		}
-		if err = UploadOrDelete(objs, b.storage); err != nil {
-			return
-		}
 		// update status
 		if r, ok := record.(StatusInterface); ok {
-			now := b.db.NowFunc()
+			now := tx.NowFunc()
 			if version, ok := record.(VersionInterface); ok {
 				var modelSchema *schema.Schema
-				modelSchema, err = schema.Parse(record, &sync.Map{}, b.db.NamingStrategy)
+				modelSchema, err = schema.Parse(record, &sync.Map{}, tx.NamingStrategy)
 				if err != nil {
 					return
 				}
-				scope := setPrimaryKeysConditionWithoutVersion(b.db.Model(reflect.New(modelSchema.ModelType).Interface()), record, modelSchema).Where("version <> ? AND status = ?", version.EmbedVersion().Version, StatusOnline)
+				scope := setPrimaryKeysConditionWithoutVersion(tx.Model(reflect.New(modelSchema.ModelType).Interface()), record, modelSchema).Where("version <> ? AND status = ?", version.EmbedVersion().Version, StatusOnline)
 
 				oldVersionUpdateMap := make(map[string]interface{})
 				if _, ok := record.(ScheduleInterface); ok {
@@ -484,22 +481,29 @@ func (b *Builder) defaultPublish(ctx context.Context, record any) (err error) {
 				updateMap["scheduled_start_at"] = r.EmbedSchedule().ScheduledStartAt
 				updateMap["actual_start_at"] = r.EmbedSchedule().ActualStartAt
 			}
-			if _, ok := record.(ListInterface); ok {
+			if r, ok := record.(ListInterface); ok {
+				r.EmbedList().ListUpdated = true
 				updateMap["list_updated"] = true
 			}
+			r.EmbedStatus().Status = StatusOnline
 			updateMap["status"] = StatusOnline
 			updateMap["online_url"] = r.EmbedStatus().OnlineUrl
-			if err = b.db.Model(record).Updates(updateMap).Error; err != nil {
+			if err = tx.Model(record).Updates(updateMap).Error; err != nil {
 				return
 			}
 		}
 
+		if err = UploadOrDelete(objs, b.storage); err != nil {
+			return
+		}
+
 		// publish callback
 		if r, ok := record.(AfterPublishInterface); ok {
-			if err = r.AfterPublish(ctx, b.db, b.storage); err != nil {
+			if err = r.AfterPublish(ctx, tx, b.storage); err != nil {
 				return
 			}
 		}
+
 		return
 	})
 	return
@@ -523,34 +527,38 @@ func (b *Builder) defaultUnPublish(ctx context.Context, record any) (err error) 
 		if err != nil {
 			return
 		}
-		if err = UploadOrDelete(objs, b.storage); err != nil {
-			return
-		}
 		// update status
-		if _, ok := record.(StatusInterface); ok {
+		if r, ok := record.(StatusInterface); ok {
 			updateMap := make(map[string]interface{})
 			if r, ok := record.(ScheduleInterface); ok {
-				now := b.db.NowFunc()
+				now := tx.NowFunc()
 				r.EmbedSchedule().ActualEndAt = &now
 				r.EmbedSchedule().ScheduledEndAt = nil
 				updateMap["scheduled_end_at"] = r.EmbedSchedule().ScheduledEndAt
 				updateMap["actual_end_at"] = r.EmbedSchedule().ActualEndAt
 			}
-			if _, ok := record.(ListInterface); ok {
+			if r, ok := record.(ListInterface); ok {
+				r.EmbedList().ListDeleted = true
 				updateMap["list_deleted"] = true
 			}
+			r.EmbedStatus().Status = StatusOffline
 			updateMap["status"] = StatusOffline
-			if err = b.db.Model(record).Updates(updateMap).Error; err != nil {
+			if err = tx.Model(record).Updates(updateMap).Error; err != nil {
 				return
 			}
 		}
 
+		if err = UploadOrDelete(objs, b.storage); err != nil {
+			return
+		}
+
 		// unpublish callback
 		if r, ok := record.(AfterUnPublishInterface); ok {
-			if err = r.AfterUnPublish(ctx, b.db, b.storage); err != nil {
+			if err = r.AfterUnPublish(ctx, tx, b.storage); err != nil {
 				return
 			}
 		}
+
 		return
 	})
 	return
