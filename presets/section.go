@@ -189,6 +189,12 @@ func (b *SectionBuilder) WrapSaveBtnFunc(w func(in ObjectBoolFunc) ObjectBoolFun
 	return b
 }
 
+// WrapValidateFunc only used in detailing
+func (b *SectionBuilder) WrapValidateFunc(w func(in ValidateFunc) ValidateFunc) (r *SectionBuilder) {
+	b.validator = w(b.validator)
+	return b
+}
+
 func (b *SectionBuilder) DisableElementDeleteBtn() *SectionBuilder {
 	b.disableElementDeleteBtn = true
 	return b
