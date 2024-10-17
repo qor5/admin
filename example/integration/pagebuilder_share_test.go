@@ -76,17 +76,23 @@ func TestPageBuilderShareContainer(t *testing.T) {
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
 				var (
-					container pagebuilder.Container
-					m         containers.ListContent
+					container     pagebuilder.Container
+					nextContainer pagebuilder.Container
+					m             containers.ListContent
 				)
 				TestDB.Order("id desc").First(&container)
-				if container.ID <= 11 || container.ModelID == 10 || container.ModelName != "ListContent" || container.Shared {
+				if container.ID <= 11 || container.ModelID == 10 || container.ModelName != "ListContent" || container.Shared || container.DisplayOrder != 2 {
 					t.Fatalf("Replicate Container Faield %#+v", container)
 					return
 				}
 				TestDB.Order("id desc").First(&m, container.ModelID)
 				if m.Link != "ijuhuheweq" {
 					t.Fatalf("Replicate Container Model Faield %#+v", m)
+					return
+				}
+				TestDB.First(&nextContainer, 11)
+				if nextContainer.DisplayOrder != 3 {
+					t.Fatalf("Replicate Container Faield %#+v", nextContainer)
 					return
 				}
 				return

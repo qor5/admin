@@ -11,13 +11,12 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/qor5/web/v3"
-	"github.com/sunfmin/reflectutils"
-	h "github.com/theplant/htmlgo"
-	"gorm.io/gorm"
-
 	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
+	"github.com/sunfmin/reflectutils"
+	h "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
@@ -60,6 +59,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 		isReadonly                  = status != publish.StatusDraft && b.tb == nil
 		pageID, pageVersion, locale = b.getPrimaryColumnValuesBySlug(ctx)
 		msgr                        = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		pMsgr                       = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 	)
 	wc := map[string]interface{}{
 		"page_model_name": b.name,
@@ -76,6 +76,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 
 	var sorterData ContainerSorter
 	sorterData.Items = []ContainerSorterItem{}
+
 	for i, c := range cons {
 		vicon := "mdi-eye"
 		if c.Hidden {
@@ -118,6 +119,42 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 	renameEvent := web.Plaid().
 		URL(b.editorURL()).
 		EventFunc(RenameContainerEvent).Query(paramStatus, status).Query(paramContainerID, web.Var("element.param_id")).Go()
+
+	// container functions
+	containerOperations := h.Div(
+		VBtn("").Variant(VariantText).Icon("mdi-content-copy").Size(SizeSmall).Attr("@click",
+			web.Plaid().
+				EventFunc(ReplicateContainerEvent).
+				Query(paramContainerID, web.Var("element.param_id")).
+				Go(),
+		).Attr("v-show", "isHovering"),
+		VMenu(
+			web.Slot(
+				VBtn("").Children(
+					VIcon("mdi-dots-horizontal"),
+				).Attr("v-bind", "props").Variant(VariantText).Size(SizeSmall),
+			).Name("activator").Scope("{ props }"),
+			VList(
+				VListItem(h.Text(msgr.Rename)).PrependIcon("mdi-pencil").Attr("@click",
+					"element.editShow=!element.editShow",
+				),
+				VListItem(h.Text(fmt.Sprintf("{{element.hidden?%q:%q}}", msgr.Show, msgr.Hide))).Attr(":prepend-icon", "element.visibility_icon").Attr("@click",
+					web.Plaid().
+						EventFunc(ToggleContainerVisibilityEvent).
+						Query(paramContainerID, web.Var("element.param_id")).
+						Query(paramStatus, status).
+						Go(),
+				),
+				VListItem(h.Text(pMsgr.Delete)).PrependIcon("mdi-delete").Attr("@click",
+					web.Plaid().
+						URL(ctx.R.URL.Path).
+						EventFunc(DeleteContainerConfirmationEvent).
+						Query(paramContainerID, web.Var("element.param_id")).
+						Query(paramContainerName, web.Var("element.display_name")).
+						Go(),
+				)),
+		),
+	).Attr("v-show", "!element.editShow")
 	r = web.Scope(
 		VSheet(
 			VList(
@@ -153,26 +190,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 										),
 										web.Slot(
 											h.If(!isReadonly,
-												h.Div(
-													VBtn("").Variant(VariantText).Icon("mdi-pencil").Attr("@click",
-														"element.editShow=!element.editShow",
-													).Attr("v-show", "!element.editShow && !element.hidden && isHovering"),
-													VBtn("").Variant(VariantText).Attr(":icon", "element.visibility_icon").Size(SizeSmall).Attr("@click",
-														web.Plaid().
-															EventFunc(ToggleContainerVisibilityEvent).
-															Query(paramContainerID, web.Var("element.param_id")).
-															Query(paramStatus, status).
-															Go(),
-													).Attr("v-show", "!element.editShow && (element.hidden || isHovering)"),
-													VBtn("").Variant(VariantText).Icon("mdi-delete").Attr("@click",
-														web.Plaid().
-															URL(ctx.R.URL.Path).
-															EventFunc(DeleteContainerConfirmationEvent).
-															Query(paramContainerID, web.Var("element.param_id")).
-															Query(paramContainerName, web.Var("element.display_name")).
-															Go(),
-													).Attr("v-show", "!element.editShow && !element.hidden && isHovering"),
-												),
+												containerOperations,
 											),
 										).Name("append"),
 									).Attr(":variant", fmt.Sprintf(` element.hidden &&!isHovering && !element.editShow?%q:%q`, VariantPlain, VariantText)).
@@ -645,19 +663,20 @@ func (b *ModelBuilder) containerPreview(ctx *web.EventContext) (r web.EventRespo
 
 func (b *ModelBuilder) replicateContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var (
-		container   Container
-		cs          = container.PrimaryColumnValuesBySlug(ctx.Param(paramContainerID))
-		containerID = cs[presets.ParamID]
-		locale      = cs[l10n.SlugLocaleCode]
+		container      Container
+		cs             = container.PrimaryColumnValuesBySlug(ctx.Param(paramContainerID))
+		containerID    = cs[presets.ParamID]
+		locale         = cs[l10n.SlugLocaleCode]
+		containerMb    *ContainerBuilder
+		modelID        int
+		newContainerID string
 	)
 	if err = b.db.Transaction(func(tx *gorm.DB) (dbErr error) {
 		if dbErr = tx.Where("id = ? AND locale_code = ?", containerID, locale).First(&container).Error; dbErr != nil {
 			return
 		}
-		var (
-			containerMb = b.builder.ContainerByName(container.ModelName)
-			model       = containerMb.NewModel()
-		)
+		containerMb = b.builder.ContainerByName(container.ModelName)
+		model := containerMb.NewModel()
 		if container.Shared {
 			container.Shared = false
 			// presets.ShowMessage(&r, "", ColorWarning)
@@ -674,14 +693,27 @@ func (b *ModelBuilder) replicateContainer(ctx *web.EventContext) (r web.EventRes
 		if dbErr = containerMb.Editing().Creating().Saver(model, "", ctx); dbErr != nil {
 			return
 		}
+		if dbErr = withLocale(
+			b.builder,
+			tx.Model(&Container{}).
+				Where("page_id = ? and page_version = ? and page_model_name = ? and display_order > ? ", container.PageID, container.PageVersion, container.PageModelName, container.DisplayOrder),
+			locale,
+		).
+			UpdateColumn("display_order", gorm.Expr("display_order + ? ", 1)).Error; dbErr != nil {
+			return
+		}
+		container.DisplayOrder += 1
 		container.ModelID = reflectutils.MustGet(model, "ID").(uint)
+		modelID = int(container.ModelID)
+		container.Hidden = false
 		if dbErr = tx.Save(&container).Error; dbErr != nil {
 			return
 		}
+		newContainerID = container.PrimarySlug()
 		return
 	}); err != nil {
 		return
 	}
-	r.RunScript = web.Plaid().PushState(true).Go()
+	r.RunScript = web.Plaid().Query(paramContainerDataID, containerMb.getContainerDataID(modelID)).Query(paramContainerID, newContainerID).PushState(true).Go()
 	return
 }
