@@ -108,7 +108,8 @@ func configPermOrder(b *presets.Builder) {
 
 	order.Detailing("source_section").Drawer(true)
 
-	order.Detailing("source_section").Section("source_section").Editing("Source")
+	section := presets.NewSectionBuilder(order, "source_section").Editing("Source")
+	order.Detailing("source_section").Section(section)
 }
 
 var permCustomerData = gofixtures.Data(gofixtures.Sql(`
@@ -118,8 +119,9 @@ INSERT INTO public.permtest_customers (custom_code, created_at, updated_at, dele
 func configPermCustomer(b *presets.Builder) {
 	mb := b.Model(&customer{})
 	de := mb.Detailing("name_section").Drawer(true)
-	se := de.Section("name_section")
-	se.Editing("Name").Viewing("Name")
+	section := presets.NewSectionBuilder(mb, "name_section").
+		Editing("Name").Viewing("Name")
+	de.Section(section)
 }
 
 func TestPermWithoutID(t *testing.T) {
@@ -136,7 +138,7 @@ func TestPermWithoutID(t *testing.T) {
 				ReqFunc: func() *http.Request {
 					permCustomerData.TruncatePut(dbr)
 					req := multipartestutils.NewMultipartBuilder().
-						PageURL("/customers?__execute_event__=presets_Detailing_Field_Edit&section=name_section&id=1").
+						PageURL("/customers?__execute_event__=section_edit_name_section&id=1").
 						BuildEventFuncRequest()
 					return req
 				},
@@ -151,7 +153,7 @@ func TestPermWithoutID(t *testing.T) {
 				ReqFunc: func() *http.Request {
 					permCustomerData.TruncatePut(dbr)
 					req := multipartestutils.NewMultipartBuilder().
-						PageURL("/customers?__execute_event__=presets_Detailing_Field_Edit&section=name_section&id=1").
+						PageURL("/customers?__execute_event__=section_edit_name_section&id=1").
 						BuildEventFuncRequest()
 					return req
 				},
@@ -260,8 +262,7 @@ func TestSectionEditPerm(t *testing.T) {
 				ReqFunc: func() *http.Request {
 					admin.OrdersExampleData.TruncatePut(dbr)
 					req := multipartestutils.NewMultipartBuilder().
-						PageURL("/orders?__execute_event__=presets_Detailing_Field_Save&id=6").
-						Query("section", "source_section").
+						PageURL("/orders?__execute_event__=section_save_source_section&id=6").
 						AddField("source_section.Source", "newSource").
 						BuildEventFuncRequest()
 					return req
@@ -277,8 +278,7 @@ func TestSectionEditPerm(t *testing.T) {
 				ReqFunc: func() *http.Request {
 					admin.OrdersExampleData.TruncatePut(dbr)
 					req := multipartestutils.NewMultipartBuilder().
-						PageURL("/orders?__execute_event__=presets_Detailing_Field_Save&id=6").
-						Query("section", "source_section").
+						PageURL("/orders?__execute_event__=section_save_source_section&id=6").
 						AddField("source_section.Source", "newSource").
 						BuildEventFuncRequest()
 					return req

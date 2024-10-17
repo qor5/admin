@@ -660,11 +660,11 @@ func configPost(
 	m.Editing().Field("TitleWithSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)
 
 	dp := m.Detailing(publish.VersionsPublishBar, "Detail").Drawer(true)
-	sb := dp.Section("Detail").Editing("Title", "TitleWithSlug", "HeroImage", "Body", "BodyImage")
-	sb.EditingField("TitleWithSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)
-
+	detailSection := presets.NewSectionBuilder(m, "Detail").
+		Editing("Title", "TitleWithSlug", "HeroImage", "Body", "BodyImage")
+	detailSection.EditingField("TitleWithSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)
 	// TODO: need viewing field setting
-	sb.EditingField("HeroImage").
+	detailSection.EditingField("HeroImage").
 		WithContextValue(
 			media.MediaBoxConfig,
 			&media_library.MediaBoxConfig{
@@ -680,11 +680,11 @@ func configPost(
 					},
 				},
 			})
-	sb.EditingField("BodyImage").
+	detailSection.EditingField("BodyImage").
 		WithContextValue(
 			media.MediaBoxConfig,
 			&media_library.MediaBoxConfig{})
-	sb.EditingField("Body").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	detailSection.EditingField("Body").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		extensions := tiptap.TiptapExtensions()
 		return tiptap.TiptapEditor(db, field.Name).
 			Extensions(extensions).
@@ -694,5 +694,6 @@ func configPost(
 			Disabled(field.Disabled).
 			ErrorMessages(field.Errors...)
 	})
+	dp.Section(detailSection)
 	return m
 }

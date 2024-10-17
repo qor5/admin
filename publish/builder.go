@@ -103,8 +103,12 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 			}
 		})
 		if m.HasDetailing() {
-			detailFields := m.Detailing().GetSections()
-			for _, detailField := range detailFields {
+			detailFields := m.Detailing().FieldsBuilder
+			for _, detailName := range detailFields.FieldNames() {
+				if _, ok := m.Detailing().GetField(detailName.(string)).GetComponent().(*presets.SectionBuilder); !ok {
+					continue
+				}
+				detailField := m.Detailing().GetField(detailName.(string)).GetComponent().(*presets.SectionBuilder)
 				wrapper := func(in presets.ObjectBoolFunc) presets.ObjectBoolFunc {
 					return func(obj interface{}, ctx *web.EventContext) bool {
 						return in(obj, ctx) && EmbedStatus(obj).Status == StatusDraft
