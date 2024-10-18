@@ -546,3 +546,48 @@ func PresetsDetailListSection(b *presets.Builder, db *gorm.DB) (cust *presets.Mo
 	dp.Section(cardsSection1, cardsSection2)
 	return
 }
+
+func PresetsSectionError(b *presets.Builder, db *gorm.DB) (cust *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	err := db.AutoMigrate(&UserCreditCard{})
+	if err != nil {
+		panic(err)
+	}
+	b.DataOperator(gorm2op.DataOperator(db))
+	cust = b.Model(&UserCreditCard{})
+	dp = cust.Detailing("Name", "CreditCards", "CreditCards2").Drawer(true)
+	dp.WrapFetchFunc(func(in presets.FetchFunc) presets.FetchFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
+			o, _ := in(obj, id, ctx)
+			us := o.(*UserCreditCard)
+			if len(us.CreditCards2) == 0 {
+				us.CreditCards2 = nil
+			}
+			return us, nil
+		}
+	})
+	namesection := presets.NewSectionBuilder(cust, "Name").Editing("Name").
+		WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
+			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+				err.GlobalError("name section validator error")
+				return
+			}
+		})
+
+	cardsSection1 := presets.NewSectionBuilder(cust, "CreditCards").Label("cards").IsList(&CreditCard{}).AlwaysShowListLabel().
+		Editing("Name", "Phone").Viewing("Name", "Phone")
+	cardsSection1.WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
+		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			err.GlobalError("cards section validator error")
+			return
+		}
+	})
+
+	cardsSection2 := presets.NewSectionBuilder(cust, "CreditCards2").Label("cards2").IsList(&CreditCard{}).AlwaysShowListLabel().
+		Editing("Name", "Phone").Viewing("Name", "Phone")
+	dp.Section(namesection, cardsSection1, cardsSection2)
+	return
+}
