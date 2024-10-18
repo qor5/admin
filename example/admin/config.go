@@ -76,7 +76,7 @@ var (
 	s3PublishBucket           = osenv.Get("S3_Publish_Bucket", "s3-bucket for publish", "example-publish")
 	s3PublishRegion           = osenv.Get("S3_Publish_Region", "s3-region for publish", "ap-northeast-1")
 	publishURL                = osenv.Get("PUBLISH_URL", "publish url", "")
-	awsRegion                 = osenv.Get("AWS_REGION", "aws region for show count down", "")
+	dbReset                   = osenv.Get("DB_RESET", "db reset for show count down", "")
 	resetAndImportInitialData = osenv.GetBool("RESET_AND_IMPORT_INITIAL_DATA",
 		"Will reset and import initial data if set to true", false)
 )
@@ -542,7 +542,7 @@ func configBrand(b *presets.Builder) {
 				v.VCol(h.H1(msgr.Demo)).Class("pt-4"),
 			),
 			// ).Density(DensityCompact),
-			h.If(awsRegion != "",
+			h.If(dbReset != "",
 				h.Div(
 					h.Span(msgr.DBResetTipLabel),
 					v.VIcon("schedule").Size(v.SizeXSmall),
