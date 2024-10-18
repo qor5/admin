@@ -402,9 +402,7 @@ func configListModel(b *presets.Builder, ab *activity.Builder, publisher *publis
 					).Class("v-input__slot"),
 				).Class("v-input v-input--is-label-active v-input--is-dirty theme--light v-text-field v-text-field--is-booted")
 			},
-		).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
-			return nil
-		})
+		)
 
 		detailing.Section("ListPath").ComponentFunc(
 			func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
@@ -433,9 +431,7 @@ func configListModel(b *presets.Builder, ab *activity.Builder, publisher *publis
 					).Class("v-input__slot"),
 				).Class("v-input v-input--is-label-active v-input--is-dirty theme--light v-text-field v-text-field--is-booted")
 			},
-		).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
-			return nil
-		})
+		)
 	}
 	return mb
 }

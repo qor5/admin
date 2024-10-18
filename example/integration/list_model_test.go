@@ -15,6 +15,7 @@ import (
 
 var listModelData = gofixtures.Data(gofixtures.Sql(`
 INSERT INTO public.list_models (id, created_at, updated_at, deleted_at, title, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, page_number, position, list_deleted, list_updated, version, version_name, parent_version) VALUES (1, '2024-10-18 07:23:43.969040 +00:00', '2024-10-18 07:23:43.969040 +00:00', null, '123', 'online', '/tmp/public', null, null, null, null, 1, 0, false, false, '2024-10-18-v01', '2024-10-18-v01', '');
+INSERT INTO public.list_models (id, created_at, updated_at, deleted_at, title, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, page_number, position, list_deleted, list_updated, version, version_name, parent_version) VALUES (2, '2024-10-18 07:23:43.969040 +00:00', '2024-10-18 07:23:43.969040 +00:00', null, '456', 'draft', '', null, null, null, null, 0, 0, false, false, '2024-10-18-v01', '2024-10-18-v01', '');
 `, []string{`list_models`}))
 
 func TestListModel(t *testing.T) {
@@ -43,6 +44,20 @@ func TestListModel(t *testing.T) {
 				return req
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Online", "Unpublish", "123", "Detail Path", "List Path"},
+		},
+		{
+			Name:  "Detail ListModel Draft",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				listModelData.TruncatePut(dbr)
+				req := NewMultipartBuilder().PageURL("/list-models").
+					EventFunc(actions.DetailingDrawer).
+					Query(presets.ParamID, "2_2024-10-18-v01").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Draft", "Publish", "456"},
+			ExpectPortalUpdate0NotContains:     []string{"Detail Path", "List Path"},
 		},
 	}
 
