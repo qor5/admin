@@ -376,34 +376,34 @@ func configListModel(b *presets.Builder, ab *activity.Builder, publisher *publis
 		mb.Editing("Title")
 
 		detailing := mb.Detailing(publish.VersionsPublishBar, "Title", "DetailPath", "ListPath").Drawer(true)
-		detailing.Section("Title").Editing("Title")
-		detailing.Section("DetailPath").ComponentFunc(
-			func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
-				this := obj.(*models.ListModel)
+		titleSection := presets.NewSectionBuilder(mb, "Title").Editing("Title")
+		detailPathSection := presets.NewSectionBuilder(mb, "DetailPath").
+			ComponentFunc(
+				func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
+					this := obj.(*models.ListModel)
 
-				if this.Status.Status != publish.StatusOnline {
-					return nil
-				}
+					if this.Status.Status != publish.StatusOnline {
+						return nil
+					}
 
-				var content []h.HTMLComponent
+					var content []h.HTMLComponent
 
-				content = append(content,
-					h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, mb.Info().Label(), field.Label)))
-				domain := PublishStorage.GetEndpoint()
-				if this.OnlineUrl != "" {
-					p := this.OnlineUrl
-					content = append(content, h.A(h.Text(p)).Href(domain+p))
-				}
+					content = append(content,
+						h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, mb.Info().Label(), field.Label)))
+					domain := PublishStorage.GetEndpoint()
+					if this.OnlineUrl != "" {
+						p := this.OnlineUrl
+						content = append(content, h.A(h.Text(p)).Href(domain+p))
+					}
 
-				return h.Div(
-					h.Div(
-						h.Div(content...).Class("v-text-field__slot").Style("padding: 8px 0;"),
-					).Class("v-input__slot"),
-				).Class("v-input v-input--is-label-active v-input--is-dirty theme--light v-text-field v-text-field--is-booted")
-			},
-		)
-
-		detailing.Section("ListPath").ComponentFunc(
+					return h.Div(
+						h.Div(
+							h.Div(content...).Class("v-text-field__slot").Style("padding: 8px 0;"),
+						).Class("v-input__slot"),
+					).Class("v-input v-input--is-label-active v-input--is-dirty theme--light v-text-field v-text-field--is-booted")
+				},
+			)
+		listPathSection := presets.NewSectionBuilder(mb, "ListPath").ComponentFunc(
 			func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
 				this := obj.(*models.ListModel)
 
@@ -430,6 +430,7 @@ func configListModel(b *presets.Builder, ab *activity.Builder, publisher *publis
 				).Class("v-input v-input--is-label-active v-input--is-dirty theme--light v-text-field v-text-field--is-booted")
 			},
 		)
+		detailing.Section(titleSection, detailPathSection, listPathSection)
 	}
 	return mb
 }
@@ -656,11 +657,11 @@ func configPost(
 	m.Editing().Field("TitleWithSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)
 
 	dp := m.Detailing(publish.VersionsPublishBar, "Detail").Drawer(true)
-	sb := dp.Section("Detail").Editing("Title", "TitleWithSlug", "HeroImage", "Body", "BodyImage")
-	sb.EditingField("TitleWithSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)
-
+	detailSection := presets.NewSectionBuilder(m, "Detail").
+		Editing("Title", "TitleWithSlug", "HeroImage", "Body", "BodyImage")
+	detailSection.EditingField("TitleWithSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)
 	// TODO: need viewing field setting
-	sb.EditingField("HeroImage").
+	detailSection.EditingField("HeroImage").
 		WithContextValue(
 			media.MediaBoxConfig,
 			&media_library.MediaBoxConfig{
@@ -676,11 +677,11 @@ func configPost(
 					},
 				},
 			})
-	sb.EditingField("BodyImage").
+	detailSection.EditingField("BodyImage").
 		WithContextValue(
 			media.MediaBoxConfig,
 			&media_library.MediaBoxConfig{})
-	sb.EditingField("Body").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	detailSection.EditingField("Body").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		extensions := tiptap.TiptapExtensions()
 		return tiptap.TiptapEditor(db, field.Name).
 			Extensions(extensions).
@@ -690,5 +691,6 @@ func configPost(
 			Disabled(field.Disabled).
 			ErrorMessages(field.Errors...)
 	})
+	dp.Section(detailSection)
 	return m
 }

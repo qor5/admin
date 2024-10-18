@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/multipartestutils"
@@ -111,8 +110,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 				settingData.TruncatePut(db)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/ps/parameter-settings").
-					EventFunc(actions.DoSaveDetailingField).
-					Query(presets.SectionFieldName, "Detail").
+					EventFunc("section_save_Detail").
 					Query(presets.ParamID, "1").
 					AddField("DisplayName", "newName").
 					BuildEventFuncRequest()
@@ -139,8 +137,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 				settingData.TruncatePut(db)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/ps/parameter-settings").
-					EventFunc(actions.DoCreateDetailingListField).
-					Query(presets.SectionFieldName, "FormSetting").
+					EventFunc("section_create_FormSetting").
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
 			},
@@ -168,8 +165,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 				settingData.TruncatePut(db)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/ps/parameter-settings").
-					EventFunc(actions.DoSaveDetailingListField).
-					Query(presets.SectionFieldName, "FormSetting").
+					EventFunc("section_save_FormSetting").
 					Query(presets.ParamID, "1").
 					Query("sectionListSaveBtn_FormSetting", "0").
 					AddField("FormSetting[0].Path", "/newPath").
@@ -204,8 +200,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 				settingData.TruncatePut(db)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/ps/parameter-settings").
-					EventFunc(actions.DoDeleteDetailingListField).
-					Query(presets.SectionFieldName, "FormSetting").
+					EventFunc("section_delete_FormSetting").
 					Query(presets.ParamID, "1").
 					Query("sectionListDeleteBtn_FormSetting", "0").
 					AddField("FormSetting[0].Path", "/newPath").
@@ -234,7 +229,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 	cust := b.Model(&ParameterSetting{})
 
 	detail := cust.Detailing("ParameterID", "Detail", "FormSetting").Drawer(true)
-	detail.Section("Detail").
+	detailSection := presets.NewSectionBuilder(cust, "Detail").
 		ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			ps := obj.(*ParameterSetting)
 			return h.Div(h.Text(ps.DisplayName))
@@ -246,7 +241,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 					Attr(web.VField(fmt.Sprintf("%s.DisplayName", field.FormKey), ps.DisplayName)...),
 			)
 		})
-	detail.Section("FormSetting").
+	formSetting := presets.NewSectionBuilder(cust, "FormSetting").
 		IsList(&ParameterFieldSetting{}).
 		Editing("DisplayName", "Description", "Path", "ValType").
 		ElementShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -276,7 +271,7 @@ func TestDetailFieldBuilder(t *testing.T) {
 			)
 			return div
 		})
-
+	detail.Section(detailSection, formSetting)
 	for _, c := range Cases {
 		t.Run(c.Name, func(t *testing.T) {
 			w := httptest.NewRecorder()
