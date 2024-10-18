@@ -320,7 +320,7 @@ func NewConfig(db *gorm.DB) Config {
 
 	b.Use(pageBuilder)
 
-	configListModel(b, ab)
+	configListModel(b, ab, publisher)
 
 	microb := microsite.New(db).Publisher(publisher)
 
@@ -368,12 +368,16 @@ func NewConfig(db *gorm.DB) Config {
 	}
 }
 
-func configListModel(b *presets.Builder, ab *activity.Builder) *presets.ModelBuilder {
-	l := b.Model(&models.ListModel{}).Use(ab)
+func configListModel(b *presets.Builder, ab *activity.Builder, publisher *publish.Builder) *presets.ModelBuilder {
+	mb := b.Model(&models.ListModel{})
+	defer mb.Use(ab, publisher)
 	{
-		l.Listing("ID", "Title", "Status")
-		ed := l.Editing("StatusBar", "ScheduleBar", "Title", "DetailPath", "ListPath")
-		ed.Field("DetailPath").ComponentFunc(
+		mb.Listing("ID", "Title", "Status")
+		mb.Editing("Title")
+
+		detailing := mb.Detailing(publish.VersionsPublishBar, "Title", "DetailPath", "ListPath").Drawer(true)
+		detailing.Section("Title").Editing("Title")
+		detailing.Section("DetailPath").ComponentFunc(
 			func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
 				this := obj.(*models.ListModel)
 
@@ -384,8 +388,8 @@ func configListModel(b *presets.Builder, ab *activity.Builder) *presets.ModelBui
 				var content []h.HTMLComponent
 
 				content = append(content,
-					h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, l.Info().Label(), field.Label)).Class("v-label v-label--active theme--light").Style("left: 0px; right: auto; position: absolute;"),
-				)
+					h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, mb.Info().Label(), field.Label),
+					))
 				domain := PublishStorage.GetEndpoint()
 				if this.OnlineUrl != "" {
 					p := this.OnlineUrl
@@ -394,9 +398,7 @@ func configListModel(b *presets.Builder, ab *activity.Builder) *presets.ModelBui
 
 				return h.Div(
 					h.Div(
-						h.Div(
-							content...,
-						).Class("v-text-field__slot").Style("padding: 8px 0;"),
+						h.Div(content...).Class("v-text-field__slot").Style("padding: 8px 0;"),
 					).Class("v-input__slot"),
 				).Class("v-input v-input--is-label-active v-input--is-dirty theme--light v-text-field v-text-field--is-booted")
 			},
@@ -404,7 +406,7 @@ func configListModel(b *presets.Builder, ab *activity.Builder) *presets.ModelBui
 			return nil
 		})
 
-		ed.Field("ListPath").ComponentFunc(
+		detailing.Section("ListPath").ComponentFunc(
 			func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (r h.HTMLComponent) {
 				this := obj.(*models.ListModel)
 
@@ -415,8 +417,8 @@ func configListModel(b *presets.Builder, ab *activity.Builder) *presets.ModelBui
 				var content []h.HTMLComponent
 
 				content = append(content,
-					h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, l.Info().Label(), field.Label)).Class("v-label v-label--active theme--light").Style("left: 0px; right: auto; position: absolute;"),
-				)
+					h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, mb.Info().Label(), field.Label),
+					))
 				domain := PublishStorage.GetEndpoint()
 				if this.OnlineUrl != "" {
 					p := this.GetListUrl(strconv.Itoa(this.PageNumber))
@@ -435,7 +437,7 @@ func configListModel(b *presets.Builder, ab *activity.Builder) *presets.ModelBui
 			return nil
 		})
 	}
-	return l
+	return mb
 }
 
 func configMenuOrder(b *presets.Builder) {
