@@ -36,6 +36,12 @@ func TestProfile(t *testing.T) {
 			},
 		},
 	})
+	defer func() {
+		// 10 OK , 30 Fail
+		for i := 0; i < 30; i++ {
+			_ = admin.TestHandler(TestDB, nil)
+		}
+	}()
 
 	dbr, _ := TestDB.DB()
 
