@@ -7,10 +7,11 @@ import (
 	"github.com/theplant/gofixtures"
 	"gorm.io/gorm"
 
+	"github.com/qor5/web/v3/multipartestutils"
+
 	"github.com/qor5/admin/v3/example/admin"
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/role"
-	"github.com/qor5/web/v3/multipartestutils"
 )
 
 var profileData = gofixtures.Data(gofixtures.Sql(`
@@ -84,6 +85,18 @@ func TestProfile(t *testing.T) {
 				return req
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{`Login Sessions`, `Time`, `Device`, `IP`, `Status`},
+		},
+		{
+			Name:  "Index Dashboard Without CountDown",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{`DEMO`},
+			ExpectPageBodyNotContains:     []string{`countdown`},
 		},
 	}
 
