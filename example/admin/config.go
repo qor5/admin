@@ -388,8 +388,7 @@ func configListModel(b *presets.Builder, ab *activity.Builder, publisher *publis
 				var content []h.HTMLComponent
 
 				content = append(content,
-					h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, mb.Info().Label(), field.Label),
-					))
+					h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, mb.Info().Label(), field.Label)))
 				domain := PublishStorage.GetEndpoint()
 				if this.OnlineUrl != "" {
 					p := this.OnlineUrl
@@ -417,8 +416,7 @@ func configListModel(b *presets.Builder, ab *activity.Builder, publisher *publis
 				var content []h.HTMLComponent
 
 				content = append(content,
-					h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, mb.Info().Label(), field.Label),
-					))
+					h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, mb.Info().Label(), field.Label)))
 				domain := PublishStorage.GetEndpoint()
 				if this.OnlineUrl != "" {
 					p := this.GetListUrl(strconv.Itoa(this.PageNumber))
