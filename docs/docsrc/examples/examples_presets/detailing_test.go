@@ -800,7 +800,6 @@ func TestPresetsDetailSectionView(t *testing.T) {
 	}
 }
 
-
 func TestPresetsSectionError(t *testing.T) {
 	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
 	PresetsSectionError(pb, TestDB)
@@ -838,7 +837,6 @@ func TestPresetsSectionError(t *testing.T) {
 			},
 			ExpectRunScriptContainsInOrder: []string{"name section validator error"},
 		},
-		
 	}
 
 	for _, c := range cases {
