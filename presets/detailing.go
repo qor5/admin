@@ -213,13 +213,13 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 	}
 
 	comp := web.Scope(b.ToComponent(b.mb.Info(), obj, ctx)).VSlot("{form}")
-	var tabsContent h.HTMLComponent = defaultToPage(commonPageConfig{
+	tabsContent := defaultToPage(commonPageConfig{
 		formContent: comp,
 		tabPanels:   b.tabPanels,
 		sidePanel:   b.sidePanel,
 	}, obj, ctx)
 
-	actionButtons := []h.HTMLComponent{}
+	var actionButtons []h.HTMLComponent
 	for _, ba := range b.actions {
 		if b.mb.Info().Verifier().SnakeDo(permActions, ba.name).WithReq(ctx.R).IsAllowed() != nil {
 			continue
