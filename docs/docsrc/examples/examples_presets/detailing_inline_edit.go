@@ -244,7 +244,13 @@ func PresetsDetailInlineEditFieldSections(b *presets.Builder, db *gorm.DB) (
 	})
 
 	section2 := presets.NewSectionBuilder(cust, "section").Label("SectionTitle").
-		Editing([]string{"Name", "Email"})
+		Editing([]string{"Name", "Email"}).
+		HiddenFuncs(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+			return h.Div(
+				h.Input("").Type("hidden").
+					Attr(web.VField("TestHiddenFunc", "This is hidden input")...),
+			)
+		})
 
 	dp.Section(sectionDetail, section2)
 	return
@@ -338,15 +344,6 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 	// section will use Editing().ValidateFunc() as validateFunc default
 	cust.Editing().ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		customer := obj.(*Customer)
-		if len(customer.Name) > 6 {
-			err.FieldError("name_section.Name", "customer name must no longer than 6")
-		}
-		if len(customer.Name) > 20 {
-			err.GlobalError("customer name must no longer than 20")
-		}
-		if customer.Name == "" {
-			err.GlobalError("customer name must not be empty")
-		}
 		if customer.Email == "" {
 			err.GlobalError("customer email must not be empty")
 		}
@@ -379,6 +376,21 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 			ErrorMessages(vErr.GetFieldErrors("name_section.Name")...)
 	}).WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		return in
+	}).WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
+		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			err = in(obj, ctx)
+			customer := obj.(*Customer)
+			if len(customer.Name) > 6 {
+				err.FieldError("name_section.Name", "customer name must no longer than 6")
+			}
+			if len(customer.Name) > 20 {
+				err.GlobalError("customer name must no longer than 20")
+			}
+			if customer.Name == "" {
+				err.GlobalError("customer name must not be empty")
+			}
+			return
+		}
 	})
 
 	emailSection := presets.NewSectionBuilder(cust, "email_section").

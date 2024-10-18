@@ -1113,18 +1113,11 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 
 // EditDetailListField Event: click detail list field element edit button
 func (b *SectionBuilder) EditDetailListField(ctx *web.EventContext) (r web.EventResponse, err error) {
-	var index, deleteIndex int64
+	var index int64
 	unsaved := ctx.ParamAsBool(b.elementUnsavedKey())
 	index, err = strconv.ParseInt(ctx.Queries().Get(b.EditBtnKey()), 10, 32)
 	if err != nil {
 		return
-	}
-	deleteIndex = -1
-	if ctx.Queries().Get(b.DeleteBtnKey()) != "" {
-		deleteIndex, err = strconv.ParseInt(ctx.Queries().Get(b.EditBtnKey()), 10, 32)
-		if err != nil {
-			return
-		}
 	}
 
 	obj := b.mb.NewModel()
@@ -1149,7 +1142,7 @@ func (b *SectionBuilder) EditDetailListField(ctx *web.EventContext) (r web.Event
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: b.FieldPortalName(),
-		Body: b.listComponent(obj, ctx, int(deleteIndex), int(index), -1, unsaved),
+		Body: b.listComponent(obj, ctx, -1, int(index), -1, unsaved),
 	})
 
 	return
