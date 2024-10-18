@@ -653,38 +653,11 @@ func (b *SectionBuilder) DefaultListUnmarshalFunc(ctx *web.EventContext, obj int
 	return nil
 }
 
-func (b *SectionBuilder) listComponent(obj interface{}, ctx *web.EventContext, deletedID, editID, saveID int, unsaved bool) h.HTMLComponent {
-	if b.elementHoverFunc != nil {
-		b.elementHover = b.elementHoverFunc(obj, ctx)
-	}
-	if b.elementEditBtnFunc != nil {
-		b.elementEditBtn = b.elementEditBtnFunc(obj, ctx)
-	}
-	if b.elementEditBtn {
-		b.elementEditBtn = b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() == nil
-	}
-
-	id := ctx.Param(ParamID)
-	if id == "" {
-		if slugIf, ok := obj.(SlugEncoder); ok {
-			id = slugIf.PrimarySlug()
-		}
-	}
-
-	list, err := reflectutils.Get(obj, b.name)
-	if err != nil {
-		panic(err)
-	}
-	listLen := 0
-	if list != nil {
-		listLen = reflect.ValueOf(list).Len()
-	}
-
-	lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.mb.label, b.label)
-	label := h.Div(h.H2(lb).Class("section-title")).Class("section-title-wrap")
+func (b *SectionBuilder) buildElementRows(list interface{}, deletedID, editID, saveID, listLen int, unsaved bool, ctx *web.EventContext) *h.HTMLTagBuilder {
 	rows := h.Div()
-
 	if b.alwaysShowListLabel && !b.disableLabel {
+		lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.mb.label, b.label)
+		label := h.Div(h.H2(lb).Class("section-title")).Class("section-title-wrap")
 		rows.AppendChildren(label)
 	}
 
@@ -692,10 +665,10 @@ func (b *SectionBuilder) listComponent(obj interface{}, ctx *web.EventContext, d
 		i := 0
 		reflectutils.ForEach(list, func(elementObj interface{}) {
 			defer func() { i++ }()
-			if i == 0 {
-				if b.label != "" && !b.alwaysShowListLabel && !b.disableLabel {
-					rows.AppendChildren(label)
-				}
+			if i == 0 && b.label != "" && !b.alwaysShowListLabel && !b.disableLabel {
+				lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.mb.label, b.label)
+				label := h.Div(h.H2(lb).Class("section-title")).Class("section-title-wrap")
+				rows.AppendChildren(label)
 			}
 			// set fieldSetting to ctx.R.Form by sortIndex
 			sortIndex := i
@@ -718,7 +691,7 @@ func (b *SectionBuilder) listComponent(obj interface{}, ctx *web.EventContext, d
 					rows.AppendChildren(b.showElement(elementObj, sortIndex, ctx))
 				} else {
 					formObj := reflect.New(reflect.TypeOf(b.editingFB.model).Elem()).Interface()
-					err = b.elementUnmarshaler(elementObj, formObj, b.ListFieldPrefix(fromIndex), ctx)
+					err := b.elementUnmarshaler(elementObj, formObj, b.ListFieldPrefix(fromIndex), ctx)
 					if err != nil {
 						panic(err)
 					}
@@ -727,6 +700,33 @@ func (b *SectionBuilder) listComponent(obj interface{}, ctx *web.EventContext, d
 			}
 		})
 	}
+
+	return rows
+}
+
+func (b *SectionBuilder) listComponent(obj interface{}, ctx *web.EventContext, deletedID, editID, saveID int, unsaved bool) h.HTMLComponent {
+	if b.elementHoverFunc != nil {
+		b.elementHover = b.elementHoverFunc(obj, ctx)
+	}
+	if b.elementEditBtnFunc != nil {
+		b.elementEditBtn = b.elementEditBtnFunc(obj, ctx)
+	}
+	if b.elementEditBtn {
+		b.elementEditBtn = b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() == nil
+	}
+
+	id := b.getObjectID(ctx, obj)
+
+	list, err := reflectutils.Get(obj, b.name)
+	if err != nil {
+		panic(err)
+	}
+	listLen := 0
+	if list != nil {
+		listLen = reflect.ValueOf(list).Len()
+	}
+
+	rows := b.buildElementRows(list, deletedID, editID, saveID, listLen, unsaved, ctx)
 
 	disableCreateBtn := b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
 	disableCreateBtn = disableCreateBtn || (ctx.ParamAsBool(b.elementUnsavedKey()))
@@ -1337,4 +1337,14 @@ func (b *SectionBuilder) CreateDetailListField(ctx *web.EventContext) (r web.Eve
 	})
 
 	return
+}
+
+func (b *SectionBuilder) getObjectID(ctx *web.EventContext, obj interface{}) string {
+	id := ctx.Param(ParamID)
+	if id == "" {
+		if slugIf, ok := obj.(SlugEncoder); ok {
+			id = slugIf.PrimarySlug()
+		}
+	}
+	return id
 }
