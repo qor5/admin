@@ -522,9 +522,15 @@ func PresetsDetailListSection(b *presets.Builder, db *gorm.DB) (cust *presets.Mo
 	})
 	cardsSection1 := presets.NewSectionBuilder(cust, "CreditCards").Label("cards").IsList(&CreditCard{}).AlwaysShowListLabel().
 		Editing("Name", "Phone").Viewing("Name", "Phone")
+	cardsSection1.HiddenFuncs(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+		return h.Div(
+			h.Input("").Type("hidden").
+				Attr(web.VField("TestHiddenFunc", "This is hidden input")...),
+		)
+	})
+
 	cardsSection2 := presets.NewSectionBuilder(cust, "CreditCards2").Label("cards2").IsList(&CreditCard{}).AlwaysShowListLabel().
 		Editing("Name", "Phone").Viewing("Name", "Phone")
-
 	dp.Section(cardsSection1, cardsSection2)
 	return
 }

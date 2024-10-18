@@ -474,12 +474,7 @@ func (b *SectionBuilder) EventCreate() string {
 }
 
 func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	id := ctx.Param(ParamID)
-	if id == "" {
-		if slugIf, ok := obj.(SlugEncoder); ok {
-			id = slugIf.PrimarySlug()
-		}
-	}
+	id := b.getObjectID(ctx, obj)
 
 	disableEditBtn := b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
 	btn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Edit")).Variant(VariantFlat).Size(SizeXSmall).
@@ -534,12 +529,8 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 }
 
 func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	id := ctx.Param(ParamID)
-	if id == "" {
-		if slugIf, ok := obj.(SlugEncoder); ok {
-			id = slugIf.PrimarySlug()
-		}
-	}
+	id := b.getObjectID(ctx, obj)
+
 	onChangeEvent := fmt.Sprintf("if (vars.%s ){ vars.%s.section_%s=true };", VarsPresetsDataChanged, VarsPresetsDataChanged, b.name)
 	cancelChangeEvent := fmt.Sprintf("if (vars.%s ){vars.%s.section_%s=false};", VarsPresetsDataChanged, VarsPresetsDataChanged, b.name)
 
@@ -750,13 +741,14 @@ func (b *SectionBuilder) listComponent(obj interface{}, ctx *web.EventContext, d
 		}
 	}
 
-	if b.isEdit {
-		return h.Div(
-			// element and addBtn have mb-2, so the real effect is mb-6
-			h.Div(rows).Class("mb-4"),
-			hiddenComp,
-		)
-	}
+	// TODO editing list section
+	// if b.isEdit {
+	// 	return h.Div(
+	// 		// element and addBtn have mb-2, so the real effect is mb-6
+	// 		h.Div(rows).Class("mb-4"),
+	// 		hiddenComp,
+	// 	)
+	// }
 	return h.Div(
 		web.Scope(
 			// element and addBtn have mb-2, so the real effect is mb-6

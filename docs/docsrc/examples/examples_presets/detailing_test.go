@@ -614,6 +614,21 @@ func TestPresetsDetailListSection(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"Name", "terry", "Phone", "188", "Add Row"},
 			ExpectPortalUpdate0NotContains:     []string{"Cancel", "Save"},
 		},
+		{
+			Name:  "edit section 2",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				userCreditCardsData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_edit_CreditCards").
+					Query("sectionListUnsaved_CreditCards", "false").
+					Query("sectionListEditBtn_CreditCards", "0").
+					Query("id", "2").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Cancel", "Save", "This is hidden"},
+		},
 	}
 
 	for _, c := range cases {
