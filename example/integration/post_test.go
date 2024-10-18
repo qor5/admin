@@ -50,6 +50,18 @@ func TestPost(t *testing.T) {
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{`Title`, `vx-field`, "Hero Image", "Choose File", "Body", "vx-tiptap-editor"},
 		},
+		{
+			Name:  "Index Post View",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				admin.PostsExampleData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/posts").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{`Demo`, `vx-filter`, "Create Time"},
+		},
 	}
 
 	for _, c := range cases {
