@@ -7,8 +7,11 @@ import (
 
 	. "github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
+	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/example/admin"
+	"github.com/qor5/admin/v3/example/models"
+	"github.com/qor5/admin/v3/role"
 )
 
 var roleData = gofixtures.Data(gofixtures.Sql(`
@@ -19,7 +22,15 @@ INSERT INTO public.roles (id, created_at, updated_at, deleted_at, name) VALUES (
 `, []string{`user_role_join`, `roles`}))
 
 func TestRole(t *testing.T) {
-	h := admin.TestHandler(TestDB, nil)
+	h := admin.TestHandler(TestDB, &models.User{
+		Model: gorm.Model{ID: 888},
+		Name:  "viwer@theplant.jp",
+		Roles: []role.Role{
+			{
+				Name: models.RoleEditor,
+			},
+		},
+	})
 	dbr, _ := TestDB.DB()
 
 	cases := []TestCase{
@@ -30,7 +41,7 @@ func TestRole(t *testing.T) {
 				roleData.TruncatePut(dbr)
 				return httptest.NewRequest("GET", "/roles", nil)
 			},
-			ExpectPageBodyContainsInOrder: []string{"Viewer", "Editor", "Manager", "Admin"},
+			ExpectPageBodyContainsInOrder: []string{"Viewer", "Editor"},
 		},
 	}
 
