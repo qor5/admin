@@ -16,7 +16,7 @@ INSERT INTO public.roles (id, created_at, updated_at, deleted_at, name) VALUES (
 INSERT INTO public.roles (id, created_at, updated_at, deleted_at, name) VALUES (3, '2024-08-23 08:43:32.969461 +00:00', '2024-08-23 08:43:32.969461 +00:00', null, 'Editor');
 INSERT INTO public.roles (id, created_at, updated_at, deleted_at, name) VALUES (4, '2024-08-23 08:43:32.969461 +00:00', '2024-08-23 08:43:32.969461 +00:00', null, 'Viewer');
 INSERT INTO public.roles (id, created_at, updated_at, deleted_at, name) VALUES (1, '2024-08-23 08:43:32.969461 +00:00', '2024-09-12 06:25:17.533058 +00:00', null, 'Admin');
-`, []string{`roles`}))
+`, []string{`user_role_join`, `roles`}))
 
 func TestRole(t *testing.T) {
 	h := admin.TestHandler(TestDB, nil)
