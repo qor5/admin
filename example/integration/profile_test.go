@@ -226,5 +226,4 @@ func TestRoleEditor(t *testing.T) {
 			},
 		},
 	})
-
 }
