@@ -71,9 +71,8 @@ func TestDemoCase(t *testing.T) {
 				demoCaseData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/demo-cases/1").
-					EventFunc(actions.DoSaveDetailingField).
+					EventFunc("section_save_FieldSection").
 					Query(presets.ParamID, "1").
-					Query(presets.SectionFieldName, "FieldSection").
 					AddField("FieldSection.FieldData.Text", "123").
 					AddField("FieldSection.FieldData.Textarea", "456").
 					AddField("FieldSection.FieldData.TextValidate", "12345").
@@ -97,9 +96,8 @@ func TestDemoCase(t *testing.T) {
 				demoCaseData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/demo-cases/1").
-					EventFunc(actions.DoSaveDetailingField).
+					EventFunc("section_save_FieldSection").
 					Query(presets.ParamID, "1").
-					Query(presets.SectionFieldName, "FieldSection").
 					AddField("FieldSection.FieldData.Text", "123").
 					AddField("FieldSection.FieldData.Textarea", "456").
 					AddField("FieldSection.FieldData.TextValidate", "1234").
@@ -116,9 +114,8 @@ func TestDemoCase(t *testing.T) {
 				demoCaseData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/demo-cases/1").
-					EventFunc(actions.DoSaveDetailingField).
+					EventFunc("section_save_FieldSection").
 					Query(presets.ParamID, "1").
-					Query(presets.SectionFieldName, "FieldSection").
 					AddField("FieldSection.FieldData.Text", "123").
 					AddField("FieldSection.FieldData.Textarea", "456").
 					AddField("FieldSection.FieldData.TextValidate", "12345").
@@ -135,9 +132,8 @@ func TestDemoCase(t *testing.T) {
 				demoCaseData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/demo-cases/1").
-					EventFunc(actions.DoSaveDetailingField).
+					EventFunc("section_save_SelectSection").
 					Query(presets.ParamID, "1").
-					Query(presets.SectionFieldName, "SelectSection").
 					AddField("SelectSection.SelectData.AutoComplete[0]", "1").
 					AddField("SelectSection.SelectData.AutoComplete[1]", "2").
 					AddField("SelectSection.SelectData.NormalSelect", "3").
@@ -170,9 +166,8 @@ func TestDemoCase(t *testing.T) {
 				demoCaseData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/demo-cases/1").
-					EventFunc(actions.DoSaveDetailingField).
+					EventFunc("section_save_SelectSection").
 					Query(presets.ParamID, "1").
-					Query(presets.SectionFieldName, "SelectSection").
 					AddField("SelectSection.SelectData.AutoComplete[0]", "1").
 					AddField("SelectSection.SelectData.NormalSelect", "8").
 					BuildEventFuncRequest()
@@ -187,9 +182,8 @@ func TestDemoCase(t *testing.T) {
 				demoCaseData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/demo-cases/1").
-					EventFunc(actions.DoSaveDetailingField).
+					EventFunc("section_save_CheckboxSection").
 					Query(presets.ParamID, "1").
-					Query(presets.SectionFieldName, "CheckboxSection").
 					AddField("CheckboxSection.CheckboxData.Checkbox", "true").
 					BuildEventFuncRequest()
 				return req
