@@ -44,6 +44,7 @@ func TestHandler(db *gorm.DB, u *models.User) http.Handler {
 	mux, _ := TestHandlerComplex(db, u, false)
 	return mux
 }
+
 func TestHandlerWorker(db *gorm.DB, u *models.User) http.Handler {
 	mux, _ := TestHandlerComplex(db, u, true)
 	return mux
