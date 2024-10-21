@@ -159,21 +159,36 @@ func configVxField(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder
 			return h.Components(
 				v.VRow(
 					v.VCol(
-						DemoCaseTextField(obj, sectionName, editField, "Text", "Text", vErr).
-							Tips("This is Tips"),
+						vx.VXField().
+							Label("Text(Disabled)").
+							ModelValue("This is Disabled Vx-Field").
+							Disabled(true),
 					),
 					v.VCol(
-						DemoCaseTextField(obj, sectionName, editField, "Textarea", "Textarea", vErr).
+						vx.VXField().
+							Label("Textarea(Disabled)").
+							ModelValue("This is Readonly Vx-Field type Textarea").
+							Disabled(true).
 							Type("textarea"),
 					),
 				),
 				v.VRow(
 					v.VCol(
-						DemoCaseTextField(obj, sectionName, editField, "TextValidate", "TextValidate(input more than 5 chars)", vErr).Required(true),
+						DemoCaseTextField(obj, sectionName, editField, "Text", "Text", vErr).
+							Tips("This is Tips").Clearable(true),
+					),
+					v.VCol(
+						DemoCaseTextField(obj, sectionName, editField, "Textarea", "Textarea", vErr).
+							Type("textarea").Clearable(true),
+					),
+				),
+				v.VRow(
+					v.VCol(
+						DemoCaseTextField(obj, sectionName, editField, "TextValidate", "TextValidate(input more than 5 chars)", vErr).Required(true).Clearable(true),
 					),
 					v.VCol(
 						DemoCaseTextField(obj, sectionName, editField, "TextareaValidate", "TextareaValidate(input more than 10 chars)", vErr).Required(true).
-							Type("textarea"),
+							Type("textarea").Clearable(true),
 					),
 				),
 			)
@@ -205,7 +220,7 @@ func configVxSelect(detailing *presets.DetailingBuilder, mb *presets.ModelBuilde
 				v.VRow(
 					v.VCol(
 						DemoCaseSelect(obj, sectionName, editField, "AutoComplete", "AutoComplete(select more than 1 item)", vErr, items).
-							Type("autocomplete").Multiple(true).Chips(true),
+							Type("autocomplete").Multiple(true).Chips(true).ClosableChips(true),
 					),
 				),
 				v.VRow(
