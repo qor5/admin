@@ -291,7 +291,7 @@ func doDelete(mb *Builder) web.EventFunc {
 			ids             = strings.Split(ctx.Param(ParamMediaIDS), ",")
 			cfg             = ctx.Param(ParamCfg)
 			objs            []media_library.MediaLibrary
-			deleteIDs       []uint
+			deleteIDs       []uint64
 			deleteFolderIDS []uint
 		)
 		for _, idStr := range ids {
@@ -299,7 +299,7 @@ func doDelete(mb *Builder) web.EventFunc {
 			if innerErr != nil {
 				continue
 			}
-			deleteIDs = append(deleteIDs, uint(id))
+			deleteIDs = append(deleteIDs, id)
 		}
 
 		err = db.Where("id in ?", deleteIDs).Find(&objs).Error
@@ -807,14 +807,14 @@ func moveToFolder(mb *Builder) web.EventFunc {
 		}
 		queries := ctx.Queries()
 		delete(queries, searchKeywordName(field))
-		var ids []uint
+		var ids []uint64
 
 		for _, idStr := range selectIDs {
 			selectID, innerErr := strconv.ParseUint(idStr, 10, 64)
 			if innerErr != nil {
 				continue
 			}
-			ids = append(ids, uint(selectID))
+			ids = append(ids, selectID)
 		}
 		presets.ShowMessage(&r, msgr.MovedFailed, ColorWarning)
 		if len(ids) > 0 {
@@ -851,7 +851,7 @@ func folderGroupsComponents(db *gorm.DB, ctx *web.EventContext, parentID int) (i
 		records   []*media_library.MediaLibrary
 		count     int64
 		selectIDs = strings.Split(ctx.Param(ParamSelectIDS), ",")
-		idS       []uint
+		idS       []uint64
 	)
 
 	for _, idStr := range selectIDs {
@@ -859,7 +859,7 @@ func folderGroupsComponents(db *gorm.DB, ctx *web.EventContext, parentID int) (i
 		if err != nil {
 			continue
 		}
-		idS = append(idS, uint(id))
+		idS = append(idS, id)
 	}
 
 	if parentID == -1 {
