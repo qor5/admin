@@ -11,7 +11,7 @@ import (
 )
 
 func TestPost(t *testing.T) {
-	h := admin.TestHandler(TestDB, nil)
+	h := admin.TestHandlerWorker(TestDB, nil)
 	dbr, _ := TestDB.DB()
 
 	cases := []multipartestutils.TestCase{

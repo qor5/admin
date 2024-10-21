@@ -81,7 +81,7 @@ var (
 		"Will reset and import initial data if set to true", false)
 )
 
-func NewConfig(db *gorm.DB) Config {
+func NewConfig(db *gorm.DB, enableWork bool) Config {
 	if err := db.AutoMigrate(
 		&models.Post{},
 		&models.InputDemo{},
@@ -248,11 +248,13 @@ func NewConfig(db *gorm.DB) Config {
 			})
 			return nil
 		})
-
-	w := worker.New(db)
-	defer w.Listen()
-	addJobs(w)
-	configProduct(b, db, w, publisher)
+	if enableWork {
+		w := worker.New(db)
+		defer w.Listen()
+		addJobs(w)
+		configProduct(b, db, w, publisher)
+		b.Use(w.Activity(ab))
+	}
 	configCategory(b, db, publisher)
 
 	// Use m to customize the model, Or config more models here.
@@ -271,7 +273,6 @@ func NewConfig(db *gorm.DB) Config {
 
 	configNestedFieldDemo(b, db)
 
-	b.Use(w.Activity(ab))
 	pageBuilder := example.ConfigPageBuilder(db, "/page_builder", ``, b)
 	pageBuilder.
 		Media(mediab).

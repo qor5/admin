@@ -291,15 +291,15 @@ func doDelete(mb *Builder) web.EventFunc {
 			ids             = strings.Split(ctx.Param(ParamMediaIDS), ",")
 			cfg             = ctx.Param(ParamCfg)
 			objs            []media_library.MediaLibrary
-			deleteIDs       []uint
+			deleteIDs       []uint64
 			deleteFolderIDS []uint
 		)
 		for _, idStr := range ids {
-			id, err1 := strconv.ParseInt(idStr, 10, 64)
-			if err1 != nil {
+			id, innerErr := strconv.ParseUint(idStr, 10, 64)
+			if innerErr != nil {
 				continue
 			}
-			deleteIDs = append(deleteIDs, uint(id))
+			deleteIDs = append(deleteIDs, id)
 		}
 
 		err = db.Where("id in ?", deleteIDs).Find(&objs).Error
@@ -325,16 +325,16 @@ func doDelete(mb *Builder) web.EventFunc {
 				return
 			}
 		}
-		err = db.Transaction(func(tx *gorm.DB) (err1 error) {
+		err = db.Transaction(func(tx *gorm.DB) (dbErr error) {
 			if len(deleteFolderIDS) > 0 {
-				if err1 = db.
+				if dbErr = tx.
 					Model(&media_library.MediaLibrary{}).
-					Where("parent_id in ? ", deleteFolderIDS).Update("parent_id", 0).Error; err1 != nil {
+					Where("parent_id in ? ", deleteFolderIDS).Update("parent_id", 0).Error; dbErr != nil {
 					return
 				}
 			}
 
-			if err1 = db.Delete(&media_library.MediaLibrary{}, "id  in ?", deleteIDs).Error; err != nil {
+			if dbErr = tx.Delete(&media_library.MediaLibrary{}, "id  in ?", deleteIDs).Error; dbErr != nil {
 				return
 			}
 			return
@@ -807,14 +807,14 @@ func moveToFolder(mb *Builder) web.EventFunc {
 		}
 		queries := ctx.Queries()
 		delete(queries, searchKeywordName(field))
-		var ids []uint
+		var ids []uint64
 
 		for _, idStr := range selectIDs {
-			selectID, err1 := strconv.ParseInt(idStr, 10, 64)
-			if err1 != nil {
+			selectID, innerErr := strconv.ParseUint(idStr, 10, 64)
+			if innerErr != nil {
 				continue
 			}
-			ids = append(ids, uint(selectID))
+			ids = append(ids, selectID)
 		}
 		presets.ShowMessage(&r, msgr.MovedFailed, ColorWarning)
 		if len(ids) > 0 {
@@ -851,7 +851,7 @@ func folderGroupsComponents(db *gorm.DB, ctx *web.EventContext, parentID int) (i
 		records   []*media_library.MediaLibrary
 		count     int64
 		selectIDs = strings.Split(ctx.Param(ParamSelectIDS), ",")
-		idS       []uint
+		idS       []uint64
 	)
 
 	for _, idStr := range selectIDs {
@@ -859,7 +859,7 @@ func folderGroupsComponents(db *gorm.DB, ctx *web.EventContext, parentID int) (i
 		if err != nil {
 			continue
 		}
-		idS = append(idS, uint(id))
+		idS = append(idS, id)
 	}
 
 	if parentID == -1 {
