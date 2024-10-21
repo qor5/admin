@@ -159,7 +159,7 @@ func TestPageBuilder(t *testing.T) {
 			Name:  "Page Builder Editor Page without perm.Update",
 			Debug: true,
 			HandlerMaker: func() http.Handler {
-				mux, c := admin.TestHandlerComplex(TestDB, nil)
+				mux, c := admin.TestHandlerComplex(TestDB, nil, false)
 				c.GetPresetsBuilder().Permission(
 					perm.New().Policies(
 						perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),

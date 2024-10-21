@@ -21,9 +21,9 @@ const (
 	exportOrdersURL = "/export-orders"
 )
 
-func TestHandlerComplex(db *gorm.DB, u *models.User) (http.Handler, Config) {
+func TestHandlerComplex(db *gorm.DB, u *models.User, enableWork bool) (http.Handler, Config) {
 	mux := http.NewServeMux()
-	c := NewConfig(db, false)
+	c := NewConfig(db, enableWork)
 	if u == nil {
 		u = &models.User{
 			Model: gorm.Model{ID: 888},
@@ -41,7 +41,11 @@ func TestHandlerComplex(db *gorm.DB, u *models.User) (http.Handler, Config) {
 }
 
 func TestHandler(db *gorm.DB, u *models.User) http.Handler {
-	mux, _ := TestHandlerComplex(db, u)
+	mux, _ := TestHandlerComplex(db, u, false)
+	return mux
+}
+func TestHandlerWorker(db *gorm.DB, u *models.User) http.Handler {
+	mux, _ := TestHandlerComplex(db, u, true)
 	return mux
 }
 
