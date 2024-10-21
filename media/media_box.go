@@ -295,8 +295,8 @@ func doDelete(mb *Builder) web.EventFunc {
 			deleteFolderIDS []uint
 		)
 		for _, idStr := range ids {
-			id, err1 := strconv.ParseInt(idStr, 10, 64)
-			if err1 != nil {
+			id, innerErr := strconv.ParseInt(idStr, 10, 64)
+			if innerErr != nil {
 				continue
 			}
 			deleteIDs = append(deleteIDs, uint(id))
@@ -325,16 +325,16 @@ func doDelete(mb *Builder) web.EventFunc {
 				return
 			}
 		}
-		err = db.Transaction(func(tx *gorm.DB) (err1 error) {
+		err = db.Transaction(func(tx *gorm.DB) (dbErr error) {
 			if len(deleteFolderIDS) > 0 {
-				if err1 = db.
+				if dbErr = tx.
 					Model(&media_library.MediaLibrary{}).
-					Where("parent_id in ? ", deleteFolderIDS).Update("parent_id", 0).Error; err1 != nil {
+					Where("parent_id in ? ", deleteFolderIDS).Update("parent_id", 0).Error; dbErr != nil {
 					return
 				}
 			}
 
-			if err1 = db.Delete(&media_library.MediaLibrary{}, "id  in ?", deleteIDs).Error; err != nil {
+			if dbErr = tx.Delete(&media_library.MediaLibrary{}, "id  in ?", deleteIDs).Error; dbErr != nil {
 				return
 			}
 			return
@@ -810,8 +810,8 @@ func moveToFolder(mb *Builder) web.EventFunc {
 		var ids []uint
 
 		for _, idStr := range selectIDs {
-			selectID, err1 := strconv.ParseInt(idStr, 10, 64)
-			if err1 != nil {
+			selectID, innerErr := strconv.ParseInt(idStr, 10, 64)
+			if innerErr != nil {
 				continue
 			}
 			ids = append(ids, uint(selectID))
