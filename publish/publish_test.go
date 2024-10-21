@@ -224,6 +224,46 @@ func TestMain(m *testing.M) {
 
 const skipList = "skip_list"
 
+type ProductWithError struct {
+	Product
+	publishActionError   error
+	afterPublishError    error
+	unpublschActionError error
+	afterUnPublishError  error
+}
+
+func (p *ProductWithError) TableName() string {
+	return "products"
+}
+
+func (p *ProductWithError) GetPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
+	if p.publishActionError != nil {
+		return nil, p.publishActionError
+	}
+	return p.Product.GetPublishActions(ctx, db, storage)
+}
+
+func (p *ProductWithError) GetUnPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
+	if p.unpublschActionError != nil {
+		return nil, p.unpublschActionError
+	}
+	return p.Product.GetUnPublishActions(ctx, db, storage)
+}
+
+func (p *ProductWithError) AfterPublish(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) error {
+	if p.afterPublishError != nil {
+		return p.afterPublishError
+	}
+	return nil
+}
+
+func (p *ProductWithError) AfterUnPublish(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) error {
+	if p.afterUnPublishError != nil {
+		return p.afterUnPublishError
+	}
+	return nil
+}
+
 func TestPublishVersionContentToS3(t *testing.T) {
 	db := TestDB
 	db.AutoMigrate(&Product{})
@@ -276,6 +316,40 @@ func TestPublishVersionContentToS3(t *testing.T) {
 	assertUpdateStatus(t, db, &productV2, publish.StatusOffline, productV2.getUrl())
 	assertContentDeleted(t, productV2.getUrl(), storage)
 	assertContentDeleted(t, productV2.getListUrl(), storage)
+
+	err := p.Publish(skipListFalseContext, &ProductWithError{
+		Product:            productV2,
+		publishActionError: fmt.Errorf("publish error"),
+	})
+	require.ErrorContains(t, err, "publish error")
+	assertUpdateStatus(t, db, &productV2, publish.StatusOffline, productV2.getUrl())
+
+	err = p.Publish(skipListFalseContext, &ProductWithError{
+		Product:           productV2,
+		afterPublishError: fmt.Errorf("after publish error"),
+	})
+	require.ErrorContains(t, err, "after publish error")
+	assertUpdateStatus(t, db, &productV2, publish.StatusOffline, productV2.getUrl())
+
+	err = p.Publish(skipListFalseContext, &ProductWithError{
+		Product: productV2,
+	})
+	require.NoError(t, err)
+	assertUpdateStatus(t, db, &productV2, publish.StatusOnline, productV2.getUrl())
+
+	err = p.UnPublish(skipListFalseContext, &ProductWithError{
+		Product:              productV2,
+		unpublschActionError: fmt.Errorf("unpublish error"),
+	})
+	require.ErrorContains(t, err, "unpublish error")
+	assertUpdateStatus(t, db, &productV2, publish.StatusOnline, productV2.getUrl())
+
+	err = p.UnPublish(skipListFalseContext, &ProductWithError{
+		Product:             productV2,
+		afterUnPublishError: fmt.Errorf("after unpublish error"),
+	})
+	require.ErrorContains(t, err, "after unpublish error")
+	assertUpdateStatus(t, db, &productV2, publish.StatusOnline, productV2.getUrl())
 }
 
 func TestPublishList(t *testing.T) {
