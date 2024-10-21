@@ -621,7 +621,13 @@ func (b *EditingBuilder) Section(sections ...*SectionBuilder) *EditingBuilder {
 			}
 		})
 
-		b.Field(sb.name).Component(sb.defaultEdit()).
+		sb.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return web.Portal(
+				sb.editComponent(obj, field, ctx),
+			).Name(sb.FieldPortalName())
+		})
+
+		b.Field(sb.name).Component(sb).
 			SetterFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) (err error) {
 				err = sb.unmarshalFunc(ctx, obj)
 				return err

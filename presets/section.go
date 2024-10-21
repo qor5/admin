@@ -385,15 +385,6 @@ func (b *SectionBuilder) EditComponentFunc(v FieldComponentFunc) (r *SectionBuil
 	return b
 }
 
-func (b *SectionBuilder) defaultEdit() (r *SectionBuilder) {
-	b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return web.Portal(
-			b.editComponent(obj, field, ctx),
-		).Name(b.FieldPortalName())
-	})
-	return b
-}
-
 func (b *SectionBuilder) Label(label string) (r *SectionBuilder) {
 	b.label = label
 	return b
