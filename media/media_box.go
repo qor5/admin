@@ -295,7 +295,7 @@ func doDelete(mb *Builder) web.EventFunc {
 			deleteFolderIDS []uint
 		)
 		for _, idStr := range ids {
-			id, innerErr := strconv.ParseInt(idStr, 10, 64)
+			id, innerErr := strconv.ParseUint(idStr, 10, 64)
 			if innerErr != nil {
 				continue
 			}
@@ -810,7 +810,7 @@ func moveToFolder(mb *Builder) web.EventFunc {
 		var ids []uint
 
 		for _, idStr := range selectIDs {
-			selectID, innerErr := strconv.ParseInt(idStr, 10, 64)
+			selectID, innerErr := strconv.ParseUint(idStr, 10, 64)
 			if innerErr != nil {
 				continue
 			}
