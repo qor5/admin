@@ -41,7 +41,9 @@ func NewSectionBuilder(mb *ModelBuilder, name string) (r *SectionBuilder) {
 			}
 			return err
 		},
-		setter:            nil,
+		setter: func(obj interface{}, ctx *web.EventContext) error {
+			return nil
+		},
 		componentViewFunc: nil,
 		componentEditFunc: nil,
 		saveBtnFunc: func(obj interface{}, ctx *web.EventContext) bool {
@@ -76,7 +78,7 @@ func NewSectionBuilder(mb *ModelBuilder, name string) (r *SectionBuilder) {
 	r.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		return mb.editing.Saver(obj, id, ctx)
 	})
-	r.UnmarshalFunc(r.DefaultUnmarshalFunc)
+	r.setter = r.defaultUnmarshalFunc
 	// d.Field(name).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	// 	panic("you must set ViewComponentFunc and EditComponentFunc if you want to use SectionsBuilder")
 	// })
@@ -100,7 +102,7 @@ type SectionBuilder struct {
 	unmarshalFunc     func(ctx *web.EventContext, obj interface{}) error
 	comp              FieldComponentFunc
 	saver             SaveFunc
-	setter            SetterFunc
+	setter            func(obj interface{}, ctx *web.EventContext) error
 	validator         ValidateFunc
 	hiddenFuncs       []ObjectComponentFunc
 	componentViewFunc FieldComponentFunc
@@ -251,7 +253,7 @@ func (b *SectionBuilder) IsList(v interface{}) (r *SectionBuilder) {
 	r = b
 	r.editingFB.Model(v)
 	r.isList = true
-	r.UnmarshalFunc(r.DefaultListUnmarshalFunc)
+	r.setter = r.defaultListUnmarshalFunc
 	r.elementUnmarshaler = r.DefaultElementUnmarshal()
 
 	return
@@ -324,12 +326,12 @@ func (b *SectionBuilder) UnmarshalFunc(v func(ctx *web.EventContext, obj interfa
 	return b
 }
 
-func (b *SectionBuilder) WrapSetterFunc(w func(in SetterFunc) SetterFunc) (r *SectionBuilder) {
+func (b *SectionBuilder) WrapSetterFunc(w func(in func(obj interface{}, ctx *web.EventContext) error) func(obj interface{}, ctx *web.EventContext) error) (r *SectionBuilder) {
 	b.setter = w(b.setter)
 	return b
 }
 
-func (b *SectionBuilder) SetterFunc(v SetterFunc) (r *SectionBuilder) {
+func (b *SectionBuilder) SetterFunc(v func(obj interface{}, ctx *web.EventContext) error) (r *SectionBuilder) {
 	if v == nil {
 		panic("value required")
 	}
@@ -602,7 +604,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 	)
 }
 
-func (b *SectionBuilder) DefaultUnmarshalFunc(ctx *web.EventContext, obj interface{}) (err error) {
+func (b *SectionBuilder) defaultUnmarshalFunc(obj interface{}, ctx *web.EventContext) (err error) {
 	if tf := reflect.TypeOf(obj).Kind(); tf != reflect.Ptr {
 		return fmt.Errorf("model %#+v must be pointer", obj)
 	}
@@ -614,7 +616,7 @@ func (b *SectionBuilder) DefaultUnmarshalFunc(ctx *web.EventContext, obj interfa
 	return
 }
 
-func (b *SectionBuilder) DefaultListUnmarshalFunc(ctx *web.EventContext, obj interface{}) (err error) {
+func (b *SectionBuilder) defaultListUnmarshalFunc(obj interface{}, ctx *web.EventContext) (err error) {
 	var index int64
 	index, err = strconv.ParseInt(ctx.Queries().Get(b.SaveBtnKey()), 10, 32)
 	if err != nil {
@@ -998,13 +1000,14 @@ func (b *SectionBuilder) EditDetailField(ctx *web.EventContext) (r web.EventResp
 	if b.isList {
 		return b.EditDetailListField(ctx)
 	}
+
 	obj := b.mb.NewModel()
-	obj, err = b.mb.detailing.GetFetchFunc()(obj, ctx.Param(ParamID), ctx)
+	obj, err = b.mb.editing.Fetcher(obj, ctx.Queries().Get(ParamID), ctx)
 	if err != nil {
 		return
 	}
-	if b.setter != nil {
-		b.setter(obj, ctx)
+	if b.mb.editing.Setter != nil {
+		b.mb.editing.Setter(obj, ctx)
 	}
 
 	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
@@ -1039,12 +1042,12 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 	}
 
 	obj := b.mb.NewModel()
-	obj, err = b.mb.detailing.GetFetchFunc()(obj, id, ctx)
+	obj, err = b.mb.editing.Fetcher(obj, ctx.Queries().Get(ParamID), ctx)
 	if err != nil {
 		return
 	}
-	if b.setter != nil {
-		b.setter(obj, ctx)
+	if b.mb.editing.Setter != nil {
+		b.mb.editing.Setter(obj, ctx)
 	}
 
 	if isCancel {
@@ -1060,9 +1063,14 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 		return
 	}
 
-	if err = b.unmarshalFunc(ctx, obj); err != nil {
-		ShowMessage(&r, err.Error(), "warning")
+	if Verr := b.mb.editing.Unmarshal(obj, b.mb.Info(), true, ctx); Verr.HaveErrors() {
+		ShowMessage(&r, Verr.Error(), "warning")
 		return r, nil
+	}
+	if !b.isEdit {
+		if b.setter != nil {
+			b.setter(obj, ctx)
+		}
 	}
 
 	needSave := true
@@ -1112,12 +1120,12 @@ func (b *SectionBuilder) EditDetailListField(ctx *web.EventContext) (r web.Event
 	}
 
 	obj := b.mb.NewModel()
-	obj, err = b.mb.detailing.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
+	obj, err = b.mb.editing.Fetcher(obj, ctx.Queries().Get(ParamID), ctx)
 	if err != nil {
 		return
 	}
-	if b.setter != nil {
-		b.setter(obj, ctx)
+	if b.mb.editing.Setter != nil {
+		b.mb.editing.Setter(obj, ctx)
 	}
 
 	if unsaved {
@@ -1152,12 +1160,12 @@ func (b *SectionBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Event
 	index = ctx.ParamAsInt(b.SaveBtnKey())
 
 	obj := b.mb.NewModel()
-	obj, err = b.mb.detailing.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
+	obj, err = b.mb.editing.Fetcher(obj, ctx.Queries().Get(ParamID), ctx)
 	if err != nil {
 		return
 	}
-	if b.setter != nil {
-		b.setter(obj, ctx)
+	if b.mb.editing.Setter != nil {
+		b.mb.editing.Setter(obj, ctx)
 	}
 
 	if isCancel {
@@ -1179,9 +1187,14 @@ func (b *SectionBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Event
 		return
 	}
 
-	if err = b.unmarshalFunc(ctx, obj); err != nil {
-		ShowMessage(&r, err.Error(), "warning")
+	if Verr := b.mb.editing.Unmarshal(obj, b.mb.Info(), true, ctx); Verr.HaveErrors() {
+		ShowMessage(&r, Verr.Error(), "warning")
 		return r, nil
+	}
+	if !b.isEdit {
+		if b.setter != nil {
+			b.setter(obj, ctx)
+		}
 	}
 
 	needSave := true
@@ -1234,12 +1247,12 @@ func (b *SectionBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.Eve
 	}
 
 	obj := b.mb.NewModel()
-	obj, err = b.mb.detailing.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
+	obj, err = b.mb.editing.Fetcher(obj, ctx.Queries().Get(ParamID), ctx)
 	if err != nil {
 		return
 	}
-	if b.setter != nil {
-		b.setter(obj, ctx)
+	if b.mb.editing.Setter != nil {
+		b.mb.editing.Setter(obj, ctx)
 	}
 
 	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
@@ -1287,12 +1300,12 @@ func (b *SectionBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.Eve
 // CreateDetailListField Event: click detail list field element Add row button
 func (b *SectionBuilder) CreateDetailListField(ctx *web.EventContext) (r web.EventResponse, err error) {
 	obj := b.mb.NewModel()
-	obj, err = b.mb.detailing.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
+	obj, err = b.mb.editing.Fetcher(obj, ctx.Queries().Get(ParamID), ctx)
 	if err != nil {
 		return
 	}
-	if b.setter != nil {
-		b.setter(obj, ctx)
+	if b.mb.editing.Setter != nil {
+		b.mb.editing.Setter(obj, ctx)
 	}
 
 	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
