@@ -629,7 +629,7 @@ func (b *EditingBuilder) Section(sections ...*SectionBuilder) *EditingBuilder {
 
 		b.Field(sb.name).Component(sb).
 			SetterFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) (err error) {
-				err = sb.unmarshalFunc(ctx, obj)
+				err = sb.setter(obj, ctx)
 				return err
 			})
 	}

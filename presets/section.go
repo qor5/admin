@@ -318,14 +318,6 @@ func (b *SectionBuilder) WrapSaveFunc(w func(in SaveFunc) SaveFunc) (r *SectionB
 	return b
 }
 
-func (b *SectionBuilder) UnmarshalFunc(v func(ctx *web.EventContext, obj interface{}) error) (r *SectionBuilder) {
-	if v == nil {
-		panic("value required")
-	}
-	b.unmarshalFunc = v
-	return b
-}
-
 func (b *SectionBuilder) WrapSetterFunc(w func(in func(obj interface{}, ctx *web.EventContext) error) func(obj interface{}, ctx *web.EventContext) error) (r *SectionBuilder) {
 	b.setter = w(b.setter)
 	return b
