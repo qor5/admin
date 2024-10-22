@@ -67,7 +67,7 @@ func TestPresetsDetailing(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				detailData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/customers?__execute_event__=presets_Detailing_Field_Edit&section=Details&id=12").
+					PageURL("/customers?__execute_event__=section_edit_Details&id=12").
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Details.Name", "Details.Email"},
@@ -78,7 +78,7 @@ func TestPresetsDetailing(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				detailData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/customers?__execute_event__=presets_Detailing_Field_Save&section=Details&id=12").
+					PageURL("/customers?__execute_event__=section_save_Details&id=12").
 					AddField("Details.Name", "123123").
 					AddField("Details.Email", "abc@example.com").
 					AddField("Details.Description", "hello description").
@@ -127,9 +127,7 @@ func TestPresetsDetailing(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				detailData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/customers?__execute_event__=presets_Detailing_Field_Save"+
-						"&id=12").
-					Query("section", "section").
+					PageURL("/customers?__execute_event__=section_save_section&id=12").
 					Query("isCancel", "true").
 					AddField("section.Name", "name").
 					AddField("section.Email", "email").
@@ -292,7 +290,7 @@ func TestPresetsDetailSectionValidate(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				detailData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/customers?__execute_event__=presets_Detailing_Field_Save&section=name_section&id=12").
+					PageURL("/customers?__execute_event__=section_save_name_section&id=12").
 					AddField("name_section.Name", "").
 					BuildEventFuncRequest()
 			},
@@ -304,7 +302,7 @@ func TestPresetsDetailSectionValidate(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				detailData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/customers?__execute_event__=presets_Detailing_Field_Save&section=name_section&id=12").
+					PageURL("/customers?__execute_event__=section_save_name_section&id=12").
 					AddField("name_section.Name", "long name").
 					BuildEventFuncRequest()
 			},
@@ -316,7 +314,7 @@ func TestPresetsDetailSectionValidate(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				detailData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/customers?__execute_event__=presets_Detailing_Field_Save&section=name_section&id=12").
+					PageURL("/customers?__execute_event__=section_save_name_section&id=12").
 					AddField("name_section.Name", "long long long long name").
 					BuildEventFuncRequest()
 			},
@@ -330,7 +328,7 @@ func TestPresetsDetailSectionValidate(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				detailData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/customers?__execute_event__=presets_Detailing_Field_Save&section=email_section&id=12").
+					PageURL("/customers?__execute_event__=section_save_email_section&id=12").
 					AddField("email_section.Email", "").
 					BuildEventFuncRequest()
 			},
@@ -342,7 +340,7 @@ func TestPresetsDetailSectionValidate(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				detailData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/customers?__execute_event__=presets_Detailing_Field_Save&section=email_section&id=12").
+					PageURL("/customers?__execute_event__=section_save_email_section&id=12").
 					AddField("email_section.Email", "short").
 					BuildEventFuncRequest()
 			},
@@ -354,7 +352,7 @@ func TestPresetsDetailSectionValidate(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				detailData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/customers?__execute_event__=presets_Detailing_List_Field_Save&section=CreditCards&id=12").
+					PageURL("/customers?__execute_event__=section_save_CreditCards&id=12").
 					Query("sectionListSaveBtn_CreditCards", "0").
 					Query("sectionListUnsaved_CreditCards", "false").
 					AddField("CreditCards[0].Name", "").
@@ -411,8 +409,7 @@ func TestPresetsDetailSectionCancel(t *testing.T) {
 				detailData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/customers").
-					Query("__execute_event__", "presets_Detailing_List_Field_Save").
-					Query("section", "CreditCards").
+					Query("__execute_event__", "section_save_CreditCards").
 					Query("sectionListSaveBtn_CreditCards", "0").
 					Query("id", "12").
 					Query("isCancel", "true").
@@ -428,8 +425,7 @@ func TestPresetsDetailSectionCancel(t *testing.T) {
 				detailData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/customers").
-					Query("__execute_event__", "presets_Detailing_Field_Save").
-					Query("section", "section2").
+					Query("__execute_event__", "section_save_section2").
 					Query("id", "12").
 					Query("isCancel", "true").
 					BuildEventFuncRequest()
@@ -476,8 +472,7 @@ func TestPresetsDetailListSection(t *testing.T) {
 				userCreditCardsData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/user-credit-cards").
-					Query("__execute_event__", "presets_Detailing_List_Field_Create").
-					Query("section", "CreditCards").
+					Query("__execute_event__", "section_create_CreditCards").
 					Query("id", "1").
 					Query("sectionListUnsaved_CreditCards", "true").
 					BuildEventFuncRequest()
@@ -492,9 +487,8 @@ func TestPresetsDetailListSection(t *testing.T) {
 				userCreditCardsData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/user-credit-cards").
-					Query("__execute_event__", "presets_Detailing_List_Field_Save").
+					Query("__execute_event__", "section_save_CreditCards").
 					Query("sectionListUnsaved_CreditCards", "false").
-					Query("section", "CreditCards").
 					Query("sectionListSaveBtn_CreditCards", "0").
 					Query("id", "1").
 					AddField("CreditCards[0].Name", "terry").
@@ -512,9 +506,8 @@ func TestPresetsDetailListSection(t *testing.T) {
 				userCreditCardsData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/user-credit-cards").
-					Query("__execute_event__", "presets_Detailing_List_Field_Save").
+					Query("__execute_event__", "section_save_CreditCards").
 					Query("sectionListUnsaved_CreditCards", "false").
-					Query("section", "CreditCards").
 					Query("sectionListSaveBtn_CreditCards", "0").
 					Query("id", "1").
 					Query("isCancel", "true").
@@ -530,9 +523,8 @@ func TestPresetsDetailListSection(t *testing.T) {
 				userCreditCardsData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/user-credit-cards").
-					Query("__execute_event__", "presets_Detailing_List_Field_Delete").
+					Query("__execute_event__", "section_delete_CreditCards").
 					Query("sectionListUnsaved_CreditCards", "false").
-					Query("section", "CreditCards").
 					Query("sectionListDeleteBtn_CreditCards", "0").
 					Query("id", "1").
 					AddField("CreditCards[0].Name", "terry").
@@ -550,9 +542,8 @@ func TestPresetsDetailListSection(t *testing.T) {
 				userCreditCardsData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/user-credit-cards").
-					Query("__execute_event__", "presets_Detailing_List_Field_Delete").
+					Query("__execute_event__", "section_delete_CreditCards").
 					Query("sectionListUnsaved_CreditCards", "true").
-					Query("section", "CreditCards").
 					Query("sectionListDeleteBtn_CreditCards", "0").
 					Query("id", "2").
 					AddField("CreditCards[0].Name", "terry").
@@ -573,9 +564,8 @@ func TestPresetsDetailListSection(t *testing.T) {
 				userCreditCardsData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/user-credit-cards").
-					Query("__execute_event__", "presets_Detailing_List_Field_Save").
+					Query("__execute_event__", "section_save_CreditCards").
 					Query("sectionListUnsaved_CreditCards", "true").
-					Query("section", "CreditCards").
 					Query("sectionListSaveBtn_CreditCards", "0").
 					Query("id", "2").
 					Query("isCancel", "true").
@@ -597,8 +587,7 @@ func TestPresetsDetailListSection(t *testing.T) {
 				userCreditCardsData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/user-credit-cards").
-					Query("__execute_event__", "presets_Detailing_List_Field_Create").
-					Query("section", "CreditCards2").
+					Query("__execute_event__", "section_create_CreditCards2").
 					Query("id", "1").
 					Query("sectionListUnsaved_CreditCards2", "true").
 					BuildEventFuncRequest()
@@ -613,9 +602,8 @@ func TestPresetsDetailListSection(t *testing.T) {
 				userCreditCardsData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/user-credit-cards").
-					Query("__execute_event__", "presets_Detailing_List_Field_Save").
+					Query("__execute_event__", "section_save_CreditCards2").
 					Query("sectionListUnsaved_CreditCards2", "false").
-					Query("section", "CreditCards2").
 					Query("sectionListSaveBtn_CreditCards2", "0").
 					Query("id", "1").
 					AddField("CreditCards2[0].Name", "terry").
@@ -625,6 +613,21 @@ func TestPresetsDetailListSection(t *testing.T) {
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Name", "terry", "Phone", "188", "Add Row"},
 			ExpectPortalUpdate0NotContains:     []string{"Cancel", "Save"},
+		},
+		{
+			Name:  "edit section 2",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				userCreditCardsData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_edit_CreditCards").
+					Query("sectionListUnsaved_CreditCards", "false").
+					Query("sectionListEditBtn_CreditCards", "0").
+					Query("id", "2").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Cancel", "Save", "This is hidden"},
 		},
 	}
 
@@ -691,9 +694,8 @@ func TestPresetsDetailTabsSection(t *testing.T) {
 				customerData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/customers").
-					Query("__execute_event__", "presets_Detailing_Field_Save").
+					Query("__execute_event__", "section_save_name").
 					Query("id", "1").
-					Query("section", "name").
 					AddField("name.Name", "terry1").
 					BuildEventFuncRequest()
 			},
@@ -733,9 +735,8 @@ func TestPresetsDetailTabsSectionOrder(t *testing.T) {
 				customerData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/customers").
-					Query("__execute_event__", "presets_Detailing_Field_Save").
+					Query("__execute_event__", "section_save_name").
 					Query("id", "1").
-					Query("section", "name").
 					AddField("name.Name", "terry1").
 					BuildEventFuncRequest()
 			},
@@ -792,6 +793,52 @@ func TestPresetsDetailSectionView(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"section-edit-area", "z-index:2"},
 		},
 	}
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}
+
+func TestPresetsSectionError(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsSectionError(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "save created section",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				userCreditCardsData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_save_CreditCards").
+					Query("sectionListUnsaved_CreditCards", "false").
+					Query("sectionListSaveBtn_CreditCards", "0").
+					Query("id", "1").
+					AddField("CreditCards[0].Name", "terry").
+					AddField("CreditCards[0].Phone", "188").
+					AddField("__Deleted_CreditCards[0].sectionListEditing", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{"cards section validator error"},
+		},
+		{
+			Name:  "save created section",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				userCreditCardsData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_save_Name").
+					Query("id", "1").
+					AddField("Name.Name", "terry").
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{"name section validator error"},
+		},
+	}
+
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
 			multipartestutils.RunCase(t, c, pb)

@@ -12,8 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/qor5/admin/v3/activity"
-	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
@@ -22,6 +20,9 @@ import (
 	. "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/presets"
 )
 
 type Builder struct {
@@ -435,7 +436,7 @@ func (b *Builder) createJob(ctx *web.EventContext, qorJob *QorJob) (j *QorJob, e
 			Job:    qorJob.Job,
 			Status: JobStatusNew,
 		}
-		err = b.db.Create(j).Error
+		err = tx.Create(j).Error
 		if err != nil {
 			return err
 		}

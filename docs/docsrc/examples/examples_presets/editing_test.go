@@ -214,14 +214,38 @@ func TestPresetsEditingSection(t *testing.T) {
 
 	cases := []multipartestutils.TestCase{
 		{
-			Name:  "section in editing",
+			Name:  "new drawer",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/customers?__execute_event__=presets_New").
+					PageURL("/companies?__execute_event__=presets_New").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"detailing-page-wrap", "Field_sectionEN", "Name", "Email"},
+			ExpectPortalUpdate0ContainsInOrder: []string{`section1`, "Name", "Create"},
+			ExpectPortalUpdate0NotContains:     []string{"Save", "Edit"},
+		},
+		{
+			Name:  "do new",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/companies?__execute_event__=presets_Update").
+					AddField("section1.Name", "Terry").
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{"Terry"},
+		},
+		{
+			Name:  "detailing section use editing validator",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				companyData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/companies?__execute_event__=section_save_section1").
+					AddField("section1.Name", "terryterryterry").
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{`too long name`},
 		},
 	}
 

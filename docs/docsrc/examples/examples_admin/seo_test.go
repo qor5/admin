@@ -42,7 +42,7 @@ func TestSEOExampleBasic(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				seoData.TruncatePut(SqlDB)
 				req := multipartestutils.NewMultipartBuilder().
-					PageURL("/seo-posts?__execute_event__=presets_Detailing_Field_Save&section=SEO&id=1").
+					PageURL("/seo-posts?__execute_event__=section_save_SEO&id=1").
 					AddField("SEO.EnabledCustomize", "true").
 					AddField("SEO.Title", "My seo title").
 					BuildEventFuncRequest()

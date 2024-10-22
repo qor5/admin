@@ -51,8 +51,9 @@ func PresetsDetailInlineEditDetails(b *presets.Builder, db *gorm.DB) (
 
 	cust = b.Model(&Customer{})
 	dp = cust.Detailing("Details").Drawer(true)
-	dp.Section("Details").
+	section := presets.NewSectionBuilder(cust, "Details").
 		Editing("Name", "Email", "Description", "Avatar")
+	dp.Section(section)
 
 	return
 }
@@ -72,13 +73,14 @@ func PresetsDetailSectionView(b *presets.Builder, db *gorm.DB) (
 
 	cust = b.Model(&Customer{})
 	dp = cust.Detailing("Details").Drawer(true)
-	dp.Section("Details").
+	section := presets.NewSectionBuilder(cust, "Details").
 		Editing("Name").ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return v.VSwitch().Label("Prevent components covering the Edit button and making it unclickable").Color("primary").
 			Attr(web.VField(fmt.Sprintf("%s.%s", field.FormKey, "Invalid"), true)...).
 			Density(v.DensityCompact).
 			Readonly(true)
 	})
+	dp.Section(section)
 
 	return
 }
@@ -99,10 +101,7 @@ func PresetsDetailTabsSection(b *presets.Builder, db *gorm.DB) (
 	cust = b.Model(&Customer{})
 	dp = cust.Detailing("tabs").Drawer(true)
 
-	tb := presets.NewTabsFieldBuilder()
-	dp.Field("tabs").Tab(tb)
-
-	dp.Section("name").
+	nameSection := presets.NewSectionBuilder(cust, "name").
 		Editing("Name").
 		EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			custom := obj.(*Customer)
@@ -115,8 +114,9 @@ func PresetsDetailTabsSection(b *presets.Builder, db *gorm.DB) (
 			h.Text(custom.Name),
 		)
 	})
+	dp.Section(nameSection)
 
-	dp.Section("email").
+	emailSection := presets.NewSectionBuilder(cust, "email").
 		Editing("Email").
 		EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			custom := obj.(*Customer)
@@ -129,9 +129,10 @@ func PresetsDetailTabsSection(b *presets.Builder, db *gorm.DB) (
 			h.Text(custom.Email),
 		)
 	})
+	dp.Section(emailSection)
 
-	dp.Section("name").Tabs("tabs")
-	dp.Section("email").Tabs("tabs")
+	tb := presets.NewTabsFieldBuilder()
+	dp.Field("tabs").Tab(tb).AppendTabs(dp.Field("name")).AppendTabs(dp.Field("email"))
 
 	return
 }
@@ -156,13 +157,8 @@ func PresetsDetailTabsSectionOrder(b *presets.Builder, db *gorm.DB) (
 		nameSection  = "name"
 		emailSection = "email"
 	)
-	tb := presets.NewTabsFieldBuilder().
-		TabsOrderFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) []string {
-			return []string{emailSection, nameSection}
-		})
-	dp.Field("tabs").Tab(tb)
 
-	dp.Section(nameSection).Label("name_label").
+	sectionName := presets.NewSectionBuilder(cust, nameSection).Label("name_label").
 		Editing("Name").
 		EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			custom := obj.(*Customer)
@@ -175,9 +171,8 @@ func PresetsDetailTabsSectionOrder(b *presets.Builder, db *gorm.DB) (
 		return h.Div(
 			h.Text(custom.Name),
 		)
-	}).Tabs("tabs")
-
-	dp.Section(emailSection).
+	})
+	sectionEmail := presets.NewSectionBuilder(cust, emailSection).
 		Editing("Email").
 		EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			custom := obj.(*Customer)
@@ -189,8 +184,13 @@ func PresetsDetailTabsSectionOrder(b *presets.Builder, db *gorm.DB) (
 		return h.Div(
 			h.Text(custom.Email),
 		)
-	}).Tabs("tabs")
-
+	})
+	dp.Section(sectionEmail).Section(sectionName)
+	tb := presets.NewTabsFieldBuilder().
+		TabsOrderFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) []string {
+			return []string{emailSection, nameSection}
+		})
+	dp.Field("tabs").Tab(tb).AppendTabs(dp.Field(nameSection)).AppendTabs(dp.Field(emailSection))
 	return
 }
 
@@ -226,7 +226,7 @@ func PresetsDetailInlineEditFieldSections(b *presets.Builder, db *gorm.DB) (
 
 	cust = b.Model(&Customer{})
 	dp = cust.Detailing("Details", "section").Drawer(true)
-	sb := dp.Section("Details").
+	sectionDetail := presets.NewSectionBuilder(cust, "Details").
 		Editing(&presets.FieldsSection{
 			Title: "FieldSectionTitle",
 			Rows: [][]string{
@@ -235,16 +235,24 @@ func PresetsDetailInlineEditFieldSections(b *presets.Builder, db *gorm.DB) (
 			},
 		}, "Avatar")
 
-	sb.EditingField("Name").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	sectionDetail.EditingField("Name").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return h.Input("").Attr(web.VField("Details."+field.Name, field.Value(obj))...)
 	})
 
-	sb.ViewingField("Email").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	sectionDetail.ViewingField("Email").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return h.Strong(obj.(*Customer).Email)
 	})
 
-	dp.Section("section").Label("SectionTitle").
-		Editing([]string{"Name", "Email"})
+	section2 := presets.NewSectionBuilder(cust, "section").Label("SectionTitle").
+		Editing([]string{"Name", "Email"}).
+		HiddenFuncs(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+			return h.Div(
+				h.Input("").Type("hidden").
+					Attr(web.VField("TestHiddenFunc", "This is hidden input")...),
+			)
+		})
+
+	dp.Section(sectionDetail, section2)
 	return
 }
 
@@ -293,9 +301,9 @@ func PresetsDetailSectionLabel(b *presets.Builder, db *gorm.DB) (
 			return c, nil
 		}
 	})
-	dp.Section("section1").Label("section_with_label").Editing("Name")
-	dp.Section("section2").Label("section_without_label").DisableLabel().Editing("Email")
-	dp.Section("CreditCards").Label("section_list_with_label").IsList(&CreditCard{}).
+	section1 := presets.NewSectionBuilder(cust, "section1").Label("section_with_label").Editing("Name")
+	section2 := presets.NewSectionBuilder(cust, "section2").Label("section_without_label").DisableLabel().Editing("Email")
+	creditCardssection := presets.NewSectionBuilder(cust, "CreditCards").Label("section_list_with_label").IsList(&CreditCard{}).
 		Editing("Name").
 		ElementShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			card := obj.(*CreditCard)
@@ -305,7 +313,8 @@ func PresetsDetailSectionLabel(b *presets.Builder, db *gorm.DB) (
 			card := obj.(*CreditCard)
 			return vx.VXTextField().Text(card.Name)
 		})
-	dp.Section("Notes").Label("section_list_without_label").IsList(&Note{}).DisableLabel().
+
+	notesSection := presets.NewSectionBuilder(cust, "Notes").Label("section_list_without_label").IsList(&Note{}).DisableLabel().
 		Editing("Content").
 		ElementShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			note := obj.(*Note)
@@ -315,7 +324,7 @@ func PresetsDetailSectionLabel(b *presets.Builder, db *gorm.DB) (
 			note := obj.(*Note)
 			return vx.VXTextField().Text(note.Content)
 		})
-
+	dp.Section(section1, section2, creditCardssection, notesSection)
 	return
 }
 
@@ -335,17 +344,25 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 	// section will use Editing().ValidateFunc() as validateFunc default
 	cust.Editing().ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		customer := obj.(*Customer)
-		if len(customer.Name) > 6 {
-			err.FieldError("name_section.Name", "customer name must no longer than 6")
+		if customer.Email == "" {
+			err.GlobalError("customer email must not be empty")
 		}
-		if len(customer.Name) > 20 {
-			err.GlobalError("customer name must no longer than 20")
+		if len(customer.Email) < 6 {
+			err.FieldError("email_section.Email", "customer email must longer than 6")
+		}
+		for index, card := range customer.CreditCards {
+			if card.Name == "" {
+				err.GlobalError("credit card name must not be empty")
+			}
+			if card.Name == "" {
+				err.FieldError("card", fmt.Sprintf("credit card %d name must not be empty", index))
+			}
 		}
 		return
 	})
 	// This should inspect Notes attributes, When it is a list, It should show a standard table in detail page
 	dp = cust.Detailing("name_section", "email_section", "CreditCards").Drawer(true)
-	dp.Section("name_section").Label("name must not be empty, no longer than 6").
+	nameSection := presets.NewSectionBuilder(cust, "name_section").Label("name must not be empty, no longer than 6").
 		Editing("Name").EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		customer := obj.(*Customer)
 		var vErr web.ValidationErrors
@@ -363,41 +380,38 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 			err = in(obj, ctx)
 			customer := obj.(*Customer)
+			if len(customer.Name) > 6 {
+				err.FieldError("name_section.Name", "customer name must no longer than 6")
+			}
+			if len(customer.Name) > 20 {
+				err.GlobalError("customer name must no longer than 20")
+			}
 			if customer.Name == "" {
 				err.GlobalError("customer name must not be empty")
 			}
-			return err
+			return
 		}
 	})
 
-	dp.Section("email_section").
+	emailSection := presets.NewSectionBuilder(cust, "email_section").
 		Label("email must not be empty, must longer than 6").
 		Editing("Email").
-		ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			customer := obj.(*Customer)
-			if customer.Email == "" {
-				err.GlobalError("customer email must not be empty")
+			var vErr web.ValidationErrors
+			if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+				vErr = *ve
 			}
-			if len(customer.Email) < 6 {
-				err.FieldError("email_section.Email", "customer email must longer than 6")
-			}
-			return
-		}).EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		customer := obj.(*Customer)
-		var vErr web.ValidationErrors
-		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
-			vErr = *ve
-		}
-		return v.VTextField().
-			Variant(v.VariantOutlined).
-			Density(v.DensityCompact).
-			Attr(web.VField("email_section.Email", customer.Name)...).
-			ErrorMessages(vErr.GetFieldErrors("email_section.Email")...)
-	}).SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			return v.VTextField().
+				Variant(v.VariantOutlined).
+				Density(v.DensityCompact).
+				Attr(web.VField("email_section.Email", customer.Name)...).
+				ErrorMessages(vErr.GetFieldErrors("email_section.Email")...)
+		}).SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		return cust.Editing().Saver(obj, id, ctx)
 	})
 
-	dp.Section("CreditCards").IsList(&CreditCard{}).Editing("Name").
+	cardsSection := presets.NewSectionBuilder(cust, "CreditCards").IsList(&CreditCard{}).Editing("Name").
 		ElementEditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			card := obj.(*CreditCard)
 			var errText []string
@@ -410,18 +424,9 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 		ElementShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			card := obj.(*CreditCard)
 			return vx.VXTextField().Text(card.Name)
-		}).ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-		customer := obj.(*Customer)
-		for index, card := range customer.CreditCards {
-			if card.Name == "" {
-				err.GlobalError("credit card name must not be empty")
-			}
-			if card.Name == "" {
-				err.FieldError("card", fmt.Sprintf("credit card %d name must not be empty", index))
-			}
-		}
-		return
-	})
+		})
+
+	dp.Section(nameSection, emailSection, cardsSection)
 	return
 }
 
@@ -442,7 +447,9 @@ func PresetsDetailNestedMany(b *presets.Builder, db *gorm.DB) (
 
 	ccmb := mb.NestedMany(&CreditCard{}, "CustomerID")
 	dp.Field("CreditCards").Use(ccmb)
-	ccmb.Detailing("Detail").Drawer(true).Section("Detail").Editing("Name", "Phone")
+
+	detailSection := presets.NewSectionBuilder(mb, "Detail").Editing("Name", "Phone")
+	ccmb.Detailing("Detail").Drawer(true).Section(detailSection)
 
 	ccmb2 := mb.NestedMany(&CreditCard{}, "CustomerID")
 	// force ignore ExpireYearMonth column if you need
@@ -525,10 +532,62 @@ func PresetsDetailListSection(b *presets.Builder, db *gorm.DB) (cust *presets.Mo
 			return us, nil
 		}
 	})
-	dp.Section("CreditCards").Label("cards").IsList(&CreditCard{}).AlwaysShowListLabel().
+	cardsSection1 := presets.NewSectionBuilder(cust, "CreditCards").Label("cards").IsList(&CreditCard{}).AlwaysShowListLabel().
 		Editing("Name", "Phone").Viewing("Name", "Phone")
+	cardsSection1.HiddenFuncs(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+		return h.Div(
+			h.Input("").Type("hidden").
+				Attr(web.VField("TestHiddenFunc", "This is hidden input")...),
+		)
+	})
 
-	dp.Section("CreditCards2").Label("cards2").IsList(&CreditCard{}).AlwaysShowListLabel().
+	cardsSection2 := presets.NewSectionBuilder(cust, "CreditCards2").Label("cards2").IsList(&CreditCard{}).AlwaysShowListLabel().
 		Editing("Name", "Phone").Viewing("Name", "Phone")
+	dp.Section(cardsSection1, cardsSection2)
+	return
+}
+
+func PresetsSectionError(b *presets.Builder, db *gorm.DB) (cust *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	err := db.AutoMigrate(&UserCreditCard{})
+	if err != nil {
+		panic(err)
+	}
+	b.DataOperator(gorm2op.DataOperator(db))
+	cust = b.Model(&UserCreditCard{})
+	dp = cust.Detailing("Name", "CreditCards", "CreditCards2").Drawer(true)
+	dp.WrapFetchFunc(func(in presets.FetchFunc) presets.FetchFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
+			o, _ := in(obj, id, ctx)
+			us := o.(*UserCreditCard)
+			if len(us.CreditCards2) == 0 {
+				us.CreditCards2 = nil
+			}
+			return us, nil
+		}
+	})
+	namesection := presets.NewSectionBuilder(cust, "Name").Editing("Name").
+		WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
+			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+				err.GlobalError("name section validator error")
+				return
+			}
+		})
+
+	cardsSection1 := presets.NewSectionBuilder(cust, "CreditCards").Label("cards").IsList(&CreditCard{}).AlwaysShowListLabel().
+		Editing("Name", "Phone").Viewing("Name", "Phone")
+	cardsSection1.WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
+		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			err.GlobalError("cards section validator error")
+			return
+		}
+	})
+
+	cardsSection2 := presets.NewSectionBuilder(cust, "CreditCards2").Label("cards2").IsList(&CreditCard{}).AlwaysShowListLabel().
+		Editing("Name", "Phone").Viewing("Name", "Phone")
+	dp.Section(namesection, cardsSection1, cardsSection2)
 	return
 }

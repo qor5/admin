@@ -422,18 +422,20 @@ func (b *Builder) vSeoReadonly(obj interface{}, fieldPrefix, locale string, seo 
 }
 
 func (b *Builder) ModelInstall(pb *presets.Builder, mb *presets.ModelBuilder) error {
-	b.configDetailing(mb.Detailing())
+	b.configDetailing(mb)
 	return nil
 }
 
-func (b *Builder) configDetailing(pd *presets.DetailingBuilder) {
+func (b *Builder) configDetailing(mb *presets.ModelBuilder) {
+	pd := mb.Detailing()
 	fb := pd.GetField(SeoDetailFieldName)
 	if fb != nil && fb.GetCompFunc() == nil {
-		pd.Section(SeoDetailFieldName).
+		seoSection := presets.NewSectionBuilder(mb, "SEO").
 			Editing("SEO").
 			SaveFunc(b.detailSaver).
 			ViewComponentFunc(b.detailShowComponent).
 			EditComponentFunc(b.EditingComponentFunc)
+		pd.Section(seoSection)
 	}
 }
 

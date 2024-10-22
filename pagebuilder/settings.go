@@ -122,21 +122,11 @@ transform-origin: 0 0; transform:scale(0.5);width:200%;height:200%`),
 	}
 }
 
-func detailPageEditor(dp *presets.DetailingBuilder, b *Builder) {
+func detailPageEditor(dp *presets.DetailingBuilder, mb *presets.ModelBuilder, b *Builder) {
 	db := b.db
 	fields := b.filterFields([]interface{}{"Title", "CategoryID", "Slug"})
-	section := dp.Section("Page").
-		Editing(fields...).
-		WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
-			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-				p := obj.(*Page)
-				if err = pageValidator(ctx, p, db, b.l10n); err.HaveErrors() {
-					return
-				}
-				err = in(obj, ctx)
-				return
-			}
-		})
+	section := presets.NewSectionBuilder(mb, "Page").
+		Editing(fields...)
 	if b.expectField("Title") {
 		section.ViewingField("Title").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
 			return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -206,5 +196,6 @@ func detailPageEditor(dp *presets.DetailingBuilder, b *Builder) {
 			return complete
 		})
 	}
+	dp.Section(section)
 	return
 }
