@@ -225,7 +225,8 @@ func configVxSelect(detailing *presets.DetailingBuilder, mb *presets.ModelBuilde
 				),
 				v.VRow(
 					v.VCol(
-						DemoCaseSelect(obj, sectionName, editField, "NormalSelect", "NormalSelect(can`t select Trevor)", vErr, items).
+						DemoCaseSelect(obj, sectionName, editField, "NormalSelect", "", vErr, items).
+							Attr(":rules", `[(value) => value !== 8 || "can't select Trevor"]`).
 							Type("autocomplete"),
 					),
 				),
