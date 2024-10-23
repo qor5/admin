@@ -85,6 +85,7 @@ func (c *CheckboxData) Scan(value interface{}) error {
 func (c *CheckboxData) Value() (driver.Value, error) {
 	return json.Marshal(c)
 }
+
 func (c *DatepickerData) Scan(value interface{}) error {
 	if bytes, ok := value.([]byte); ok {
 		return json.Unmarshal(bytes, c)
@@ -373,6 +374,7 @@ func DemoCaseDatepicker(obj interface{}, section, editField, field, label string
 		Placeholder(field).
 		ErrorMessages(vErr.GetFieldErrors(formKey)...)
 }
+
 func DemoCaseRangePicker(obj interface{}, section, editField, field, label string, vErr web.ValidationErrors) *vx.VXRangePickerBuilder {
 	fieldName := fmt.Sprintf("%s.%s", editField, field)
 	formKey := fmt.Sprintf("%s.%s", section, fieldName)
@@ -383,6 +385,7 @@ func DemoCaseRangePicker(obj interface{}, section, editField, field, label strin
 		Attr(web.VField(formKey, val)...).
 		ErrorMessages(vErr.GetFieldErrors(formKey)...)
 }
+
 func configVxDatepicker(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder) {
 	label := "vx-datepicker"
 	sectionName := "DatepickerSection"
@@ -397,8 +400,10 @@ func configVxDatepicker(detailing *presets.DetailingBuilder, mb *presets.ModelBu
 				v.VRow(
 					v.VCol(
 						DemoCaseDatepicker(obj, sectionName, editField, "Date", "date-picker(required,Within five days before and after)", vErr).
-							DatePickerProps(map[string]string{"min": time.Now().AddDate(0, 0, -5).Format("2006-01-02"),
-								"max": time.Now().AddDate(0, 0, 5).Format("2006-01-02")}),
+							DatePickerProps(map[string]string{
+								"min": time.Now().AddDate(0, 0, -5).Format("2006-01-02"),
+								"max": time.Now().AddDate(0, 0, 5).Format("2006-01-02"),
+							}),
 					),
 					v.VCol(
 						DemoCaseDatepicker(obj, sectionName, editField, "DateTime", "datetime-picker(required)", vErr).Type("datetimepicker"),
