@@ -62,7 +62,7 @@ func TestDemoCase(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPageBodyContainsInOrder: []string{"vx-field", "&#34;121231321&amp;&amp;&#34;", "vx-select", "vx-checkbox"},
+			ExpectPageBodyContainsInOrder: []string{"vx-field", "&#34;121231321&amp;&amp;&#34;", "vx-select", "vx-checkbox", "vx-datepicker", "vx-dialog"},
 		},
 		{
 			Name:  "Demo Case Field Save",
@@ -196,6 +196,22 @@ func TestDemoCase(t *testing.T) {
 				}
 				return
 			},
+		},
+		{
+			Name:  "Demo Case DatePicker Validate",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				demoCaseData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/demo-cases/1").
+					EventFunc("section_save_DatepickerSection").
+					Query(presets.ParamID, "1").
+					AddField("DatepickerSection.DatepickerData.Date", "0").
+					AddField("DatepickerSection.DatepickerData.DateTime", "0").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Date is required", "DateTime is required", "End later than Start"},
 		},
 	}
 

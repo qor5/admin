@@ -102,39 +102,7 @@ func configureDemoCase(b *presets.Builder, db *gorm.DB) {
 		panic(err)
 	}
 	mb := b.Model(&DemoCase{})
-	mb.Editing("Name").WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
-		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-			if in != nil {
-				in(obj, ctx)
-			}
-			p := obj.(*DemoCase)
-			if p.ID == 0 {
-				return
-			}
-			if len(p.FieldData.TextValidate) < 5 {
-				err.FieldError(fmt.Sprintf("%s.%s.TextValidate", "FieldSection", "FieldData"), "input more than 5 chars")
-			}
-			if len(p.FieldData.TextareaValidate) < 10 {
-				err.FieldError(fmt.Sprintf("%s.%s.TextareaValidate", "FieldSection", "FieldData"), "input more than 10 chars")
-			}
-			if len(p.SelectData.AutoComplete) == 1 {
-				err.FieldError(fmt.Sprintf("%s.%s.AutoComplete", "SelectSection", "SelectData"), "select more than 1 item")
-			}
-			if p.SelectData.NormalSelect == 8 {
-				err.FieldError(fmt.Sprintf("%s.%s.NormalSelect", "SelectSection", "SelectData"), "can`t select Trevor")
-			}
-			if p.DatepickerData.Date == 0 {
-				err.FieldError(fmt.Sprintf("%s.%s.Date", "DatepickerSection", "DatepickerData"), "Date is required")
-			}
-			if p.DatepickerData.DateTime == 0 {
-				err.FieldError(fmt.Sprintf("%s.%s.DateTime", "DatepickerSection", "DatepickerData"), "DateTime is required")
-			}
-			if p.DatepickerData.DateRange == nil || p.DatepickerData.DateRange[1] < p.DatepickerData.DateRange[0] {
-				err.FieldError(fmt.Sprintf("%s.%s.DateRange", "DatepickerSection", "DatepickerData"), "End later than Start")
-			}
-			return
-		}
-	})
+	mb.Editing("Name")
 	mb.Listing("ID", "Name")
 	detailing := mb.Detailing("FieldSection", "SelectSection", "CheckboxSection", "DatepickerSection", "DialogSection")
 	configVxField(detailing, mb)
@@ -179,6 +147,24 @@ func configVxField(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder
 	editField := "FieldData"
 	label := "vx-field"
 	section := generateSection(detailing, mb, sectionName, editField, label).
+		WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
+			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+				if in != nil {
+					in(obj, ctx)
+				}
+				p := obj.(*DemoCase)
+				if p.ID == 0 {
+					return
+				}
+				if len(p.FieldData.TextValidate) < 5 {
+					err.FieldError(fmt.Sprintf("%s.%s.TextValidate", "FieldSection", "FieldData"), "input more than 5 chars")
+				}
+				if len(p.FieldData.TextareaValidate) < 10 {
+					err.FieldError(fmt.Sprintf("%s.%s.TextareaValidate", "FieldSection", "FieldData"), "input more than 10 chars")
+				}
+				return
+			}
+		}).
 		EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			var vErr web.ValidationErrors
 			if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
@@ -229,6 +215,24 @@ func configVxSelect(detailing *presets.DetailingBuilder, mb *presets.ModelBuilde
 	editField := "SelectData"
 	label := "vx-select"
 	section := generateSection(detailing, mb, sectionName, editField, label).
+		WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
+			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+				if in != nil {
+					in(obj, ctx)
+				}
+				p := obj.(*DemoCase)
+				if p.ID == 0 {
+					return
+				}
+				if len(p.SelectData.AutoComplete) == 1 {
+					err.FieldError(fmt.Sprintf("%s.%s.AutoComplete", "SelectSection", "SelectData"), "select more than 1 item")
+				}
+				if p.SelectData.NormalSelect == 8 {
+					err.FieldError(fmt.Sprintf("%s.%s.NormalSelect", "SelectSection", "SelectData"), "can`t select Trevor")
+				}
+				return
+			}
+		}).
 		EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			var vErr web.ValidationErrors
 			if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
@@ -388,6 +392,27 @@ func configVxDatepicker(detailing *presets.DetailingBuilder, mb *presets.ModelBu
 	sectionName := "DatepickerSection"
 	editField := "DatepickerData"
 	section := generateSection(detailing, mb, sectionName, editField, label).
+		WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
+			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+				if in != nil {
+					in(obj, ctx)
+				}
+				p := obj.(*DemoCase)
+				if p.ID == 0 {
+					return
+				}
+				if p.DatepickerData.Date == 0 {
+					err.FieldError(fmt.Sprintf("%s.%s.Date", "DatepickerSection", "DatepickerData"), "Date is required")
+				}
+				if p.DatepickerData.DateTime == 0 {
+					err.FieldError(fmt.Sprintf("%s.%s.DateTime", "DatepickerSection", "DatepickerData"), "DateTime is required")
+				}
+				if p.DatepickerData.DateRange == nil || p.DatepickerData.DateRange[1] < p.DatepickerData.DateRange[0] {
+					err.FieldError(fmt.Sprintf("%s.%s.DateRange", "DatepickerSection", "DatepickerData"), "End later than Start")
+				}
+				return
+			}
+		}).
 		EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			var vErr web.ValidationErrors
 			if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
