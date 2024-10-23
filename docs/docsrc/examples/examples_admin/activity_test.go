@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3/multipartestutils"
@@ -670,6 +671,36 @@ func TestActivityBeforeCreate(t *testing.T) {
 				"<div", "<v-btn", "mdi-chevron-left", "<v-btn", "mdi-chevron-right", "</div>",
 			},
 			ExpectPageBodyNotContains: []string{"v-pagination"},
+		},
+		{
+			Name:  "Edit a item(before create error)",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				pb := presets.New()
+				activityExample(pb, TestDB, func(mb *presets.ModelBuilder, ab *activity.Builder) {
+					pb.Use(ab)
+
+					ab.MustGetModelBuilder(mb).BeforeCreate(func(ctx context.Context, log *activity.ActivityLog) error {
+						return errors.New("before create error")
+					})
+				})
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				activityData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/with-activity-products?__execute_event__=section_save_Content&id=22").
+					AddField("Content.Title", "Jordan 1 Retro High").
+					AddField("Content.Code", "10011").
+					AddField("Content.Approved", "false").
+					AddField("Content.Edited", "false").
+					AddField("Content.Price", "252").
+					AddField("Content.StockedAt", "").
+					AddField("Content.AppovedAt", "").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"failed to run before create"},
 		},
 	}
 
