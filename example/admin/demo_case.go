@@ -220,7 +220,7 @@ func configVxSelect(detailing *presets.DetailingBuilder, mb *presets.ModelBuilde
 				v.VRow(
 					v.VCol(
 						DemoCaseSelect(obj, sectionName, editField, "AutoComplete", "AutoComplete(select more than 1 item)", vErr, items).
-							Type("autocomplete").Multiple(true).Chips(true).ClosableChips(true),
+							Type("autocomplete").Multiple(true).Chips(true).ClosableChips(true).Clearable(true),
 					),
 				),
 				v.VRow(
