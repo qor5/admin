@@ -35,14 +35,8 @@ func NewSectionBuilder(mb *ModelBuilder, name string) (r *SectionBuilder) {
 			label: name,
 		},
 		mb: mb,
-		validator: func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-			if mb.editing.Validator != nil {
-				return mb.editing.Validator(obj, ctx)
-			}
-			return err
-		},
-		setter: func(obj interface{}, ctx *web.EventContext) error {
-			return nil
+		saver: func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			return mb.editing.Saver(obj, id, ctx)
 		},
 		componentViewFunc: nil,
 		componentEditFunc: nil,
@@ -75,9 +69,6 @@ func NewSectionBuilder(mb *ModelBuilder, name string) (r *SectionBuilder) {
 	r.editingFB.defaults = mb.writeFields.defaults
 	r.viewingFB.Model(mb.model)
 	r.viewingFB.defaults = mb.p.detailFieldDefaults
-	r.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		return mb.editing.Saver(obj, id, ctx)
-	})
 	r.setter = r.defaultUnmarshalFunc
 	// d.Field(name).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	// 	panic("you must set ViewComponentFunc and EditComponentFunc if you want to use SectionsBuilder")
@@ -103,7 +94,6 @@ type SectionBuilder struct {
 	comp              FieldComponentFunc
 	saver             SaveFunc
 	setter            func(obj interface{}, ctx *web.EventContext) error
-	validator         ValidateFunc
 	hiddenFuncs       []ObjectComponentFunc
 	componentViewFunc FieldComponentFunc
 	componentEditFunc FieldComponentFunc
@@ -188,12 +178,6 @@ func (b *SectionBuilder) WrapComponentHoverFunc(w func(in ObjectBoolFunc) Object
 
 func (b *SectionBuilder) WrapSaveBtnFunc(w func(in ObjectBoolFunc) ObjectBoolFunc) (r *SectionBuilder) {
 	b.saveBtnFunc = w(b.componentHoverFunc)
-	return b
-}
-
-// WrapValidateFunc only used in detailing
-func (b *SectionBuilder) WrapValidateFunc(w func(in ValidateFunc) ValidateFunc) (r *SectionBuilder) {
-	b.validator = w(b.validator)
 	return b
 }
 
@@ -310,11 +294,6 @@ func (b *SectionBuilder) SaveFunc(v SaveFunc) (r *SectionBuilder) {
 		panic("value required")
 	}
 	b.saver = v
-	return b
-}
-
-func (b *SectionBuilder) WrapSaveFunc(w func(in SaveFunc) SaveFunc) (r *SectionBuilder) {
-	b.saver = w(b.saver)
 	return b
 }
 
@@ -1066,11 +1045,13 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 	}
 
 	needSave := true
-	if vErr := b.validator(obj, ctx); vErr.HaveErrors() {
-		ctx.Flash = &vErr
-		needSave = false
-		if vErr.GetGlobalError() != "" {
-			ShowMessage(&r, vErr.GetGlobalError(), "warning")
+	if b.mb.editing.Validator != nil {
+		if vErr := b.mb.editing.Validator(obj, ctx); vErr.HaveErrors() {
+			ctx.Flash = &vErr
+			needSave = false
+			if vErr.GetGlobalError() != "" {
+				ShowMessage(&r, vErr.GetGlobalError(), "warning")
+			}
 		}
 	}
 
@@ -1190,11 +1171,13 @@ func (b *SectionBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Event
 	}
 
 	needSave := true
-	if vErr := b.validator(obj, ctx); vErr.HaveErrors() {
-		ctx.Flash = &vErr
-		needSave = false
-		if vErr.GetGlobalError() != "" {
-			ShowMessage(&r, vErr.GetGlobalError(), "warning")
+	if b.mb.editing.Validator != nil {
+		if vErr := b.mb.editing.Validator(obj, ctx); vErr.HaveErrors() {
+			ctx.Flash = &vErr
+			needSave = false
+			if vErr.GetGlobalError() != "" {
+				ShowMessage(&r, vErr.GetGlobalError(), "warning")
+			}
 		}
 	}
 
@@ -1259,11 +1242,13 @@ func (b *SectionBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.Eve
 	}
 
 	needSave := true
-	if vErr := b.validator(obj, ctx); vErr.HaveErrors() {
-		ctx.Flash = &vErr
-		needSave = false
-		if vErr.GetGlobalError() != "" {
-			ShowMessage(&r, vErr.GetGlobalError(), "warning")
+	if b.mb.editing.Validator != nil {
+		if vErr := b.mb.editing.Validator(obj, ctx); vErr.HaveErrors() {
+			ctx.Flash = &vErr
+			needSave = false
+			if vErr.GetGlobalError() != "" {
+				ShowMessage(&r, vErr.GetGlobalError(), "warning")
+			}
 		}
 	}
 

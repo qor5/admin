@@ -26,7 +26,7 @@ func TestPresetsDetailing(t *testing.T) {
 	pb1 := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
 	PresetsDetailInlineEditFieldSections(pb1, TestDB)
 
-	pb2 := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	pb2 := presets.New().DataOperator(gorm2o p.DataOperator(TestDB))
 	PresetsDetailPageCards(pb2, TestDB)
 
 	cases := []multipartestutils.TestCase{
@@ -75,6 +75,9 @@ func TestPresetsDetailing(t *testing.T) {
 		{
 			Name:  "page detail update",
 			Debug: true,
+			HandlerMaker: func() http.Handler {
+				return pb
+			},
 			ReqFunc: func() *http.Request {
 				detailData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
@@ -330,6 +333,7 @@ func TestPresetsDetailSectionValidate(t *testing.T) {
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/customers?__execute_event__=section_save_email_section&id=12").
 					AddField("email_section.Email", "").
+					AddField("name_section.Name", "name").
 					BuildEventFuncRequest()
 			},
 			ExpectRunScriptContainsInOrder: []string{"message: \"customer email must not be empty\""},
@@ -356,6 +360,8 @@ func TestPresetsDetailSectionValidate(t *testing.T) {
 					Query("sectionListSaveBtn_CreditCards", "0").
 					Query("sectionListUnsaved_CreditCards", "false").
 					AddField("CreditCards[0].Name", "").
+					AddField("name_section.Name", "name").
+					AddField("email_section.Email", "email").
 					AddField("__Deleted_CreditCards[0].sectionListEditing", "true").
 					BuildEventFuncRequest()
 			},
@@ -793,52 +799,6 @@ func TestPresetsDetailSectionView(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"section-edit-area", "z-index:2"},
 		},
 	}
-	for _, c := range cases {
-		t.Run(c.Name, func(t *testing.T) {
-			multipartestutils.RunCase(t, c, pb)
-		})
-	}
-}
-
-func TestPresetsSectionError(t *testing.T) {
-	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
-	PresetsSectionError(pb, TestDB)
-
-	cases := []multipartestutils.TestCase{
-		{
-			Name:  "save created section",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				userCreditCardsData.TruncatePut(SqlDB)
-				return multipartestutils.NewMultipartBuilder().
-					PageURL("/user-credit-cards").
-					Query("__execute_event__", "section_save_CreditCards").
-					Query("sectionListUnsaved_CreditCards", "false").
-					Query("sectionListSaveBtn_CreditCards", "0").
-					Query("id", "1").
-					AddField("CreditCards[0].Name", "terry").
-					AddField("CreditCards[0].Phone", "188").
-					AddField("__Deleted_CreditCards[0].sectionListEditing", "true").
-					BuildEventFuncRequest()
-			},
-			ExpectRunScriptContainsInOrder: []string{"cards section validator error"},
-		},
-		{
-			Name:  "save created section",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				userCreditCardsData.TruncatePut(SqlDB)
-				return multipartestutils.NewMultipartBuilder().
-					PageURL("/user-credit-cards").
-					Query("__execute_event__", "section_save_Name").
-					Query("id", "1").
-					AddField("Name.Name", "terry").
-					BuildEventFuncRequest()
-			},
-			ExpectRunScriptContainsInOrder: []string{"name section validator error"},
-		},
-	}
-
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
 			multipartestutils.RunCase(t, c, pb)
