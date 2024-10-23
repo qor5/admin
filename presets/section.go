@@ -90,7 +90,6 @@ type SectionBuilder struct {
 	isUsed            bool
 	isRegistered      bool
 	isEdit            bool
-	unmarshalFunc     func(ctx *web.EventContext, obj interface{}) error
 	comp              FieldComponentFunc
 	saver             SaveFunc
 	setter            func(obj interface{}, ctx *web.EventContext) error

@@ -26,7 +26,7 @@ func TestPresetsDetailing(t *testing.T) {
 	pb1 := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
 	PresetsDetailInlineEditFieldSections(pb1, TestDB)
 
-	pb2 := presets.New().DataOperator(gorm2o p.DataOperator(TestDB))
+	pb2 := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
 	PresetsDetailPageCards(pb2, TestDB)
 
 	cases := []multipartestutils.TestCase{
