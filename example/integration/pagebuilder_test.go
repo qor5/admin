@@ -159,7 +159,7 @@ func TestPageBuilder(t *testing.T) {
 			Name:  "Page Builder Editor Page without perm.Update",
 			Debug: true,
 			HandlerMaker: func() http.Handler {
-				mux, c := admin.TestHandlerComplex(TestDB, nil)
+				mux, c := admin.TestHandlerComplex(TestDB, nil, false)
 				c.GetPresetsBuilder().Permission(
 					perm.New().Policies(
 						perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
@@ -628,9 +628,8 @@ func TestPageBuilder(t *testing.T) {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				return NewMultipartBuilder().
 					PageURL("/pages/10_2024-05-21-v01_International").
-					EventFunc(actions.DoSaveDetailingField).
+					EventFunc("section_save_Page").
 					Query(presets.ParamID, "10_2024-05-21-v01_International").
-					Query("section", "Page").
 					AddField("Page.Title", "123").
 					AddField("Page.Slug", "123").
 					AddField("Page.CategoryID", "0").
@@ -688,8 +687,7 @@ func TestPageBuilder(t *testing.T) {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/pages/10_2024-05-21-v01_International").
-					Query(web.EventFuncIDName, actions.DoEditDetailingField).
-					Query("section", "Page").
+					Query(web.EventFuncIDName, "section_edit_Page").
 					Query("id", "10_2024-05-21-v01_International").
 					BuildEventFuncRequest()
 				return req
@@ -703,8 +701,7 @@ func TestPageBuilder(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/pages/1_2024-05-18-v01_International").
-					Query(web.EventFuncIDName, actions.DoEditDetailingField).
-					Query("section", "Page").
+					Query(web.EventFuncIDName, "section_edit_Page").
 					Query("id", "1_2024-05-18-v01_International").
 					BuildEventFuncRequest()
 				return req
@@ -998,6 +995,43 @@ func TestPageBuilder(t *testing.T) {
 				return req
 			},
 			ExpectPageBodyNotContains: []string{"Page Builder"},
+		},
+		{
+			Name:  "PageBuilder Editor Replicate Container",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					EventFunc(pagebuilder.ReplicateContainerEvent).
+					Query("containerID", "10_International").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var (
+					container     pagebuilder.Container
+					nextContainer pagebuilder.Container
+					m             containers.ListContent
+				)
+				TestDB.Order("id desc").First(&container)
+				if container.ID <= 11 || container.ModelID == 10 || container.ModelName != "ListContent" || container.DisplayOrder != 2 {
+					t.Fatalf("Replicate Container Faield %#+v", container)
+					return
+				}
+				TestDB.Order("id desc").First(&m, container.ModelID)
+				if m.Link != "ijuhuheweq" {
+					t.Fatalf("Replicate Container Model Faield %#+v", m)
+					return
+				}
+				TestDB.First(&nextContainer, 11)
+				if nextContainer.DisplayOrder != 3 {
+					t.Fatalf("Replicate Container Faield %#+v", nextContainer)
+					return
+				}
+				return
+			},
 		},
 	}
 

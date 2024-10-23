@@ -359,20 +359,21 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 			return
 		}
 	})
+	campaignModelBuilder.Editing().ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		c := obj.(*Campaign)
+		if c.Title == "" {
+			err.GlobalError("title could not be empty")
+		}
+		return
+	})
 	pb.RegisterModelBuilderTemplate(campaignModelBuilder, ct)
 	campaignModelBuilder.Listing("Title")
 	detail := campaignModelBuilder.Detailing(
 		pagebuilder.PageBuilderPreviewCard,
 		"CampaignDetail",
 	)
-	detail.Section("CampaignDetail").Editing("Title").
-		ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-			c := obj.(*Campaign)
-			if c.Title == "" {
-				err.GlobalError("title could not be empty")
-			}
-			return
-		})
+	campaignDetailSection := presets.NewSectionBuilder(campaignModelBuilder, "CampaignDetail").Editing("Title")
+	detail.Section(campaignDetailSection)
 	pb.RegisterModelContainer("CampaignContent", campaignModelBuilder).Group("Campaign").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			c := obj.(*CampaignContent)
@@ -392,8 +393,8 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		pagebuilder.PageBuilderPreviewCard,
 		"ProductDetail",
 	)
-
-	detail2.Section("ProductDetail").Editing("Name")
+	productDetail := presets.NewSectionBuilder(productModelBuilder, "ProductDetail").Editing("Name")
+	detail2.Section(productDetail)
 
 	pb.RegisterModelContainer("ProductContent", productModelBuilder).Group("CampaignProduct").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
@@ -414,7 +415,9 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		"ProductDetail",
 	)
 
-	detail3.Section("ProductDetail").Editing("Name")
+	productDetail3 := presets.NewSectionBuilder(pageProductModelBuilder, "ProductDetail").Editing("Name")
+	detail3.Section(productDetail3)
+
 	pageProductModelBuilder.Use(pb)
 
 	// use demo container and media etc. plugins

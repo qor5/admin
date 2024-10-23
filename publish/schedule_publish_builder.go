@@ -20,7 +20,8 @@ func NewSchedulePublishBuilder(publisher *Builder) *SchedulePublishBuilder {
 }
 
 type SchedulePublisher interface {
-	SchedulePublisherDBScope(db *gorm.DB) *gorm.DB
+	SchedulePublishDBScope(db *gorm.DB) *gorm.DB
+	ScheduleUnPublishDBScope(db *gorm.DB) *gorm.DB
 }
 
 // model is a empty struct
@@ -28,21 +29,19 @@ type SchedulePublisher interface {
 func (b *SchedulePublishBuilder) Run(ctx context.Context, model interface{}) (err error) {
 	reqCtx := b.publisher.WithContextValues(ctx)
 
-	var scope *gorm.DB
-	if m, ok := model.(SchedulePublisher); ok {
-		scope = m.SchedulePublisherDBScope(b.publisher.db)
-	} else {
-		scope = b.publisher.db
-	}
-
 	// If model is Product{}
 	// Generate a records: []*Product{}
 	records := reflect.MakeSlice(reflect.SliceOf(reflect.New(reflect.TypeOf(model)).Type()), 0, 0).Interface()
-	flagTime := scope.NowFunc()
+	flagTime := b.publisher.db.NowFunc()
 	var unpublishAfterPublishRecords []interface{}
 
 	{
 		tempRecords := records
+
+		scope := b.publisher.db
+		if m, ok := model.(SchedulePublisher); ok {
+			scope = m.ScheduleUnPublishDBScope(scope)
+		}
 		err = scope.Where("scheduled_end_at <= ?", flagTime).Order("scheduled_end_at").Find(&tempRecords).Error
 		if err != nil {
 			return
@@ -66,6 +65,11 @@ func (b *SchedulePublishBuilder) Run(ctx context.Context, model interface{}) (er
 
 	{
 		tempRecords := records
+
+		scope := b.publisher.db
+		if m, ok := model.(SchedulePublisher); ok {
+			scope = m.SchedulePublishDBScope(scope)
+		}
 		err = scope.Where("scheduled_start_at <= ?", flagTime).Order("scheduled_start_at").Find(&tempRecords).Error
 		if err != nil {
 			return

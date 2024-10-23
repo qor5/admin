@@ -95,7 +95,6 @@ func TestChangePassword(t *testing.T) {
 	}
 }
 
-
 func TestPasswordWithVisibleToggle(t *testing.T) {
 	current := &User{
 		Model:   gorm.Model{ID: 1},
@@ -109,7 +108,7 @@ func TestPasswordWithVisibleToggle(t *testing.T) {
 
 	h := changePasswordExample(presets.New(), TestDB, current)
 
-	cases := []multipartestutils.TestCase{ 
+	cases := []multipartestutils.TestCase{
 		{
 			Name:  "password field with visible toggle",
 			Debug: true,

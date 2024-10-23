@@ -248,7 +248,7 @@ func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent
 			menus       []h.HTMLComponent
 		)
 		name, description = b.getTemplateNameDescription(obj, ctx)
-		if p, ok := obj.(PrimarySlugInterface); ok {
+		if p, ok := obj.(presets.SlugEncoder); ok {
 			ps = p.PrimarySlug()
 		}
 		if ojID, err = reflectutils.Get(obj, "ID"); err != nil {

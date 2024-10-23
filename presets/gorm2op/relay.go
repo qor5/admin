@@ -4,12 +4,13 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/theplant/relay"
 	"github.com/theplant/relay/cursor"
 	"github.com/theplant/relay/gormrelay"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/presets"
 )
 
 func OffsetBasedPagination(skipTotalCount bool, cursorMiddlewares ...relay.CursorMiddleware[any]) presets.RelayPagination {
@@ -23,7 +24,7 @@ func KeysetBasedPagination(skipTotalCount bool, cursorMiddlewares ...relay.Curso
 func relayPagination(f func(db *gorm.DB) relay.ApplyCursorsFunc[any], skipTotalCount bool, cursorMiddlewares ...relay.CursorMiddleware[any]) presets.RelayPagination {
 	p := relay.New(
 		func(ctx context.Context, req *relay.ApplyCursorsRequest) (*relay.ApplyCursorsResponse[any], error) {
-			db, ok := ctx.Value(ctxKeyDB{}).(*gorm.DB)
+			db, ok := ctx.Value(ctxKeyDBForRelay{}).(*gorm.DB)
 			if !ok {
 				return nil, errors.New("db not found in context")
 			}

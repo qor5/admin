@@ -6,11 +6,12 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/qor5/admin/v3/example/models"
-	"github.com/qor5/admin/v3/role"
 	"github.com/qor5/x/v3/login"
 	"github.com/qor5/x/v3/sitemap"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/example/models"
+	"github.com/qor5/admin/v3/role"
 )
 
 //go:embed assets/favicon.ico
@@ -20,9 +21,9 @@ const (
 	exportOrdersURL = "/export-orders"
 )
 
-func TestHandlerComplex(db *gorm.DB, u *models.User) (http.Handler, Config) {
+func TestHandlerComplex(db *gorm.DB, u *models.User, enableWork bool) (http.Handler, Config) {
 	mux := http.NewServeMux()
-	c := NewConfig(db)
+	c := NewConfig(db, enableWork)
 	if u == nil {
 		u = &models.User{
 			Model: gorm.Model{ID: 888},
@@ -40,13 +41,18 @@ func TestHandlerComplex(db *gorm.DB, u *models.User) (http.Handler, Config) {
 }
 
 func TestHandler(db *gorm.DB, u *models.User) http.Handler {
-	mux, _ := TestHandlerComplex(db, u)
+	mux, _ := TestHandlerComplex(db, u, false)
+	return mux
+}
+
+func TestHandlerWorker(db *gorm.DB, u *models.User) http.Handler {
+	mux, _ := TestHandlerComplex(db, u, true)
 	return mux
 }
 
 func TestL18nHandler(db *gorm.DB) http.Handler {
 	mux := http.NewServeMux()
-	c := NewConfig(db)
+	c := NewConfig(db, false)
 	c.loginSessionBuilder.Secret("test")
 	c.loginSessionBuilder.Mount(mux)
 	mux.Handle("/", c.pb)
@@ -54,7 +60,7 @@ func TestL18nHandler(db *gorm.DB) http.Handler {
 }
 
 func Router(db *gorm.DB) http.Handler {
-	c := NewConfig(db)
+	c := NewConfig(db, true)
 
 	mux := http.NewServeMux()
 	c.loginSessionBuilder.Mount(mux)

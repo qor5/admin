@@ -7,12 +7,11 @@ import (
 	"strings"
 
 	"github.com/qor5/web/v3"
-	"github.com/sunfmin/reflectutils"
-	h "github.com/theplant/htmlgo"
-
 	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
+	"github.com/sunfmin/reflectutils"
+	h "github.com/theplant/htmlgo"
 
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
@@ -33,7 +32,7 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 		)
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		versionComponent := publish.DefaultVersionComponentFunc(pm)(obj, field, ctx)
-		if v, ok := obj.(PrimarySlugInterface); ok {
+		if v, ok := obj.(presets.SlugEncoder); ok {
 			ps = v.PrimarySlug()
 		}
 
@@ -123,21 +122,11 @@ transform-origin: 0 0; transform:scale(0.5);width:200%;height:200%`),
 	}
 }
 
-func detailPageEditor(dp *presets.DetailingBuilder, b *Builder) {
+func detailPageEditor(dp *presets.DetailingBuilder, mb *presets.ModelBuilder, b *Builder) {
 	db := b.db
 	fields := b.filterFields([]interface{}{"Title", "CategoryID", "Slug"})
-	section := dp.Section("Page").
-		Editing(fields...).
-		WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
-			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-				p := obj.(*Page)
-				if err = pageValidator(ctx, p, db, b.l10n); err.HaveErrors() {
-					return
-				}
-				err = in(obj, ctx)
-				return
-			}
-		})
+	section := presets.NewSectionBuilder(mb, "Page").
+		Editing(fields...)
 	if b.expectField("Title") {
 		section.ViewingField("Title").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
 			return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -207,5 +196,6 @@ func detailPageEditor(dp *presets.DetailingBuilder, b *Builder) {
 			return complete
 		})
 	}
+	dp.Section(section)
 	return
 }

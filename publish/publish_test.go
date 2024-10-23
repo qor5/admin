@@ -224,6 +224,46 @@ func TestMain(m *testing.M) {
 
 const skipList = "skip_list"
 
+type ProductWithError struct {
+	Product
+	publishActionError   error
+	afterPublishError    error
+	unpublschActionError error
+	afterUnPublishError  error
+}
+
+func (p *ProductWithError) TableName() string {
+	return "products"
+}
+
+func (p *ProductWithError) GetPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
+	if p.publishActionError != nil {
+		return nil, p.publishActionError
+	}
+	return p.Product.GetPublishActions(ctx, db, storage)
+}
+
+func (p *ProductWithError) GetUnPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {
+	if p.unpublschActionError != nil {
+		return nil, p.unpublschActionError
+	}
+	return p.Product.GetUnPublishActions(ctx, db, storage)
+}
+
+func (p *ProductWithError) AfterPublish(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) error {
+	if p.afterPublishError != nil {
+		return p.afterPublishError
+	}
+	return nil
+}
+
+func (p *ProductWithError) AfterUnPublish(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) error {
+	if p.afterUnPublishError != nil {
+		return p.afterUnPublishError
+	}
+	return nil
+}
+
 func TestPublishVersionContentToS3(t *testing.T) {
 	db := TestDB
 	db.AutoMigrate(&Product{})
@@ -276,6 +316,40 @@ func TestPublishVersionContentToS3(t *testing.T) {
 	assertUpdateStatus(t, db, &productV2, publish.StatusOffline, productV2.getUrl())
 	assertContentDeleted(t, productV2.getUrl(), storage)
 	assertContentDeleted(t, productV2.getListUrl(), storage)
+
+	err := p.Publish(skipListFalseContext, &ProductWithError{
+		Product:            productV2,
+		publishActionError: fmt.Errorf("publish error"),
+	})
+	require.ErrorContains(t, err, "publish error")
+	assertUpdateStatus(t, db, &productV2, publish.StatusOffline, productV2.getUrl())
+
+	err = p.Publish(skipListFalseContext, &ProductWithError{
+		Product:           productV2,
+		afterPublishError: fmt.Errorf("after publish error"),
+	})
+	require.ErrorContains(t, err, "after publish error")
+	assertUpdateStatus(t, db, &productV2, publish.StatusOffline, productV2.getUrl())
+
+	err = p.Publish(skipListFalseContext, &ProductWithError{
+		Product: productV2,
+	})
+	require.NoError(t, err)
+	assertUpdateStatus(t, db, &productV2, publish.StatusOnline, productV2.getUrl())
+
+	err = p.UnPublish(skipListFalseContext, &ProductWithError{
+		Product:              productV2,
+		unpublschActionError: fmt.Errorf("unpublish error"),
+	})
+	require.ErrorContains(t, err, "unpublish error")
+	assertUpdateStatus(t, db, &productV2, publish.StatusOnline, productV2.getUrl())
+
+	err = p.UnPublish(skipListFalseContext, &ProductWithError{
+		Product:             productV2,
+		afterUnPublishError: fmt.Errorf("after unpublish error"),
+	})
+	require.ErrorContains(t, err, "after unpublish error")
+	assertUpdateStatus(t, db, &productV2, publish.StatusOnline, productV2.getUrl())
 }
 
 func TestPublishList(t *testing.T) {
@@ -319,10 +393,10 @@ func TestPublishList(t *testing.T) {
 	var expected string
 	expected = "product:1 product:3 pageNumber:1"
 	if storage.Objects["/product_without_version/list/1.html"] != expected {
-		t.Error(fmt.Errorf(`
+		t.Errorf(`
 want: %v
 get: %v
-`, expected, storage.Objects["/product_without_version/list/1.html"]))
+`, expected, storage.Objects["/product_without_version/list/1.html"])
 	}
 
 	publisher.Publish(context.Background(), &productV2)
@@ -332,7 +406,7 @@ get: %v
 
 	expected = "product:1 product:2 product:3 pageNumber:1"
 	if storage.Objects["/product_without_version/list/1.html"] != expected {
-		fmt.Errorf(`
+		t.Errorf(`
 want: %v
 get: %v
 `, expected, storage.Objects["/product_without_version/list/1.html"])
@@ -345,7 +419,7 @@ get: %v
 
 	expected = "product:1 product:3 pageNumber:1"
 	if storage.Objects["/product_without_version/list/1.html"] != expected {
-		fmt.Errorf(`
+		t.Errorf(`
 want: %v
 get: %v
 `, expected, storage.Objects["/product_without_version/list/1.html"])
@@ -358,11 +432,27 @@ get: %v
 
 	expected = "product:1 pageNumber:1"
 	if storage.Objects["/product_without_version/list/1.html"] != expected {
-		fmt.Errorf(`
+		t.Errorf(`
 want: %v
 get: %v
 `, expected, storage.Objects["/product_without_version/list/1.html"])
 	}
+}
+
+type ProductWithSchedulePublisherDBScope struct {
+	Product
+}
+
+func (p ProductWithSchedulePublisherDBScope) TableName() string {
+	return "products"
+}
+
+func (p ProductWithSchedulePublisherDBScope) SchedulePublishDBScope(db *gorm.DB) *gorm.DB {
+	return db.Where("name <> ?", "should_ignored_by_publish")
+}
+
+func (p ProductWithSchedulePublisherDBScope) ScheduleUnPublishDBScope(db *gorm.DB) *gorm.DB {
+	return db.Where("name <> ?", "should_ignored_by_unpublish")
 }
 
 func TestSchedulePublish(t *testing.T) {
@@ -387,7 +477,7 @@ func TestSchedulePublish(t *testing.T) {
 	var expected string
 	expected = "11"
 	if storage.Objects["test/product/1/index.html"] != expected {
-		fmt.Errorf(`
+		t.Errorf(`
 	want: %v
 	get: %v
 	`, expected, storage.Objects["test/product/1/index.html"])
@@ -405,7 +495,7 @@ func TestSchedulePublish(t *testing.T) {
 	}
 	expected = "12"
 	if storage.Objects["test/product/1/index.html"] != expected {
-		fmt.Errorf(`
+		t.Errorf(`
 	want: %v
 	get: %v
 	`, expected, storage.Objects["test/product/1/index.html"])
@@ -421,10 +511,73 @@ func TestSchedulePublish(t *testing.T) {
 	}
 	expected = ""
 	if storage.Objects["test/product/1/index.html"] != expected {
-		fmt.Errorf(`
+		t.Errorf(`
 	want: %v
 	get: %v
 	`, expected, storage.Objects["test/product/1/index.html"])
+	}
+
+	productV1.ScheduledEndAt = nil
+	// expect ignored
+	{
+		productV1.Name = "should_ignored_by_publish"
+		startAt := db.NowFunc().Add(-24 * time.Hour)
+		productV1.ScheduledStartAt = &startAt
+
+		err := db.Save(&productV1).Error
+		require.NoError(t, err)
+
+		err = schedulePublisher.Run(context.Background(), ProductWithSchedulePublisherDBScope{
+			Product: productV1,
+		})
+		require.NoError(t, err)
+		require.Equal(t, "", storage.Objects["test/product/1/index.html"])
+	}
+	// expect ok
+	{
+		productV1.Name = "3"
+		startAt := db.NowFunc().Add(-24 * time.Hour)
+		productV1.ScheduledStartAt = &startAt
+
+		err := db.Save(&productV1).Error
+		require.NoError(t, err)
+
+		err = schedulePublisher.Run(context.Background(), ProductWithSchedulePublisherDBScope{
+			Product: productV1,
+		})
+		require.NoError(t, err)
+		require.Equal(t, "13", storage.Objects["test/product/1/index.html"])
+	}
+	productV1.ScheduledStartAt = nil
+	// expect ignored
+	{
+		productV1.Name = "should_ignored_by_unpublish"
+		endAt := startAt.Add(time.Second * 2)
+		productV1.ScheduledEndAt = &endAt
+
+		err := db.Save(&productV1).Error
+		require.NoError(t, err)
+
+		err = schedulePublisher.Run(context.Background(), ProductWithSchedulePublisherDBScope{
+			Product: productV1,
+		})
+		require.NoError(t, err)
+		require.Equal(t, "13", storage.Objects["test/product/1/index.html"])
+	}
+	// expect ok
+	{
+		productV1.Name = "3"
+		endAt := startAt.Add(time.Second * 2)
+		productV1.ScheduledEndAt = &endAt
+
+		err := db.Save(&productV1).Error
+		require.NoError(t, err)
+
+		err = schedulePublisher.Run(context.Background(), ProductWithSchedulePublisherDBScope{
+			Product: productV1,
+		})
+		require.NoError(t, err)
+		require.Equal(t, "", storage.Objects["test/product/1/index.html"])
 	}
 }
 

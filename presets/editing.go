@@ -602,3 +602,37 @@ func (b *EditingBuilder) UpdateOverlayContent(
 		Body: b.editFormFor(obj, ctx),
 	})
 }
+
+func (b *EditingBuilder) Section(sections ...*SectionBuilder) *EditingBuilder {
+	for _, sb := range sections {
+		if sb.isList {
+			panic("list section can not in edit")
+		}
+		if sb.isUsed {
+			panic("section is used")
+		}
+		sb.isUsed = true
+		sb.registerEvent()
+		sb.isEdit = true
+
+		sb.WrapSaveBtnFunc(func(in ObjectBoolFunc) ObjectBoolFunc {
+			return func(obj interface{}, ctx *web.EventContext) bool {
+				return false
+			}
+		})
+
+		sb.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return web.Portal(
+				sb.editComponent(obj, field, ctx),
+			).Name(sb.FieldPortalName())
+		})
+
+		b.Field(sb.name).Component(sb).
+			SetterFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) (err error) {
+				err = sb.unmarshalFunc(ctx, obj)
+				return err
+			})
+	}
+
+	return b
+}

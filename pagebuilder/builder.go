@@ -111,7 +111,6 @@ type Builder struct {
 }
 
 const (
-	selectTemplateEvent = "selectTemplateEvent"
 	// clearTemplateEvent               = "clearTemplateEvent"
 	republishRelatedOnlinePagesEvent = "republish_related_online_pages"
 
@@ -948,14 +947,24 @@ func (b *ContainerBuilder) setFieldsLazyWrapComponentFunc(fields *presets.Fields
 					return h.Div(comp).Attr("v-on-mounted", fmt.Sprintf(`({el,window})=>{
 		const refName = "%s";
 		vars.__currentFocusUpdating = false;
+		vars.__currentFocusPos = 0
+		el.__handelSection = (event)=>{
+		const editor = event.target.editor
+		if (editor){
+			vars.__currentFocusPos = editor.state.doc.content.size - editor.state.selection.from
+			}else{
+				vars.__currentFocusPos = event.target.value.length - event.target.selectionStart
+			}
+		vars.__currentFocusPos *=-1	
+		}
 		el.__handleFocusIn=()=>{
 			vars.__currentFocusRefName = refName;
 		};
 		el.__handleFocusOut=(event)=>{
+			el.__handelSection(event);
 			if(vars.__currentFocusUpdating){return}
 			vars.__currentFocusRefName ="";
 		};
-
 		el.addEventListener("focusin",el.__handleFocusIn);
 		el.addEventListener("focusout",el.__handleFocusOut);
 	   }`, formKey)).Attr("v-on-unmounted", `({el})=>{
@@ -1004,9 +1013,14 @@ func (b *ContainerBuilder) Install() {
 				const newAddRowBtn = window.document.getElementById(addRowBtnID);
 				newAddRowBtn.scrollIntoView({ behavior: 'smooth', block: 'end' });
 				}
-				 const __currentFocusRefName = $refs[vars.__currentFocusRefName];
-                 if(!__currentFocusRefName || typeof __currentFocusRefName.focus != 'function'){return}
-				  __currentFocusRefName.focus();	
+				 const __currentFocusRef = $refs[vars.__currentFocusRefName];	
+  				 const pos = vars.__currentFocusPos;
+                 if(!__currentFocusRef || typeof __currentFocusRef.focus != 'function'){return}
+				  window.setTimeout(()=>{
+				__currentFocusRef.focus();
+				const size =__currentFocusRef.editor?__currentFocusRef.editor.state.doc.content.size :__currentFocusRef.value.length;
+				__currentFocusRef.setSelectionRange(size+pos,size+pos);
+			},0)
 			}`, addRowBtnID)),
 			web.Listen(
 				b.mb.NotifRowUpdated(),
@@ -1269,8 +1283,6 @@ func (b *ContainerBuilder) firstOrCreate(localeCodes []string) (err error) {
 		}
 		return
 	})
-
-	return
 }
 
 func republishRelatedOnlinePages(pageURL string) web.EventFunc {

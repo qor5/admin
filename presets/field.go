@@ -35,18 +35,23 @@ type FieldContext struct {
 
 func (fc *FieldContext) StringValue(obj interface{}) (r string) {
 	val := fc.Value(obj)
-	switch vt := val.(type) {
-	case []rune:
-		return string(vt)
-	case []byte:
-		return string(vt)
-	case time.Time:
-		return vt.Format("2006-01-02 15:04:05")
-	case *time.Time:
-		if vt == nil {
-			return ""
+	if val != nil {
+		switch vt := val.(type) {
+		case []rune:
+			return string(vt)
+		case []byte:
+			return string(vt)
+		case time.Time:
+			if vt.IsZero() {
+				return ""
+			}
+			return vt.Format("2006-01-02 15:04:05")
+		case *time.Time:
+			if vt.IsZero() {
+				return ""
+			}
+			return vt.Format("2006-01-02 15:04:05")
 		}
-		return vt.Format("2006-01-02 15:04:05")
 	}
 	return fmt.Sprint(val)
 }
@@ -75,7 +80,7 @@ type FieldsBuilder struct {
 type FieldBuilder struct {
 	NameLabel
 	hidden              bool
-	compFunc            FieldComponentFunc
+	comp                FieldComponentInterface
 	lazyWrapCompFunc    func(in FieldComponentFunc) FieldComponentFunc
 	setterFunc          FieldSetterFunc
 	lazyWrapSetterFunc  func(in FieldSetterFunc) FieldSetterFunc
@@ -84,6 +89,25 @@ type FieldBuilder struct {
 	nestedFieldsBuilder *FieldsBuilder
 	tabFieldsBuilders   *TabsFieldBuilder
 	plugins             []FieldPlugin
+}
+
+type FieldComponentInterface interface {
+	FieldComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent
+}
+
+func (f FieldComponentFunc) FieldComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	return f(obj, field, ctx)
+}
+
+func (b *FieldBuilder) GetComponent() FieldComponentInterface {
+	return b.comp
+}
+
+func (b *FieldBuilder) GetCompFunc() FieldComponentFunc {
+	if b.comp == nil {
+		return nil
+	}
+	return b.comp.FieldComponent
 }
 
 func (b *FieldsBuilder) appendNewFieldWithName(name string) (r *FieldBuilder) {
@@ -116,10 +140,6 @@ func (b *FieldsBuilder) NewFieldWithName(name string) (r *FieldBuilder) {
 	return
 }
 
-func (b *FieldBuilder) GetCompFunc() FieldComponentFunc {
-	return b.compFunc
-}
-
 func (b *FieldBuilder) Label(v string) (r *FieldBuilder) {
 	b.label = v
 	return b
@@ -129,7 +149,7 @@ func (b *FieldBuilder) Clone() (r *FieldBuilder) {
 	r = &FieldBuilder{}
 	r.name = b.name
 	r.label = b.label
-	r.compFunc = b.compFunc
+	r.comp = b.comp
 	r.lazyWrapCompFunc = b.lazyWrapCompFunc
 	r.setterFunc = b.setterFunc
 	r.lazyWrapSetterFunc = b.lazyWrapSetterFunc
@@ -145,7 +165,15 @@ func (b *FieldBuilder) ComponentFunc(v FieldComponentFunc) (r *FieldBuilder) {
 	if v == nil {
 		panic("value required")
 	}
-	b.compFunc = v
+	b.comp = v
+	return b
+}
+
+func (b *FieldBuilder) Component(v FieldComponentInterface) (r *FieldBuilder) {
+	if v == nil {
+		panic("value required")
+	}
+	b.comp = v
 	return b
 }
 
@@ -170,11 +198,11 @@ func (b *FieldBuilder) LazyWrapComponentFunc(w func(in FieldComponentFunc) Field
 	return b
 }
 
-func (b *FieldBuilder) lazyCompFunc() FieldComponentFunc {
+func (b *FieldBuilder) lazyCompFunc() FieldComponentInterface {
 	if b.lazyWrapCompFunc == nil {
-		return b.compFunc
+		return b.GetCompFunc()
 	}
-	return b.lazyWrapCompFunc(b.compFunc)
+	return b.lazyWrapCompFunc(b.comp.FieldComponent)
 }
 
 func (b *FieldBuilder) SetterFunc(v FieldSetterFunc) (r *FieldBuilder) {
@@ -291,8 +319,9 @@ func (b *FieldBuilder) AppendTabs(fb *FieldBuilder) (r *FieldBuilder) {
 	if b.tabFieldsBuilders == nil {
 		b.tabFieldsBuilders = NewTabsFieldBuilder()
 	}
-	b.tabFieldsBuilders.AppendTabField(fb.name, fb.label, fb.compFunc)
+	b.tabFieldsBuilders.AppendTabField(fb.name, fb.label, fb.GetCompFunc())
 	b.ComponentFunc(b.tabFieldsBuilders.ComponentFunc())
+	fb.hidden = true
 	return b
 }
 
@@ -594,7 +623,7 @@ func (b *FieldsBuilder) getLabel(field NameLabel) (r string) {
 
 func (b *FieldsBuilder) getFieldOrDefault(name string) (r *FieldBuilder) {
 	r = b.GetField(name)
-	if r.compFunc == nil {
+	if r.comp == nil {
 		if b.defaults == nil {
 			panic("field defaults must be provided")
 		}
@@ -868,7 +897,7 @@ func (b *FieldsBuilder) fieldToComponentWithFormValueKey(info *ModelInfo, obj in
 			disabled = info.Verifier().Do(PermCreate).ObjectOn(obj).SnakeOn("f_"+f.name).WithReq(ctx.R).IsAllowed() != nil
 		}
 	}
-	return f.lazyCompFunc()(obj, &FieldContext{
+	return f.lazyCompFunc().FieldComponent(obj, &FieldContext{
 		ModelInfo:           info,
 		Name:                f.name,
 		FormKey:             contextKeyPath,
