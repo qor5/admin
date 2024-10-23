@@ -47,6 +47,7 @@ type ModelBuilder struct {
 	ignoredFields []string                     // ignored fields
 	typeHandlers  map[reflect.Type]TypeHandler // type handlers
 	link          func(any) string             // display the model link on the admin detail page
+	beforeCreate  func(ctx context.Context, log *ActivityLog) error
 }
 
 // @snippet_end
@@ -394,6 +395,11 @@ func (mb *ModelBuilder) IgnoredFields(fields ...string) *ModelBuilder {
 	return mb
 }
 
+func (mb *ModelBuilder) BeforeCreate(f func(ctx context.Context, log *ActivityLog) error) *ModelBuilder {
+	mb.beforeCreate = f
+	return mb
+}
+
 func (mb *ModelBuilder) AddTypeHanders(v any, f TypeHandler) *ModelBuilder {
 	if mb.typeHandlers == nil {
 		mb.typeHandlers = map[reflect.Type]TypeHandler{}
@@ -537,6 +543,12 @@ func (mb *ModelBuilder) create(
 		return nil, errors.Wrap(err, "failed to marshal detail")
 	}
 	log.Detail = string(detailJson)
+
+	if mb.beforeCreate != nil {
+		if err := mb.beforeCreate(ctx, log); err != nil {
+			return nil, errors.Wrap(err, "failed to run before create")
+		}
+	}
 
 	if action == ActionLastView {
 		log.Hidden = true

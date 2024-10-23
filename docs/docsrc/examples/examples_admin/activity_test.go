@@ -620,3 +620,62 @@ func TestActivityAdmin(t *testing.T) {
 		})
 	}
 }
+
+func TestActivityBeforeCreate(t *testing.T) {
+	pb := presets.New()
+	activityExample(pb, TestDB, func(mb *presets.ModelBuilder, ab *activity.Builder) {
+		pb.Use(ab)
+
+		ab.MustGetModelBuilder(mb).BeforeCreate(func(ctx context.Context, log *activity.ActivityLog) error {
+			log.ModelName = log.ModelName + "_BeforeCreate"
+			log.ModelLabel = log.ModelLabel + "_BeforeCreate"
+			return nil
+		})
+	})
+
+	dbr, _ := TestDB.DB()
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "Edit a item",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				activityData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/with-activity-products?__execute_event__=section_save_Content&id=22").
+					AddField("Content.Title", "Jordan 1 Retro High").
+					AddField("Content.Code", "10011").
+					AddField("Content.Approved", "false").
+					AddField("Content.Edited", "false").
+					AddField("Content.Price", "252").
+					AddField("Content.StockedAt", "").
+					AddField("Content.AppovedAt", "").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"PresetsNotifModelsUpdatedexamplesAdminWithActivityProduct"},
+		},
+		{
+			Name:  "Index Page",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return httptest.NewRequest("GET", "/activity-logs?lang=zh", nil)
+			},
+			ExpectPageBodyContainsInOrder: []string{
+				"操作日志列表",
+				"全部", "创建", "编辑", "删除", "备注",
+				"<vx-filter", "操作类型", "操作时间", "操作人", "操作对象", "</vx-filter>",
+				"日期时间", "操作者", "操作", "表的主键值", "菜单名", "表名",
+				"_BeforeCreate", "_BeforeCreate",
+				"<div", "<v-btn", "mdi-chevron-left", "<v-btn", "mdi-chevron-right", "</div>",
+			},
+			ExpectPageBodyNotContains: []string{"v-pagination"},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}
