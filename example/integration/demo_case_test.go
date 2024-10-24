@@ -62,7 +62,8 @@ func TestDemoCase(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPageBodyContainsInOrder: []string{"vx-field",
+			ExpectPageBodyContainsInOrder: []string{
+				"vx-field",
 				"&#34;121231321&amp;&amp;&#34;",
 				"vx-field(type textarea)",
 				"vx-field(type password)",

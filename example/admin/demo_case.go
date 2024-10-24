@@ -71,6 +71,7 @@ func (c *FieldData) Scan(value interface{}) error {
 	}
 	return nil
 }
+
 func (c *FieldData) Value() (driver.Value, error) {
 	return json.Marshal(c)
 }
@@ -81,6 +82,7 @@ func (c *FieldTextareaData) Scan(value interface{}) error {
 	}
 	return nil
 }
+
 func (c *FieldTextareaData) Value() (driver.Value, error) {
 	return json.Marshal(c)
 }
@@ -88,12 +90,14 @@ func (c *FieldTextareaData) Value() (driver.Value, error) {
 func (c *FieldPasswordData) Value() (driver.Value, error) {
 	return json.Marshal(c)
 }
+
 func (c *FieldPasswordData) Scan(value interface{}) error {
 	if bytes, ok := value.([]byte); ok {
 		return json.Unmarshal(bytes, c)
 	}
 	return nil
 }
+
 func (c *FieldNumberData) Scan(value interface{}) error {
 	if bytes, ok := value.([]byte); ok {
 		return json.Unmarshal(bytes, c)
@@ -242,6 +246,7 @@ func configVxField(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder
 		})
 	detailing.Section(section)
 }
+
 func configVxFieldArea(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder) {
 	sectionName := "FieldTextareaSection"
 	editField := "FieldTextareaData"
@@ -290,6 +295,7 @@ func configVxFieldArea(detailing *presets.DetailingBuilder, mb *presets.ModelBui
 		})
 	detailing.Section(section)
 }
+
 func configVxFieldPassword(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder) {
 	sectionName := "FieldPasswordSection"
 	editField := "FieldPasswordData"
@@ -383,7 +389,6 @@ func configVxFieldNumber(detailing *presets.DetailingBuilder, mb *presets.ModelB
 						Tips("Number tips").
 						Clearable(true).
 						Type("number"),
-
 				),
 			)
 		})
@@ -656,7 +661,6 @@ func dialogActivator(btn, label, text, color string) *vx.VXDialogBuilder {
 func avatarView[T comparable](sizes []T, show func(T) string) (comps []h.HTMLComponent) {
 	for _, size := range sizes {
 		comps = append(comps, h.Components(h.Div(h.Text(show(size))).Class("mb-2"), vx.VXAvatar().Name("ShaoXing").Size(fmt.Sprint(size))))
-
 	}
 	return
 }
@@ -665,7 +669,6 @@ func configVxAvatar(detailing *presets.DetailingBuilder, mb *presets.ModelBuilde
 	label := "vx-avatar"
 	sectionName := "AvatarSection"
 	section := presets.NewSectionBuilder(mb, sectionName).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-
 		return web.Scope(
 			h.Div(
 				h.Div(
@@ -681,7 +684,6 @@ func configVxAvatar(detailing *presets.DetailingBuilder, mb *presets.ModelBuilde
 						return fmt.Sprintf("%vpx", s)
 					})...,
 				),
-
 			).Class("section-wrap with-border-b"),
 		).VSlot("{locals}").Init("{dialogVisible:false}")
 	})
