@@ -199,14 +199,15 @@ func TestDemoCase(t *testing.T) {
 					PageURL("/demo-cases/1").
 					EventFunc("section_save_FieldNumberSection").
 					Query(presets.ParamID, "1").
-					AddField("FieldNumberSection.FieldNumberData.Number", "20").
+					AddField("FieldNumberSection.FieldNumberData.Number", "0").
+					AddField("FieldNumberSection.FieldNumberData.NumberValidate", "20").
 					BuildEventFuncRequest()
 				return req
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
 				m := admin.DemoCase{}
 				TestDB.Order("id desc").First(&m, 1)
-				if m.FieldNumberData.Number != 20 {
+				if m.FieldNumberData.NumberValidate != 20 {
 					t.Fatalf("Update Demo Case Field Failed: %v", m.FieldNumberData)
 				}
 				return
@@ -221,7 +222,8 @@ func TestDemoCase(t *testing.T) {
 					PageURL("/demo-cases/1").
 					EventFunc("section_save_FieldNumberSection").
 					Query(presets.ParamID, "1").
-					AddField("FieldNumberSection.FieldNumberData.Number", "0").
+					AddField("FieldNumberSection.FieldNumberData.Number", "20").
+					AddField("FieldNumberSection.FieldNumberData.NumberValidate", "0").
 					BuildEventFuncRequest()
 				return req
 			},
