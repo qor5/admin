@@ -62,7 +62,18 @@ func TestDemoCase(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPageBodyContainsInOrder: []string{"vx-field", "&#34;121231321&amp;&amp;&#34;", "vx-select", "vx-checkbox", "vx-datepicker", "vx-dialog"},
+			ExpectPageBodyContainsInOrder: []string{
+				"vx-field",
+				"&#34;121231321&amp;&amp;&#34;",
+				"vx-field(type textarea)",
+				"vx-field(type password)",
+				"vx-field(type number)",
+				"vx-select",
+				"vx-checkbox",
+				"vx-datepicker",
+				"vx-dialog",
+				"vx-avatar",
+			},
 		},
 		{
 			Name:  "Demo Case Field Save",
@@ -74,23 +85,21 @@ func TestDemoCase(t *testing.T) {
 					EventFunc("section_save_FieldSection").
 					Query(presets.ParamID, "1").
 					AddField("FieldSection.FieldData.Text", "123").
-					AddField("FieldSection.FieldData.Textarea", "456").
 					AddField("FieldSection.FieldData.TextValidate", "12345").
-					AddField("FieldSection.FieldData.TextareaValidate", "1234567890").
 					BuildEventFuncRequest()
 				return req
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
 				m := admin.DemoCase{}
 				TestDB.Order("id desc").First(&m, 1)
-				if m.FieldData.Text != "123" {
+				if m.FieldData.TextValidate != "12345" {
 					t.Fatalf("Update Demo Case Field Failed: %v", m.FieldData)
 				}
 				return
 			},
 		},
 		{
-			Name:  "Demo Case Field TextValidate",
+			Name:  "Demo Case Field Validate",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				demoCaseData.TruncatePut(dbr)
@@ -99,31 +108,126 @@ func TestDemoCase(t *testing.T) {
 					EventFunc("section_save_FieldSection").
 					Query(presets.ParamID, "1").
 					AddField("FieldSection.FieldData.Text", "123").
-					AddField("FieldSection.FieldData.Textarea", "456").
 					AddField("FieldSection.FieldData.TextValidate", "1234").
-					AddField("FieldSection.FieldData.TextareaValidate", "1234567890").
 					BuildEventFuncRequest()
 				return req
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"input more than 5 chars"},
 		},
 		{
-			Name:  "Demo Case Field TextareaValidate",
+			Name:  "Demo Case FieldTextarea Save",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				demoCaseData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/demo-cases/1").
-					EventFunc("section_save_FieldSection").
+					EventFunc("section_save_FieldTextareaSection").
 					Query(presets.ParamID, "1").
-					AddField("FieldSection.FieldData.Text", "123").
-					AddField("FieldSection.FieldData.Textarea", "456").
-					AddField("FieldSection.FieldData.TextValidate", "12345").
-					AddField("FieldSection.FieldData.TextareaValidate", "123456789").
+					AddField("FieldTextareaSection.FieldTextareaData.Textarea", "456").
+					AddField("FieldTextareaSection.FieldTextareaData.TextareaValidate", "1234567890").
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				m := admin.DemoCase{}
+				TestDB.Order("id desc").First(&m, 1)
+				if m.FieldTextareaData.TextareaValidate != "1234567890" {
+					t.Fatalf("Update Demo Case Field Failed: %v", m.FieldTextareaData)
+				}
+				return
+			},
+		},
+		{
+			Name:  "Demo Case FieldTextarea Validate",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				demoCaseData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/demo-cases/1").
+					EventFunc("section_save_FieldTextareaSection").
+					Query(presets.ParamID, "1").
+					AddField("FieldTextareaSection.FieldTextData.Textarea", "1234").
+					AddField("FieldTextareaSection.FieldTextData.TextareaValidate", "1234").
 					BuildEventFuncRequest()
 				return req
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"input more than 10 chars"},
+		},
+		{
+			Name:  "Demo Case FieldPassword Save",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				demoCaseData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/demo-cases/1").
+					EventFunc("section_save_FieldPasswordSection").
+					Query(presets.ParamID, "1").
+					AddField("FieldPasswordSection.FieldPasswordData.Password", "12345").
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				m := admin.DemoCase{}
+				TestDB.Order("id desc").First(&m, 1)
+				if m.FieldPasswordData.Password != "12345" {
+					t.Fatalf("Update Demo Case Field Failed: %v", m.FieldPasswordData)
+				}
+				return
+			},
+		},
+		{
+			Name:  "Demo Case FieldPassword Validate",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				demoCaseData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/demo-cases/1").
+					EventFunc("section_save_FieldPasswordSection").
+					Query(presets.ParamID, "1").
+					AddField("FieldPasswordSection.FieldPasswordData.Password", "1234").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"password more than 5 chars"},
+		},
+		{
+			Name:  "Demo Case FieldNumber Save",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				demoCaseData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/demo-cases/1").
+					EventFunc("section_save_FieldNumberSection").
+					Query(presets.ParamID, "1").
+					AddField("FieldNumberSection.FieldNumberData.Number", "0").
+					AddField("FieldNumberSection.FieldNumberData.NumberValidate", "20").
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				m := admin.DemoCase{}
+				TestDB.Order("id desc").First(&m, 1)
+				if m.FieldNumberData.NumberValidate != 20 {
+					t.Fatalf("Update Demo Case Field Failed: %v", m.FieldNumberData)
+				}
+				return
+			},
+		},
+		{
+			Name:  "Demo Case FieldNumber Validate",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				demoCaseData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/demo-cases/1").
+					EventFunc("section_save_FieldNumberSection").
+					Query(presets.ParamID, "1").
+					AddField("FieldNumberSection.FieldNumberData.Number", "20").
+					AddField("FieldNumberSection.FieldNumberData.NumberValidate", "0").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"input greater than 0"},
 		},
 		{
 			Name:  "Demo Case Select Save",
