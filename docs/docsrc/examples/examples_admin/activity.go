@@ -56,7 +56,6 @@ func activityExample(b *presets.Builder, db *gorm.DB, customize func(mb *presets
 	}
 
 	mb := b.Model(&WithActivityProduct{})
-	defer func() { ab.RegisterModel(mb) }()
 	mb.Listing("Title", activity.ListFieldNotes, "Code", "Price", "StockedAt", "AppovedAt")
 	dp := mb.Detailing("Content").Drawer(true)
 	contentSection := presets.NewSectionBuilder(mb, "Content").Editing("Title", "Code", "Approved", "Edited", "Price", "StockedAt", "AppovedAt")
@@ -64,6 +63,8 @@ func activityExample(b *presets.Builder, db *gorm.DB, customize func(mb *presets
 	dp.SidePanelFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		return ab.MustGetModelBuilder(mb).NewTimelineCompo(ctx, obj, "_side")
 	})
+
+	ab.RegisterModel(mb)
 	// @snippet_end
 
 	if customize != nil {
