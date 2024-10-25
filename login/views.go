@@ -242,23 +242,40 @@ func DefaultLoginPageX(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 			)
 		}
 
+		var langCompo HTMLComponent
+		if len(langs) > 0 {
+			ctx.Injector.HeadHTML(`
+			<style>
+				.transparent-language-select.vx-select-wrap .v-input .v-field {
+					background-color: transparent;
+				}
+				.transparent-language-select.vx-select-wrap .v-input .v-field .v-select__selection-text {
+					font-size: 14px !important;
+					font-weight: 400;
+				}
+				.transparent-language-select.vx-select-wrap .v-input .v-field .v-field__outline {
+					display: none;
+				}
+			</style>
+			`)
+			langCompo = web.Scope().VSlot(" { locals : selectLocals } ").Init(fmt.Sprintf(`{currLangVal: '%s'}`, currLangVal)).Children(
+				vx.VXSelect().Class("transparent-language-select").
+					Items(langs).
+					ItemTitle("Label").
+					ItemValue("Value").
+					Attr("v-model", `selectLocals.currLangVal`).
+					Attr("@update:model-value", web.Plaid().MergeQuery(true).Query(qn, web.Var("selectLocals.currLangVal")).PushState(true).Go()),
+			)
+		}
+
 		rightCompo := VCol().Cols(12).Md(6).Class("d-flex flex-column justify-center align-center").Children(
 			Div().Class("d-flex flex-column pa-4").Style("max-width: 455px; width: 100%").Children(
-				Div().Class("d-flex flex-row justify-end ga-2 mb-5").Children(
-					Div().Class("hidden-lg-and-up").Children(
+				Div().Class("d-flex flex-row align-center ga-2 mb-5").Children(
+					Div().Class("hidden-lg-and-up mb-4").Children(
 						logoCompo(),
 					),
 					VSpacer(),
-					If(len(langs) > 0,
-						web.Scope().VSlot(" { locals : selectLocals } ").Init(fmt.Sprintf(`{currLangVal: '%s'}`, currLangVal)).Children(
-							vx.VXSelect().
-								Items(langs).
-								ItemTitle("Label").
-								ItemValue("Value").
-								Attr("v-model", `selectLocals.currLangVal`).
-								Attr("@update:model-value", web.Plaid().MergeQuery(true).Query(qn, web.Var("selectLocals.currLangVal")).PushState(true).Go()),
-						),
-					),
+					langCompo,
 				),
 				// TODO: customize
 				Div().Text("Welcome to").Class("mb-4 text-h4"),
@@ -271,7 +288,8 @@ func DefaultLoginPageX(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 		r.PageTitle = msgr.LoginPageTitle
 		r.Body = Components(
 			DefaultViewCommon.Notice(vh, msgr, ctx.W, ctx.R),
-			VRow().Class("fill-height justify-center").NoGutters(true).Children(
+			VRow().NoGutters(true).
+				Attr(":class", "$vuetify.display.mdAndDown ? 'fill-height justify-center bg-grey-lighten-5':'fill-height justify-center'").Children(
 				leftCompo,
 				rightCompo,
 			),
