@@ -511,7 +511,7 @@ func configVxDialog(detailing *presets.DetailingBuilder, mb *presets.ModelBuilde
 	section := presets.NewSectionBuilder(mb, sectionName).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		text := "This is an info description line This is an info description lineThis is an info description lineThis is an info description lineThis is an info description line"
 		textLarge := text
-		for i := 0; i < 5; i++ {
+		for i := 0; i < 30; i++ {
 			textLarge += text
 		}
 		return web.Scope(
@@ -528,28 +528,46 @@ func configVxDialog(detailing *presets.DetailingBuilder, mb *presets.ModelBuilde
 							Title("ModelValue").
 							Text(text),
 					),
-					dialogActivator("Open Dialog", "Activator Slot(HideClose)", text, v.ColorSecondary).HideClose(true).
-						OkText("✅").CancelText("❌"),
+					dialogActivator("Open Dialog", "Activator Slot", text, v.ColorSecondary).Title("Conform"),
 				),
 
 				cardRows("Type", 5,
-					dialogActivator("Open Dialog", "Info(HideCancel)", text, v.ColorInfo).Type("info").
-						HideCancel(true).
+					dialogActivator("Open Dialog", "Default", text, v.ColorSecondary).
+						Title("Default"),
+					dialogActivator("Open Dialog", "Info", text, v.ColorInfo).Type("info").
 						Title("Info"),
-					dialogActivator("Open Dialog", "Success(HideOk)", text, v.ColorSuccess).Type("success").
-						HideOk(true).
+					dialogActivator("Open Dialog", "Success", text, v.ColorSuccess).Type("success").
 						Title("Success"),
-					dialogActivator("Open Dialog", "Warning(HideFooter)", text, v.ColorWarning).Type("warn").
-						HideFooter(true).
+					dialogActivator("Open Dialog", "Warning", text, v.ColorWarning).Type("warn").
 						Title("Warning"),
-					dialogActivator("Open Dialog", "Error(DisableOk)", text, v.ColorError).Type("error").
-						DisableOk(true).
+					dialogActivator("Open Dialog", "Error", text, v.ColorError).Type("error").
 						Title("Error"),
 				),
 				cardRows("Size", 5,
-					dialogActivator("Open Dialog", "Large", text, v.ColorSecondary).Size("large"),
-					dialogActivator("Open Dialog", "Custom Width", textLarge, v.ColorSecondary).Width(200),
-					dialogActivator("Open Dialog", "Custom Height", text, v.ColorSecondary).Height(400),
+					dialogActivator("Open Dialog", "Default", text, v.ColorSecondary).Title("Confirm"),
+					dialogActivator("Open Dialog", "Large", text, v.ColorSecondary).Title("Confirm").Size("large"),
+					dialogActivator("Open Dialog", "Custom Width", text, v.ColorSecondary).Title("Confirm").Width(1200),
+					dialogActivator("Open Dialog", "Content Scroll Bar(Custom Height)", textLarge, v.ColorSecondary).Size("large").Title("Confirm").Height(400),
+					dialogActivator("Open Dialog", "Content Scroll Bar", textLarge, v.ColorSecondary).Title("Confirm").Width(300),
+				),
+				cardRows("Button&Event", 2,
+					dialogActivator("Open Dialog", "Custom Event", text, v.ColorSecondary).Title("Confirm").
+						Attr("@click:ok", presets.ShowSnackbarScript("click ok", v.ColorSuccess)).
+						Attr("@click:cancel", presets.ShowSnackbarScript("click cancel", v.ColorWarning)),
+					dialogActivator("Open Dialog", "Custom Button Text", text, v.ColorSecondary).Title("Confirm").
+						CancelText("取消").OkText("确定"),
+				),
+				cardRows("Hide&Show", 5,
+					dialogActivator("Open Dialog", "HideCancel", text, v.ColorSecondary).Title("Confirm").
+						HideCancel(true),
+					dialogActivator("Open Dialog", "HideOk", text, v.ColorSecondary).Title("Confirm").
+						HideOk(true),
+					dialogActivator("Open Dialog", "HideClose", text, v.ColorSecondary).Title("Confirm").
+						HideClose(true),
+					dialogActivator("Open Dialog", "HideFooter", text, v.ColorSecondary).Title("Confirm").
+						HideFooter(true),
+					dialogActivator("Open Dialog", "DisableOk", text, v.ColorSecondary).Title("Confirm").
+						DisableOk(true),
 				),
 			).Class("section-wrap with-border-b"),
 		).VSlot("{locals}").Init("{dialogVisible:false}")
