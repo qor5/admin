@@ -144,10 +144,7 @@ func initLoginSessionBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Buil
 				return nil
 			}
 		}).TOTP(false).MaxRetryCount(0)
-
-	// loginBuilder.LoginPageFunc(loginPage(loginBuilder.ViewHelper(), pb))
-
-	loginBuilder.LoginPageFunc(plogin.DefaultLoginPageX(loginBuilder.ViewHelper(), pb))
+	loginBuilder.LoginPageFunc(plogin.NewAdvancedLoginPage(nil)(loginBuilder.ViewHelper(), pb))
 
 	genInitialUser(db)
 
