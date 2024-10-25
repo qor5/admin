@@ -69,7 +69,7 @@ func NewSectionBuilder(mb *ModelBuilder, name string) (r *SectionBuilder) {
 	r.editingFB.defaults = mb.writeFields.defaults
 	r.viewingFB.Model(mb.model)
 	r.viewingFB.defaults = mb.p.detailFieldDefaults
-	r.setter = r.defaultUnmarshalFunc
+	//r.setter = r.defaultUnmarshalFunc
 	// d.Field(name).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	// 	panic("you must set ViewComponentFunc and EditComponentFunc if you want to use SectionsBuilder")
 	// })
@@ -236,7 +236,6 @@ func (b *SectionBuilder) IsList(v interface{}) (r *SectionBuilder) {
 	r = b
 	r.editingFB.Model(v)
 	r.isList = true
-	r.setter = r.defaultListUnmarshalFunc
 	r.elementUnmarshaler = r.DefaultElementUnmarshal()
 
 	return
@@ -248,7 +247,7 @@ func (b *SectionBuilder) Editing(fields ...interface{}) (r *SectionBuilder) {
 	b.editingFB = *b.editingFB.Only(fields...)
 	if b.componentEditFunc == nil {
 		b.EditComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return b.editingFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, b.name, ctx)
+			return b.editingFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, "", ctx)
 		})
 	}
 	if b.isList {
@@ -267,13 +266,13 @@ func (b *SectionBuilder) Viewing(fields ...interface{}) (r *SectionBuilder) {
 	b.viewingFB = *b.viewingFB.Only(fields...)
 	if b.componentViewFunc == nil {
 		b.ViewComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return b.viewingFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, b.name, ctx)
+			return b.viewingFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, "", ctx)
 		})
 	}
 	if b.isList {
 		if b.elementViewFunc == nil {
 			b.ElementShowComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-				return b.viewingFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, field.FormKey, ctx)
+				return b.viewingFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, "", ctx)
 			})
 		}
 	}
@@ -875,25 +874,27 @@ func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, ctx *we
 
 func (b *SectionBuilder) DefaultElementUnmarshal() func(toObj, formObj any, prefix string, ctx *web.EventContext) error {
 	return func(toObj, formObj any, prefix string, ctx *web.EventContext) (err error) {
-		if tf := reflect.TypeOf(toObj).Kind(); tf != reflect.Ptr {
-			return fmt.Errorf("model %#+v must be pointer", toObj)
-		}
-		oldForm := &multipart.Form{
-			Value: (map[string][]string)(http.Header(ctx.R.MultipartForm.Value).Clone()),
-		}
-		newForm := &multipart.Form{
-			Value: make(map[string][]string),
-		}
-		// prefix.key => key
-		for k, v := range oldForm.Value {
-			if strings.HasPrefix(k, prefix+".") {
-				newForm.Value[strings.TrimPrefix(k, prefix+".")] = v
+		if b.isList {
+			if tf := reflect.TypeOf(toObj).Kind(); tf != reflect.Ptr {
+				return fmt.Errorf("model %#+v must be pointer", toObj)
 			}
+			oldForm := &multipart.Form{
+				Value: (map[string][]string)(http.Header(ctx.R.MultipartForm.Value).Clone()),
+			}
+			newForm := &multipart.Form{
+				Value: make(map[string][]string),
+			}
+			// prefix.key => key
+			for k, v := range oldForm.Value {
+				if strings.HasPrefix(k, prefix+".") {
+					newForm.Value[strings.TrimPrefix(k, prefix+".")] = v
+				}
+			}
+			ctx2 := &web.EventContext{R: new(http.Request)}
+			ctx2.R.MultipartForm = newForm
+			ctx = ctx2
 		}
-		ctx2 := &web.EventContext{R: new(http.Request)}
-		ctx2.R.MultipartForm = newForm
-
-		_ = ctx2.UnmarshalForm(formObj)
+		_ = ctx.UnmarshalForm(formObj)
 		for _, f := range b.editingFB.fields {
 			name := f.name
 			info := b.mb.modelInfo
@@ -1033,14 +1034,12 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 		return
 	}
 
-	if Verr := b.mb.editing.Unmarshal(obj, b.mb.Info(), true, ctx); Verr.HaveErrors() {
+	if Verr := b.editingFB.Unmarshal(obj, b.mb.Info(), true, ctx); Verr.HaveErrors() {
 		ShowMessage(&r, Verr.Error(), "warning")
-		return r, nil
+		return
 	}
-	if !b.isEdit {
-		if b.setter != nil {
-			b.setter(obj, ctx)
-		}
+	if b.setter != nil {
+		b.setter(obj, ctx)
 	}
 
 	needSave := true
@@ -1159,14 +1158,31 @@ func (b *SectionBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Event
 		return
 	}
 
-	if Verr := b.mb.editing.Unmarshal(obj, b.mb.Info(), true, ctx); Verr.HaveErrors() {
+	listObj := reflect.ValueOf(reflectutils.MustGet(obj, b.name))
+	if !listObj.IsValid() || listObj.Len() == int(index) {
+		b.appendElement(obj)
+		listObj = reflect.ValueOf(reflectutils.MustGet(obj, b.name))
+	}
+	elementObj := listObj.Index(int(index)).Interface()
+	newForm := new(multipart.Form)
+	newForm.Value = make(map[string][]string)
+	for key, val := range ctx.R.MultipartForm.Value {
+		prefix := fmt.Sprintf("%s[%d].", b.name, index)
+		if strings.HasPrefix(key, prefix) {
+			newForm.Value[strings.TrimPrefix(key, prefix)] = val
+		}
+	}
+	oldForm := ctx.R.MultipartForm
+	ctx.R.MultipartForm = newForm
+	if Verr := b.editingFB.Unmarshal(elementObj, b.mb.Info(), true, ctx); Verr.HaveErrors() {
 		ShowMessage(&r, Verr.Error(), "warning")
 		return r, nil
 	}
-	if !b.isEdit {
-		if b.setter != nil {
-			b.setter(obj, ctx)
-		}
+	ctx.R.MultipartForm = oldForm
+	listObj.Index(int(index)).Set(reflect.ValueOf(elementObj))
+
+	if b.setter != nil {
+		b.setter(obj, ctx)
 	}
 
 	needSave := true

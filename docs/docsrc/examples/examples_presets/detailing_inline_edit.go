@@ -355,7 +355,7 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 
 	cust = b.Model(&Customer{})
 	// section will use Editing().ValidateFunc() as validateFunc default
-	cust.Editing().ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+	cust.Editing("name_section", "email_section").ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		customer := obj.(*Customer)
 		if len(customer.Name) > 6 {
 			err.FieldError("name_section.Name", "customer name must no longer than 6")
@@ -394,7 +394,7 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 		return v.VTextField().
 			Variant(v.VariantOutlined).
 			Density(v.DensityCompact).
-			Attr(web.VField("name_section.Name", customer.Name)...).
+			Attr(web.VField("Name", customer.Name)...).
 			ErrorMessages(vErr.GetFieldErrors("name_section.Name")...)
 	})
 
@@ -410,11 +410,11 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 			return v.VTextField().
 				Variant(v.VariantOutlined).
 				Density(v.DensityCompact).
-				Attr(web.VField("email_section.Email", customer.Name)...).
+				Attr(web.VField("Email", customer.Name)...).
 				ErrorMessages(vErr.GetFieldErrors("email_section.Email")...)
 		})
 
-	cardsSection := presets.NewSectionBuilder(cust, "CreditCards").IsList(&CreditCard{}).Editing("Name").
+	cardsSection := presets.NewSectionBuilder(cust, "CreditCards").IsList(&CreditCard{}).Editing("CreditCards").
 		ElementEditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			card := obj.(*CreditCard)
 			var errText []string
