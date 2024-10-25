@@ -69,7 +69,7 @@ func NewSectionBuilder(mb *ModelBuilder, name string) (r *SectionBuilder) {
 	r.editingFB.defaults = mb.writeFields.defaults
 	r.viewingFB.Model(mb.model)
 	r.viewingFB.defaults = mb.p.detailFieldDefaults
-	//r.setter = r.defaultUnmarshalFunc
+	// r.setter = r.defaultUnmarshalFunc
 	// d.Field(name).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	// 	panic("you must set ViewComponentFunc and EditComponentFunc if you want to use SectionsBuilder")
 	// })
