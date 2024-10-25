@@ -135,6 +135,7 @@ func (vc *ViewCommon) FormSubmitBtn(
 	label string,
 ) *VBtnBuilder {
 	return VBtn(label).
+		Variant(VariantFlat).
 		Color("primary").
 		Block(true).
 		Size(SizeLarge).

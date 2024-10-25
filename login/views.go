@@ -143,6 +143,144 @@ func defaultLoginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 	})
 }
 
+func DefaultLoginPageX(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
+	return pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		// i18n start
+		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
+		i18nBuilder := vh.I18n()
+		var langs []languageItem
+		var currLangVal string
+		qn := i18nBuilder.GetQueryName()
+		if ls := i18nBuilder.GetSupportLanguages(); len(ls) > 1 {
+			lang := ctx.R.FormValue(qn)
+			if lang == "" {
+				lang = i18nBuilder.GetCurrentLangFromCookie(ctx.R)
+			}
+			accept := ctx.R.Header.Get("Accept-Language")
+			_, mi := language.MatchStrings(language.NewMatcher(ls), lang, accept)
+			for i, l := range ls {
+				if i == mi {
+					currLangVal = l.String()
+				}
+				langs = append(langs, languageItem{
+					Label: display.Self.Name(l),
+					Value: l.String(),
+				})
+			}
+		}
+		// i18n end
+
+		logoCompo := func() *HTMLTagBuilder {
+			return Div().Class("d-flex flex-row ga-6 px-6 py-2 rounded").Style("background-color: white;").Children(
+				VImg().Src("https://cdn.vuetifyjs.com/images/logos/vuetify-logo-light.png").Height(24).Width(24),
+				VDivider().Color(ColorGreyDarken3).Vertical(true),
+				VImg().Src("https://cdn.vuetifyjs.com/images/logos/vuetify-logo-light.png").Height(24).Width(24),
+			)
+		}
+
+		leftCompo := VCol().Cols(0).Md(6).Class("hidden-md-and-down").Children(
+			VImg().Class("fill-height").Cover(true).Src("https://cdn.vuetifyjs.com/images/parallax/material2.jpg").Children(
+				Div().Class("position-absolute").Style("top: 32px; left: 32px;").Children(
+					logoCompo(),
+				),
+			),
+		)
+
+		var oauthCompo HTMLComponent
+		if vh.OAuthEnabled() {
+			buttons := []HTMLComponent{}
+			for _, provider := range vh.OAuthProviders() {
+				buttons = append(buttons,
+					VBtn("").Class("bg-grey-lighten-4").
+						Block(true).
+						Size(SizeLarge).
+						Variant(VariantFlat).
+						Href(fmt.Sprintf("%s?provider=%s", vh.OAuthBeginURL(), provider.Key)).
+						Children(
+							Div().Class("d-flex flex-row ga-2 text-body-1").Children(
+								provider.Logo,
+								Div().Class("text-body1").Text(provider.Text), // TODO: customize
+							),
+						),
+				)
+			}
+			if len(buttons) > 0 {
+				oauthCompo = Div().Class("d-flex flex-column ga-6").Children(buttons...)
+			}
+		}
+
+		wIn := vh.GetWrongLoginInputFlash(ctx.W, ctx.R)
+		isRecaptchaEnabled := vh.RecaptchaEnabled()
+		if isRecaptchaEnabled {
+			DefaultViewCommon.InjectRecaptchaAssets(ctx, "login-form", "token")
+		}
+
+		var userPassCompo HTMLComponent
+		if vh.UserPassEnabled() {
+			compo := Form().Class("d-flex flex-column").Id("login-form").Method(http.MethodPost).Action(vh.PasswordLoginURL())
+			compo.AppendChildren(
+				// TODO: customize
+				DefaultViewCommon.Input("account", msgr.AccountPlaceholder, wIn.Account).Class("mb-5").Label(msgr.AccountLabel),
+				// TODO: customize
+				DefaultViewCommon.PasswordInput("password", msgr.PasswordPlaceholder, wIn.Password, true).Class("mb-5").Label(msgr.PasswordLabel),
+				If(isRecaptchaEnabled,
+					// recaptcha response token
+					Input("token").Id("token").Type("hidden"),
+				),
+				DefaultViewCommon.FormSubmitBtn(msgr.SignInBtn).
+					ClassIf("g-recaptcha", isRecaptchaEnabled).
+					AttrIf("data-sitekey", vh.RecaptchaSiteKey(), isRecaptchaEnabled).
+					AttrIf("data-callback", "onSubmit", isRecaptchaEnabled),
+			)
+
+			userPassCompo = Div().Class("d-flex flex-column").Children(
+				compo,
+				If(!vh.NoForgetPasswordLink(),
+					A(Text(msgr.ForgetPasswordLink)).Href(vh.ForgetPasswordPageURL()).Class("align-self-end mt-2 mb-7 grey--text text-subtitle-2 text--darken-1"),
+				),
+				VDivider().Color(ColorGreyDarken3).Class("mt-2 mb-10"),
+			)
+		}
+
+		rightCompo := VCol().Cols(12).Md(6).Class("d-flex flex-column justify-center align-center").Children(
+			Div().Class("d-flex flex-column pa-4").Style("max-width: 455px; width: 100%").Children(
+				Div().Class("d-flex flex-row justify-end ga-2 mb-5").Children(
+					Div().Class("hidden-lg-and-up").Children(
+						logoCompo(),
+					),
+					VSpacer(),
+					If(len(langs) > 0,
+						web.Scope().VSlot(" { locals : selectLocals } ").Init(fmt.Sprintf(`{currLangVal: '%s'}`, currLangVal)).Children(
+							vx.VXSelect().
+								Items(langs).
+								ItemTitle("Label").
+								ItemValue("Value").
+								Attr("v-model", `selectLocals.currLangVal`).
+								Attr("@update:model-value", web.Plaid().MergeQuery(true).Query(qn, web.Var("selectLocals.currLangVal")).PushState(true).Go()),
+						),
+					),
+				),
+				// TODO: customize
+				Div().Text("Welcome to").Class("mb-4 text-h4"),
+				Div().Text("CS Admin System").Class("mb-16").Style("font-size: 42px; font-weight: 510;"),
+				userPassCompo,
+				oauthCompo,
+			),
+		)
+
+		r.PageTitle = msgr.LoginPageTitle
+		r.Body = Components(
+			DefaultViewCommon.Notice(vh, msgr, ctx.W, ctx.R),
+			VRow().Class("fill-height justify-center").NoGutters(true).Children(
+				leftCompo,
+				rightCompo,
+			),
+		)
+
+		return
+	})
+}
+
 func defaultForgetPasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 	return pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
