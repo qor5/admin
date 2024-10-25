@@ -168,8 +168,8 @@ func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *Advanced
 			msgr := i18n.MustGetModuleMessages(ctx.R, I18nAdminLoginKey, Messages_en_US).(*Messages)
 
 			config := &AdvancedLoginPageConfig{
-				WelcomeLabel:        "Welcome to",
-				TitleLabel:          "Qor Admin System",
+				WelcomeLabel:        msgr.LoginWelcomeLabel,
+				TitleLabel:          msgr.LoginTitleLabel,
 				AccountLabel:        msgr.LoginAccountLabel,
 				AccountPlaceholder:  msgr.LoginAccountPlaceholder,
 				PasswordLabel:       msgr.LoginPasswordLabel,
