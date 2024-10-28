@@ -50,13 +50,13 @@ func TestHandlerWorker(db *gorm.DB, u *models.User) http.Handler {
 	return mux
 }
 
-func TestL18nHandler(db *gorm.DB) http.Handler {
+func TestL18nHandler(db *gorm.DB) (http.Handler, Config) {
 	mux := http.NewServeMux()
 	c := NewConfig(db, false)
 	c.loginSessionBuilder.Secret("test")
 	c.loginSessionBuilder.Mount(mux)
 	mux.Handle("/", c.pb)
-	return mux
+	return mux, c
 }
 
 func Router(db *gorm.DB) http.Handler {

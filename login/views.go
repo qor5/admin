@@ -239,7 +239,7 @@ func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *Advanced
 
 			var oauthCompo HTMLComponent
 			if vh.OAuthEnabled() {
-				buttons := []HTMLComponent{}
+				var buttons []HTMLComponent
 				for _, provider := range vh.OAuthProviders() {
 					display := config.OAuthProviderDisplay(provider)
 					buttons = append(buttons,
