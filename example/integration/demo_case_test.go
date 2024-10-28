@@ -68,30 +68,30 @@ func TestDemoCase(t *testing.T) {
 				return
 			},
 		},
-		//{
-		//	Name:  "Demo Case Detail",
-		//	Debug: true,
-		//	ReqFunc: func() *http.Request {
-		//		demoCaseData.TruncatePut(dbr)
-		//		req := NewMultipartBuilder().
-		//			PageURL("/demo-cases/1").
-		//			Query("__execute_event__", "__reload__").
-		//			BuildEventFuncRequest()
-		//		return req
-		//	},
-		//	ExpectPageBodyContainsInOrder: []string{
-		//		"vx-field",
-		//		`\u0026#34;121231321\u0026amp;\u0026amp;\u0026#34;`,
-		//		"vx-field(type textarea)",
-		//		"vx-field(type password)",
-		//		"vx-field(type number)",
-		//		"vx-select",
-		//		"vx-checkbox",
-		//		"vx-datepicker",
-		//		"vx-dialog",
-		//		"vx-avatar",
-		//	},
-		//},
+		{
+			Name:  "Demo Case Detail",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				demoCaseData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/demo-cases/1").
+					Query("__execute_event__", "__reload__").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{
+				"vx-field",
+				`\u0026#34;121231321\u0026amp;\u0026amp;\u0026#34;`,
+				"vx-field(type textarea)",
+				"vx-field(type password)",
+				"vx-field(type number)",
+				"vx-select",
+				"vx-checkbox",
+				"vx-datepicker",
+				"vx-dialog",
+				"vx-avatar",
+			},
+		},
 		{
 			Name:  "Demo Case Field Save",
 			Debug: true,
