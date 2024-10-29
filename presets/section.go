@@ -38,6 +38,9 @@ func NewSectionBuilder(mb *ModelBuilder, name string) (r *SectionBuilder) {
 		saver: func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 			return mb.editing.Saver(obj, id, ctx)
 		},
+		validator: func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			return
+		},
 		componentViewFunc: nil,
 		componentEditFunc: nil,
 		saveBtnFunc: func(obj interface{}, ctx *web.EventContext) bool {
@@ -86,13 +89,15 @@ func NewSectionBuilder(mb *ModelBuilder, name string) (r *SectionBuilder) {
 // show, edit: fetcher => setter
 type SectionBuilder struct {
 	NameLabel
-	mb                *ModelBuilder
-	isUsed            bool
-	isRegistered      bool
-	isEdit            bool
-	comp              FieldComponentFunc
-	saver             SaveFunc
-	setter            func(obj interface{}, ctx *web.EventContext) error
+	mb           *ModelBuilder
+	isUsed       bool
+	isRegistered bool
+	isEdit       bool
+	comp         FieldComponentFunc
+	saver        SaveFunc
+	setter       func(obj interface{}, ctx *web.EventContext) error
+	// validate object in save section event
+	validator         ValidateFunc
 	hiddenFuncs       []ObjectComponentFunc
 	componentViewFunc FieldComponentFunc
 	componentEditFunc FieldComponentFunc
@@ -147,6 +152,11 @@ func (s *SectionBuilder) Clone() *SectionBuilder {
 
 func (b *SectionBuilder) FieldComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	return b.comp(obj, field, ctx)
+}
+
+func (b *SectionBuilder) WrapValidator(w func(in ValidateFunc) ValidateFunc) (r *SectionBuilder) {
+	b.validator = w(b.validator)
+	return b
 }
 
 func (b *SectionBuilder) ComponentEditBtnFunc(v ObjectBoolFunc) *SectionBuilder {
@@ -1031,6 +1041,13 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 			}
 		}
 	}
+	if vErr := b.validator(obj, ctx); vErr.HaveErrors() {
+		ctx.Flash = &vErr
+		needSave = false
+		if vErr.GetGlobalError() != "" {
+			ShowMessage(&r, vErr.GetGlobalError(), "warning")
+		}
+	}
 
 	if needSave {
 		err = b.saver(obj, id, ctx)
@@ -1172,6 +1189,13 @@ func (b *SectionBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Event
 			if vErr.GetGlobalError() != "" {
 				ShowMessage(&r, vErr.GetGlobalError(), "warning")
 			}
+		}
+	}
+	if vErr := b.validator(obj, ctx); vErr.HaveErrors() {
+		ctx.Flash = &vErr
+		needSave = false
+		if vErr.GetGlobalError() != "" {
+			ShowMessage(&r, vErr.GetGlobalError(), "warning")
 		}
 	}
 

@@ -158,9 +158,6 @@ func configureDemoCase(b *presets.Builder, db *gorm.DB) {
 			if p.ID == 0 {
 				return
 			}
-			if len(p.FieldData.TextValidate) < 5 {
-				err.FieldError("FieldSection.editField.TextValidate", "input more than 5 chars")
-			}
 			if len(p.FieldTextareaData.TextareaValidate) < 10 {
 				err.FieldError("FieldTextareaSection.FieldTextareaData.TextareaValidate", "input more than 10 chars")
 			}
@@ -275,6 +272,15 @@ func configVxField(detailing *presets.DetailingBuilder, editing *presets.Editing
 					DemoCaseTextField(obj, sectionName, editField, "TextValidate", "TextValidate(input more than 5 chars)", vErr).Required(true).Clearable(true),
 				),
 			)
+		}).
+		WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
+			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+				p := obj.(*DemoCase)
+				if len(p.FieldData.TextValidate) < 5 {
+					err.FieldError(fmt.Sprintf("%s.%s.TextValidate", sectionName, editField), "input more than 5 chars")
+				}
+				return
+			}
 		})
 	detailing.Section(section)
 	editing.Section(section.Clone())
