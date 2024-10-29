@@ -585,27 +585,6 @@ func (b *SectionBuilder) defaultUnmarshalFunc(obj interface{}, ctx *web.EventCon
 	return
 }
 
-func (b *SectionBuilder) defaultListUnmarshalFunc(obj interface{}, ctx *web.EventContext) (err error) {
-	var index int64
-	index, err = strconv.ParseInt(ctx.Queries().Get(b.SaveBtnKey()), 10, 32)
-	if err != nil {
-		return
-	}
-
-	listObj := reflect.ValueOf(reflectutils.MustGet(obj, b.name))
-	if !listObj.IsValid() || listObj.Len() == int(index) {
-		b.appendElement(obj)
-		listObj = reflect.ValueOf(reflectutils.MustGet(obj, b.name))
-	}
-	elementObj := listObj.Index(int(index)).Interface()
-	formObj := reflect.New(reflect.TypeOf(b.editingFB.model).Elem()).Interface()
-	if err = b.elementUnmarshaler(elementObj, formObj, b.ListFieldPrefix(int(index)), ctx); err != nil {
-		return
-	}
-	listObj.Index(int(index)).Set(reflect.ValueOf(elementObj))
-	return nil
-}
-
 func (b *SectionBuilder) buildElementRows(list interface{}, deletedID, editID, saveID, listLen int, unsaved bool, ctx *web.EventContext) *h.HTMLTagBuilder {
 	rows := h.Div()
 	if b.alwaysShowListLabel && !b.disableLabel {
