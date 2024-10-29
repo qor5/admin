@@ -405,7 +405,7 @@ func (b *SectionBuilder) ComponentFunc(v FieldComponentFunc) *SectionBuilder {
 }
 
 func (b *SectionBuilder) ListFieldPrefix(index int) string {
-	return fmt.Sprintf("%s[%b]", b.name, index)
+	return fmt.Sprintf("%s[%d]", b.name, index)
 }
 
 func (b *SectionBuilder) registerEvent() {
@@ -737,11 +737,11 @@ func (b *SectionBuilder) DeleteBtnKey() string {
 }
 
 func (b *SectionBuilder) ListElementIsEditing(index int) string {
-	return fmt.Sprintf("%s_%s[%b].%s", deletedHiddenNamePrefix, b.name, index, sectionListFieldEditing)
+	return fmt.Sprintf("%s_%s[%d].%s", deletedHiddenNamePrefix, b.name, index, sectionListFieldEditing)
 }
 
 func (b *SectionBuilder) ListElementPortalName(index int) string {
-	return fmt.Sprintf("DetailElementPortal_%s_%b", b.name, index)
+	return fmt.Sprintf("DetailElementPortal_%s_%d", b.name, index)
 }
 
 func (b *SectionBuilder) FieldPortalName() string {
@@ -764,7 +764,7 @@ func (b *SectionBuilder) showElement(obj any, index int, ctx *web.EventContext) 
 	content := b.elementViewFunc(obj, &FieldContext{
 		ModelInfo: b.mb.modelInfo,
 		Name:      b.name,
-		FormKey:   fmt.Sprintf("%s[%b]", b.name, index),
+		FormKey:   fmt.Sprintf("%s[%d]", b.name, index),
 		Label:     b.label,
 	}, ctx)
 
@@ -827,9 +827,9 @@ func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, ctx *we
 		h.Div(
 			b.elementEditFunc(obj, &FieldContext{
 				ModelInfo: b.mb.modelInfo,
-				Name:      fmt.Sprintf("%s[%b]", b.name, index),
-				FormKey:   fmt.Sprintf("%s[%b]", b.name, index),
-				Label:     fmt.Sprintf("%s[%b]", b.label, index),
+				Name:      fmt.Sprintf("%s[%d]", b.name, index),
+				FormKey:   fmt.Sprintf("%s[%d]", b.name, index),
+				Label:     fmt.Sprintf("%s[%d]", b.label, index),
 			}, ctx),
 		).Class("flex-grow-1"),
 		h.Div(deleteBtn).Class("d-flex pl-3"),
