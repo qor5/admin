@@ -432,7 +432,7 @@ func (b *Builder) configDetailing(mb *presets.ModelBuilder) {
 	if fb != nil && fb.GetCompFunc() == nil {
 		seoSection := presets.NewSectionBuilder(mb, "SEO").
 			Editing("SEO").
-			SaveFunc(b.detailSaver).
+			SetterFunc(b.detailSaver).
 			ViewComponentFunc(b.detailShowComponent).
 			EditComponentFunc(b.EditingComponentFunc)
 		pd.Section(seoSection)
@@ -470,12 +470,9 @@ func (b *Builder) detailShowComponent(obj interface{}, _ *presets.FieldContext, 
 	).Class("pb-4")
 }
 
-func (b *Builder) detailSaver(obj interface{}, id string, ctx *web.EventContext) (err error) {
+func (b *Builder) detailSaver(obj interface{}, ctx *web.EventContext) (err error) {
 	if err = EditSetterFunc(obj, &presets.FieldContext{Name: SeoDetailFieldName}, ctx); err != nil {
 		return
-	}
-	if err = b.db.Updates(obj).Error; err != nil {
-		return err
 	}
 	return
 }

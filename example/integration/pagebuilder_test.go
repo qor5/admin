@@ -630,9 +630,9 @@ func TestPageBuilder(t *testing.T) {
 					PageURL("/pages/10_2024-05-21-v01_International").
 					EventFunc("section_save_Page").
 					Query(presets.ParamID, "10_2024-05-21-v01_International").
-					AddField("Page.Title", "123").
-					AddField("Page.Slug", "123").
-					AddField("Page.CategoryID", "0").
+					AddField("Title", "123").
+					AddField("Slug", "123").
+					AddField("CategoryID", "0").
 					BuildEventFuncRequest()
 			},
 			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {
@@ -692,7 +692,7 @@ func TestPageBuilder(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`"Page.Title":"1234567"`, `"Page.CategoryID":""`, `"Page.Slug":"12313"`},
+			ExpectPortalUpdate0ContainsInOrder: []string{`"Title":"1234567"`, `"CategoryID":""`, `"Slug":"12313"`},
 		},
 		{
 			Name:  "Page Detail Editing Has Category",
@@ -706,7 +706,7 @@ func TestPageBuilder(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`"Page.Title":"12312"`, `"Page.CategoryID":1`, `"Page.Slug":"123"`},
+			ExpectPortalUpdate0ContainsInOrder: []string{`"Title":"12312"`, `"CategoryID":1`, `"Slug":"123"`},
 		},
 
 		{
