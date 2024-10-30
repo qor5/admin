@@ -70,18 +70,21 @@ func TestPresetsDetailing(t *testing.T) {
 					PageURL("/customers?__execute_event__=section_edit_Details&id=12").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Details.Name", "Details.Email"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Name", "Email"},
 		},
 		{
 			Name:  "page detail update",
 			Debug: true,
+			HandlerMaker: func() http.Handler {
+				return pb
+			},
 			ReqFunc: func() *http.Request {
 				detailData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/customers?__execute_event__=section_save_Details&id=12").
-					AddField("Details.Name", "123123").
-					AddField("Details.Email", "abc@example.com").
-					AddField("Details.Description", "hello description").
+					AddField("Name", "123123").
+					AddField("Email", "abc@example.com").
+					AddField("Description", "hello description").
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"123123", "abc@example.com", "hello description"},
@@ -129,8 +132,8 @@ func TestPresetsDetailing(t *testing.T) {
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/customers?__execute_event__=section_save_section&id=12").
 					Query("isCancel", "true").
-					AddField("section.Name", "name").
-					AddField("section.Email", "email").
+					AddField("Name", "name").
+					AddField("Email", "email").
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"SectionEN"},
@@ -291,7 +294,7 @@ func TestPresetsDetailSectionValidate(t *testing.T) {
 				detailData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/customers?__execute_event__=section_save_name_section&id=12").
-					AddField("name_section.Name", "").
+					AddField("Name", "").
 					BuildEventFuncRequest()
 			},
 			ExpectRunScriptContainsInOrder: []string{"message: \"customer name must not be empty\""},
@@ -303,7 +306,7 @@ func TestPresetsDetailSectionValidate(t *testing.T) {
 				detailData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/customers?__execute_event__=section_save_name_section&id=12").
-					AddField("name_section.Name", "long name").
+					AddField("Name", "long name").
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"customer name must no longer than 6"},
@@ -315,7 +318,7 @@ func TestPresetsDetailSectionValidate(t *testing.T) {
 				detailData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/customers?__execute_event__=section_save_name_section&id=12").
-					AddField("name_section.Name", "long long long long name").
+					AddField("Name", "long long long long name").
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"customer name must no longer than 6"},
@@ -329,7 +332,8 @@ func TestPresetsDetailSectionValidate(t *testing.T) {
 				detailData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/customers?__execute_event__=section_save_email_section&id=12").
-					AddField("email_section.Email", "").
+					AddField("Email", "").
+					AddField("Name", "name").
 					BuildEventFuncRequest()
 			},
 			ExpectRunScriptContainsInOrder: []string{"message: \"customer email must not be empty\""},
@@ -341,7 +345,7 @@ func TestPresetsDetailSectionValidate(t *testing.T) {
 				detailData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/customers?__execute_event__=section_save_email_section&id=12").
-					AddField("email_section.Email", "short").
+					AddField("Email", "short").
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"customer email must longer than 6"},
@@ -356,6 +360,8 @@ func TestPresetsDetailSectionValidate(t *testing.T) {
 					Query("sectionListSaveBtn_CreditCards", "0").
 					Query("sectionListUnsaved_CreditCards", "false").
 					AddField("CreditCards[0].Name", "").
+					AddField("Name", "name").
+					AddField("Email", "email11").
 					AddField("__Deleted_CreditCards[0].sectionListEditing", "true").
 					BuildEventFuncRequest()
 			},
@@ -696,7 +702,7 @@ func TestPresetsDetailTabsSection(t *testing.T) {
 					PageURL("/customers").
 					Query("__execute_event__", "section_save_name").
 					Query("id", "1").
-					AddField("name.Name", "terry1").
+					AddField("Name", "terry1").
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"terry1"},
@@ -737,7 +743,7 @@ func TestPresetsDetailTabsSectionOrder(t *testing.T) {
 					PageURL("/customers").
 					Query("__execute_event__", "section_save_name").
 					Query("id", "1").
-					AddField("name.Name", "terry1").
+					AddField("Name", "terry1").
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"terry1"},
@@ -793,52 +799,6 @@ func TestPresetsDetailSectionView(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"section-edit-area", "z-index:2"},
 		},
 	}
-	for _, c := range cases {
-		t.Run(c.Name, func(t *testing.T) {
-			multipartestutils.RunCase(t, c, pb)
-		})
-	}
-}
-
-func TestPresetsSectionError(t *testing.T) {
-	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
-	PresetsSectionError(pb, TestDB)
-
-	cases := []multipartestutils.TestCase{
-		{
-			Name:  "save created section",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				userCreditCardsData.TruncatePut(SqlDB)
-				return multipartestutils.NewMultipartBuilder().
-					PageURL("/user-credit-cards").
-					Query("__execute_event__", "section_save_CreditCards").
-					Query("sectionListUnsaved_CreditCards", "false").
-					Query("sectionListSaveBtn_CreditCards", "0").
-					Query("id", "1").
-					AddField("CreditCards[0].Name", "terry").
-					AddField("CreditCards[0].Phone", "188").
-					AddField("__Deleted_CreditCards[0].sectionListEditing", "true").
-					BuildEventFuncRequest()
-			},
-			ExpectRunScriptContainsInOrder: []string{"cards section validator error"},
-		},
-		{
-			Name:  "save created section",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				userCreditCardsData.TruncatePut(SqlDB)
-				return multipartestutils.NewMultipartBuilder().
-					PageURL("/user-credit-cards").
-					Query("__execute_event__", "section_save_Name").
-					Query("id", "1").
-					AddField("Name.Name", "terry").
-					BuildEventFuncRequest()
-			},
-			ExpectRunScriptContainsInOrder: []string{"name section validator error"},
-		},
-	}
-
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
 			multipartestutils.RunCase(t, c, pb)
