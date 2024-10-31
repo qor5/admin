@@ -362,14 +362,17 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		vars.__FormUpdatedFunc = ()=>{ window.setTimeout(()=>{vars.__FormFieldIsUpdating = false},600)}
 		}`),
 			web.Listen(b.mb.NotifModelsValidate(),
-				`
-			vars.__FormUpdatingFunc();
-			for (const key in payload.form){
-				form[key] = payload.form[key]
-			}
-			vars.__FormUpdatedFunc();
-`,
-			),
+				`vars.__FormUpdatingFunc();
+				 for (const key in payload.form){
+					if (vars.__currentValidateKeys){
+						if(vars.__currentValidateKeys.lastIndexOf(key)>=0){
+							form[key] = payload.form[key]
+							}
+					}else{
+						form[key] = payload.form[key]
+						}
+				}
+				vars.__FormUpdatedFunc();`),
 			b.ToComponent(b.mb.Info(), obj, ctx),
 		),
 		h.If(!autosave, VCardActions(actionButtons)),
@@ -408,7 +411,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 	operateID := fmt.Sprint(time.Now().UnixNano())
 	if autosave {
 		onChangeEvent += fmt.Sprintf(`if (!vars.__FormFieldIsUpdating){%s}`, web.Plaid().URL(ctx.R.URL.Path).
-			BeforeScript(fmt.Sprintf(`vars.__ValidateOperateID=%q`, operateID)).
+			BeforeScript(fmt.Sprintf(`vars.__currentValidateKeys=null;vars.__ValidateOperateID=%q`, operateID)).
 			EventFunc(actions.Validate).
 			Query(ParamID, id).
 			Query(ParamOperateID, operateID).
@@ -416,19 +419,19 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 			Go())
 	} else {
 		onChangeEvent += fmt.Sprintf(`if (!vars.__FormFieldIsUpdating){
-	 let differences = {};
+	  vars.__currentValidateKeys = [];	
+	  const endKey = %q	;
 	  for (let key in form) {
-		if (key.endsWith(%q)){continue}
+		if (key.endsWith(endKey)){continue}
 		if (form[key] !== oldForm[key]) {
-			differences[key] = form[key]?form[key]:"";
+			vars.__currentValidateKeys.push(key+endKey)
 		}
-}
+	}	
 %s
 }`, ErrorMessagePostfix,
 			web.Plaid().URL(ctx.R.URL.Path).
 				BeforeScript(fmt.Sprintf(`vars.__ValidateOperateID=%q`, operateID)).
 				EventFunc(actions.Validate).
-				Form(web.Var("differences")).
 				Query(ParamID, id).
 				Query(ParamOperateID, operateID).
 				Query(ParamOverlay, ctx.Param(ParamOverlay)).
@@ -441,7 +444,7 @@ func (b *EditingBuilder) doValidate(ctx *web.EventContext) (r web.EventResponse,
 	var (
 		id        = ctx.Param(ParamID)
 		operateID = ctx.Param(ParamOperateID)
-		obj       = b.mb.NewModelById(id)
+		obj       = b.mb.NewModel()
 		vErr      web.ValidationErrors
 		usingB    = b
 	)
@@ -467,7 +470,14 @@ func (b *EditingBuilder) doValidate(ctx *web.EventContext) (r web.EventResponse,
 			web.AppendRunScripts(&r, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), "error"))
 		}
 	}()
-
+	if id != "" {
+		var err1 error
+		obj, err1 = usingB.Fetcher(obj, id, ctx)
+		if err1 != nil {
+			vErr.GlobalError(err1.Error())
+			return
+		}
+	}
 	vErr = usingB.RunSetterFunc(ctx, true, obj)
 	if vErr.HaveErrors() {
 		return
@@ -538,7 +548,7 @@ func (b *EditingBuilder) FetchAndUnmarshal(id string, removeDeletedAndSort bool,
 func (b *EditingBuilder) doUpdate(
 	ctx *web.EventContext,
 	r *web.EventResponse,
-	// will not close drawer/dialog
+// will not close drawer/dialog
 	silent bool,
 ) (created bool, err error) {
 	id := ctx.R.FormValue(ParamID)

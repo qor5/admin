@@ -575,19 +575,19 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 	}
 	operateID := fmt.Sprint(time.Now().UnixNano())
 	onChangeEvent += fmt.Sprintf(`if (!vars.__FormFieldIsUpdating){
-	 let differences = {};
-	  for (let key in oldForm) {
-		if (key.endsWith(%q)){continue}
+	  vars.__currentValidateKeys = [];	
+	  const endKey = %q	;
+	  for (let key in form) {
+		if (key.endsWith(endKey)){continue}
 		if (form[key] !== oldForm[key]) {
-			differences[key] = form[key]?form[key]:"";
-			}	
+			vars.__currentValidateKeys.push(key+endKey)
 		}
+	}
 %s
 }`, ErrorMessagePostfix,
 		web.Plaid().URL(ctx.R.URL.Path).
 			BeforeScript(fmt.Sprintf(`vars.__ValidateOperateID=%q`, operateID)).
 			EventFunc(b.EventValidate()).
-			Form(web.Var("differences")).
 			Query(ParamID, id).
 			Query(ParamOperateID, operateID).
 			Go())
@@ -601,11 +601,15 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 			`
 			vars.__FormUpdatingFunc();
 			for (const key in payload.form){
-				form[key] = payload.form[key]
-			}
-			vars.__FormUpdatedFunc();`,
-		),
-	)
+				if (vars.__currentValidateKeys){
+					if(vars.__currentValidateKeys.lastIndexOf(key)>=0){
+						form[key] = payload.form[key]
+						}
+					}else{
+						form[key] = payload.form[key]
+						}
+				}
+			vars.__FormUpdatedFunc();`))
 
 	if b.isEdit {
 		return h.Div(
@@ -1123,17 +1127,10 @@ func (b *SectionBuilder) ValidateDetailField(ctx *web.EventContext) (r web.Event
 	var (
 		id        = ctx.Param(ParamID)
 		operateID = ctx.Param(ParamOperateID)
-		obj       = b.mb.NewModelById(id)
+		obj       = b.mb.NewModel()
 		vErr      web.ValidationErrors
 	)
-	if b.setter != nil {
-		b.setter(obj, ctx)
-	}
-	vErr = b.editingFB.Unmarshal(obj, b.mb.Info(), true, ctx)
 
-	if vErr.HaveErrors() {
-		return
-	}
 	defer func() {
 		web.AppendRunScripts(&r,
 			fmt.Sprintf(`if (vars.__ValidateOperateID==%q){%s}`, operateID,
@@ -1151,7 +1148,22 @@ func (b *SectionBuilder) ValidateDetailField(ctx *web.EventContext) (r web.Event
 			web.AppendRunScripts(&r, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), "error"))
 		}
 	}()
+	if id != "" {
+		var err1 error
+		obj, err1 = b.mb.editing.Fetcher(obj, id, ctx)
+		if err1 != nil {
+			vErr.GlobalError(err1.Error())
+			return
+		}
+	}
+	if b.setter != nil {
+		b.setter(obj, ctx)
+	}
 
+	vErr = b.editingFB.Unmarshal(obj, b.mb.Info(), true, ctx)
+	if vErr.HaveErrors() {
+		return
+	}
 	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
 		vErr.GlobalError(perm.PermissionDenied.Error())
 		return

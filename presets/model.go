@@ -12,7 +12,6 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
-	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 
 	"github.com/qor5/admin/v3/presets/actions"
@@ -305,20 +304,4 @@ func (mb *ModelBuilder) getLabel(field NameLabel) (r string) {
 	}
 
 	return humanizeString(field.name)
-}
-
-func (mb *ModelBuilder) NewModelById(id string) (r interface{}) {
-	r = reflect.New(mb.modelType.Elem()).Interface()
-	if id == "" {
-		return
-	}
-	if slugger, ok := r.(SlugDecoder); ok {
-		cs := slugger.PrimaryColumnValuesBySlug(id)
-		for k, v := range cs {
-			_ = reflectutils.Set(r, toPascalCase(k), v)
-		}
-	} else {
-		_ = reflectutils.Set(r, toPascalCase(ParamID), id)
-	}
-	return
 }
