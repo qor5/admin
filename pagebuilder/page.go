@@ -131,7 +131,7 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 				msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 				return comp.(*vx.VXFieldBuilder).
 					Label(msgr.Slug).
-					Attr(web.VField(field.FormKey, strings.TrimPrefix(p.Slug, "/"))...).
+					Attr(presets.VFieldError(field.FormKey, strings.TrimPrefix(p.Slug, "/"), field.Errors)...).
 					Disabled(field.Disabled).Attr("prefix", "/")
 			}
 		}).LazyWrapSetterFunc(func(in presets.FieldSetterFunc) presets.FieldSetterFunc {
