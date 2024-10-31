@@ -9,11 +9,12 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
-	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
 	h "github.com/theplant/htmlgo"
+
+	"github.com/qor5/admin/v3/presets/actions"
 )
 
 type ModelBuilder struct {
@@ -97,6 +98,7 @@ func (mb *ModelBuilder) LabelName(f func(evCtx *web.EventContext, singular bool)
 func (mb *ModelBuilder) registerDefaultEventFuncs() {
 	mb.RegisterEventFunc(actions.New, mb.editing.formNew)
 	mb.RegisterEventFunc(actions.Edit, mb.editing.formEdit)
+	mb.RegisterEventFunc(actions.Validate, mb.editing.doValidate)
 	mb.RegisterEventFunc(actions.Update, mb.editing.defaultUpdate)
 	mb.RegisterEventFunc(actions.DoDelete, mb.editing.doDelete)
 

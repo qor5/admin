@@ -3,13 +3,15 @@ package presets
 import (
 	"fmt"
 	"strings"
+	"time"
 
-	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
+
+	"github.com/qor5/admin/v3/presets/actions"
 )
 
 type EditingBuilder struct {
@@ -24,7 +26,6 @@ type EditingBuilder struct {
 	sidePanel                ObjectComponentFunc
 	actionsFunc              ObjectComponentFunc
 	editingTitleFunc         EditingTitleComponentFunc
-	onChangeAction           OnChangeActionFunc
 	idCurrentActiveProcessor IdCurrentActiveProcessor
 	FieldsBuilder
 }
@@ -147,11 +148,6 @@ func (b *EditingBuilder) SetterFunc(v SetterFunc) (r *EditingBuilder) {
 	return b
 }
 
-func (b *EditingBuilder) OnChangeActionFunc(v OnChangeActionFunc) (r *EditingBuilder) {
-	b.onChangeAction = v
-	return b
-}
-
 func (b *EditingBuilder) WrapSetterFunc(w func(in SetterFunc) SetterFunc) (r *EditingBuilder) {
 	b.Setter = w(b.Setter)
 	return b
@@ -252,11 +248,13 @@ func (b *EditingBuilder) singletonPageFunc(ctx *web.EventContext) (r web.PageRes
 }
 
 func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
-	msgr := MustGetMessages(ctx.R)
-	id := ctx.R.FormValue(ParamID)
-	overlayType := ctx.R.FormValue(ParamOverlay)
-	isAutoSave := b.onChangeAction != nil && overlayType == actions.Content
-	onChangeEvent := fmt.Sprintf(`if (vars.%s) { vars.%s.editing=true };`, VarsPresetsDataChanged, VarsPresetsDataChanged)
+	var (
+		msgr          = MustGetMessages(ctx.R)
+		id            = ctx.R.FormValue(ParamID)
+		overlayType   = ctx.R.FormValue(ParamOverlay)
+		onChangeEvent = fmt.Sprintf(`if (vars.%s) { vars.%s.editing=true };`, VarsPresetsDataChanged, VarsPresetsDataChanged)
+		autosave      = overlayType == actions.Content
+	)
 	if b.mb.singleton {
 		id = vx.ObjectID(obj)
 	}
@@ -359,9 +357,25 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 	formContent := web.Scope(h.Components(
 		VCardText(
 			h.Components(hiddenComps...),
+			h.Div().Style("display:none").Attr("v-on-mounted", `({window})=>{
+		vars.__FormUpdatingFunc = ()=>{ vars.__FormFieldIsUpdating = true}
+		vars.__FormUpdatedFunc = ()=>{ window.setTimeout(()=>{vars.__FormFieldIsUpdating = false},600)}
+		}`),
+			web.Listen(b.mb.NotifModelsValidate(),
+				`vars.__FormUpdatingFunc();
+				 for (const key in payload.form){
+					if (vars.__currentValidateKeys){
+						if(vars.__currentValidateKeys.lastIndexOf(key)>=0){
+							form[key] = payload.form[key]
+							}
+					}else{
+						form[key] = payload.form[key]
+						}
+				}
+				vars.__FormUpdatedFunc();`),
 			b.ToComponent(b.mb.Info(), obj, ctx),
 		),
-		h.If(!isAutoSave, VCardActions(actionButtons)),
+		h.If(!autosave, VCardActions(actionButtons)),
 	))
 
 	asideContent := defaultToPage(commonPageConfig{
@@ -382,7 +396,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 					VToolbarTitle("").Class("pl-2").
 						Children(title),
 					VSpacer(),
-					h.If(!isAutoSave, VBtn("").Icon(true).Children(
+					h.If(!autosave, VBtn("").Icon(true).Children(
 						VIcon("mdi-close"),
 					).Attr("@click.stop", closeBtnVarScript)),
 				).Color("white").Elevation(0),
@@ -394,10 +408,91 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 			),
 		),
 	).VSlot("{ form }")
-	if isAutoSave {
-		return scope.OnChange(onChangeEvent + b.onChangeAction(id, ctx))
+	operateID := fmt.Sprint(time.Now().UnixNano())
+	if autosave {
+		onChangeEvent += fmt.Sprintf(`if (!vars.__FormFieldIsUpdating){%s}`, web.Plaid().URL(ctx.R.URL.Path).
+			BeforeScript(fmt.Sprintf(`vars.__currentValidateKeys=null;vars.__ValidateOperateID=%q`, operateID)).
+			EventFunc(actions.Validate).
+			Query(ParamID, id).
+			Query(ParamOperateID, operateID).
+			Query(ParamOverlay, ctx.Param(ParamOverlay)).
+			Go())
+	} else {
+		onChangeEvent += fmt.Sprintf(`if (!vars.__FormFieldIsUpdating){
+	  vars.__currentValidateKeys = [];	
+	  const endKey = %q	;
+	  for (let key in form) {
+		if (key.endsWith(endKey)){continue}
+		if (form[key] !== oldForm[key]) {
+			vars.__currentValidateKeys.push(key+endKey)
+		}
+	}	
+%s
+}`, ErrorMessagePostfix,
+			web.Plaid().URL(ctx.R.URL.Path).
+				BeforeScript(fmt.Sprintf(`vars.__ValidateOperateID=%q`, operateID)).
+				EventFunc(actions.Validate).
+				Query(ParamID, id).
+				Query(ParamOperateID, operateID).
+				Query(ParamOverlay, ctx.Param(ParamOverlay)).
+				Go())
 	}
-	return scope.OnChange(onChangeEvent).UseDebounce(150)
+	return scope.OnChange(onChangeEvent).UseDebounce(500)
+}
+
+func (b *EditingBuilder) doValidate(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var (
+		id        = ctx.Param(ParamID)
+		operateID = ctx.Param(ParamOperateID)
+		obj       = b.mb.NewModel()
+		vErr      web.ValidationErrors
+		usingB    = b
+	)
+
+	if b.mb.creating != nil && id == "" {
+		usingB = b.mb.creating
+	}
+
+	defer func() {
+		web.AppendRunScripts(&r,
+			fmt.Sprintf(`if (vars.__ValidateOperateID==%q){%s}`, operateID,
+				web.Emit(
+					b.mb.NotifModelsValidate(),
+					PayloadModelsSetter{
+						Form:   b.ToErrorMessagesForm(ctx, &vErr),
+						Id:     id,
+						Passed: !vErr.HaveErrors(),
+					},
+				)),
+		)
+
+		if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
+			web.AppendRunScripts(&r, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), "error"))
+		}
+	}()
+	if id != "" {
+		var err1 error
+		obj, err1 = usingB.Fetcher(obj, id, ctx)
+		if err1 != nil {
+			vErr.GlobalError(err1.Error())
+			return
+		}
+	}
+	vErr = usingB.RunSetterFunc(ctx, true, obj)
+	if vErr.HaveErrors() {
+		return
+	}
+
+	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+		vErr.GlobalError(perm.PermissionDenied.Error())
+		return
+	}
+	if usingB.Validator != nil {
+		if vErr = usingB.Validator(obj, ctx); vErr.HaveErrors() {
+			return
+		}
+	}
+	return
 }
 
 func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, err1 error) {

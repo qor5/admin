@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
@@ -425,6 +426,7 @@ func (b *SectionBuilder) registerEvent() {
 	b.isRegistered = true
 	b.mb.RegisterEventFunc(b.EventSave(), b.SaveDetailField)
 	b.mb.RegisterEventFunc(b.EventEdit(), b.EditDetailField)
+	b.mb.RegisterEventFunc(b.EventValidate(), b.ValidateDetailField)
 	b.mb.RegisterEventFunc(b.EventDelete(), b.DeleteDetailListField)
 	b.mb.RegisterEventFunc(b.EventCreate(), b.CreateDetailListField)
 }
@@ -435,6 +437,10 @@ func (b *SectionBuilder) EventEdit() string {
 
 func (b *SectionBuilder) EventSave() string {
 	return fmt.Sprintf("section_save_%s", b.name)
+}
+
+func (b *SectionBuilder) EventValidate() string {
+	return fmt.Sprintf("section_validate_%s", b.name)
 }
 
 func (b *SectionBuilder) EventDelete() string {
@@ -567,19 +573,59 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 			).Class("section-body"),
 		)
 	}
+	operateID := fmt.Sprint(time.Now().UnixNano())
+	onChangeEvent += fmt.Sprintf(`if (!vars.__FormFieldIsUpdating){
+	  vars.__currentValidateKeys = [];	
+	  const endKey = %q	;
+	  for (let key in form) {
+		if (key.endsWith(endKey)){continue}
+		if (form[key] !== oldForm[key]) {
+			vars.__currentValidateKeys.push(key+endKey)
+		}
+	}
+%s
+}`, ErrorMessagePostfix,
+		web.Plaid().URL(ctx.R.URL.Path).
+			BeforeScript(fmt.Sprintf(`vars.__ValidateOperateID=%q`, operateID)).
+			EventFunc(b.EventValidate()).
+			Query(ParamID, id).
+			Query(ParamOperateID, operateID).
+			Go())
+
+	comps := h.Components(
+		h.Div().Style("display:none").Attr("v-on-mounted", `({window})=>{
+		vars.__FormUpdatingFunc = ()=>{ vars.__FormFieldIsUpdating = true}
+		vars.__FormUpdatedFunc = ()=>{ window.setTimeout(()=>{vars.__FormFieldIsUpdating = false},600)}
+		}`),
+		web.Listen(b.mb.NotifModelsSectionValidate(b.name),
+			`
+			vars.__FormUpdatingFunc();
+			for (const key in payload.form){
+				if (vars.__currentValidateKeys){
+					if(vars.__currentValidateKeys.lastIndexOf(key)>=0){
+						form[key] = payload.form[key]
+						}
+					}else{
+						form[key] = payload.form[key]
+						}
+				}
+			vars.__FormUpdatedFunc();`))
+
 	if b.isEdit {
 		return h.Div(
 			web.Scope(
+				comps,
 				content,
 				hiddenComp,
-			).OnChange(onChangeEvent).UseDebounce(150),
+			).OnChange(onChangeEvent).UseDebounce(500),
 		)
 	}
 	return h.Div(
 		web.Scope(
+			comps,
 			content,
 			hiddenComp,
-		).VSlot("{ form }").OnChange(onChangeEvent).UseDebounce(150),
+		).VSlot("{ form }").OnChange(onChangeEvent).UseDebounce(500),
 	)
 }
 
@@ -1075,6 +1121,60 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 		Models: map[string]any{id: obj},
 	})
 	return r, nil
+}
+
+func (b *SectionBuilder) ValidateDetailField(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var (
+		id        = ctx.Param(ParamID)
+		operateID = ctx.Param(ParamOperateID)
+		obj       = b.mb.NewModel()
+		vErr      web.ValidationErrors
+	)
+
+	defer func() {
+		web.AppendRunScripts(&r,
+			fmt.Sprintf(`if (vars.__ValidateOperateID==%q){%s}`, operateID,
+				web.Emit(
+					b.mb.NotifModelsSectionValidate(b.name),
+					PayloadModelsSetter{
+						Form:   b.editingFB.ToErrorMessagesForm(ctx, &vErr),
+						Id:     id,
+						Passed: !vErr.HaveErrors(),
+					},
+				),
+			),
+		)
+		if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
+			web.AppendRunScripts(&r, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), "error"))
+		}
+	}()
+	if id != "" {
+		var err1 error
+		obj, err1 = b.mb.editing.Fetcher(obj, id, ctx)
+		if err1 != nil {
+			vErr.GlobalError(err1.Error())
+			return
+		}
+	}
+	if b.setter != nil {
+		b.setter(obj, ctx)
+	}
+
+	vErr = b.editingFB.Unmarshal(obj, b.mb.Info(), true, ctx)
+	if vErr.HaveErrors() {
+		return
+	}
+	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+		vErr.GlobalError(perm.PermissionDenied.Error())
+		return
+	}
+	if b.validator != nil {
+		if vErr = b.validator(obj, ctx); vErr.HaveErrors() {
+			return
+		}
+	}
+
+	return
 }
 
 // EditDetailListField Event: click detail list field element edit button

@@ -48,3 +48,17 @@ func (mb *ModelBuilder) NotifRowUpdated() string {
 type PayloadRowUpdated struct {
 	Id string `json:"id"`
 }
+
+func (mb *ModelBuilder) NotifModelsValidate() string {
+	return fmt.Sprintf("presets_NotifModelsValidate_%T", mb.model)
+}
+
+func (mb *ModelBuilder) NotifModelsSectionValidate(name string) string {
+	return fmt.Sprintf("presets_NotifModelsValidate_%v_%T", name, mb.model)
+}
+
+type PayloadModelsSetter struct {
+	Id     string      `json:"id"`
+	Form   interface{} `json:"form"`
+	Passed bool        `json:"passed"`
+}

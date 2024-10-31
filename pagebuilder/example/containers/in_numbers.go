@@ -4,13 +4,16 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"fmt"
 
-	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 
-	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/presets"
+
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/pagebuilder"
 )
 
 type InNumbers struct {
@@ -56,10 +59,17 @@ func RegisterInNumbersContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 			return InNumbersBody(v, input)
 		})
 	mb := vb.Model(&InNumbers{})
-	eb := mb.Editing("AddTopSpace", "AddBottomSpace", "AnchorID", "Heading", "Items")
+	eb := mb.Editing("AddTopSpace", "AddBottomSpace", "AnchorID", "Heading", "Items").ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		p := obj.(*InNumbers)
+		for i, v := range p.Items {
+			if v.Heading == "" {
+				err.FieldError(fmt.Sprintf("Items[%v].Heading", i), "Heading can`t Empty")
+			}
+		}
+		return
+	})
 
 	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&InNumbersItem{}).Only("Heading", "Text")
-
 	eb.Field("Items").Nested(fb, &presets.DisplayFieldInSorter{Field: "Heading"})
 }
 
