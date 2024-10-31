@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
+
+	"github.com/qor5/admin/v3/presets/actions"
 )
 
 type (
@@ -212,7 +213,9 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 		).ModelValue(true).Location("top").Color("success")
 	}
 
-	comp := web.Scope(b.ToComponent(b.mb.Info(), obj, ctx)).VSlot("{form}")
+	comp := web.Scope(
+		b.ToComponent(b.mb.Info(), obj, ctx),
+	).VSlot("{form}")
 	tabsContent := defaultToPage(commonPageConfig{
 		formContent: comp,
 		tabPanels:   b.tabPanels,

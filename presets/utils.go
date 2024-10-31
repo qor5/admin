@@ -5,15 +5,18 @@ import (
 	"fmt"
 	"net/url"
 	"reflect"
+	"strings"
 	"time"
+	"unicode"
 
 	"github.com/pkg/errors"
-	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
+
+	"github.com/qor5/admin/v3/presets/actions"
 )
 
 func RecoverPrimaryColumnValuesBySlug(dec SlugDecoder, slug string) (r map[string]string, err error) {
@@ -173,4 +176,23 @@ func MustJsonCopy(dst, src any) {
 	if err := JsonCopy(dst, src); err != nil {
 		panic(err)
 	}
+}
+
+func toPascalCase(s string) string {
+	var result strings.Builder
+	shouldCapitalize := true
+
+	for _, char := range s {
+		if char == '_' {
+			shouldCapitalize = true
+		} else {
+			if shouldCapitalize {
+				result.WriteRune(unicode.ToUpper(char))
+				shouldCapitalize = false
+			} else {
+				result.WriteRune(char)
+			}
+		}
+	}
+	return result.String()
 }

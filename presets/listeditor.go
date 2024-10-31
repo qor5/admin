@@ -93,7 +93,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 		form = b.fieldContext.NestedFieldsBuilder.ToComponentForEach(b.fieldContext, b.value, ctx, func(obj interface{}, formKey string, content h.HTMLComponent, ctx *web.EventContext) h.HTMLComponent {
 			return VCard(
 				h.If(!b.fieldContext.Disabled,
-					VBtn("").Icon("mdi-delete").Class("position-absolute right-0 top-0 mt-6 mr-1").
+					VBtn("").Icon("mdi-delete").Class("float-right ma-2").
 						Attr("@click", web.Plaid().
 							URL(b.fieldContext.ModelInfo.ListingHref()).
 							EventFunc(b.removeListItemRowEvent).
@@ -105,7 +105,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 							Go()),
 				),
 				content,
-			).Class("mx-0 mb-2 px-4 pb-0 pt-4 position-relative").Variant(VariantOutlined)
+			).Class("mx-0 mb-2 px-4 pb-0 pt-4").Variant(VariantOutlined)
 		})
 	}
 

@@ -111,15 +111,6 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 				return
 			}
 		})
-	eb.WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
-		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-			p := obj.(*Page)
-			if err = pageValidator(ctx, p, db, b.l10n); err.HaveErrors() {
-				return
-			}
-			return in(obj, ctx)
-		}
-	})
 	titleFiled := eb.GetField("Title")
 	if titleFiled != nil {
 		titleFiled.LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
@@ -165,12 +156,11 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 			complete := presets.SelectField(obj, field, ctx).
 				Multiple(false).Chips(false).
 				Label(msgr.Category).
-				Items(categories).ItemTitle("Path").ItemValue("ID").
-				ErrorMessages(field.Errors...)
+				Items(categories).ItemTitle("Path").ItemValue("ID")
 			if p.CategoryID > 0 {
-				complete.Attr(web.VField(field.FormKey, p.CategoryID)...)
+				complete.Attr(presets.VFieldError(field.FormKey, p.CategoryID, field.Errors)...)
 			} else {
-				complete.Attr(web.VField(field.FormKey, "")...)
+				complete.Attr(presets.VFieldError(field.FormKey, "", field.Errors)...)
 			}
 			return complete
 		})

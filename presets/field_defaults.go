@@ -7,9 +7,10 @@ import (
 	"time"
 
 	"github.com/iancoleman/strcase"
-	"github.com/qor5/web/v3"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
+
+	"github.com/qor5/web/v3"
 
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/ui/vuetifyx"
@@ -176,18 +177,16 @@ func cfTextTd(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTM
 
 func cfCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	return vuetifyx.VXCheckbox().
-		Attr(web.VField(field.FormKey, reflectutils.MustGet(obj, field.Name).(bool))...).
+		Attr(VFieldError(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name).(bool)), field.Errors)...).
 		Label(field.Label).
-		ErrorMessages(field.Errors...).
 		Disabled(field.Disabled)
 }
 
 func cfNumber(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	return vuetifyx.VXField().
 		Type("number").
-		Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
+		Attr(VFieldError(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)), field.Errors)...).
 		Label(field.Label).
-		ErrorMessages(field.Errors...).
 		Disabled(field.Disabled)
 }
 
@@ -214,7 +213,7 @@ func DateTimePicker(obj interface{}, field *FieldContext, ctx *web.EventContext)
 	}
 	return vuetifyx.VXDateTimePicker().
 		Label(field.Label).
-		Attr(web.VField(field.FormKey, val)...).
+		Attr(VFieldError(field.FormKey, val, field.Errors)...).
 		Value(val).
 		TimePickerProps(vuetifyx.TimePickerProps{
 			Format:     "24hr",
@@ -222,8 +221,7 @@ func DateTimePicker(obj interface{}, field *FieldContext, ctx *web.EventContext)
 		}).
 		ClearText(msgr.Clear).
 		OkText(msgr.OK).
-		Disabled(field.Disabled).
-		ErrorMessages(field.Errors...)
+		Disabled(field.Disabled)
 }
 
 func cfTimeSetter(obj interface{}, field *FieldContext, ctx *web.EventContext) (err error) {
@@ -245,11 +243,23 @@ func DateTimeSetter(obj interface{}, field *FieldContext, ctx *web.EventContext)
 func cfTextField(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	return TextField(obj, field, ctx)
 }
+func VFieldError(name string, value interface{}, error interface{}) []interface{} {
+	errKey := name + ErrorMessagePostfix
 
+	objValue := map[string]interface{}{
+		name:   value,
+		errKey: error,
+	}
+	return append([]interface{}{
+		"v-model",
+		fmt.Sprintf("form[%s]", h.JSONString(name)),
+		":error-messages",
+		fmt.Sprintf("form[%q]", errKey),
+	}, web.VAssign("form", objValue)...)
+}
 func TextField(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXFieldBuilder {
 	return vuetifyx.VXField().Label(field.Label).
-		Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
-		ErrorMessages(field.Errors...).
+		Attr(VFieldError(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)), field.Errors)...).
 		Disabled(field.Disabled)
 }
 
@@ -257,8 +267,8 @@ func SelectField(obj interface{}, field *FieldContext, ctx *web.EventContext) *v
 	return vuetifyx.VXSelect().
 		Label(field.Label).
 		Disabled(field.Disabled).
-		Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
-		ErrorMessages(field.Errors...)
+		Attr(VFieldError(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)), field.Errors)...)
+
 }
 
 func ReadonlyText(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXReadonlyFieldBuilder {

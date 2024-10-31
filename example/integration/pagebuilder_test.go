@@ -134,6 +134,35 @@ func TestPageBuilder(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"Invalid Title"},
 		},
 		{
+			Name:  "Page Title Section Validate Empty",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages").
+					Query(presets.ParamID, "1_2024-05-18-v01_International").
+					AddField("Title", "").
+					EventFunc("section_validate_Page").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"Invalid Title"},
+		},
+		{
+			Name:  "Page Title Section Empty",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages").
+					Query(presets.ParamID, "1_2024-05-18-v01_International").
+					EventFunc("section_save_Page").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Invalid Title"},
+		},
+		{
 			Name:  "Category New Title Empty",
 			Debug: true,
 			ReqFunc: func() *http.Request {
@@ -584,6 +613,20 @@ func TestPageBuilder(t *testing.T) {
 			},
 		},
 		{
+			Name:  "InNumber Validate Items ",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderDemoContainerTestData.TruncatePut(dbr)
+				return NewMultipartBuilder().
+					PageURL("/page_builder/in-numbers").
+					EventFunc(actions.Validate).
+					Query(presets.ParamID, "1").
+					AddField("Items[0].Heading", "").
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{"Heading can`t Empty"},
+		},
+		{
 			Name:  "Edit Demo Container",
 			Debug: true,
 			ReqFunc: func() *http.Request {
@@ -813,15 +856,28 @@ func TestPageBuilder(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/page_categories").
 					EventFunc(actions.Update).
-					Query(presets.ParamID, "1_International").
 					AddField("Name", "category_123").
 					AddField("Path", "45").
-					AddField("LocaleCode", "International").
 					BuildEventFuncRequest()
 
 				return req
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Existing Path"},
+		},
+		{
+			Name:  "Page Category Validate Event Existing Path",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_categories").
+					EventFunc(actions.Validate).
+					AddField("Path", "45").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"Existing Path"},
 		},
 		{
 			Name:  "Page Category Delete Related Page",
@@ -1032,6 +1088,23 @@ func TestPageBuilder(t *testing.T) {
 				}
 				return
 			},
+		},
+		{
+			Name:  "Container Heading  Validate",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderDemoContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/headings").
+					EventFunc(actions.Validate).
+					Query(presets.ParamID, "1").
+					AddField("LinkText", "").
+					AddField("FontColor", "blue").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"LinkText 不能为空"},
 		},
 	}
 

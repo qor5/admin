@@ -869,8 +869,9 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 		}
 		comps = append(comps, comp)
 	}
-
-	return h.Components(comps...)
+	return h.Components(
+		comps...,
+	)
 }
 
 func (b *FieldsBuilder) fieldToComponentWithFormValueKey(info *ModelInfo, obj interface{}, parentFormValueKey string, ctx *web.EventContext, name string, edit bool, vErr *web.ValidationErrors) h.HTMLComponent {
@@ -902,7 +903,7 @@ func (b *FieldsBuilder) fieldToComponentWithFormValueKey(info *ModelInfo, obj in
 		Name:                f.name,
 		FormKey:             contextKeyPath,
 		Label:               label,
-		Errors:              vErr.GetFieldErrors(f.name),
+		Errors:              vErr.GetFieldErrors(contextKeyPath),
 		NestedFieldsBuilder: f.nestedFieldsBuilder,
 		Context:             f.context,
 		Disabled:            disabled,
@@ -913,6 +914,27 @@ type RowFunc func(obj interface{}, formKey string, content h.HTMLComponent, ctx 
 
 func defaultRowFunc(obj interface{}, formKey string, content h.HTMLComponent, ctx *web.EventContext) h.HTMLComponent {
 	return content
+}
+
+func (b *FieldsBuilder) ToErrorMessagesForm(ctx *web.EventContext, vErr *web.ValidationErrors) interface{} {
+	form := make(map[string]interface{})
+
+	for k, _ := range ctx.R.PostForm {
+		if k == web.EventFuncIDName {
+			continue
+		}
+		if strings.HasSuffix(k, "]") {
+			k = k[:strings.LastIndexAny(k, "[")]
+		}
+		key := k + ErrorMessagePostfix
+		if _, ok := form[key]; ok {
+			continue
+		}
+		form[key] = vErr.GetFieldErrors(k)
+
+	}
+
+	return form
 }
 
 func (b *FieldsBuilder) ToComponentForEach(field *FieldContext, slice interface{}, ctx *web.EventContext, rowFunc RowFunc) h.HTMLComponent {

@@ -589,7 +589,7 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			comp := in(obj, field, ctx)
 			if p, ok := comp.(*vx.VXFieldBuilder); ok {
-				p.Attr(web.VField(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"))...).
+				p.Attr(presets.VFieldError(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"), field.Errors)...).
 					Attr("prefix", "/")
 			}
 			return comp
@@ -1036,6 +1036,20 @@ func (b *ContainerBuilder) Install() {
 			),
 			h.If(b.builder.autoSaveReload,
 				web.Listen(
+					b.mb.NotifModelsValidate(),
+					fmt.Sprintf(`if(payload.passed){%s}`,
+						web.Plaid().
+							URL(b.mb.Info().ListingHref()).
+							EventFunc(actions.Update).
+							Query(presets.ParamID, web.Var("payload.id")).
+							Query(presets.ParamPortalName, pageBuilderRightContentPortal).
+							Query(presets.ParamOverlay, actions.Content).
+							ThenScript(web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).
+								Query(paramStatus, ctx.Param(paramStatus)).MergeQuery(true).Go()).
+							Go(),
+					),
+				),
+				web.Listen(
 					b.mb.NotifModelsUpdated(),
 					web.Plaid().
 						URL(b.mb.Info().ListingHref()).
@@ -1137,9 +1151,6 @@ func (b *ContainerBuilder) Editing(vs ...interface{}) *presets.EditingBuilder {
 
 func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 	eb := b.mb.Editing()
-	eb.OnChangeActionFunc(func(id string, ctx *web.EventContext) (s string) {
-		return web.Emit(b.mb.NotifRowUpdated(), presets.PayloadRowUpdated{Id: id})
-	})
 	eb.AppendTabsPanelFunc(func(obj interface{}, ctx *web.EventContext) (tab h.HTMLComponent, content h.HTMLComponent) {
 		if ctx.R.FormValue(paramOpenFromSharedContainer) != "1" {
 			return nil, nil
