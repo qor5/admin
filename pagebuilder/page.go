@@ -100,17 +100,18 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 			"Path":  msgr.ListHeaderPath,
 		}, nil
 	}))
-	eb := pm.Editing().Creating(names...).
+
+	eb := pm.Editing().
 		WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
 			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 				p := obj.(*Page)
 				if err = pageValidator(ctx, p, db, b.l10n); err.HaveErrors() {
 					return
 				}
-				err = in(obj, ctx)
 				return
 			}
-		})
+		}).Creating(names...)
+
 	titleFiled := eb.GetField("Title")
 	if titleFiled != nil {
 		titleFiled.LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
