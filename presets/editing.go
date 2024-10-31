@@ -329,16 +329,20 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 	var actionButtons h.HTMLComponent = h.Components(
 		VSpacer(),
 		h.Iff(!noPerm, func() h.HTMLComponent {
-			return VBtn(buttonLabel).
-				Color("primary").
-				Variant(VariantFlat).
-				Attr(":disabled", "isFetching").
-				Attr(":loading", "isFetching").
-				Attr("@click", web.Plaid().
-					EventFunc(actions.Update).
-					Queries(queries).
-					URL(b.mb.Info().ListingHref()).
-					Go())
+			return web.Scope(
+				VBtn(buttonLabel).
+					Color("primary").
+					Variant(VariantFlat).
+					Attr(":disabled", "xLocals.isFetching").
+					Attr(":loading", "xLocals.isFetching").
+					Attr("@click", web.Plaid().
+						BeforeScript("xLocals.isFetching=true").
+						EventFunc(actions.Update).
+						Queries(queries).
+						AfterScript("xLocals.isFetching=false").
+						URL(b.mb.Info().ListingHref()).
+						Go()),
+			).VSlot("{locals:xLocals}").Init("{isFetching:false}")
 		}),
 	)
 
