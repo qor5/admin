@@ -438,6 +438,7 @@ func (b *SectionBuilder) EventEdit() string {
 func (b *SectionBuilder) EventSave() string {
 	return fmt.Sprintf("section_save_%s", b.name)
 }
+
 func (b *SectionBuilder) EventValidate() string {
 	return fmt.Sprintf("section_validate_%s", b.name)
 }
@@ -1149,7 +1150,6 @@ func (b *SectionBuilder) ValidateDetailField(ctx *web.EventContext) (r web.Event
 		if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
 			web.AppendRunScripts(&r, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), "error"))
 		}
-
 	}()
 
 	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {

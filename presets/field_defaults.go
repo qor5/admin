@@ -243,6 +243,7 @@ func DateTimeSetter(obj interface{}, field *FieldContext, ctx *web.EventContext)
 func cfTextField(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	return TextField(obj, field, ctx)
 }
+
 func VFieldError(name string, value interface{}, error interface{}) []interface{} {
 	errKey := name + ErrorMessagePostfix
 
@@ -257,6 +258,7 @@ func VFieldError(name string, value interface{}, error interface{}) []interface{
 		fmt.Sprintf("form[%q]", errKey),
 	}, web.VAssign("form", objValue)...)
 }
+
 func TextField(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXFieldBuilder {
 	return vuetifyx.VXField().Label(field.Label).
 		Attr(VFieldError(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)), field.Errors)...).
@@ -268,7 +270,6 @@ func SelectField(obj interface{}, field *FieldContext, ctx *web.EventContext) *v
 		Label(field.Label).
 		Disabled(field.Disabled).
 		Attr(VFieldError(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)), field.Errors)...)
-
 }
 
 func ReadonlyText(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXReadonlyFieldBuilder {

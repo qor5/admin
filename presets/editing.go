@@ -371,7 +371,6 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 `,
 			),
 			b.ToComponent(b.mb.Info(), obj, ctx),
-
 		),
 		h.If(!autosave, VCardActions(actionButtons)),
 	))
@@ -437,6 +436,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 	}
 	return scope.OnChange(onChangeEvent).UseDebounce(500)
 }
+
 func (b *EditingBuilder) doValidate(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var (
 		id        = ctx.Param(ParamID)
@@ -538,7 +538,7 @@ func (b *EditingBuilder) FetchAndUnmarshal(id string, removeDeletedAndSort bool,
 func (b *EditingBuilder) doUpdate(
 	ctx *web.EventContext,
 	r *web.EventResponse,
-// will not close drawer/dialog
+	// will not close drawer/dialog
 	silent bool,
 ) (created bool, err error) {
 	id := ctx.R.FormValue(ParamID)

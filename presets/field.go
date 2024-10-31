@@ -919,7 +919,7 @@ func defaultRowFunc(obj interface{}, formKey string, content h.HTMLComponent, ct
 func (b *FieldsBuilder) ToErrorMessagesForm(ctx *web.EventContext, vErr *web.ValidationErrors) interface{} {
 	form := make(map[string]interface{})
 
-	for k, _ := range ctx.R.PostForm {
+	for k := range ctx.R.PostForm {
 		if k == web.EventFuncIDName {
 			continue
 		}

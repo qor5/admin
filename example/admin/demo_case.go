@@ -636,6 +636,7 @@ func avatarView[T comparable](sizes []T, show func(T) string) (comps []h.HTMLCom
 	}
 	return
 }
+
 func cardRows(title string, splitCols int, comp ...h.HTMLComponent) *v.VCardBuilder {
 	var (
 		rows   []h.HTMLComponent
@@ -684,7 +685,6 @@ func DemoCaseTextField(obj interface{}, editField, field, label string, vErr web
 	return vx.VXField().
 		Label(label).
 		Attr(presets.VFieldError(formKey, reflectutils.MustGet(obj, formKey), vErr.GetFieldErrors(formKey))...)
-
 }
 
 func DemoCaseSelect(obj interface{}, editField, field, label string, vErr web.ValidationErrors, items interface{}) *vx.VXSelectBuilder {
@@ -695,7 +695,6 @@ func DemoCaseSelect(obj interface{}, editField, field, label string, vErr web.Va
 		ItemTitle("Name").
 		ItemValue("ID").
 		Attr(presets.VFieldError(formKey, reflectutils.MustGet(obj, formKey), vErr.GetFieldErrors(formKey))...)
-
 }
 
 func DemoCaseCheckBox(obj interface{}, editField, field, label string) *vx.VXCheckboxBuilder {

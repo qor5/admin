@@ -52,6 +52,7 @@ type PayloadRowUpdated struct {
 func (mb *ModelBuilder) NotifModelsValidate() string {
 	return fmt.Sprintf("presets_NotifModelsValidate_%T", mb.model)
 }
+
 func (mb *ModelBuilder) NotifModelsSectionValidate(name string) string {
 	return fmt.Sprintf("presets_NotifModelsValidate_%v_%T", name, mb.model)
 }
