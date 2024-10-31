@@ -108,7 +108,6 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 				if err = pageValidator(ctx, p, db, b.l10n); err.HaveErrors() {
 					return
 				}
-				err = in(obj, ctx)
 				return
 			}
 		}).Creating(names...)
