@@ -14,6 +14,7 @@ import (
 	"gorm.io/gorm/logger"
 
 	"github.com/qor5/admin/v3/example/admin"
+	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/pagebuilder/example/containers"
 	"github.com/qor5/admin/v3/presets"
@@ -36,6 +37,7 @@ func TestMain(m *testing.M) {
 
 var pageBuilderData = gofixtures.Data(gofixtures.Sql(`
 INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (1, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'category_123', '/12', '', 'International');
+INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (1, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'category_123', '/12', '', 'China');
 INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (2, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'category_456', '/45', '', 'International');
 SELECT setval('page_builder_categories_id_seq', 1, true);
 INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code, seo) VALUES (1, '2024-05-17 15:25:39.716658 +00:00', '2024-05-17 15:25:39.716658 +00:00', null, '12312', '/123', 1, 'draft', '', null, null, null, null, '2024-05-18-v01', '2024-05-18-v01', '', 'International', '{"OpenGraphImageFromMediaLibrary":{"ID":0,"Url":"","VideoLink":"","FileName":"","Description":""}}');
@@ -1141,6 +1143,41 @@ func TestPageBuilder(t *testing.T) {
 				return req
 			},
 			ExpectRunScriptContainsInOrder: []string{"LinkText 不能为空"},
+		},
+		{
+			Name:  "Container In Number Delete First Row Validate",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderDemoContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/in-numbers").
+					EventFunc(actions.Update).
+					AddField("__Deleted.Items", "0").
+					AddField("Items[1].Heading", "").
+					AddField("Items[1].Text", "blue").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Items[0].Heading"},
+			ExpectPortalUpdate0NotContains:     []string{"Items[1].Heading"},
+		},
+		{
+			Name:  "Category DoLocalize",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_categories").
+					EventFunc(l10n.DoLocalize).
+					Query(presets.ParamID, "1_International").
+					AddField("localize_from", "International").
+					AddField("localize_to", "Japan").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"Successfully Localized"},
 		},
 	}
 
