@@ -324,7 +324,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		return vuetify.VTextField().
 			Variant(vuetify.FieldVariantUnderlined).
 			Label(field.Label).
-			Attr(web.VField(field.FormKey, field.Value(obj))...)
+			Attr(presets.VFieldError(field.FormKey, field.Value(obj), field.Errors)...)
 	})
 
 	// only pages view containers set OnlyPages true
@@ -339,7 +339,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		return vuetify.VTextField().
 			Variant(vuetify.FieldVariantUnderlined).
 			Label(field.Label).
-			Attr(web.VField(field.FormKey, field.Value(obj))...)
+			Attr(presets.VFieldError(field.FormKey, field.Value(obj), field.Errors)...)
 	})
 
 	// Campaigns Menu

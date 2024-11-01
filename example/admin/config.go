@@ -691,10 +691,9 @@ func configPost(
 		return tiptap.TiptapEditor(db, field.Name).
 			Extensions(extensions).
 			MarkdownTheme("github"). // Match tiptap.ThemeGithubCSSComponentsPack
-			Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
+			Attr(presets.VFieldError(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)), field.Errors)...).
 			Label(field.Label).
-			Disabled(field.Disabled).
-			ErrorMessages(field.Errors...)
+			Disabled(field.Disabled)
 	})
 	dp.Section(detailSection)
 	return m
