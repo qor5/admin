@@ -579,6 +579,84 @@ func TestSchedulePublish(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, "", storage.Objects["test/product/1/index.html"])
 	}
+
+	productV1.ScheduledEndAt = nil
+	{
+		productV1.Name = "should_ignored_by_finder"
+		startAt := db.NowFunc().Add(-24 * time.Hour)
+		productV1.ScheduledStartAt = &startAt
+
+		err := db.Save(&productV1).Error
+		require.NoError(t, err)
+
+		// expect ignored
+		ctx := publish.WithScheduleRecordsFinder(context.Background(), func(ctx context.Context, operation publish.ScheduleOperation, b *publish.Builder, db *gorm.DB, records any) error {
+			switch operation {
+			case publish.ScheduleOperationPublish:
+				if err := db.Where("scheduled_start_at <= ? AND name <> ?", db.NowFunc(), "should_ignored_by_finder").
+					Order("scheduled_start_at").Find(records).Error; err != nil {
+					return err
+				}
+			case publish.ScheduleOperationUnPublish:
+				if err := db.Where("scheduled_end_at <= ? AND name <> ?", db.NowFunc(), "should_ignored_by_finder").
+					Order("scheduled_end_at").Find(records).Error; err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		err = schedulePublisher.Run(ctx, productV1)
+		require.NoError(t, err)
+		require.Equal(t, "", storage.Objects["test/product/1/index.html"])
+
+		// expect ok
+		productV1.Name = "3"
+		err = db.Save(&productV1).Error
+		require.NoError(t, err)
+
+		err = schedulePublisher.Run(ctx, productV1)
+		require.NoError(t, err)
+		require.Equal(t, "13", storage.Objects["test/product/1/index.html"])
+	}
+
+	productV1.ScheduledStartAt = nil
+	{
+		productV1.Name = "should_ignored_by_finder"
+		endAt := startAt.Add(time.Second * 2)
+		productV1.ScheduledEndAt = &endAt
+
+		err := db.Save(&productV1).Error
+		require.NoError(t, err)
+
+		// expect ignored
+		ctx := publish.WithScheduleRecordsFinder(context.Background(), func(ctx context.Context, operation publish.ScheduleOperation, b *publish.Builder, db *gorm.DB, records any) error {
+			switch operation {
+			case publish.ScheduleOperationPublish:
+				if err := db.Where("scheduled_start_at <= ? AND name <> ?", db.NowFunc(), "should_ignored_by_finder").
+					Order("scheduled_start_at").Find(records).Error; err != nil {
+					return err
+				}
+			case publish.ScheduleOperationUnPublish:
+				if err := db.Where("scheduled_end_at <= ? AND name <> ?", db.NowFunc(), "should_ignored_by_finder").
+					Order("scheduled_end_at").Find(records).Error; err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		err = schedulePublisher.Run(ctx, productV1)
+		require.NoError(t, err)
+		require.Equal(t, "13", storage.Objects["test/product/1/index.html"])
+
+		// expect ok
+		productV1.Name = "3"
+		err = db.Save(&productV1).Error
+		require.NoError(t, err)
+
+		err = schedulePublisher.Run(ctx, productV1)
+		require.NoError(t, err)
+		require.Equal(t, "", storage.Objects["test/product/1/index.html"])
+	}
 }
 
 func TestPublishContentWithoutVersionToS3(t *testing.T) {
