@@ -41,6 +41,8 @@ type Messages struct {
 	FiltersDateDays                            string
 	FiltersDateMonths                          string
 	FiltersDateAnd                             string
+	FiltersDateStartAt                         string
+	FiltersDateEndAt                           string
 	FiltersDateTo                              string
 	FiltersDateClear                           string
 	FiltersDateOK                              string
@@ -181,6 +183,8 @@ var Messages_en_US = &Messages{
 	FiltersDateDays:              "days",
 	FiltersDateMonths:            "months",
 	FiltersDateAnd:               "and",
+	FiltersDateStartAt:           "Start at",
+	FiltersDateEndAt:             "End at",
 	FiltersDateTo:                "to",
 	FiltersDateClear:             "Clear",
 	FiltersDateOK:                "OK",
@@ -267,6 +271,8 @@ var Messages_zh_CN = &Messages{
 	FiltersDateDays:              "天",
 	FiltersDateMonths:            "月",
 	FiltersDateAnd:               "和",
+	FiltersDateStartAt:           "开始于",
+	FiltersDateEndAt:             "结束于",
 	FiltersDateTo:                "至",
 	FiltersDateClear:             "清空",
 	FiltersDateOK:                "确定",
@@ -353,6 +359,8 @@ var Messages_ja_JP = &Messages{
 	FiltersDateDays:              "日",
 	FiltersDateMonths:            "ヶ月",
 	FiltersDateAnd:               "と",
+	FiltersDateStartAt:           "開始",
+	FiltersDateEndAt:             "終了",
 	FiltersDateTo:                "に",
 	FiltersDateClear:             "消去する",
 	FiltersDateOK:                "OK",
