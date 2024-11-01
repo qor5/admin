@@ -89,6 +89,24 @@ func TestPresetsDetailing(t *testing.T) {
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"123123", "abc@example.com", "hello description"},
 		},
+		{
+			Name:  "page detail reload",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=section_reload_Details&id=12").
+					AddField("Name", "123123").
+					AddField("Email", "abc@example.com").
+					AddField("Description", "hello description").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Edit", "Felix 1", "abc@example.com"},
+			ExpectPortalUpdate0NotContains:     []string{"123123", "hello description", "Cancel", "Save"},
+		},
 
 		{
 			Name:  "page detail show for field sections",
@@ -563,6 +581,28 @@ func TestPresetsDetailListSection(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"tom", "199", "Cancel", "Save"},
 			ExpectPortalUpdate0NotContains:     []string{"terry", "188", "Add Row"},
 		},
+		{
+			Name:  "reload section, have created but unsaved section",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				userCreditCardsData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_reload_CreditCards").
+					Query("sectionListUnsaved_CreditCards", "true").
+					Query("id", "2").
+					AddField("CreditCards[0].Name", "terry").
+					AddField("CreditCards[0].Phone", "188").
+					AddField("__Deleted_CreditCards[0].sectionListEditing", "true").
+					AddField("CreditCards[1].Name", "tom").
+					AddField("CreditCards[1].Phone", "199").
+					AddField("__Deleted_CreditCards[1].sectionListEditing", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"terry", "188", "Add Row"},
+			ExpectPortalUpdate0NotContains:     []string{"Cancel", "Save"},
+		},
+
 		{
 			Name:  "cancel section, have created but unsaved section",
 			Debug: true,

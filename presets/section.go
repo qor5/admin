@@ -385,7 +385,7 @@ func (b *SectionBuilder) ElementShowComponentFunc(v FieldComponentFunc) (r *Sect
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return web.Scope(
 				web.Portal(
-					b.listComponent(obj, ctx, -1, -1, -1, false),
+					b.listComponent(obj, ctx, -1, -1, -1, false, false),
 				).Name(b.FieldPortalName()),
 			).VSlot("{ locals }").Init("{show:true}")
 		})
@@ -401,7 +401,7 @@ func (b *SectionBuilder) ElementEditComponentFunc(v FieldComponentFunc) (r *Sect
 	if b.elementViewFunc != nil {
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return web.Portal(
-				b.listComponent(obj, ctx, -1, -1, -1, false),
+				b.listComponent(obj, ctx, -1, -1, -1, false, false),
 			).Name(b.FieldPortalName())
 		})
 	}
@@ -427,6 +427,7 @@ func (b *SectionBuilder) registerEvent() {
 	b.mb.RegisterEventFunc(b.EventEdit(), b.EditDetailField)
 	b.mb.RegisterEventFunc(b.EventDelete(), b.DeleteDetailListField)
 	b.mb.RegisterEventFunc(b.EventCreate(), b.CreateDetailListField)
+	b.mb.RegisterEventFunc(b.EventReload(), b.ReloadDetailField)
 }
 
 func (b *SectionBuilder) EventEdit() string {
@@ -443,6 +444,10 @@ func (b *SectionBuilder) EventDelete() string {
 
 func (b *SectionBuilder) EventCreate() string {
 	return fmt.Sprintf("section_create_%s", b.name)
+}
+
+func (b *SectionBuilder) EventReload() string {
+	return fmt.Sprintf("section_reload_%s", b.name)
 }
 
 func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -595,7 +600,7 @@ func (b *SectionBuilder) defaultUnmarshalFunc(obj interface{}, ctx *web.EventCon
 	return
 }
 
-func (b *SectionBuilder) buildElementRows(list interface{}, deletedID, editID, saveID, listLen int, unsaved bool, ctx *web.EventContext) *h.HTMLTagBuilder {
+func (b *SectionBuilder) buildElementRows(list interface{}, deletedID, editID, saveID, listLen int, unsaved, isReload bool, ctx *web.EventContext) *h.HTMLTagBuilder {
 	rows := h.Div()
 	if b.alwaysShowListLabel && !b.disableLabel {
 		lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.mb.label, b.label)
@@ -623,7 +628,7 @@ func (b *SectionBuilder) buildElementRows(list interface{}, deletedID, editID, s
 			if editID == sortIndex {
 				// if click edit
 				rows.AppendChildren(b.editElement(elementObj, sortIndex, unsaved && i == listLen-1, ctx))
-			} else if saveID == sortIndex {
+			} else if saveID == sortIndex || isReload {
 				// if click save
 				rows.AppendChildren(b.showElement(elementObj, sortIndex, ctx))
 			} else {
@@ -646,7 +651,7 @@ func (b *SectionBuilder) buildElementRows(list interface{}, deletedID, editID, s
 	return rows
 }
 
-func (b *SectionBuilder) listComponent(obj interface{}, ctx *web.EventContext, deletedID, editID, saveID int, unsaved bool) h.HTMLComponent {
+func (b *SectionBuilder) listComponent(obj interface{}, ctx *web.EventContext, deletedID, editID, saveID int, unsaved, isReload bool) h.HTMLComponent {
 	if b.elementHoverFunc != nil {
 		b.elementHover = b.elementHoverFunc(obj, ctx)
 	}
@@ -668,10 +673,10 @@ func (b *SectionBuilder) listComponent(obj interface{}, ctx *web.EventContext, d
 		listLen = reflect.ValueOf(list).Len()
 	}
 
-	rows := b.buildElementRows(list, deletedID, editID, saveID, listLen, unsaved, ctx)
+	rows := b.buildElementRows(list, deletedID, editID, saveID, listLen, unsaved, isReload, ctx)
 
 	disableCreateBtn := b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
-	disableCreateBtn = disableCreateBtn || (ctx.ParamAsBool(b.elementUnsavedKey()))
+	disableCreateBtn = !isReload && (disableCreateBtn || (ctx.ParamAsBool(b.elementUnsavedKey())))
 	if !b.disableElementCreateBtn && !disableCreateBtn {
 		addBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "AddRow")).PrependIcon("mdi-plus-circle").Color("primary").Variant(VariantText).
 			Class("mb-2 ml-4").
@@ -1108,7 +1113,7 @@ func (b *SectionBuilder) EditDetailListField(ctx *web.EventContext) (r web.Event
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: b.FieldPortalName(),
-		Body: b.listComponent(obj, ctx, -1, int(index), -1, unsaved),
+		Body: b.listComponent(obj, ctx, -1, int(index), -1, unsaved, false),
 	})
 
 	return
@@ -1144,7 +1149,7 @@ func (b *SectionBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Event
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: b.FieldPortalName(),
-			Body: b.listComponent(obj, ctx, -1, -1, index, unsaved),
+			Body: b.listComponent(obj, ctx, -1, -1, index, unsaved, false),
 		})
 		return
 	}
@@ -1216,14 +1221,14 @@ func (b *SectionBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Event
 	if _, ok := ctx.Flash.(*web.ValidationErrors); ok {
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: b.FieldPortalName(),
-			Body: b.listComponent(obj, ctx, -1, index, -1, unsaved),
+			Body: b.listComponent(obj, ctx, -1, index, -1, unsaved, false),
 		})
 		return
 	}
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: b.FieldPortalName(),
-		Body: b.listComponent(obj, ctx, -1, -1, index, unsaved),
+		Body: b.listComponent(obj, ctx, -1, -1, index, unsaved, false),
 	})
 
 	return
@@ -1286,7 +1291,7 @@ func (b *SectionBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.Eve
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: b.FieldPortalName(),
-		Body: b.listComponent(obj, ctx, int(index), -1, -1, unsaved),
+		Body: b.listComponent(obj, ctx, int(index), -1, -1, unsaved, false),
 	})
 
 	return
@@ -1317,9 +1322,54 @@ func (b *SectionBuilder) CreateDetailListField(ctx *web.EventContext) (r web.Eve
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: b.FieldPortalName(),
-		Body: b.listComponent(obj, ctx, -1, listLen-1, -1, true),
+		Body: b.listComponent(obj, ctx, -1, listLen-1, -1, true, false),
 	})
 
+	return
+}
+
+func (b *SectionBuilder) ReloadDetailField(ctx *web.EventContext) (r web.EventResponse, err error) {
+	if b.isList {
+		return b.ReloadDetailListField(ctx)
+	}
+
+	field := &FieldContext{
+		ModelInfo: b.mb.modelInfo,
+		FormKey:   b.name,
+		Name:      b.name,
+		Label:     b.label,
+	}
+
+	obj := b.mb.NewModel()
+	obj, err = b.mb.editing.Fetcher(obj, ctx.Queries().Get(ParamID), ctx)
+	if err != nil {
+		return
+	}
+	if b.mb.editing.Setter != nil {
+		b.mb.editing.Setter(obj, ctx)
+	}
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: b.FieldPortalName(),
+		Body: b.viewComponent(obj, field, ctx),
+	})
+	return
+}
+
+func (b *SectionBuilder) ReloadDetailListField(ctx *web.EventContext) (r web.EventResponse, err error) {
+	obj := b.mb.NewModel()
+	obj, err = b.mb.editing.Fetcher(obj, ctx.Queries().Get(ParamID), ctx)
+	if err != nil {
+		return
+	}
+	if b.mb.editing.Setter != nil {
+		b.mb.editing.Setter(obj, ctx)
+	}
+
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: b.FieldPortalName(),
+		Body: b.listComponent(obj, ctx, -1, -1, -1, false, true),
+	})
 	return
 }
 
