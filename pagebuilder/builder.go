@@ -941,6 +941,9 @@ func (b *ContainerBuilder) setFieldsLazyWrapComponentFunc(fields *presets.Fields
 		field.LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
 			return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 				comp := in(obj, field, ctx)
+				if ctx.Param(presets.ParamOverlay) != actions.Content {
+					return comp
+				}
 				formKey := field.ModelInfo.URIName() + "_" + field.FormKey
 				if p, ok := comp.(TagInterface); ok {
 					p.SetAttr("ref", formKey)

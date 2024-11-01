@@ -1148,6 +1148,7 @@ func (b *SectionBuilder) ValidateDetailField(ctx *web.EventContext) (r web.Event
 			web.AppendRunScripts(&r, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), "error"))
 		}
 	}()
+
 	if id != "" {
 		var err1 error
 		obj, err1 = b.mb.editing.Fetcher(obj, id, ctx)
@@ -1160,7 +1161,7 @@ func (b *SectionBuilder) ValidateDetailField(ctx *web.EventContext) (r web.Event
 		b.setter(obj, ctx)
 	}
 
-	vErr = b.editingFB.Unmarshal(obj, b.mb.Info(), true, ctx)
+	vErr = b.editingFB.Unmarshal(obj, b.mb.Info(), false, ctx)
 	if vErr.HaveErrors() {
 		return
 	}

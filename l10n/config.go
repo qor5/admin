@@ -5,12 +5,13 @@ import (
 	"reflect"
 	"slices"
 
-	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/presets"
 )
 
 const (
@@ -126,7 +127,7 @@ func (b *Builder) localizeMenu(obj interface{}, chips h.HTMLComponents, field *p
 					Go(),
 			)),
 	).VSlot(`{locals:menuLocals}`).
-		Init(fmt.Sprintf(`{locales:%v}`, h.JSONString(existLocales)))
+		Init(fmt.Sprintf(`{locales:[]}`))
 }
 
 func runSwitchLocaleFunc(lb *Builder) func(ctx *web.EventContext) (r h.HTMLComponent) {

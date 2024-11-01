@@ -62,6 +62,9 @@ func RegisterInNumbersContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	eb := mb.Editing("AddTopSpace", "AddBottomSpace", "AnchorID", "Heading", "Items").ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		p := obj.(*InNumbers)
 		for i, v := range p.Items {
+			if v == nil {
+				continue
+			}
 			if v.Heading == "" {
 				err.FieldError(fmt.Sprintf("Items[%v].Heading", i), "Heading can`t Empty")
 			}
