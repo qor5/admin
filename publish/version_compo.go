@@ -319,7 +319,11 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 	registerEventFuncsForVersion(mb, db)
 	listingFields := []string{"Version", "Status", "StartAt", "EndAt", "Option"}
 	if pb.ab != nil {
-		defer func() { pb.ab.RegisterModel(mb) }()
+		defer func() {
+			pb.ab.RegisterModel(mb).LabelFunc(func() string {
+				return pm.Info().URIName()
+			})
+		}()
 		listingFields = []string{"Version", "Status", "StartAt", "EndAt", activity.ListFieldNotes, "Option"}
 	}
 
