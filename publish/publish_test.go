@@ -68,7 +68,7 @@ func (p *Product) GetPublishActions(ctx context.Context, db *gorm.DB, storage os
 		})
 	}
 
-	if val, ok := ctx.Value(skipList).(bool); ok && val {
+	if val, ok := ctx.Value(ctxKeySkipList{}).(bool); ok && val {
 		return
 	}
 	actions = append(actions, &publish.PublishAction{
@@ -84,7 +84,7 @@ func (p *Product) GetUnPublishActions(ctx context.Context, db *gorm.DB, storage 
 		Url:      p.OnlineUrl,
 		IsDelete: true,
 	})
-	if val, ok := ctx.Value(skipList).(bool); ok && val {
+	if val, ok := ctx.Value(ctxKeySkipList{}).(bool); ok && val {
 		return
 	}
 	actions = append(actions, &publish.PublishAction{
@@ -222,7 +222,7 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
-const skipList = "skip_list"
+type ctxKeySkipList struct{}
 
 type ProductWithError struct {
 	Product
@@ -288,8 +288,8 @@ func TestPublishVersionContentToS3(t *testing.T) {
 
 	p := publish.New(db, storage)
 	// publish v1
-	skipListTrueContext := context.WithValue(context.Background(), skipList, true)
-	skipListFalseContext := context.WithValue(context.Background(), skipList, false)
+	skipListTrueContext := context.WithValue(context.Background(), ctxKeySkipList{}, true)
+	skipListFalseContext := context.WithValue(context.Background(), ctxKeySkipList{}, false)
 	if err := p.Publish(skipListTrueContext, &productV1); err != nil {
 		t.Error(err)
 	}
