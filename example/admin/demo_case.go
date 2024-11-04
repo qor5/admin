@@ -148,7 +148,13 @@ func configureDemoCase(b *presets.Builder, db *gorm.DB) {
 		panic(err)
 	}
 	mb := b.Model(&DemoCase{})
-	mb.Editing("Name")
+	mb.Editing("Name").ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		p := obj.(*DemoCase)
+		if p.Name == "" {
+			err.FieldError("Name", "Name Can`t Empty")
+		}
+		return
+	})
 	mb.Listing("ID", "Name")
 	detailing := mb.Detailing(
 		"FieldSection",
