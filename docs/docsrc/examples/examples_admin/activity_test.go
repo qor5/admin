@@ -16,19 +16,6 @@ import (
 )
 
 var activityData = gofixtures.Data(gofixtures.Sql(`
-INSERT INTO "public"."with_activity_products" ("id", "created_at", "updated_at", "deleted_at", "title", "code", "price") VALUES ('13', '2024-07-16 02:50:10.242888+00', '2024-07-16 02:50:10.242888+00', NULL, 'Air Jordan 4 RM Prowls', '10001', '200'),
-('14', '2024-07-16 02:55:10.242888+00', '2024-07-16 02:55:10.242888+00', NULL, 'Nike Air Max 90', '10002', '150'),
-('15', '2024-07-16 03:00:10.242888+00', '2024-07-16 03:00:10.242888+00', NULL, 'Adidas Yeezy Boost 350', '10003', '220'),
-('16', '2024-07-16 03:05:10.242888+00', '2024-07-16 03:05:10.242888+00', NULL, 'Puma Suede Classic', '10004', '80'),
-('17', '2024-07-16 03:10:10.242888+00', '2024-07-16 03:10:10.242888+00', NULL, 'Reebok Classic Leather', '10005', '90'),
-('18', '2024-07-16 03:15:10.242888+00', '2024-07-16 03:15:10.242888+00', NULL, 'Asics Gel Lyte III', '10006', '120'),
-('19', '2024-07-16 03:20:10.242888+00', '2024-07-16 03:20:10.242888+00', NULL, 'New Balance 574', '10007', '130'),
-('20', '2024-07-16 03:25:10.242888+00', '2024-09-10 09:19:57.192539+00', NULL, 'Converse Chuck Taylor All Star', '10008', '72'),
-('21', '2024-07-16 03:30:10.242888+00', '2024-07-16 03:30:10.242888+00', NULL, 'Vans Old Skool', '10009', '60'),
-('22', '2024-07-16 03:35:10.242888+00', '2024-09-10 09:19:40.596903+00', NULL, 'Jordan 1 Retro High', '10010', '251'),
-('23', '2024-07-16 03:40:10.242888+00', '2024-07-16 03:40:10.242888+00', NULL, 'Under Armour Curry 7', '10011', '140');
-
-INSERT INTO "activity_users" ("id", "created_at", "updated_at", "deleted_at", "name", "avatar") VALUES ('1', '2024-07-26 08:03:52.17526+00', '2024-07-30 07:59:17.439158+00', NULL, 'John', 'https://i.pravatar.cc/300');
 
 INSERT INTO "public"."activity_logs" ("id", "created_at", "updated_at", "deleted_at", "user_id", "action", "hidden", "model_name", "model_keys", "model_label", "model_link", "detail", "scope") VALUES ('29', '2024-07-16 02:50:10.250739+00', '2024-07-16 02:50:10.251259+00', NULL, '1', 'Create', 'f', 'WithActivityProduct', '13', 'with-activity-products', '/examples/activity-example/with-activity-products/13', 'null', ',ownerID:1,'),
 ('30', '2024-07-16 02:55:10.250739+00', '2024-07-16 02:55:10.251259+00', NULL, '1', 'Create', 'f', 'WithActivityProduct', '14', 'with-activity-products', '/examples/activity-example/with-activity-products/14', 'null', ',ownerID:1,'),
@@ -43,13 +30,32 @@ INSERT INTO "public"."activity_logs" ("id", "created_at", "updated_at", "deleted
 ('39', '2024-07-16 03:40:10.250739+00', '2024-07-16 03:40:10.251259+00', NULL, '1', 'Create', 'f', 'WithActivityProduct', '23', 'with-activity-products', '/examples/activity-example/with-activity-products/23', 'null', ',ownerID:1,'),
 ('40', '2024-07-16 02:55:26.074417+00', '2024-07-16 02:55:26.075726+00', NULL, '1', 'LastView', 't', 'WithActivityProduct', '23', 'with-activity-products', '/examples/activity-example/with-activity-products/23', 'null', ',ownerID:1,'),
 ('41', '2024-09-10 09:19:30.248075+00', '2024-09-10 09:19:30.250049+00', NULL, '1', 'LastView', 't', 'WithActivityProduct', '22', 'with-activity-products', '/examples/activity-example/with-activity-products/22', 'null', ',ownerID:1,'),
-('42', '2024-07-16 02:56:11.064742+00', '2024-07-16 02:56:11.067334+00', NULL, '1', 'LastView', 't', 'WithActivityProduct', '19', 'with-activity-products', '/examples/activity-example/with-activity-products/19', 'null', ',ownerID:1,'),
+('42', '2024-11-04 08:30:06.590733+00', '2024-11-04 08:30:06.594158+00', NULL, '1', 'LastView', 't', 'WithActivityProduct', '19', 'with-activity-products', '/examples/activity-example/with-activity-products/19', 'null', ',ownerID:1,'),
 ('43', '2024-07-16 02:56:16.18094+00', '2024-07-16 02:56:16.184033+00', NULL, '1', 'LastView', 't', 'WithActivityProduct', '15', 'with-activity-products', '/examples/activity-example/with-activity-products/15', 'null', ',ownerID:1,'),
 ('44', '2024-07-16 02:56:42.273117+00', '2024-07-16 02:56:42.275043+00', NULL, '1', 'LastView', 't', 'WithActivityProduct', '13', 'with-activity-products', '/examples/activity-example/with-activity-products/13', 'null', ',ownerID:1,'),
 ('45', '2024-07-16 02:56:45.176698+00', '2024-07-16 02:56:45.177268+00', NULL, '1', 'Note', 'f', 'WithActivityProduct', '13', 'with-activity-products', '/examples/activity-example/with-activity-products/13', '{"note":"The newest model of the off-legacy Air Jordans is ready to burst onto to the scene.","last_edited_at":"0001-01-01T00:00:00Z"}', ',ownerID:1,'),
 ('85', '2024-09-10 09:19:40.602161+00', '2024-09-10 09:19:40.60246+00', NULL, '1', 'Edit', 'f', 'WithActivityProduct', '22', 'with-activity-products', '/examples/activity-example/with-activity-products/22', '[{"Field":"Price","Old":"250","New":"251"}]', ',ownerID:1,'),
 ('86', '2024-09-10 09:19:52.521799+00', '2024-09-10 09:19:52.522825+00', NULL, '1', 'LastView', 't', 'WithActivityProduct', '20', 'with-activity-products', '/examples/activity-example/with-activity-products/20', 'null', ',ownerID:1,'),
-('87', '2024-09-10 09:19:57.195723+00', '2024-09-10 09:19:57.195937+00', NULL, '1', 'Edit', 'f', 'WithActivityProduct', '20', 'with-activity-products', '/examples/activity-example/with-activity-products/20', '[{"Field":"Price","Old":"70","New":"72"}]', ',ownerID:1,');
+('87', '2024-09-10 09:19:57.195723+00', '2024-09-10 09:19:57.195937+00', NULL, '1', 'Edit', 'f', 'WithActivityProduct', '20', 'with-activity-products', '/examples/activity-example/with-activity-products/20', '[{"Field":"Price","Old":"70","New":"72"}]', ',ownerID:1,'),
+('119', '2024-11-04 08:30:12.193638+00', '2024-11-04 08:30:12.194166+00', NULL, '1', 'Delete', 'f', 'WithActivityProduct', '19', 'with-activity-products', '/examples/activity-example/with-activity-products/19', 'null', ',ownerID:1,'),
+('120', '2024-11-04 08:30:48.658835+00', '2024-11-04 08:30:48.660793+00', NULL, '1', 'LastView', 't', 'WithActivityProduct', '17', 'with-activity-products', '/examples/activity-example/with-activity-products/17', 'null', ',ownerID:1,'),
+('121', '2024-11-04 08:30:34.915831+00', '2024-11-04 08:30:34.916535+00', NULL, '1', 'Edit', 'f', 'WithActivityProduct', '17', 'with-activity-products', '/examples/activity-example/with-activity-products/17', '[{"Field":"AppovedAt","Old":"","New":"2024-11-06 00:00:00 +0800 CST"}]', ',ownerID:1,'),
+('122', '2024-11-04 08:30:57.018058+00', '2024-11-04 08:30:57.018752+00', NULL, '1', 'Edit', 'f', 'WithActivityProduct', '17', 'with-activity-products', '/examples/activity-example/with-activity-products/17', '[{"Field":"Price","Old":"90","New":"0"}]', ',ownerID:1,'),
+('123', '2024-11-04 08:31:13.297364+00', '2024-11-04 08:31:13.298046+00', NULL, '1', 'Edit', 'f', 'WithActivityProduct', '17', 'with-activity-products', '/examples/activity-example/with-activity-products/17', '[{"Field":"AppovedAt","Old":"2024-11-06 00:00:00 +0800 CST","New":""}]', ',ownerID:1,');
+
+INSERT INTO "public"."activity_users" ("id", "created_at", "updated_at", "deleted_at", "name", "avatar") VALUES ('1', '2024-07-26 08:03:52.17526+00', '2024-11-04 08:31:13.292852+00', NULL, 'John', 'https://i.pravatar.cc/300');
+
+INSERT INTO "public"."with_activity_products" ("id", "created_at", "updated_at", "deleted_at", "title", "code", "price", "approved", "edited", "stocked_at", "appoved_at") VALUES ('13', '2024-07-16 02:50:10.242888+00', '2024-07-16 02:50:10.242888+00', NULL, 'Air Jordan 4 RM Prowls', '10001', '200', NULL, NULL, NULL, NULL),
+('14', '2024-07-16 02:55:10.242888+00', '2024-07-16 02:55:10.242888+00', NULL, 'Nike Air Max 90', '10002', '150', NULL, NULL, NULL, NULL),
+('15', '2024-07-16 03:00:10.242888+00', '2024-07-16 03:00:10.242888+00', NULL, 'Adidas Yeezy Boost 350', '10003', '220', NULL, NULL, NULL, NULL),
+('16', '2024-07-16 03:05:10.242888+00', '2024-07-16 03:05:10.242888+00', NULL, 'Puma Suede Classic', '10004', '80', NULL, NULL, NULL, NULL),
+('17', '2024-07-16 03:10:10.242888+00', '2024-11-04 08:31:13.289941+00', NULL, 'Reebok Classic Leather', '10005', '0', 'f', 'f', '0001-01-01 00:00:00+00', NULL),
+('18', '2024-07-16 03:15:10.242888+00', '2024-07-16 03:15:10.242888+00', NULL, 'Asics Gel Lyte III', '10006', '120', NULL, NULL, NULL, NULL),
+('19', '2024-07-16 03:20:10.242888+00', '2024-07-16 03:20:10.242888+00', '2024-11-04 08:30:12.185633+00', 'New Balance 574', '10007', '130', NULL, NULL, NULL, NULL),
+('20', '2024-07-16 03:25:10.242888+00', '2024-09-10 09:19:57.192539+00', NULL, 'Converse Chuck Taylor All Star', '10008', '72', NULL, NULL, NULL, NULL),
+('21', '2024-07-16 03:30:10.242888+00', '2024-07-16 03:30:10.242888+00', NULL, 'Vans Old Skool', '10009', '60', NULL, NULL, NULL, NULL),
+('22', '2024-07-16 03:35:10.242888+00', '2024-09-10 09:19:40.596903+00', NULL, 'Jordan 1 Retro High', '10010', '251', NULL, NULL, NULL, NULL),
+('23', '2024-07-16 03:40:10.242888+00', '2024-07-16 03:40:10.242888+00', NULL, 'Under Armour Curry 7', '10011', '140', NULL, NULL, NULL, NULL);
 `, []string{"with_activity_products", "activity_logs", "activity_users"}))
 
 func TestActivity(t *testing.T) {
@@ -602,7 +608,7 @@ func TestActivityAdmin(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"Activity Log", "45", "A updated note", "edited at now"},
 		},
 		{
-			Name:  "Activity log detail for edit action",
+			Name:  "Activity log detail for edit action (changes)",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				// activityData.TruncatePut(dbr)
@@ -612,6 +618,30 @@ func TestActivityAdmin(t *testing.T) {
 				return req
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Activity Log", "87", "<td style='white-space: nowrap;'>Price</td>", "<td v-pre>70</td>", "<td v-pre>72</td>"},
+		},
+		{
+			Name:  "Activity log detail for edit action (new)",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				// activityData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/activity-logs?__execute_event__=presets_DetailingDrawer&id=121").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Activity Log", "121", "<td style='white-space: nowrap;'>AppovedAt</td>", "<td v-pre>2024-11-06 00:00:00 +0800 CST</td>"},
+		},
+		{
+			Name:  "Activity log detail for edit action (delete)",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				// activityData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/activity-logs?__execute_event__=presets_DetailingDrawer&id=121").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Activity Log", "121", "<td style='white-space: nowrap;'>AppovedAt</td>", "<td v-pre>2024-11-06 00:00:00 +0800 CST</td>"},
 		},
 	}
 
