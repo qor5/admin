@@ -11,6 +11,7 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/qor5/x/v3/perm"
+	"github.com/stretchr/testify/require"
 	"github.com/theplant/gofixtures"
 	"gorm.io/gorm"
 )
@@ -553,11 +554,11 @@ func TestActivityAdmin(t *testing.T) {
 			ExpectPageBodyContainsInOrder: []string{
 				"操作日志列表",
 				"全部", "创建", "编辑", "删除", "备注",
-				"<vx-filter", "操作类型", "操作时间", "操作人", "操作对象", "</vx-filter>",
-				"日期时间", "操作者", "操作", "表的主键值", "菜单名", "表名",
+				"<vx-filter", "操作类型", "操作时间", "操作者", "对象", "</vx-filter>",
+				"日期时间", "操作者", "操作", "主键", "菜单名", "对象",
 				"<div", "<v-btn", "mdi-chevron-left", "<v-btn", "mdi-chevron-right", "</div>",
 			},
-			ExpectPageBodyNotContains: []string{"v-pagination"},
+			ExpectPageBodyNotContains: []string{"v-pagination", "没有可显示的记录"},
 		},
 		{
 			Name:  "Update note",
@@ -613,6 +614,31 @@ func TestActivityAdmin(t *testing.T) {
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Activity Log", "87", "<td>Price</td>", "<td v-pre>70</td>", "<td v-pre>72</td>"},
 		},
+
+		{
+			Name:  "Activity logs without PermList",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				pb := presets.New()
+				pb.Permission(
+					perm.New().Policies(
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermList).On("*:presets:with_activity_products:*"),
+					),
+				)
+				activityExample(pb, TestDB, func(mb *presets.ModelBuilder, ab *activity.Builder) {
+					pb.Use(ab)
+				})
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				// activityData.TruncatePut(dbr)
+				return httptest.NewRequest("GET", "/activity-logs?lang=zh", nil)
+			},
+			ExpectPageBodyContainsInOrder: []string{
+				"没有可显示的记录",
+			},
+		},
 	}
 
 	for _, c := range cases {
@@ -620,6 +646,36 @@ func TestActivityAdmin(t *testing.T) {
 			multipartestutils.RunCase(t, c, pb)
 		})
 	}
+
+	panicCase := multipartestutils.TestCase{
+		Name:  "Activity log detail for edit action without PermGet",
+		Debug: true,
+		HandlerMaker: func() http.Handler {
+			pb := presets.New()
+			pb.Permission(
+				perm.New().Policies(
+					perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
+					perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermGet).On("*:presets:with_activity_products:*"),
+				),
+			)
+			activityExample(pb, TestDB, func(mb *presets.ModelBuilder, ab *activity.Builder) {
+				pb.Use(ab)
+			})
+			return pb
+		},
+		ReqFunc: func() *http.Request {
+			// activityData.TruncatePut(dbr)
+			req := multipartestutils.NewMultipartBuilder().
+				PageURL("/activity-logs?__execute_event__=presets_DetailingDrawer&id=87").
+				BuildEventFuncRequest()
+			return req
+		},
+	}
+	t.Run(panicCase.Name, func(t *testing.T) {
+		require.Panics(t, func() {
+			multipartestutils.RunCase(t, panicCase, pb)
+		})
+	})
 }
 
 func TestActivityBeforeCreate(t *testing.T) {
@@ -665,8 +721,8 @@ func TestActivityBeforeCreate(t *testing.T) {
 			ExpectPageBodyContainsInOrder: []string{
 				"操作日志列表",
 				"全部", "创建", "编辑", "删除", "备注",
-				"<vx-filter", "操作类型", "操作时间", "操作人", "操作对象", "</vx-filter>",
-				"日期时间", "操作者", "操作", "表的主键值", "菜单名", "表名",
+				"<vx-filter", "操作类型", "操作时间", "操作者", "对象", "</vx-filter>",
+				"日期时间", "操作者", "操作", "主键", "菜单名", "对象",
 				"_BeforeCreate", "_BeforeCreate",
 				"<div", "<v-btn", "mdi-chevron-left", "<v-btn", "mdi-chevron-right", "</div>",
 			},
