@@ -414,7 +414,7 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 		var elems []h.HTMLComponent
 		for _, d := range addediffs {
 			elems = append(elems, h.Tr(
-				h.Td().Text(d.Field),
+				h.Td().Style("white-space: nowrap").Text(d.Field),
 				h.Td().Attr("v-pre", true).Text(d.New),
 			))
 		}
@@ -424,7 +424,7 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 				VCardTitle().Class("pa-0").Children(h.Text(msgr.DiffAdd)),
 				VCardText().Class("pa-0 pt-3").Children(
 					VTable(
-						h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffValue))),
+						h.Thead(h.Tr(h.Th(msgr.DiffField).Style("white-space: nowrap"), h.Th(msgr.DiffValue))),
 						h.Tbody(elems...),
 					),
 				),
@@ -435,7 +435,7 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 		var elems []h.HTMLComponent
 		for _, d := range deletediffs {
 			elems = append(elems, h.Tr(
-				h.Td().Text(d.Field),
+				h.Td().Style("white-space: nowrap").Text(d.Field),
 				h.Td().Attr("v-pre", true).Text(d.Old),
 			))
 		}
@@ -445,7 +445,7 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 				VCardTitle().Class("pa-0").Children(h.Text(msgr.DiffDelete)),
 				VCardText().Class("pa-0 pt-3").Children(
 					VTable(
-						h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffValue))),
+						h.Thead(h.Tr(h.Th(msgr.DiffField).Style("white-space: nowrap"), h.Th(msgr.DiffValue))),
 						h.Tbody(elems...),
 					),
 				),
@@ -456,7 +456,7 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 		var elems []h.HTMLComponent
 		for _, d := range changediffs {
 			elems = append(elems, h.Tr(
-				h.Td().Text(d.Field),
+				h.Td().Style("white-space: nowrap").Text(d.Field),
 				h.Td().Attr("v-pre", true).Text(d.Old),
 				h.Td().Attr("v-pre", true).Text(d.New),
 			))
@@ -467,7 +467,7 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 				VCardTitle().Class("pa-0").Children(h.Text(msgr.DiffChanges)),
 				VCardText().Class("pa-0 pt-3").Children(
 					VTable(
-						h.Thead(h.Tr(h.Th(msgr.DiffField), h.Th(msgr.DiffOld), h.Th(msgr.DiffNew))),
+						h.Thead(h.Tr(h.Th(msgr.DiffField).Style("white-space: nowrap"), h.Th(msgr.DiffOld), h.Th(msgr.DiffNew))),
 						h.Tbody(elems...),
 					),
 				),
