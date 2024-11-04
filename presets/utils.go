@@ -55,7 +55,7 @@ func EditDeleteRowMenuItemFuncs(mi *ModelInfo, url string, editExtraParams url.V
 
 func editRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values) vx.RowMenuItemFunc {
 	return func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
-		msgr := MustGetMessages(ctx.R)
+		msgr := mi.mb.mustGetMessages(ctx.R)
 		if mi.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
 			return nil
 		}
@@ -80,7 +80,7 @@ func editRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values) 
 
 func deleteRowMenuItemFunc(mi *ModelInfo, url string, editExtraParams url.Values) vx.RowMenuItemFunc {
 	return func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
-		msgr := MustGetMessages(ctx.R)
+		msgr := mi.mb.mustGetMessages(ctx.R)
 		if mi.mb.Info().Verifier().Do(PermDelete).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
 			return nil
 		}

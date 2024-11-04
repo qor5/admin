@@ -284,7 +284,7 @@ func cfReadonlyText(obj interface{}, field *FieldContext, ctx *web.EventContext)
 }
 
 func ReadonlyCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXCheckboxBuilder {
-	msgr := MustGetMessages(ctx.R)
+	msgr := field.ModelInfo.mb.mustGetMessages(ctx.R)
 	return vuetifyx.VXCheckbox().
 		Title(field.Label).
 		TrueLabel(msgr.CheckboxTrueLabel).

@@ -230,7 +230,7 @@ func (b *EditingBuilder) singletonPageFunc(ctx *web.EventContext) (r web.PageRes
 		return
 	}
 
-	msgr := MustGetMessages(ctx.R)
+	msgr := b.mb.mustGetMessages(ctx.R)
 	title := msgr.EditingObjectTitle(b.mb.Info().LabelName(ctx, true), "")
 	r.PageTitle = title
 	obj, err := b.Fetcher(b.mb.NewModel(), "", ctx)
@@ -249,7 +249,7 @@ func (b *EditingBuilder) singletonPageFunc(ctx *web.EventContext) (r web.PageRes
 
 func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 	var (
-		msgr          = MustGetMessages(ctx.R)
+		msgr          = b.mb.mustGetMessages(ctx.R)
 		id            = ctx.R.FormValue(ParamID)
 		overlayType   = ctx.R.FormValue(ParamOverlay)
 		onChangeEvent = fmt.Sprintf(`if (vars.%s) { vars.%s.editing=true };`, VarsPresetsDataChanged, VarsPresetsDataChanged)
@@ -544,7 +544,7 @@ func (b *EditingBuilder) FetchAndUnmarshal(id string, removeDeletedAndSort bool,
 func (b *EditingBuilder) doUpdate(
 	ctx *web.EventContext,
 	r *web.EventResponse,
-	// will not close drawer/dialog
+// will not close drawer/dialog
 	silent bool,
 ) (created bool, err error) {
 	id := ctx.R.FormValue(ParamID)
@@ -631,7 +631,7 @@ func (b *EditingBuilder) doUpdate(
 func (b *EditingBuilder) defaultUpdate(ctx *web.EventContext) (r web.EventResponse, err error) {
 	created, uErr := b.doUpdate(ctx, &r, false)
 	if uErr == nil {
-		msgr := MustGetMessages(ctx.R)
+		msgr := b.mb.mustGetMessages(ctx.R)
 		if created {
 			ShowMessage(&r, msgr.SuccessfullyCreated, "")
 		} else {
