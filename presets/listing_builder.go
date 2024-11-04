@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/iancoleman/strcase"
-	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/stateful"
 	"github.com/qor5/x/v3/perm"
@@ -14,6 +13,8 @@ import (
 	"github.com/samber/lo"
 	h "github.com/theplant/htmlgo"
 	"github.com/theplant/relay"
+
+	"github.com/qor5/admin/v3/presets/actions"
 )
 
 type ListingStyle string
@@ -313,7 +314,7 @@ func (b *ListingBuilder) defaultPageFunc(evCtx *web.EventContext) (r web.PageRes
 }
 
 func (b *ListingBuilder) getTitle(evCtx *web.EventContext, style ListingStyle) (title string, titleCompo h.HTMLComponent, err error) {
-	title = MustGetMessages(evCtx.R).ListingObjectTitle(b.mb.Info().LabelName(evCtx, false))
+	title = b.mb.mustGetMessages(evCtx.R).ListingObjectTitle(b.mb.Info().LabelName(evCtx, false))
 	if b.titleFunc != nil {
 		return b.titleFunc(evCtx, style, title)
 	}
@@ -377,7 +378,7 @@ func (b *ListingBuilder) openListingDialog(evCtx *web.EventContext) (r web.Event
 }
 
 func (b *ListingBuilder) deleteConfirmation(evCtx *web.EventContext) (r web.EventResponse, err error) {
-	msgr := MustGetMessages(evCtx.R)
+	msgr := b.mb.mustGetMessages(evCtx.R)
 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: DeleteConfirmPortalName,

@@ -541,6 +541,17 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 	db := b.db
 
 	lb := pm.Listing("Name", "Path", "Description")
+	pm.WrapMustGetMessages(func(f func(r *http.Request) *presets.Messages) func(r *http.Request) *presets.Messages {
+		return func(r *http.Request) *presets.Messages {
+			messages := f(r)
+			if b.l10n == nil {
+				return messages
+			}
+			msgr := i18n.MustGetModuleMessages(r, I18nPageBuilderKey, Messages_en_US).(*Messages)
+			messages.DeleteConfirmationText = msgr.CategoryDeleteConfirmationText
+			return messages
+		}
+	})
 	pm.LabelName(func(evCtx *web.EventContext, singular bool) string {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		if singular {
@@ -614,7 +625,7 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 			err = errors.New(msgr.UnableDeleteCategoryMsg)
 			return
 		}
-		if err = db.Model(&Category{}).Where("id = ? AND locale_code = ?", ID, Locale).Delete(&Category{}).Error; err != nil {
+		if err = db.Model(&Category{}).Where("id = ?", ID).Delete(&Category{}).Error; err != nil {
 			return
 		}
 		return
