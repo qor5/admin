@@ -80,10 +80,12 @@ func (mb *ModelBuilder) HasDetailing() bool {
 func (mb *ModelBuilder) GetSingleton() bool {
 	return mb.singleton
 }
+
 func (mb *ModelBuilder) MustGetMessages(in func(r *http.Request) *Messages) *ModelBuilder {
 	mb.mustGetMessages = in
 	return mb
 }
+
 func (mb *ModelBuilder) WrapMustGetMessages(w func(func(r *http.Request) *Messages) func(r *http.Request) *Messages) *ModelBuilder {
 	mb.mustGetMessages = w(mb.mustGetMessages)
 	return mb

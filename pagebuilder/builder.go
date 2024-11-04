@@ -612,13 +612,15 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 	})
 
 	eb.DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		cs := obj.(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)
-		ID := cs["id"]
-		Locale := cs[l10n.SlugLocaleCode]
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		var (
+			cs   = obj.(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)
+			ID   = cs[presets.ParamID]
+			msgr = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
-		var count int64
-		if err = db.Model(&Page{}).Where("category_id = ? AND locale_code = ?", ID, Locale).Count(&count).Error; err != nil {
+			count int64
+		)
+
+		if err = db.Model(&Page{}).Where("category_id = ?", ID).Count(&count).Error; err != nil {
 			return
 		}
 		if count > 0 {
