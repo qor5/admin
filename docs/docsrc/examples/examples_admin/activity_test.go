@@ -611,7 +611,7 @@ func TestActivityAdmin(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Activity Log", "87", "<td>Price</td>", "<td v-pre>70</td>", "<td v-pre>72</td>"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Activity Log", "87", "<td style='white-space: nowrap;'>Price</td>", "<td v-pre>70</td>", "<td v-pre>72</td>"},
 		},
 	}
 
