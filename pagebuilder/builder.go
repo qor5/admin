@@ -541,6 +541,17 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 	db := b.db
 
 	lb := pm.Listing("Name", "Path", "Description")
+	pm.WrapMustGetMessages(func(f func(r *http.Request) *presets.Messages) func(r *http.Request) *presets.Messages {
+		return func(r *http.Request) *presets.Messages {
+			messages := f(r)
+			if b.l10n == nil {
+				return messages
+			}
+			msgr := i18n.MustGetModuleMessages(r, I18nPageBuilderKey, Messages_en_US).(*Messages)
+			messages.DeleteConfirmationText = msgr.CategoryDeleteConfirmationText
+			return messages
+		}
+	})
 	pm.LabelName(func(evCtx *web.EventContext, singular bool) string {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		if singular {
@@ -589,7 +600,7 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			comp := in(obj, field, ctx)
 			if p, ok := comp.(*vx.VXFieldBuilder); ok {
-				p.Attr(web.VField(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"))...).
+				p.Attr(presets.VFieldError(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"), field.Errors)...).
 					Attr("prefix", "/")
 			}
 			return comp
@@ -601,20 +612,22 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 	})
 
 	eb.DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		cs := obj.(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)
-		ID := cs["id"]
-		Locale := cs[l10n.SlugLocaleCode]
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		var (
+			cs   = obj.(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)
+			ID   = cs[presets.ParamID]
+			msgr = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
-		var count int64
-		if err = db.Model(&Page{}).Where("category_id = ? AND locale_code = ?", ID, Locale).Count(&count).Error; err != nil {
+			count int64
+		)
+
+		if err = db.Model(&Page{}).Where("category_id = ?", ID).Count(&count).Error; err != nil {
 			return
 		}
 		if count > 0 {
 			err = errors.New(msgr.UnableDeleteCategoryMsg)
 			return
 		}
-		if err = db.Model(&Category{}).Where("id = ? AND locale_code = ?", ID, Locale).Delete(&Category{}).Error; err != nil {
+		if err = db.Model(&Category{}).Where("id = ?", ID).Delete(&Category{}).Error; err != nil {
 			return
 		}
 		return
@@ -941,6 +954,9 @@ func (b *ContainerBuilder) setFieldsLazyWrapComponentFunc(fields *presets.Fields
 		field.LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
 			return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 				comp := in(obj, field, ctx)
+				if ctx.Param(presets.ParamOverlay) != actions.Content {
+					return comp
+				}
 				formKey := field.ModelInfo.URIName() + "_" + field.FormKey
 				if p, ok := comp.(TagInterface); ok {
 					p.SetAttr("ref", formKey)
@@ -1035,6 +1051,20 @@ func (b *ContainerBuilder) Install() {
 					Go(),
 			),
 			h.If(b.builder.autoSaveReload,
+				web.Listen(
+					b.mb.NotifModelsValidate(),
+					fmt.Sprintf(`if(payload.passed){%s}`,
+						web.Plaid().
+							URL(b.mb.Info().ListingHref()).
+							EventFunc(actions.Update).
+							Query(presets.ParamID, web.Var("payload.id")).
+							Query(presets.ParamPortalName, pageBuilderRightContentPortal).
+							Query(presets.ParamOverlay, actions.Content).
+							ThenScript(web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).
+								Query(paramStatus, ctx.Param(paramStatus)).MergeQuery(true).Go()).
+							Go(),
+					),
+				),
 				web.Listen(
 					b.mb.NotifModelsUpdated(),
 					web.Plaid().
@@ -1137,9 +1167,6 @@ func (b *ContainerBuilder) Editing(vs ...interface{}) *presets.EditingBuilder {
 
 func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 	eb := b.mb.Editing()
-	eb.OnChangeActionFunc(func(id string, ctx *web.EventContext) (s string) {
-		return web.Emit(b.mb.NotifRowUpdated(), presets.PayloadRowUpdated{Id: id})
-	})
 	eb.AppendTabsPanelFunc(func(obj interface{}, ctx *web.EventContext) (tab h.HTMLComponent, content h.HTMLComponent) {
 		if ctx.R.FormValue(paramOpenFromSharedContainer) != "1" {
 			return nil, nil

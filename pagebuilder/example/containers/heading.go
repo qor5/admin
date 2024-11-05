@@ -52,10 +52,9 @@ func RegisterHeadingContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 		return tiptap.TiptapEditor(db, field.Name).
 			Extensions(extensions).
 			MarkdownTheme("github"). // Match tiptap.ThemeGithubCSSComponentsPack
-			Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
+			Attr(presets.VFieldError(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)), field.Errors)...).
 			Label(field.Label).
-			Disabled(field.Disabled).
-			ErrorMessages(field.Errors...)
+			Disabled(field.Disabled)
 	})
 	ed.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		p := obj.(*Heading)

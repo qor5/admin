@@ -3,6 +3,7 @@ package actions
 const (
 	New                = "presets_New"
 	Edit               = "presets_Edit"
+	Validate           = "presets_Validate"
 	Action             = "presets_Action"
 	Update             = "presets_Update"
 	DoAction           = "presets_DoAction"
