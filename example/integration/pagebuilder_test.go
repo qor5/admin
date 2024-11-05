@@ -14,6 +14,7 @@ import (
 	"gorm.io/gorm/logger"
 
 	"github.com/qor5/admin/v3/example/admin"
+	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/pagebuilder/example/containers"
 	"github.com/qor5/admin/v3/presets"
@@ -36,7 +37,10 @@ func TestMain(m *testing.M) {
 
 var pageBuilderData = gofixtures.Data(gofixtures.Sql(`
 INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (1, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'category_123', '/12', '', 'International');
+INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (1, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'category_123', '/12', '', 'China');
 INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (2, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'category_456', '/45', '', 'International');
+INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (3, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'category_34', '/34', '', 'International');
+INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (3, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'category_34', '/34', '', 'China');
 SELECT setval('page_builder_categories_id_seq', 1, true);
 INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code, seo) VALUES (1, '2024-05-17 15:25:39.716658 +00:00', '2024-05-17 15:25:39.716658 +00:00', null, '12312', '/123', 1, 'draft', '', null, null, null, null, '2024-05-18-v01', '2024-05-18-v01', '', 'International', '{"OpenGraphImageFromMediaLibrary":{"ID":0,"Url":"","VideoLink":"","FileName":"","Description":""}}');
 SELECT setval('page_builder_pages_id_seq', 1, true);
@@ -134,6 +138,35 @@ func TestPageBuilder(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"Invalid Title"},
 		},
 		{
+			Name:  "Page Title Section Validate Empty",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages").
+					Query(presets.ParamID, "1_2024-05-18-v01_International").
+					AddField("Title", "").
+					EventFunc("section_validate_Page").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"Invalid Title"},
+		},
+		{
+			Name:  "Page Title Section Empty",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages").
+					Query(presets.ParamID, "1_2024-05-18-v01_International").
+					EventFunc("section_save_Page").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Invalid Title"},
+		},
+		{
 			Name:  "Category New Title Empty",
 			Debug: true,
 			ReqFunc: func() *http.Request {
@@ -220,11 +253,11 @@ func TestPageBuilder(t *testing.T) {
 					t.Fatalf("Page not duplicated %v", pages)
 					return
 				}
-				var containers []*pagebuilder.Container
-				TestDB.Find(&containers, "page_id = ? AND page_version = ?", pages[0].ID,
+				var cons []*pagebuilder.Container
+				TestDB.Find(&cons, "page_id = ? AND page_version = ?", pages[0].ID,
 					pages[0].Version.Version)
-				if len(containers) == 0 {
-					t.Error("Container not duplicated", containers)
+				if len(cons) == 0 {
+					t.Error("Container not duplicated", cons)
 				}
 			},
 		},
@@ -252,11 +285,11 @@ func TestPageBuilder(t *testing.T) {
 					t.Fatalf("Page not duplicated %v", pages)
 					return
 				}
-				var containers []*pagebuilder.Container
-				TestDB.Find(&containers, "page_id = ? AND page_version = ?", pages[0].ID,
+				var cons []*pagebuilder.Container
+				TestDB.Find(&cons, "page_id = ? AND page_version = ?", pages[0].ID,
 					pages[0].Version.Version)
-				if len(containers) == 0 {
-					t.Error("Container not duplicated", containers)
+				if len(cons) == 0 {
+					t.Error("Container not duplicated", cons)
 				}
 			},
 		},
@@ -297,13 +330,13 @@ func TestPageBuilder(t *testing.T) {
 				return req
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
-				var containers []pagebuilder.Container
-				TestDB.Order("display_order asc").Find(&containers)
-				if len(containers) != 3 {
-					t.Error("containers not add", containers)
+				var cons []pagebuilder.Container
+				TestDB.Order("display_order asc").Find(&cons)
+				if len(cons) != 3 {
+					t.Error("containers not add", cons)
 				}
-				if containers[0].ModelName != "ListContent" || containers[1].ModelName != "Header" || containers[2].ModelName != "BrandGrid" {
-					t.Error("containers not add under", containers)
+				if cons[0].ModelName != "ListContent" || cons[1].ModelName != "Header" || cons[2].ModelName != "BrandGrid" {
+					t.Error("containers not add under", cons)
 				}
 			},
 		},
@@ -322,14 +355,14 @@ func TestPageBuilder(t *testing.T) {
 				return req
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
-				var containers []pagebuilder.Container
-				TestDB.Order("display_order asc").Find(&containers)
-				if len(containers) != 3 {
-					t.Fatalf("containers not add %#+v", containers)
+				var cons []pagebuilder.Container
+				TestDB.Order("display_order asc").Find(&cons)
+				if len(cons) != 3 {
+					t.Fatalf("cons not add %#+v", cons)
 					return
 				}
-				if containers[0].ModelName != "ListContent" || containers[1].ModelName != "BrandGrid" || containers[2].ModelName != "Header" {
-					t.Fatalf("containers not add under  %#+v", containers)
+				if cons[0].ModelName != "ListContent" || cons[1].ModelName != "BrandGrid" || cons[2].ModelName != "Header" {
+					t.Fatalf("containers not add under  %#+v", cons)
 					return
 				}
 			},
@@ -364,10 +397,10 @@ func TestPageBuilder(t *testing.T) {
 				return req
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
-				var containers []pagebuilder.Container
-				TestDB.Order("display_order asc").Find(&containers)
-				if len(containers) != 1 {
-					t.Fatalf("containers not delete %#+v", containers)
+				var cons []pagebuilder.Container
+				TestDB.Order("display_order asc").Find(&cons)
+				if len(cons) != 1 {
+					t.Fatalf("containers not delete %#+v", cons)
 					return
 				}
 			},
@@ -440,14 +473,14 @@ func TestPageBuilder(t *testing.T) {
 				return req
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
-				var containers []pagebuilder.Container
-				TestDB.Order("display_order asc").Find(&containers)
-				if len(containers) != 2 {
-					t.Error("containers not add", containers)
+				var cons []pagebuilder.Container
+				TestDB.Order("display_order asc").Find(&cons)
+				if len(cons) != 2 {
+					t.Error("containers not add", cons)
 					return
 				}
-				if containers[0].ModelName != "Header" || containers[1].ModelName != "ListContent" {
-					t.Error("container not move down", containers)
+				if cons[0].ModelName != "Header" || cons[1].ModelName != "ListContent" {
+					t.Error("container not move down", cons)
 					return
 				}
 			},
@@ -467,14 +500,14 @@ func TestPageBuilder(t *testing.T) {
 				return req
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
-				var containers []pagebuilder.Container
-				TestDB.Order("display_order asc").Find(&containers)
-				if len(containers) != 2 {
-					t.Error("containers not add", containers)
+				var cons []pagebuilder.Container
+				TestDB.Order("display_order asc").Find(&cons)
+				if len(cons) != 2 {
+					t.Error("containers not add", cons)
 					return
 				}
-				if containers[0].ModelName != "Header" || containers[1].ModelName != "ListContent" {
-					t.Error("container not move down", containers)
+				if cons[0].ModelName != "Header" || cons[1].ModelName != "ListContent" {
+					t.Error("container not move down", cons)
 					return
 				}
 			},
@@ -494,14 +527,14 @@ func TestPageBuilder(t *testing.T) {
 				return req
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
-				var containers []pagebuilder.Container
-				TestDB.Order("display_order asc").Find(&containers)
-				if len(containers) != 2 {
-					t.Error("containers not add", containers)
+				var cons []pagebuilder.Container
+				TestDB.Order("display_order asc").Find(&cons)
+				if len(cons) != 2 {
+					t.Error("cons not add", cons)
 					return
 				}
-				if containers[0].ModelName != "Header" || containers[1].ModelName != "ListContent" {
-					t.Error("container not sort move", containers)
+				if cons[0].ModelName != "Header" || cons[1].ModelName != "ListContent" {
+					t.Error("container not sort move", cons)
 					return
 				}
 			},
@@ -582,6 +615,20 @@ func TestPageBuilder(t *testing.T) {
 					return
 				}
 			},
+		},
+		{
+			Name:  "InNumber Validate Items ",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderDemoContainerTestData.TruncatePut(dbr)
+				return NewMultipartBuilder().
+					PageURL("/page_builder/in-numbers").
+					EventFunc(actions.Validate).
+					Query(presets.ParamID, "1").
+					AddField("Items[0].Heading", "").
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{"Heading can`t Empty"},
 		},
 		{
 			Name:  "Edit Demo Container",
@@ -813,15 +860,64 @@ func TestPageBuilder(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/page_categories").
 					EventFunc(actions.Update).
+					AddField("Name", "category_123").
+					AddField("Path", "45").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Existing Path"},
+		},
+		{
+			Name:  "Page Category Save Validate By ID Existing Path",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_categories").
+					EventFunc(actions.Update).
 					Query(presets.ParamID, "1_International").
 					AddField("Name", "category_123").
 					AddField("Path", "45").
+					AddField("Description", "").
 					AddField("LocaleCode", "International").
 					BuildEventFuncRequest()
 
 				return req
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Existing Path"},
+		},
+		{
+			Name:  "Page Category Validate By ID Existing Path",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_categories").
+					EventFunc(actions.Validate).
+					Query(presets.ParamID, "1_International").
+					AddField("LocaleCode", "International").
+					AddField("Path", "45").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"Existing Path"},
+		},
+		{
+			Name:  "Page Category Validate Event Existing Path",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_categories").
+					EventFunc(actions.Validate).
+					AddField("Path", "45").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"Existing Path"},
 		},
 		{
 			Name:  "Page Category Delete Related Page",
@@ -1031,6 +1127,94 @@ func TestPageBuilder(t *testing.T) {
 					return
 				}
 				return
+			},
+		},
+		{
+			Name:  "Container Heading  Validate",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderDemoContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/headings").
+					EventFunc(actions.Validate).
+					Query(presets.ParamID, "1").
+					AddField("LinkText", "").
+					AddField("FontColor", "blue").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"LinkText 不能为空"},
+		},
+		{
+			Name:  "Container In Number Delete First Row Validate",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderDemoContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/in-numbers").
+					EventFunc(actions.Update).
+					AddField("__Deleted.Items", "0").
+					AddField("Items[1].Heading", "").
+					AddField("Items[1].Text", "blue").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Items[0].Heading"},
+			ExpectPortalUpdate0NotContains:     []string{"Items[1].Heading"},
+		},
+		{
+			Name:  "Category DoLocalize",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_categories").
+					EventFunc(l10n.DoLocalize).
+					Query(presets.ParamID, "1_International").
+					AddField("localize_from", "International").
+					AddField("localize_to", "Japan").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"Successfully Localized"},
+		},
+		{
+			Name:  "Category Delete Confirmation",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_categories").
+					EventFunc(actions.DeleteConfirmation).
+					Query(presets.ParamID, "1_International").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"this will remove all the records in all localized languages"},
+		},
+		{
+			Name:  "Category Delete",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_categories").
+					EventFunc(actions.DoDelete).
+					Query(presets.ParamID, "3_International").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var count int64
+				TestDB.Model(pagebuilder.Category{}).Where("id=3").Count(&count)
+				if count != 0 {
+					t.Fatalf("Category Delete Failed %v", count)
+				}
 			},
 		},
 	}

@@ -69,6 +69,10 @@ func (c *Config) GetPresetsBuilder() *presets.Builder {
 	return c.pb
 }
 
+func (c *Config) GetLoginSessionBuilder() *plogin.SessionBuilder {
+	return c.loginSessionBuilder
+}
+
 var (
 	s3Bucket                  = osenv.Get("S3_Bucket", "s3-bucket for media library storage", "example")
 	s3Region                  = osenv.Get("S3_Region", "s3-region for media library storage", "ap-northeast-1")
@@ -687,10 +691,9 @@ func configPost(
 		return tiptap.TiptapEditor(db, field.Name).
 			Extensions(extensions).
 			MarkdownTheme("github"). // Match tiptap.ThemeGithubCSSComponentsPack
-			Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
+			Attr(presets.VFieldError(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)), field.Errors)...).
 			Label(field.Label).
-			Disabled(field.Disabled).
-			ErrorMessages(field.Errors...)
+			Disabled(field.Disabled)
 	})
 	dp.Section(detailSection)
 	return m

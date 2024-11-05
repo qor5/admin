@@ -126,7 +126,16 @@ func detailPageEditor(dp *presets.DetailingBuilder, mb *presets.ModelBuilder, b 
 	db := b.db
 	fields := b.filterFields([]interface{}{"Title", "CategoryID", "Slug"})
 	section := presets.NewSectionBuilder(mb, "Page").
-		Editing(fields...)
+		Editing(fields...).WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
+		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			p := obj.(*Page)
+			if err = pageValidator(ctx, p, db, b.l10n); err.HaveErrors() {
+				return
+			}
+			err = in(obj, ctx)
+			return
+		}
+	})
 	if b.expectField("Title") {
 		section.ViewingField("Title").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
 			return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -143,7 +152,7 @@ func detailPageEditor(dp *presets.DetailingBuilder, mb *presets.ModelBuilder, b 
 				comp := in(obj, field, ctx)
 				p := obj.(*Page)
 				return comp.(*vx.VXFieldBuilder).Label(msgr.Slug).
-					Attr(web.VField(field.FormKey, strings.TrimPrefix(p.Slug, "/"))...).
+					Attr(presets.VFieldError(field.FormKey, strings.TrimPrefix(p.Slug, "/"), field.Errors)...).
 					Attr("prefix", "/")
 			}
 		}).LazyWrapSetterFunc(func(in presets.FieldSetterFunc) presets.FieldSetterFunc {
@@ -186,12 +195,11 @@ func detailPageEditor(dp *presets.DetailingBuilder, mb *presets.ModelBuilder, b 
 			complete := presets.SelectField(obj, field, ctx).
 				Multiple(false).Chips(false).
 				Label(msgr.Category).
-				Items(categories).ItemTitle("Path").ItemValue("ID").
-				ErrorMessages(field.Errors...)
+				Items(categories).ItemTitle("Path").ItemValue("ID")
 			if p.CategoryID > 0 {
-				complete.Attr(web.VField(field.FormKey, p.CategoryID)...)
+				complete.Attr(presets.VFieldError(field.FormKey, p.CategoryID, field.Errors)...)
 			} else {
-				complete.Attr(web.VField(field.FormKey, "")...)
+				complete.Attr(presets.VFieldError(field.FormKey, "", field.Errors)...)
 			}
 			return complete
 		})
