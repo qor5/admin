@@ -51,13 +51,12 @@ func (b *ModelBuilder) registerFuncs() {
 func (b *ModelBuilder) setPageBuilderModel(obj interface{}, ctx *web.EventContext) {
 	ctx.WithContextValue(pageBuilderModelKey{}, obj)
 }
+
 func (b *ModelBuilder) pageBuilderModel(ctx *web.EventContext) (obj interface{}, err error) {
 	obj = ctx.ContextValue(pageBuilderModelKey{})
 	if obj == nil {
 		obj = b.mb.NewModel()
-		var (
-			pageID, pageVersion, locale = b.getPrimaryColumnValuesBySlug(ctx)
-		)
+		pageID, pageVersion, locale := b.getPrimaryColumnValuesBySlug(ctx)
 		if pageID == 0 {
 			return
 		}
@@ -91,7 +90,6 @@ func (b *ModelBuilder) defaultWrapEvent(in web.EventFunc) web.EventFunc {
 				web.AppendRunScripts(&r, web.Plaid().Reload().Go())
 				return
 			}
-
 		}
 		return in(ctx)
 	}
@@ -445,7 +443,7 @@ func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.Event
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr    = presets.MustGetMessages(ctx.R)
 		okAction = web.Plaid().
-			EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
+				EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
 		portalName = dialogPortalName
 	)
 
@@ -769,6 +767,7 @@ func (b *ModelBuilder) replicateContainer(ctx *web.EventContext) (r web.EventRes
 	r.RunScript = web.Plaid().Query(paramContainerDataID, containerMb.getContainerDataID(modelID)).Query(paramContainerID, newContainerID).PushState(true).Go()
 	return
 }
+
 func (b *ModelBuilder) editContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var (
 		containerUri = ctx.Param(paramContainerUri)
@@ -782,6 +781,7 @@ func (b *ModelBuilder) editContainer(ctx *web.EventContext) (r web.EventResponse
 		Go()
 	return
 }
+
 func (b *ModelBuilder) updateContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var (
 		containerUri = ctx.Param(paramContainerUri)

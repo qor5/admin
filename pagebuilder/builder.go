@@ -1346,24 +1346,23 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
-	editAction :=
-		web.POST().
-			BeforeScript(
-				fmt.Sprintf(`vars.%s=container_data_id;`, paramContainerDataID)+
-					web.Plaid().
-						PushState(true).
-						MergeQuery(true).
-						Query(paramContainerDataID, web.Var("container_data_id")).
-						Query(paramContainerID, web.Var("container_id")).
-						RunPushState(),
-			).
-			EventFunc(EditContainerEvent).
-			MergeQuery(true).
-			Query(paramContainerUri, web.Var(fmt.Sprintf(`"%s/"+arr[0]`, b.prefix))).
-			Query(paramContainerID, web.Var("arr[1]")).
-			Query(presets.ParamOverlay, actions.Content).
-			Query(presets.ParamPortalName, pageBuilderRightContentPortal).
-			Go()
+	editAction := web.POST().
+		BeforeScript(
+			fmt.Sprintf(`vars.%s=container_data_id;`, paramContainerDataID)+
+				web.Plaid().
+					PushState(true).
+					MergeQuery(true).
+					Query(paramContainerDataID, web.Var("container_data_id")).
+					Query(paramContainerID, web.Var("container_id")).
+					RunPushState(),
+		).
+		EventFunc(EditContainerEvent).
+		MergeQuery(true).
+		Query(paramContainerUri, web.Var(fmt.Sprintf(`"%s/"+arr[0]`, b.prefix))).
+		Query(paramContainerID, web.Var("arr[1]")).
+		Query(presets.ParamOverlay, actions.Content).
+		Query(presets.ParamPortalName, pageBuilderRightContentPortal).
+		Go()
 	addAction := web.Plaid().MergeQuery(true).PushState(true).Query(paramContainerID, web.Var("container_id")).RunPushState() +
 		`;vars.containerPreview=false;vars.overlayEl.refs.overlay.showByIframe(vars.el.refs.scrollIframe,rect);vars.overlay=true;` +
 		addVirtualELeToContainer(web.Var("container_data_id"))

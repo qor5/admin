@@ -213,9 +213,7 @@ func (b *ModelBuilder) addContainerToPage(ctx *web.EventContext, pageID int, con
 }
 
 func (b *ModelBuilder) pageContent(ctx *web.EventContext) (r web.PageResponse, err error) {
-	var (
-		body h.HTMLComponent
-	)
+	var body h.HTMLComponent
 	if body, err = b.renderPageOrTemplate(ctx, true, true); err != nil {
 		return
 	}
@@ -591,9 +589,7 @@ func (b *ModelBuilder) renderPreviewContainer(ctx *web.EventContext, obj interfa
 }
 
 func (b *ModelBuilder) previewContent(ctx *web.EventContext) (r web.PageResponse, err error) {
-	var (
-		obj interface{}
-	)
+	var obj interface{}
 	r.Body, err = b.renderPageOrTemplate(ctx, false, false)
 	if err != nil {
 		return
@@ -892,10 +888,12 @@ func (b *ModelBuilder) newContainerContent(ctx *web.EventContext) h.HTMLComponen
 		).Class(W50).Color(ColorGreyLighten3),
 	).Class("d-inline-flex").Width(665).Height(460)
 }
+
 func (b *ModelBuilder) EventMiddleware(v eventMiddlewareFunc) *ModelBuilder {
 	b.eventMiddleware = v
 	return b
 }
+
 func (b *ModelBuilder) WrapEventMiddleware(w func(eventMiddlewareFunc) eventMiddlewareFunc) *ModelBuilder {
 	b.eventMiddleware = w(b.eventMiddleware)
 	return b
