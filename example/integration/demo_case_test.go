@@ -14,7 +14,7 @@ import (
 )
 
 var demoCaseData = gofixtures.Data(gofixtures.Sql(`
-INSERT INTO public.demo_cases (id, created_at, updated_at, deleted_at, name, field_data, field_textarea_data, field_password_data, field_number_data, select_data, checkbox_data, datepicker_data) VALUES (1, '2024-10-28 06:25:03.617793 +00:00', '2024-10-28 06:25:03.617793 +00:00', null, 'test', '{"Text":"121231321\u0026\u0026","TextValidate":"qor@theplant.jp"}', '{"Textarea":"","TextareaValidate":"12345678901"}', '{"Password":"12345","PasswordDefault":""}', '{"Number":0,"NumberValidate":1}', '{"AutoComplete":[1,2],"NormalSelect":1}', '{"Checkbox":true}', '{"Date":1730044800000,"DateTime":1730131200000,"DateRange":[1730044800000,1730131200000],"DateRangeNeedConfirm":null}');
+INSERT INTO public.demo_cases (id, created_at, updated_at, deleted_at, name,field_data) VALUES (1, '2024-10-10 03:18:50.316417 +00:00', '2024-10-10 03:18:50.316417 +00:00', null, '12313','{"Text":"121231321\u0026\u0026","Textarea":"1231","TextValidate":"21312","TextareaValidate":"1😋11231"}');
 `, []string{`demo_cases`}))
 
 func TestDemoCase(t *testing.T) {
@@ -29,7 +29,7 @@ func TestDemoCase(t *testing.T) {
 				demoCaseData.TruncatePut(dbr)
 				return httptest.NewRequest("GET", "/demo-cases", nil)
 			},
-			ExpectPageBodyContainsInOrder: []string{"Name", "test"},
+			ExpectPageBodyContainsInOrder: []string{"Name", "12313"},
 		},
 		{
 			Name:  "Create Demo Case",
@@ -40,22 +40,6 @@ func TestDemoCase(t *testing.T) {
 					PageURL("/demo-cases").
 					EventFunc(actions.Update).
 					AddField("Name", "test").
-					AddField("FieldData.Text", "").
-					AddField("FieldData.TextValidate", "qor@theplant.jp").
-					AddField("FieldTextareaData.Textarea", "").
-					AddField("FieldTextareaData.TextareaValidate", "12345678901").
-					AddField("FieldPasswordData.Password", "12345").
-					AddField("FieldPasswordData.PasswordDefault", "").
-					AddField("FieldNumberData.Number", "0").
-					AddField("FieldNumberData.NumberValidate", "1").
-					AddField("SelectData.AutoComplete[0]", "1").
-					AddField("SelectData.AutoComplete[1]", "2").
-					AddField("SelectData.NormalSelect", "1").
-					AddField("CheckboxData.Checkbox", "true").
-					AddField("DatepickerData.Date", "1730044800000").
-					AddField("DatepickerData.DateTime", "1730131200000").
-					AddField("DatepickerData.DateRange[0]", "1730044800000").
-					AddField("DatepickerData.DateRange[1]", "1730131200000").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -75,13 +59,12 @@ func TestDemoCase(t *testing.T) {
 				demoCaseData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/demo-cases/1").
-					Query("__execute_event__", "__reload__").
 					BuildEventFuncRequest()
 				return req
 			},
 			ExpectPageBodyContainsInOrder: []string{
 				"vx-field",
-				`\u0026#34;121231321\u0026amp;\u0026amp;\u0026#34;`,
+				"&#34;121231321&amp;&amp;&#34;",
 				"vx-field(type textarea)",
 				"vx-field(type password)",
 				"vx-field(type number)",
@@ -329,12 +312,56 @@ func TestDemoCase(t *testing.T) {
 					Query(presets.ParamID, "1").
 					AddField("DatepickerData.Date", "0").
 					AddField("DatepickerData.DateTime", "0").
-					AddField("DatepickerData.DateRange[0]", "1730131200000").
-					AddField("DatepickerData.DateRange[1]", "1730044800000").
 					BuildEventFuncRequest()
 				return req
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Date is required", "DateTime is required", "End later than Start"},
+		},
+		{
+			Name:  "Demo Case DatePicker Date Validate Event",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				demoCaseData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/demo-cases/1").
+					EventFunc("section_validate_DatepickerSection").
+					Query(presets.ParamID, "1").
+					AddField("DatepickerData.Date", "0").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"Date is required"},
+		},
+		{
+			Name:  "Demo Case DatePicker Validate Datetime Event",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				demoCaseData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/demo-cases/1").
+					EventFunc("section_validate_DatepickerSection").
+					Query(presets.ParamID, "1").
+					AddField("DatepickerData.DateTime", "0").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"DateTime is required"},
+		},
+		{
+			Name:  "Demo Case DatePicker Validate DateRange Event",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				demoCaseData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/demo-cases/1").
+					EventFunc("section_validate_DatepickerSection").
+					Query(presets.ParamID, "1").
+					AddField("DatepickerData.DateRange[0]", "0").
+					AddField("DatepickerData.DateRange[1]", "0").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"End later than Start"},
 		},
 	}
 

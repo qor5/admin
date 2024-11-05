@@ -23,6 +23,20 @@ type Messages struct {
 	Available                        string
 	Unavailable                      string
 	SuccessfullyRename               string
+
+	LoginWelcomeLabel string
+	LoginTitleLabel   string
+
+	LoginAccountLabel        string
+	LoginAccountPlaceholder  string
+	LoginPasswordLabel       string
+	LoginPasswordPlaceholder string
+	LoginSignInButtonLabel   string
+	LoginForgetPasswordLabel string
+
+	LoginProviderGoogleText    string
+	LoginProviderMicrosoftText string
+	LoginProviderGithubText    string
 }
 
 func (m *Messages) UnreadMessages(n int) string {
@@ -48,6 +62,20 @@ var Messages_en_US = &Messages{
 	Available:                        "Available",
 	Unavailable:                      "Unavailable",
 	SuccessfullyRename:               "Successfully renamed",
+
+	LoginWelcomeLabel: "Welcome",
+	LoginTitleLabel:   "Qor Admin System",
+
+	LoginAccountLabel:        "Email",
+	LoginAccountPlaceholder:  "Please enter your email",
+	LoginPasswordLabel:       "Password",
+	LoginPasswordPlaceholder: "Please enter your password",
+	LoginSignInButtonLabel:   "Sign in",
+	LoginForgetPasswordLabel: "Forget your password?",
+
+	LoginProviderGoogleText:    "Sign in with Google",
+	LoginProviderMicrosoftText: "Sign in with Microsoft",
+	LoginProviderGithubText:    "Sign in with Github",
 }
 
 var Messages_zh_CN = &Messages{
@@ -68,6 +96,20 @@ var Messages_zh_CN = &Messages{
 	Available:                        "可用",
 	Unavailable:                      "不可用",
 	SuccessfullyRename:               "成功重命名",
+
+	LoginWelcomeLabel: "欢迎",
+	LoginTitleLabel:   "Qor 管理系统",
+
+	LoginAccountLabel:        "邮箱",
+	LoginAccountPlaceholder:  "请输入您的邮箱",
+	LoginPasswordLabel:       "密码",
+	LoginPasswordPlaceholder: "请输入您的密码",
+	LoginSignInButtonLabel:   "登录",
+	LoginForgetPasswordLabel: "忘记密码？",
+
+	LoginProviderGoogleText:    "使用 Google 登录",
+	LoginProviderMicrosoftText: "使用 Microsoft 登录",
+	LoginProviderGithubText:    "使用 Github 登录",
 }
 
 var Messages_ja_JP = &Messages{
@@ -88,4 +130,18 @@ var Messages_ja_JP = &Messages{
 	Available:                        "利用可能",
 	Unavailable:                      "利用不可",
 	SuccessfullyRename:               "名前が変更されました",
+
+	LoginWelcomeLabel: "ようこそ",
+	LoginTitleLabel:   "Qor 管理システム",
+
+	LoginAccountLabel:        "メールアドレス",
+	LoginAccountPlaceholder:  "メールアドレスを入力してください",
+	LoginPasswordLabel:       "パスワード",
+	LoginPasswordPlaceholder: "パスワードを入力してください",
+	LoginSignInButtonLabel:   "サインイン",
+	LoginForgetPasswordLabel: "パスワードをお忘れですか？",
+
+	LoginProviderGoogleText:    "Google でログイン",
+	LoginProviderMicrosoftText: "Microsoft でログイン",
+	LoginProviderGithubText:    "Github でログイン",
 }

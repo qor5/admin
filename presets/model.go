@@ -9,11 +9,12 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
-	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
 	h "github.com/theplant/htmlgo"
+
+	"github.com/qor5/admin/v3/presets/actions"
 )
 
 type ModelBuilder struct {
@@ -43,6 +44,7 @@ type ModelBuilder struct {
 	modelInfo           *ModelInfo
 	singleton           bool
 	plugins             []ModelPlugin
+	mustGetMessages     func(r *http.Request) *Messages
 	web.EventsHub
 }
 
@@ -63,7 +65,7 @@ func NewModelBuilder(p *Builder, model interface{}) (mb *ModelBuilder) {
 	mb.newListing()
 	mb.newDetailing()
 	mb.newEditing()
-
+	mb.mustGetMessages = mb.defaultMustGetMessages
 	return
 }
 
@@ -77,6 +79,16 @@ func (mb *ModelBuilder) HasDetailing() bool {
 
 func (mb *ModelBuilder) GetSingleton() bool {
 	return mb.singleton
+}
+
+func (mb *ModelBuilder) MustGetMessages(in func(r *http.Request) *Messages) *ModelBuilder {
+	mb.mustGetMessages = in
+	return mb
+}
+
+func (mb *ModelBuilder) WrapMustGetMessages(w func(func(r *http.Request) *Messages) func(r *http.Request) *Messages) *ModelBuilder {
+	mb.mustGetMessages = w(mb.mustGetMessages)
+	return mb
 }
 
 func (mb *ModelBuilder) RightDrawerWidth(v string) *ModelBuilder {
@@ -97,6 +109,7 @@ func (mb *ModelBuilder) LabelName(f func(evCtx *web.EventContext, singular bool)
 func (mb *ModelBuilder) registerDefaultEventFuncs() {
 	mb.RegisterEventFunc(actions.New, mb.editing.formNew)
 	mb.RegisterEventFunc(actions.Edit, mb.editing.formEdit)
+	mb.RegisterEventFunc(actions.Validate, mb.editing.doValidate)
 	mb.RegisterEventFunc(actions.Update, mb.editing.defaultUpdate)
 	mb.RegisterEventFunc(actions.DoDelete, mb.editing.doDelete)
 
@@ -302,4 +315,14 @@ func (mb *ModelBuilder) getLabel(field NameLabel) (r string) {
 	}
 
 	return humanizeString(field.name)
+}
+
+func (mb *ModelBuilder) defaultMustGetMessages(r *http.Request) *Messages {
+	messages := &Messages{}
+	srcVal := reflect.ValueOf(MustGetMessages(r)).Elem()
+	dstVal := reflect.ValueOf(messages).Elem()
+	for i := 0; i < srcVal.NumField(); i++ {
+		dstVal.Field(i).Set(srcVal.Field(i))
+	}
+	return messages
 }

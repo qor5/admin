@@ -24,6 +24,21 @@ type SchedulePublisher interface {
 	ScheduleUnPublishDBScope(db *gorm.DB) *gorm.DB
 }
 
+type ctxKeyScheduleRecordsFinder struct{}
+
+type ScheduleOperation string
+
+const (
+	ScheduleOperationPublish   ScheduleOperation = "publish"
+	ScheduleOperationUnPublish ScheduleOperation = "unpublish"
+)
+
+type ScheduleRecordsFinderFunc func(ctx context.Context, operation ScheduleOperation, b *Builder, db *gorm.DB, records any) error
+
+func WithScheduleRecordsFinder(ctx context.Context, f ScheduleRecordsFinderFunc) context.Context {
+	return context.WithValue(ctx, ctxKeyScheduleRecordsFinder{}, f)
+}
+
 // model is a empty struct
 // example: Product{}
 func (b *SchedulePublishBuilder) Run(ctx context.Context, model interface{}) (err error) {
@@ -37,15 +52,24 @@ func (b *SchedulePublishBuilder) Run(ctx context.Context, model interface{}) (er
 
 	{
 		tempRecords := records
-
 		scope := b.publisher.db
-		if m, ok := model.(SchedulePublisher); ok {
-			scope = m.ScheduleUnPublishDBScope(scope)
+
+		fn, ok := ctx.Value(ctxKeyScheduleRecordsFinder{}).(ScheduleRecordsFinderFunc)
+		if ok && fn != nil {
+			err = fn(reqCtx, ScheduleOperationUnPublish, b.publisher, scope, &tempRecords)
+			if err != nil {
+				return
+			}
+		} else {
+			if m, ok := model.(SchedulePublisher); ok {
+				scope = m.ScheduleUnPublishDBScope(scope)
+			}
+			err = scope.Where("scheduled_end_at <= ?", flagTime).Order("scheduled_end_at").Find(&tempRecords).Error
+			if err != nil {
+				return
+			}
 		}
-		err = scope.Where("scheduled_end_at <= ?", flagTime).Order("scheduled_end_at").Find(&tempRecords).Error
-		if err != nil {
-			return
-		}
+
 		needUnpublishReflectValues := reflect.ValueOf(tempRecords)
 		for i := 0; i < needUnpublishReflectValues.Len(); i++ {
 			{
@@ -65,15 +89,24 @@ func (b *SchedulePublishBuilder) Run(ctx context.Context, model interface{}) (er
 
 	{
 		tempRecords := records
-
 		scope := b.publisher.db
-		if m, ok := model.(SchedulePublisher); ok {
-			scope = m.SchedulePublishDBScope(scope)
+
+		fn, ok := ctx.Value(ctxKeyScheduleRecordsFinder{}).(ScheduleRecordsFinderFunc)
+		if ok && fn != nil {
+			err = fn(reqCtx, ScheduleOperationPublish, b.publisher, scope, &tempRecords)
+			if err != nil {
+				return
+			}
+		} else {
+			if m, ok := model.(SchedulePublisher); ok {
+				scope = m.SchedulePublishDBScope(scope)
+			}
+			err = scope.Where("scheduled_start_at <= ?", flagTime).Order("scheduled_start_at").Find(&tempRecords).Error
+			if err != nil {
+				return
+			}
 		}
-		err = scope.Where("scheduled_start_at <= ?", flagTime).Order("scheduled_start_at").Find(&tempRecords).Error
-		if err != nil {
-			return
-		}
+
 		needPublishReflectValues := reflect.ValueOf(tempRecords)
 		for i := 0; i < needPublishReflectValues.Len(); i++ {
 			record := needPublishReflectValues.Index(i).Interface()

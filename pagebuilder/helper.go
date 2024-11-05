@@ -89,7 +89,6 @@ func categoryValidator(ctx *web.EventContext, category *Category, db *gorm.DB, l
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 	if category.Name == "" {
 		err.FieldError("Name", msgr.InvalidNameMsg)
-		return
 	}
 
 	categoryPath := path.Clean(category.Path)
