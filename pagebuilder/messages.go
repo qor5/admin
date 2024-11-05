@@ -94,6 +94,7 @@ type Messages struct {
 	Description                string
 
 	CategoryDeleteConfirmationText string
+	TheResourceCanNotBeModified    string
 }
 
 var Messages_en_US = &Messages{
@@ -183,6 +184,7 @@ var Messages_en_US = &Messages{
 	Name:                           "Name",
 	Description:                    "Description",
 	CategoryDeleteConfirmationText: "this will remove all the records in all localized languages",
+	TheResourceCanNotBeModified:    "The resource can not be modified",
 }
 
 var Messages_zh_CN = &Messages{
@@ -273,6 +275,7 @@ var Messages_zh_CN = &Messages{
 	Description:     "说明",
 
 	CategoryDeleteConfirmationText: "这将删除所有本地化语言中的所有记录",
+	TheResourceCanNotBeModified:    "该资源无法被修改",
 }
 
 var Messages_ja_JP = &Messages{
@@ -362,6 +365,7 @@ var Messages_ja_JP = &Messages{
 	Name:                           "名前",
 	Description:                    "説明",
 	CategoryDeleteConfirmationText: "これは、すべてのローカライズされた言語のすべてのレコードを削除します",
+	TheResourceCanNotBeModified:    "このリソースは変更できません",
 }
 
 type ModelsI18nModulePage struct {

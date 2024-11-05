@@ -500,18 +500,7 @@ func (b *Builder) configDetailLayoutFunc(
 		return publish.DefaultVersionBar(db)(obj, ctx)
 	})
 	pm.Detailing().Title(func(ctx *web.EventContext, obj any, style presets.DetailingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error) {
-		var pageAppbarContent []h.HTMLComponent
-		pageAppbarContent = h.Components(
-			VToolbarTitle(
-				b.GetPageTitle()(ctx),
-			),
-			VSpacer(),
-			publish.DefaultVersionBar(db)(obj, ctx),
-		)
-		title = defaultTitle
-		titleCompo = h.Div(
-			pageAppbarContent...,
-		).Class("d-flex align-center  justify-space-between  w-100")
+		title = b.GetPageTitle()(ctx)
 		return
 	})
 	return
@@ -1041,13 +1030,11 @@ func (b *ContainerBuilder) Install() {
 			web.Listen(
 				b.mb.NotifRowUpdated(),
 				web.Plaid().
-					URL(b.mb.Info().ListingHref()).
-					EventFunc(actions.Update).
-					Query(presets.ParamID, web.Var("payload.id")).
+					EventFunc(UpdateContainerEvent).
+					Query(paramContainerUri, b.mb.Info().ListingHref()).
+					Query(paramContainerID, web.Var("payload.id")).
 					Query(presets.ParamPortalName, pageBuilderRightContentPortal).
 					Query(presets.ParamOverlay, actions.Content).
-					ThenScript(web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).
-						Query(paramStatus, ctx.Param(paramStatus)).MergeQuery(true).Go()).
 					Go(),
 			),
 			h.If(b.builder.autoSaveReload,
@@ -1068,9 +1055,9 @@ func (b *ContainerBuilder) Install() {
 				web.Listen(
 					b.mb.NotifModelsUpdated(),
 					web.Plaid().
-						URL(b.mb.Info().ListingHref()).
-						EventFunc(actions.Edit).
-						Query(presets.ParamID, web.Var("payload.ids[0]")).
+						EventFunc(EditContainerEvent).
+						Query(paramContainerUri, b.mb.Info().ListingHref()).
+						Query(paramContainerID, web.Var("payload.id")).
 						Query(presets.ParamPortalName, pageBuilderRightContentPortal).
 						Query(presets.ParamOverlay, actions.Content).Go(),
 				),
@@ -1359,17 +1346,21 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
-	editAction := fmt.Sprintf(`vars.%s=container_data_id;`, paramContainerDataID) +
-		web.Plaid().
-			PushState(true).
-			MergeQuery(true).
-			Query(paramContainerDataID, web.Var("container_data_id")).
-			Query(paramContainerID, web.Var("container_id")).
-			RunPushState() + ";" +
+	editAction :=
 		web.POST().
-			EventFunc(actions.Edit).
-			URL(web.Var(fmt.Sprintf(`"%s/"+arr[0]`, b.prefix))).
-			Query(presets.ParamID, web.Var("arr[1]")).
+			BeforeScript(
+				fmt.Sprintf(`vars.%s=container_data_id;`, paramContainerDataID)+
+					web.Plaid().
+						PushState(true).
+						MergeQuery(true).
+						Query(paramContainerDataID, web.Var("container_data_id")).
+						Query(paramContainerID, web.Var("container_id")).
+						RunPushState(),
+			).
+			EventFunc(EditContainerEvent).
+			MergeQuery(true).
+			Query(paramContainerUri, web.Var(fmt.Sprintf(`"%s/"+arr[0]`, b.prefix))).
+			Query(paramContainerID, web.Var("arr[1]")).
 			Query(presets.ParamOverlay, actions.Content).
 			Query(presets.ParamPortalName, pageBuilderRightContentPortal).
 			Go()
