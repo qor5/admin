@@ -243,7 +243,7 @@ func DefaultVersionBar(db *gorm.DB) presets.ObjectComponentFunc {
 	return func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
 		res := h.Div().Class("d-inline-flex align-center")
-
+		version := Version{}
 		slugEncoderIf := obj.(presets.SlugEncoder)
 		slugDncoderIf := obj.(presets.SlugDecoder)
 		mp := slugDncoderIf.PrimaryColumnValuesBySlug(slugEncoderIf.PrimarySlug())
@@ -283,9 +283,7 @@ func DefaultVersionBar(db *gorm.DB) presets.ObjectComponentFunc {
 				v.VIcon("mdi-circle").Size(v.SizeXSmall).Color(v.ColorSuccess).Attr("style", "position:absolute;left:0;right:0;margin-left:auto;margin-right:auto"),
 			).Class("h-100 d-flex align-center").Style("position:relative;width:40px"),
 		)
-		versionIf = nextObj.(VersionInterface)
-		// TODO use nextVersion GetI18n
-		nextText := fmt.Sprintf("%s: %s", msgr.OnlineVersion, versionIf.EmbedVersion().VersionName)
+		nextText := fmt.Sprintf("%s: %s", msgr.NextVersion, version.GetNextVersion(nextObj.(ScheduleInterface).EmbedSchedule().ScheduledStartAt))
 		res.AppendChildren(v.VChip(h.Span(nextText)).Density(v.DensityCompact).Color(v.ColorSecondary))
 		if count >= 2 {
 			res.AppendChildren(

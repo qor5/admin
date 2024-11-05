@@ -1130,6 +1130,38 @@ func TestPageBuilder(t *testing.T) {
 			},
 		},
 		{
+			Name:  "PageBuilder Wrap EditContainerEvent",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					EventFunc(pagebuilder.EditContainerEvent).
+					Query("containerUri", "/page_builder/headers").
+					Query("containerID", "10").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{`plaid().vars(vars).locals(locals).form(form).url("/page_builder/headers").eventFunc("presets_Edit").query("id", "10").query("portal_name", "pageBuilderRightContentPortal").query("overlay", "content").go()`},
+		},
+		{
+			Name:  "PageBuilder Wrap UpdateContainerEvent",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					EventFunc(pagebuilder.UpdateContainerEvent).
+					Query("containerUri", "/page_builder/headers").
+					Query("containerID", "10").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{`plaid().vars(vars).locals(locals).form(form).url("/page_builder/headers").eventFunc("presets_Update").query("id", "10").query("portal_name", "pageBuilderRightContentPortal").query("overlay", "content").go()`},
+		},
+		{
 			Name:  "Container Heading  Validate",
 			Debug: true,
 			ReqFunc: func() *http.Request {
