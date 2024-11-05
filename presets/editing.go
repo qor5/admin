@@ -398,8 +398,8 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 			h.If(!b.mb.singleton,
 				VAppBar(
 					VToolbarTitle("").Class("pl-2").
-						Children(title).ClassIf("pr-5", isAutoSave),
-					h.If(!isAutoSave, VBtn("").Icon(true).Children(
+						Children(title).ClassIf("pr-5", autosave),
+					h.If(!autosave, VBtn("").Icon(true).Children(
 						VIcon("mdi-close"),
 					).Attr("@click.stop", closeBtnVarScript)),
 				).Color("white").Elevation(0),
