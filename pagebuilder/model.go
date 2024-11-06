@@ -309,10 +309,14 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			input.EditorCss = append(input.EditorCss, h.RawHTML(`<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">`))
 			input.EditorCss = append(input.EditorCss, h.Style(`
 			.wrapper-shadow{
+				display: table; /* for IE or lower versions of browers */
+				display: flow-root;/* for morden browsers*/
 			  position: relative;
 			  width: 100%;	
 			}
+
 			.inner-shadow {
+				pointer-events: none;
 			  position: absolute;
 			  width: 100%;
 			  height: 100%;
@@ -320,6 +324,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			  top: 0;
 			  left: 0;
 			  box-shadow: 3px 3px 0 0px #3E63DD inset, -3px 3px 0 0px #3E63DD inset,3px -3px 0 0px #3E63DD inset;
+				z-index:201;
 			}
 			
 			

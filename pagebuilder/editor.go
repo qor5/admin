@@ -506,8 +506,8 @@ func (b *Builder) containerWrapper(r *h.HTMLTagBuilder, ctx *web.EventContext, i
 		if isReadonly {
 			r.AppendChildren(h.Div().Class("wrapper-shadow"))
 		} else {
-			r.AppendChildren(h.Div().Class("inner-shadow"))
 			r = h.Div(
+				h.Div().Class("inner-shadow"),
 				r.Attr("onclick", "event.stopPropagation();document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('highlight')});this.parentElement.classList.add('highlight');"+pmb.postMessage(EventEdit)),
 				h.Div(
 					h.Div(h.Text(input.DisplayName)).Class("title"),
