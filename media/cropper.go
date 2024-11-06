@@ -7,13 +7,14 @@ import (
 
 	"github.com/qor5/admin/v3/media/base"
 
-	"github.com/qor5/admin/v3/media/media_library"
-	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/ui/cropper"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
+
+	"github.com/qor5/admin/v3/media/media_library"
+	"github.com/qor5/admin/v3/presets"
 )
 
 const ParamMediaIDS = "media_ids"
@@ -34,7 +35,7 @@ func loadImageCropper(mb *Builder) web.EventFunc {
 		field, id, thumb, cfg := getParams(ctx)
 
 		var m media_library.MediaLibrary
-		err = db.Find(&m, id).Error
+		err = db.First(&m, id).Error
 		if err != nil {
 			return
 		}
