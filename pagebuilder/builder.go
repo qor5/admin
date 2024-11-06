@@ -1037,27 +1037,28 @@ func (b *ContainerBuilder) Install() {
 					Query(presets.ParamOverlay, actions.Content).
 					Go(),
 			),
-			h.If(b.builder.autoSaveReload,
-				web.Listen(
-					b.mb.NotifModelsValidate(),
-					fmt.Sprintf(`if(payload.passed){%s}`,
-						web.Plaid().
-							URL(b.mb.Info().ListingHref()).
-							EventFunc(actions.Update).
-							Query(presets.ParamID, web.Var("payload.id")).
-							Query(presets.ParamPortalName, pageBuilderRightContentPortal).
-							Query(presets.ParamOverlay, actions.Content).
-							ThenScript(web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).
-								Query(paramStatus, ctx.Param(paramStatus)).MergeQuery(true).Go()).
-							Go(),
-					),
+			web.Listen(
+				b.mb.NotifModelsValidate(),
+				fmt.Sprintf(`if(payload.passed){%s}`,
+					web.Plaid().
+						URL(b.mb.Info().ListingHref()).
+						EventFunc(actions.Update).
+						Query(presets.ParamID, web.Var("payload.id")).
+						Query(presets.ParamPortalName, pageBuilderRightContentPortal).
+						Query(presets.ParamOverlay, actions.Content).
+						ThenScript(web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).
+							Query(paramStatus, ctx.Param(paramStatus)).MergeQuery(true).Go()).
+						Go(),
 				),
+			),
+			h.If(b.builder.autoSaveReload,
+
 				web.Listen(
 					b.mb.NotifModelsUpdated(),
 					web.Plaid().
 						EventFunc(EditContainerEvent).
 						Query(paramContainerUri, b.mb.Info().ListingHref()).
-						Query(paramContainerID, web.Var("payload.id")).
+						Query(paramContainerID, web.Var("payload.ids[0]")).
 						Query(presets.ParamPortalName, pageBuilderRightContentPortal).
 						Query(presets.ParamOverlay, actions.Content).Go(),
 				),
