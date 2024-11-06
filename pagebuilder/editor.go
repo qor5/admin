@@ -121,9 +121,10 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 		if containerDataID != "" {
 			arr := strings.Split(containerDataID, "_")
 			if len(arr) >= 2 {
-				editEvent := web.GET().EventFunc(actions.Edit).
-					URL(fmt.Sprintf(`%s/%s`, b.prefix, arr[0])).
-					Query(presets.ParamID, arr[1]).
+				editEvent := web.Plaid().
+					EventFunc(EditContainerEvent).
+					Query(paramContainerUri, fmt.Sprintf(`%s/%s`, b.prefix, arr[0])).
+					Query(paramContainerID, arr[1]).
 					Query(presets.ParamPortalName, pageBuilderRightContentPortal).
 					Query(presets.ParamOverlay, actions.Content).Go()
 				editContainerDrawer = web.RunScript(fmt.Sprintf(`function(){%s}`, editEvent))
