@@ -127,7 +127,7 @@ func (b *Builder) localizeMenu(obj interface{}, chips h.HTMLComponents, field *p
 					Go(),
 			)),
 	).VSlot(`{locals:menuLocals}`).
-		Init(fmt.Sprintf(`{locales:[]}`))
+		Init(`{locales:[]}`)
 }
 
 func runSwitchLocaleFunc(lb *Builder) func(ctx *web.EventContext) (r h.HTMLComponent) {
