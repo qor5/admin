@@ -471,7 +471,7 @@ func (b *EditingBuilder) doValidate(ctx *web.EventContext) (r web.EventResponse,
 		)
 
 		if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
-			web.AppendRunScripts(&r, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), "error"))
+			web.AppendRunScripts(&r, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), ColorWarning))
 		}
 	}()
 	obj, vErr = usingB.FetchAndUnmarshal(id, false, ctx)
@@ -544,7 +544,7 @@ func (b *EditingBuilder) FetchAndUnmarshal(id string, removeDeletedAndSort bool,
 func (b *EditingBuilder) doUpdate(
 	ctx *web.EventContext,
 	r *web.EventResponse,
-	// will not close drawer/dialog
+// will not close drawer/dialog
 	silent bool,
 ) (created bool, err error) {
 	id := ctx.R.FormValue(ParamID)
