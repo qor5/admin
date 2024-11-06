@@ -1041,9 +1041,9 @@ func (b *ContainerBuilder) Install() {
 				b.mb.NotifModelsValidate(),
 				fmt.Sprintf(`if(payload.passed){%s}`,
 					web.Plaid().
-						URL(b.mb.Info().ListingHref()).
-						EventFunc(actions.Update).
-						Query(presets.ParamID, web.Var("payload.id")).
+						EventFunc(UpdateContainerEvent).
+						Query(paramContainerUri, b.mb.Info().ListingHref()).
+						Query(paramContainerID, web.Var("payload.id")).
 						Query(presets.ParamPortalName, pageBuilderRightContentPortal).
 						Query(presets.ParamOverlay, actions.Content).
 						ThenScript(web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).
