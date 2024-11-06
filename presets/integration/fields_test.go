@@ -114,7 +114,7 @@ func TestFields(t *testing.T) {
 
 <vx-field label='String1' v-model='form["String1"]' :error-messages='form["String1_FieldErrorMessages"]' v-assign='[form, {"String1":"hello","String1_FieldErrorMessages":["too small"]}]' :disabled='false'></vx-field>
 
-<vx-checkbox v-model='form["Bool1"]' :error-messages='form["Bool1_FieldErrorMessages"]' v-assign='[form, {"Bool1":"true","Bool1_FieldErrorMessages":null}]' label='Bool1' :disabled='false'></vx-checkbox>
+<vx-checkbox v-model='form["Bool1"]' :error-messages='form["Bool1_FieldErrorMessages"]' v-assign='[form, {"Bool1":true,"Bool1_FieldErrorMessages":null}]' label='Bool1' :disabled='false'></vx-checkbox>
 
 <div v-model='form["Time1"]' v-assign='[form, {"Time1":"2019-08-29"}]' class='time-control'></div>
 
