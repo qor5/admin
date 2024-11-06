@@ -128,11 +128,18 @@ func detailPageEditor(dp *presets.DetailingBuilder, mb *presets.ModelBuilder, b 
 	section := presets.NewSectionBuilder(mb, "Page").
 		Editing(fields...).WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
 		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-			p := obj.(*Page)
+			var (
+				p    = obj.(*Page)
+				msgr = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+			)
+			if p.Status.Status == publish.StatusOnline || p.Status.Status == publish.StatusOffline {
+				err.GlobalError(msgr.TheResourceCanNotBeModified)
+				return
+			}
+
 			if err = pageValidator(ctx, p, db, b.l10n); err.HaveErrors() {
 				return
 			}
-			err = in(obj, ctx)
 			return
 		}
 	})

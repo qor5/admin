@@ -162,11 +162,6 @@ func (b *Builder) PageStyle(v h.HTMLComponent) (r *Builder) {
 	return b
 }
 
-func (b *Builder) AutoSaveReload(v bool) (r *Builder) {
-	b.autoSaveReload = v
-	return b
-}
-
 func (b *Builder) AutoMigrate() (r *Builder) {
 	err := AutoMigrate(b.db)
 	if err != nil {
@@ -442,7 +437,7 @@ func (b *Builder) configTemplateAndPage(pb *presets.Builder, r *ModelBuilder) {
 	}
 	b.configPublish(r)
 	b.useAllPlugin(pm)
-
+	b.seoDisableEditOnline(pm)
 	// dp.TabsPanels()
 }
 
@@ -462,6 +457,34 @@ func (b *Builder) useAllPlugin(pm *presets.ModelBuilder) {
 	if b.l10n != nil {
 		pm.Use(b.l10n)
 	}
+}
+
+func (b *Builder) seoDisableEditOnline(pm *presets.ModelBuilder) {
+	if !pm.HasDetailing() || pm.Detailing().GetField(seo.SeoDetailFieldName) == nil {
+		return
+	}
+	pm.Detailing().Field(seo.SeoDetailFieldName).GetComponent().(*presets.SectionBuilder).WrapComponentEditBtnFunc(func(in presets.ObjectBoolFunc) presets.ObjectBoolFunc {
+		return func(obj interface{}, ctx *web.EventContext) bool {
+			var (
+				p      = obj.(publish.StatusInterface)
+				status = p.EmbedStatus().Status
+			)
+			return !(status == publish.StatusOnline || status == publish.StatusOffline)
+		}
+	}).WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
+		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			var (
+				p      = obj.(publish.StatusInterface)
+				status = p.EmbedStatus().Status
+				msgr   = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+			)
+			if status == publish.StatusOnline || status == publish.StatusOffline {
+				err.GlobalError(msgr.TheResourceCanNotBeModified)
+				return
+			}
+			return in(obj, ctx)
+		}
+	})
 }
 
 func (b *Builder) preparePlugins() {

@@ -9,6 +9,7 @@ import (
 
 	"github.com/qor5/admin/v3/example/admin"
 	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/presets"
 )
 
 var pageBuilderOnlineData = gofixtures.Data(gofixtures.Sql(`
@@ -76,6 +77,41 @@ func TestPageBuilderOnline(t *testing.T) {
 				return req
 			},
 			ExpectRunScriptContainsInOrder: []string{"vars.presetsMessage = { show: true, message:", "plaid().vars(vars).locals(locals).form(form).reload().go()"},
+		},
+		{
+			Name:  "PageBuilder Online Edit Page",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderOnlineData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages/10_2024-05-21-v01_International").
+					EventFunc("section_save_Page").
+					Query(presets.ParamID, "10_2024-05-21-v01_International").
+					AddField("Title", "123").
+					AddField("Slug", "123").
+					AddField("CategoryID", "0").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{`vars.presetsMessage = { show: true, message: "The resource can not be modified", color: "warning"}`},
+		},
+		{
+			Name:  "PageBuilder Online Edit Seo",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderOnlineData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages/10_2024-05-21-v01_International").
+					EventFunc("section_save_SEO").
+					Query(presets.ParamID, "10_2024-05-21-v01_International").
+					AddField("SEO.EnabledCustomize", "true").
+					AddField("SEO.Title", "My seo title").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{`vars.presetsMessage = { show: true, message: "The resource can not be modified", color: "warning"}`},
 		},
 	}
 
