@@ -834,7 +834,8 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 					Class("d-flex align-center justify-center").
 					Height(cardHeight).Width(cardWidth),
 			).
-				Attr("v-for", "f in locals.fileChooserUploadingFiles").Cols("auto"),
+				Attr("v-for", "f in locals.fileChooserUploadingFiles").
+				Attr("style", "flex: 0 0 calc(100% / 5); max-width: calc(100% / 5);"),
 		),
 	)
 
