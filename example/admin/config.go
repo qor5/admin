@@ -47,6 +47,7 @@ import (
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/role"
+	"github.com/qor5/admin/v3/seo"
 	"github.com/qor5/admin/v3/tiptap"
 	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/admin/v3/worker"
@@ -218,7 +219,7 @@ func NewConfig(db *gorm.DB, enableWork bool) Config {
 
 	configMenuOrder(b)
 
-	configPost(b, db, publisher, ab)
+	configPost(b, db, publisher, ab, seoBuilder)
 
 	roleBuilder := role.New(db).
 		Resources([]*v.DefaultOptionItem{
@@ -565,10 +566,11 @@ func configPost(
 	db *gorm.DB,
 	publisher *publish.Builder,
 	ab *activity.Builder,
+	seoBuilder *seo.Builder,
 ) *presets.ModelBuilder {
 	m := b.Model(&models.Post{})
 	defer func() {
-		m.Use(publisher, ab)
+		m.Use(publisher, ab, seoBuilder)
 		m.Detailing().SidePanelFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 			return ab.MustGetModelBuilder(m).NewTimelineCompo(ctx, obj, "_side")
 		})
@@ -657,7 +659,7 @@ func configPost(
 	})
 	m.Editing().Field("TitleWithSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)
 
-	dp := m.Detailing(publish.VersionsPublishBar, "Detail").Drawer(true)
+	dp := m.Detailing(publish.VersionsPublishBar, "Detail", seo.SeoDetailFieldName).Drawer(true)
 	detailSection := presets.NewSectionBuilder(m, "Detail").
 		Editing("Title", "TitleWithSlug", "HeroImage", "Body", "BodyImage")
 	detailSection.EditingField("TitleWithSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)
