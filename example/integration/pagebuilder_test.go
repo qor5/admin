@@ -1024,11 +1024,12 @@ func TestPageBuilder(t *testing.T) {
 					EventFunc(actions.Update).
 					Query(presets.ParamID, "1").
 					AddField("FontColor", "blue").
+					AddField("AddTopSpace", "true").
 					BuildEventFuncRequest()
 
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"blue", "LinkText 不能为空"},
+			ExpectPortalUpdate0ContainsInOrder: []string{`"AddTopSpace":true,`, "blue", "LinkText 不能为空"},
 		},
 		{
 			Name:  "Container Heading Update Reload Editing",
@@ -1040,6 +1041,7 @@ func TestPageBuilder(t *testing.T) {
 					EventFunc(actions.Update).
 					Query(presets.ParamID, "1").
 					AddField("LinkText", "Replace{{Name}}").
+					AddField("AddTopSpace", "true").
 					BuildEventFuncRequest()
 
 				return req
@@ -1050,6 +1052,9 @@ func TestPageBuilder(t *testing.T) {
 				if heading.LinkText != "ReplaceLinkText" {
 					t.Fatalf("container has not updated")
 					return
+				}
+				if !heading.AddTopSpace {
+					t.Fatalf("container has not updated")
 				}
 			},
 		},

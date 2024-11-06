@@ -177,7 +177,7 @@ func cfTextTd(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTM
 
 func cfCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	return vuetifyx.VXCheckbox().
-		Attr(VFieldError(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name).(bool)), field.Errors)...).
+		Attr(VFieldError(field.FormKey, reflectutils.MustGet(obj, field.Name).(bool), field.Errors)...).
 		Label(field.Label).
 		Disabled(field.Disabled)
 }
