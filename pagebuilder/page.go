@@ -104,7 +104,15 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 	eb := pm.Editing().
 		WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
 			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-				p := obj.(*Page)
+				var (
+					p    = obj.(*Page)
+					msgr = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+				)
+
+				if p.Status.Status == publish.StatusOnline || p.Status.Status == publish.StatusOffline {
+					err.GlobalError(msgr.TheResourceCanNotBeModified)
+					return
+				}
 				if err = pageValidator(ctx, p, db, b.l10n); err.HaveErrors() {
 					return
 				}

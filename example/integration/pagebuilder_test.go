@@ -121,7 +121,7 @@ func TestPageBuilder(t *testing.T) {
 				return req
 			},
 			ExpectPageBodyContainsInOrder: []string{
-				`presets_Edit`,
+				`eventFunc("page_builder_EditContainerEvent").query("containerUri", "/page_builder/list-content").query("containerID", "10")`,
 			},
 		},
 		{
@@ -587,7 +587,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderDemoContainerTestData.TruncatePut(dbr)
 				return NewMultipartBuilder().
-					PageURL("/page_builder/pages/1_v1_International").
+					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
 					EventFunc(pagebuilder.AddContainerEvent).
 					AddField("modelName", "InNumbers").
 					AddField("id", "1").
