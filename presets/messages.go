@@ -92,6 +92,8 @@ type Messages struct {
 	HumanizeTimeLongWhile string
 
 	LeaveBeforeUnsubmit string
+
+	RecordNotFound string
 }
 
 func (msgr *Messages) CreatingObjectTitle(modelName string) string {
@@ -232,6 +234,8 @@ var Messages_en_US = &Messages{
 	HumanizeTimeLongWhile: "a long while %s",
 
 	LeaveBeforeUnsubmit: "If you leave before submitting the form, you will lose all the unsaved input.",
+
+	RecordNotFound: "record not found",
 }
 
 var Messages_zh_CN = &Messages{
@@ -318,6 +322,8 @@ var Messages_zh_CN = &Messages{
 	HumanizeTimeLongWhile: "很久之%s",
 
 	LeaveBeforeUnsubmit: "如果您在提交表单之前离开，您将丢失所有未保存的输入。",
+
+	RecordNotFound: "记录未找到",
 }
 
 var Messages_ja_JP = &Messages{
@@ -404,4 +410,6 @@ var Messages_ja_JP = &Messages{
 	HumanizeTimeLongWhile: "a long while %s",
 
 	LeaveBeforeUnsubmit: "フォームを送信する前に離れると、すべての未保存の入力が失われます。",
+
+	RecordNotFound: "レコードが見つかりません",
 }

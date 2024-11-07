@@ -6,6 +6,7 @@ import (
 	"github.com/qor5/web/v3"
 	"gorm.io/gorm"
 
+	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/media/base"
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/presets"
@@ -24,6 +25,7 @@ type (
 		saverFunc           SaverFunc
 		allowTypes          []string
 		fileAccept          string
+		ab                  *activity.Builder
 	}
 )
 
@@ -35,6 +37,9 @@ func New(db *gorm.DB) *Builder {
 	return b
 }
 
+func (b *Builder) GetPresetsModelBuilder() *presets.ModelBuilder {
+	return b.mb
+}
 func (b *Builder) MediaLibraryPerPage(v int) *Builder {
 	b.mediaLibraryPerPage = v
 	return b
@@ -52,6 +57,10 @@ func (b *Builder) AllowTypes(v ...string) *Builder {
 
 func (b *Builder) Searcher(v SearchFunc) *Builder {
 	b.searcher = v
+	return b
+}
+func (b *Builder) Activity(v *activity.Builder) *Builder {
+	b.ab = v
 	return b
 }
 
@@ -104,8 +113,27 @@ func (b *Builder) allowTypeSelectOptions(msgr *Messages) (items []selectItem) {
 		case media_library.ALLOW_TYPE_FILE:
 			items = append(items,
 				selectItem{Text: msgr.Files, Value: typeFile})
-
 		}
 	}
 	return
+}
+func (b *Builder) onEdit(ctx *web.EventContext, old, obj media_library.MediaLibrary) {
+	if b.ab == nil {
+		return
+	}
+	_, _ = b.ab.OnEdit(ctx.R.Context(), old, obj)
+}
+func (b *Builder) onCreate(ctx *web.EventContext, obj media_library.MediaLibrary) {
+	if b.ab == nil {
+		return
+	}
+	_, _ = b.ab.OnCreate(ctx.R.Context(), obj)
+}
+func (b *Builder) onDelete(ctx *web.EventContext, objs []media_library.MediaLibrary) {
+	if b.ab == nil {
+		return
+	}
+	for _, obj := range objs {
+		_, _ = b.ab.OnDelete(ctx.R.Context(), obj)
+	}
 }
