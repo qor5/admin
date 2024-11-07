@@ -74,7 +74,6 @@ func configure(b *presets.Builder, mb *Builder, db *gorm.DB) {
 		RegisterForModule(language.Japanese, I18nMediaLibraryKey, Messages_ja_JP)
 
 	configList(b, mb)
-
 }
 
 func MediaBoxComponentFunc(db *gorm.DB, readonly bool) presets.FieldComponentFunc {
@@ -799,7 +798,7 @@ func moveToFolder(mb *Builder) web.EventFunc {
 	db := mb.db
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var (
-			selectFolderID = ctx.Param(ParamSelectFolderID)
+			selectFolderID = ctx.ParamAsInt(ParamSelectFolderID)
 			field          = ctx.Param(ParamField)
 			selectIDs      = strings.Split(ctx.Param(ParamSelectIDS), ",")
 			msgr           = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
@@ -820,8 +819,18 @@ func moveToFolder(mb *Builder) web.EventFunc {
 		}
 		presets.ShowMessage(&r, msgr.MovedFailed, ColorError)
 		if len(ids) > 0 {
-			if err = db.Model(media_library.MediaLibrary{}).Where("id in  ?", ids).Update("parent_id", selectFolderID).Error; err != nil {
-				return
+			for _, findID := range ids {
+				var old, obj media_library.MediaLibrary
+				db.First(&obj, findID)
+				if obj.ID == 0 {
+					continue
+				}
+				db.First(&old, findID)
+				obj.ParentId = uint(selectFolderID)
+				if err = db.Save(&obj).Error; err != nil {
+					return
+				}
+				mb.onEdit(ctx, old, obj)
 			}
 			presets.ShowMessage(&r, msgr.MovedSuccess, ColorSuccess)
 		}
