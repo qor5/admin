@@ -1233,5 +1233,5 @@ func (c *ListingCompo) DoAction(ctx context.Context, req DoActionRequest) (r web
 
 func (c *ListingCompo) MustGetEventContext(ctx context.Context) (*web.EventContext, *Messages) {
 	evCtx := web.MustGetEventContext(ctx)
-	return evCtx, MustGetMessages(evCtx.R)
+	return evCtx, c.lb.mb.mustGetMessages(evCtx.R)
 }

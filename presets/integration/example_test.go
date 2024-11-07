@@ -6,13 +6,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/actions"
-	"github.com/qor5/admin/v3/presets/examples"
 	. "github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
 	"github.com/theplant/testenv"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/admin/v3/presets/examples"
 )
 
 var TestDB *gorm.DB
@@ -108,13 +109,7 @@ func TestExample(t *testing.T) {
 					EventFunc(actions.New).
 					BuildEventFuncRequest()
 			},
-			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
-				partial := er.UpdatePortals[0].Body
-				if !strings.Contains(partial, `v-model='form["Number"]' v-assign='[form, {"Number":""}]'`) {
-					t.Error(`v-model='form["Number"]' v-assign='[form, {"Number":""}]'`, partial)
-				}
-				return
-			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`v-model='form["Number"]`, `v-assign='[form, {"Number":""`},
 		},
 
 		{
@@ -152,13 +147,7 @@ func TestExample(t *testing.T) {
 					Query(presets.ParamID, "12").
 					BuildEventFuncRequest()
 			},
-			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
-				partial := er.UpdatePortals[0].Body
-				if !strings.Contains(partial, `v-model='form["OwnerName"]' v-assign='[form, {"OwnerName":""}]'`) {
-					t.Error(`can't find v-model='form["OwnerName"]' v-assign='[form, {"OwnerName":""}]'`, partial)
-				}
-				return
-			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`v-model='form["OwnerName"]`, `v-assign='[form, {"OwnerName":""`},
 		},
 
 		{
