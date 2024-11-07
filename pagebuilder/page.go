@@ -83,7 +83,7 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 					%s`, listingHref, web.GET().URL(listingHref).PushState(true).Go(),
 				),
 			),
-			h.H1("{{vars.pageTitle}}").Class("page-main-title"),
+			h.H1("{{vars.pageTitle}}").Class("page-main-title ml-4"),
 			versionBadge.Class("mt-2 ml-2"),
 		).Class("d-inline-flex align-center")
 	})
