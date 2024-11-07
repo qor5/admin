@@ -185,7 +185,7 @@ func NewConfig(db *gorm.DB, enableWork bool) Config {
 			// return supportedLanguages
 			return b.GetI18n().GetSupportLanguages()
 		})
-	mediab := media.New(db).AutoMigrate().CurrentUserID(func(ctx *web.EventContext) (id uint) {
+	mediab := media.New(db).AutoMigrate().Activity(ab).CurrentUserID(func(ctx *web.EventContext) (id uint) {
 		u := getCurrentUser(ctx.R)
 		if u == nil {
 			return
@@ -201,6 +201,9 @@ func NewConfig(db *gorm.DB, enableWork bool) Config {
 		}
 		return db
 	})
+	defer func() {
+		mediab.GetPresetsModelBuilder().Use(ab)
+	}()
 
 	l10nBuilder := l10n.New(db)
 	l10nBuilder.
@@ -348,7 +351,6 @@ func NewConfig(db *gorm.DB, enableWork bool) Config {
 	configureDemoCase(b, db)
 
 	configUser(b, ab, db, publisher, loginSessionBuilder)
-
 	b.Use(
 		mediab,
 		microb,

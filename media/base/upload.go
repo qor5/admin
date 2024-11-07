@@ -83,29 +83,30 @@ func cropField(field *schema.Field, db *gorm.DB) (cropped bool, err error) {
 }
 
 func SaveUploadAndCropImage(db *gorm.DB, obj interface{}, _ string, _ *web.EventContext) (err error) {
-	db = db.Model(obj).Save(obj)
-	err = db.Error
-	if err != nil {
-		return
-	}
-
-	updateColumns := map[string]interface{}{}
-
-	for _, field := range db.Statement.Schema.Fields {
-		ok, err := cropField(field, db)
-		if err != nil {
-			return err
+	err = db.Transaction(func(tx *gorm.DB) (dbErr error) {
+		tx = tx.Model(obj).Save(obj)
+		if dbErr = tx.Error; dbErr != nil {
+			return
 		}
-		if ok {
-			updateColumns[field.DBName] = field.ReflectValueOf(db.Statement.Context, db.Statement.ReflectValue).Addr().Interface()
+		var (
+			updateColumns = make(map[string]interface{})
+			ok            bool
+		)
+
+		for _, field := range tx.Statement.Schema.Fields {
+			if ok, dbErr = cropField(field, tx); dbErr != nil {
+				return
+			}
+			if ok {
+				updateColumns[field.DBName] = field.ReflectValueOf(tx.Statement.Context, tx.Statement.ReflectValue).Addr().Interface()
+			}
 		}
-	}
 
-	if len(updateColumns) == 0 {
-		return
-	}
+		if len(updateColumns) == 0 {
+			return
+		}
 
-	err = db.UpdateColumns(updateColumns).Error
-
+		return tx.UpdateColumns(updateColumns).Error
+	})
 	return
 }
