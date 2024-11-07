@@ -174,10 +174,14 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 		}
 		r.Body = h.Components(
 			h.Div().Style("display:none").
-				Attr("v-on-unmounted", fmt.Sprintf(`()=>{
+				Attr("v-on-unmounted", fmt.Sprintf(`({window})=>{
 				vars.$pbRightDrawerOnMouseLeave = null
 				vars.$pbRightDrawerOnMouseDown = null
 				vars.$pbRightDrawerOnMouseMove = null
+				window.removeEventListener('load', vars.$PagebuilderResizeFn)
+				window.removeEventListener('resize', vars.$PagebuilderResizeFn)
+				vars.$PagebuilderResizeFn = null
+				vars.$pbRightThrottleTimer = null
 			}`)).
 				Attr("v-on-mounted", fmt.Sprintf(`({ref, window, computed})=>{
 				vars.$pbLeftDrawerFolded = window.localStorage.getItem("$pbLeftDrawerFolded") === '1'
@@ -190,6 +194,25 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 				vars.$pbRightDrawerHighlight = false
 				vars.$pbRightDrawerIsDragging = false
 				vars.$window = window
+				vars.$pbRightThrottleTimer = null
+
+				vars.$PagebuilderResizeFn = () => {
+					if(vars.$pbRightDrawerFolded) return
+					
+					if(vars.$pbRightThrottleTimer) return
+
+					vars.$pbRightThrottleTimer = window.setTimeout(() => {
+						const halfWindowWidth = window.innerWidth / 2
+						vars.$pbRightThrottleTimer = null
+						if((vars.$pbRightDrawerWidth > halfWindowWidth) && (vars.$pbRightDrawerWidth > 350)) {
+						vars.$pbRightAdjustableWidth =  halfWindowWidth
+					} 
+						window.localStorage.setItem("$pbRightAdjustableWidth", vars.$pbRightAdjustableWidth)
+					},300)
+				}
+
+				vars.$PagebuilderResizeFn()
+				window.addEventListener('resize', vars.$PagebuilderResizeFn)
 
 				function addInlineStyle(css) {
 					const style = window.document.createElement('style');
