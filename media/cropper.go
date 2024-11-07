@@ -30,19 +30,21 @@ func getParams(ctx *web.EventContext) (field string, id int, thumb string, cfg *
 
 func loadImageCropper(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		db := mb.db
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
-		field, id, thumb, cfg := getParams(ctx)
+		var (
+			m                     media_library.MediaLibrary
+			db                    = mb.db
+			msgr                  = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
+			field, id, thumb, cfg = getParams(ctx)
+		)
 
-		var m media_library.MediaLibrary
-		err = db.First(&m, id).Error
+		err = db.Find(&m, id).Error
 		if err != nil {
 			return
 		}
-
-		moption := m.GetMediaOption()
-
-		size := moption.Sizes[thumb]
+		var (
+			moption = m.GetMediaOption()
+			size    = moption.Sizes[thumb]
+		)
 		if size == nil && thumb != base.DefaultSizeKey {
 			return
 		}
