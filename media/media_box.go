@@ -74,7 +74,6 @@ func configure(b *presets.Builder, mb *Builder, db *gorm.DB) {
 		RegisterForModule(language.Japanese, I18nMediaLibraryKey, Messages_ja_JP)
 
 	configList(b, mb)
-
 }
 
 func MediaBoxComponentFunc(db *gorm.DB, readonly bool) presets.FieldComponentFunc {
