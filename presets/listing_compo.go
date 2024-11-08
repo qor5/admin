@@ -299,6 +299,8 @@ func (c *ListingCompo) filterSearch(ctx context.Context, fd vx.FilterData) h.HTM
 	ft.Clear = msgr.FiltersClear
 	ft.Add = msgr.FiltersAdd
 	ft.Apply = msgr.FilterApply
+	ft.Date.StartAt = msgr.FiltersDateStartAt
+	ft.Date.EndAt = msgr.FiltersDateEndAt
 	ft.Date.To = msgr.FiltersDateTo
 	ft.Date.Clear = msgr.FiltersDateClear
 	ft.Date.OK = msgr.FiltersDateOK
