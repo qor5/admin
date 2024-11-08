@@ -510,7 +510,7 @@ func (b *Builder) preparePlugins() {
 	if b.mediaBuilder == nil {
 		b.mediaBuilder = media.New(b.db)
 	}
-	b.ps.Use(b.mediaBuilder, publisher, seoBuilder)
+	b.ps.Use(b.mediaBuilder, publisher)
 }
 
 func (b *Builder) configDetailLayoutFunc(
