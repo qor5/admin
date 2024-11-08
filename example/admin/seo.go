@@ -3,16 +3,18 @@ package admin
 import (
 	"net/http"
 
+	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/seo"
-	"gorm.io/gorm"
 )
 
 // @snippet_begin(SeoExample)
 var seoBuilder *seo.Builder
 
-func configureSeo(pb *presets.Builder, db *gorm.DB, locales ...string) {
+func configureSeo(pb *presets.Builder, db *gorm.DB, ab *activity.Builder, locales ...string) {
 	seoBuilder = seo.New(db, seo.WithLocales(locales...)).AutoMigrate()
 	seoBuilder.RegisterSEO("Post", &models.Post{}).RegisterContextVariable(
 		"Title",
@@ -26,6 +28,7 @@ func configureSeo(pb *presets.Builder, db *gorm.DB, locales ...string) {
 	seoBuilder.RegisterSEO("Product")
 	seoBuilder.RegisterSEO("Announcement")
 	pb.Use(seoBuilder)
+	seoBuilder.GetPresetsModelBuilder().Use(ab)
 }
 
 // @snippet_end

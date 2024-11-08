@@ -61,6 +61,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 		LayoutConfig(&presets.LayoutConfig{
 			NotificationCenterInvisible: true,
 		})
+	b.mb = seoModel
 
 	// Configure Listing Page
 	b.configListing(seoModel)

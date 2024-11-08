@@ -218,8 +218,7 @@ func NewConfig(db *gorm.DB, enableWork bool) Config {
 
 	// media_view.MediaLibraryPerPage = 3
 	// vips.UseVips(vips.Config{EnableGenerateWebp: true})
-	configureSeo(b, db, l10nBuilder.GetSupportLocaleCodes()...)
-
+	configureSeo(b, db, ab, l10nBuilder.GetSupportLocaleCodes()...)
 	configMenuOrder(b)
 
 	configPost(b, db, publisher, ab, seoBuilder)
