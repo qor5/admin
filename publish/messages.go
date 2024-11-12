@@ -33,6 +33,7 @@ type Messages struct {
 	SuccessfullyPublish                     string
 	SuccessfullyUnPublish                   string
 	OnlineVersion                           string
+	NextVersion                             string
 	VersionsList                            string
 	AllVersions                             string
 	NamedVersions                           string
@@ -108,6 +109,7 @@ var Messages_en_US = &Messages{
 	SuccessfullyPublish:                     "Successfully Publish",
 	SuccessfullyUnPublish:                   "Successfully Unpublish",
 	OnlineVersion:                           "Online Version",
+	NextVersion:                             "Next Version",
 	VersionsList:                            "Versions List",
 	AllVersions:                             "All versions",
 	NamedVersions:                           "Named versions",
@@ -164,6 +166,7 @@ var Messages_zh_CN = &Messages{
 	SuccessfullyPublish:                     "成功发布",
 	SuccessfullyUnPublish:                   "已取消发布",
 	OnlineVersion:                           "在线版本",
+	NextVersion:                             "下个版本",
 	VersionsList:                            "版本列表",
 	AllVersions:                             "所有版本",
 	NamedVersions:                           "已命名版本",
@@ -220,6 +223,7 @@ var Messages_ja_JP = &Messages{
 	SuccessfullyPublish:                     "公開に成功しました",
 	SuccessfullyUnPublish:                   "非公開に成功しました",
 	OnlineVersion:                           "オンラインバージョン",
+	NextVersion:                             "次のバージョン",
 	VersionsList:                            "バージョンリスト",
 	AllVersions:                             "すべてのバージョン",
 	NamedVersions:                           "指定バージョン",

@@ -1145,7 +1145,7 @@ func (b *SectionBuilder) ValidateDetailField(ctx *web.EventContext) (r web.Event
 			),
 		)
 		if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
-			web.AppendRunScripts(&r, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), "error"))
+			web.AppendRunScripts(&r, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), ColorWarning))
 		}
 	}()
 

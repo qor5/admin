@@ -314,6 +314,7 @@ func configVxFieldPassword(detailing *presets.DetailingBuilder, mb *presets.Mode
 					DemoCaseTextField(obj, editField, "Password", "Password(More Than 5 chars)", vErr).
 						Tips("Password tips").
 						Type("password").
+						Required(true).
 						Clearable(true).
 						PasswordVisibleToggle(true),
 					DemoCaseTextField(obj, editField, "PasswordDefault", "PasswordDefault", vErr).

@@ -52,7 +52,7 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, b *presets.Builder) *p
 	if err != nil {
 		panic(err)
 	}
-	pb := pagebuilder.New(prefix, db, b).AutoMigrate().AutoSaveReload(true)
+	pb := pagebuilder.New(prefix, db, b).AutoMigrate()
 	if style != "" {
 		pb.PageStyle(h.RawHTML(style))
 	}

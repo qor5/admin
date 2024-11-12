@@ -121,7 +121,7 @@ func TestPageBuilder(t *testing.T) {
 				return req
 			},
 			ExpectPageBodyContainsInOrder: []string{
-				`presets_Edit`,
+				`eventFunc("page_builder_EditContainerEvent").query("containerUri", "/page_builder/list-content").query("containerID", "10")`,
 			},
 		},
 		{
@@ -587,7 +587,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderDemoContainerTestData.TruncatePut(dbr)
 				return NewMultipartBuilder().
-					PageURL("/page_builder/pages/1_v1_International").
+					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
 					EventFunc(pagebuilder.AddContainerEvent).
 					AddField("modelName", "InNumbers").
 					AddField("id", "1").
@@ -1024,11 +1024,12 @@ func TestPageBuilder(t *testing.T) {
 					EventFunc(actions.Update).
 					Query(presets.ParamID, "1").
 					AddField("FontColor", "blue").
+					AddField("AddTopSpace", "true").
 					BuildEventFuncRequest()
 
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"blue", "LinkText 不能为空"},
+			ExpectPortalUpdate0ContainsInOrder: []string{`"AddTopSpace":true,`, "blue", "LinkText 不能为空"},
 		},
 		{
 			Name:  "Container Heading Update Reload Editing",
@@ -1040,6 +1041,7 @@ func TestPageBuilder(t *testing.T) {
 					EventFunc(actions.Update).
 					Query(presets.ParamID, "1").
 					AddField("LinkText", "Replace{{Name}}").
+					AddField("AddTopSpace", "true").
 					BuildEventFuncRequest()
 
 				return req
@@ -1050,6 +1052,9 @@ func TestPageBuilder(t *testing.T) {
 				if heading.LinkText != "ReplaceLinkText" {
 					t.Fatalf("container has not updated")
 					return
+				}
+				if !heading.AddTopSpace {
+					t.Fatalf("container has not updated")
 				}
 			},
 		},
@@ -1128,6 +1133,38 @@ func TestPageBuilder(t *testing.T) {
 				}
 				return
 			},
+		},
+		{
+			Name:  "PageBuilder Wrap EditContainerEvent",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					EventFunc(pagebuilder.EditContainerEvent).
+					Query("containerUri", "/page_builder/headers").
+					Query("containerID", "10").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{`plaid().vars(vars).locals(locals).form(form).url("/page_builder/headers").eventFunc("presets_Edit").query("id", "10").query("portal_name", "pageBuilderRightContentPortal").query("overlay", "content").go()`},
+		},
+		{
+			Name:  "PageBuilder Wrap UpdateContainerEvent",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					EventFunc(pagebuilder.UpdateContainerEvent).
+					Query("containerUri", "/page_builder/headers").
+					Query("containerID", "10").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{`plaid().vars(vars).locals(locals).form(form).url("/page_builder/headers").eventFunc("presets_Update").query("id", "10").query("portal_name", "pageBuilderRightContentPortal").query("overlay", "content").go()`},
 		},
 		{
 			Name:  "Container Heading  Validate",

@@ -342,7 +342,7 @@ func doDelete(mb *Builder) web.EventFunc {
 		if err != nil {
 			panic(err)
 		}
-
+		mb.onDelete(ctx, objs)
 		renderFileChooserDialogContent(
 			ctx,
 			&r,
@@ -561,7 +561,6 @@ func updateDescription(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var (
 			db   = mb.db
-			id   = ctx.Param(ParamMediaIDS)
 			msgr = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 		)
 
@@ -569,16 +568,13 @@ func updateDescription(mb *Builder) web.EventFunc {
 		if err = mb.updateDescIsAllowed(ctx.R, &obj); err != nil {
 			return
 		}
+		old := wrapFirst(mb, ctx, &r)
 
-		var media media_library.MediaLibrary
-		if err = db.Find(&media, id).Error; err != nil {
+		obj.File.Description = ctx.Param(ParamCurrentDescription)
+		if err = db.Save(&obj).Error; err != nil {
 			return
 		}
-
-		media.File.Description = ctx.Param(ParamCurrentDescription)
-		if err = db.Save(&media).Error; err != nil {
-			return
-		}
+		mb.onEdit(ctx, old, obj)
 		presets.ShowMessage(&r, msgr.DescriptionUpdated, ColorSuccess)
 		web.AppendRunScripts(&r,
 			web.Plaid().EventFunc(ImageJumpPageEvent).
@@ -598,6 +594,8 @@ func rename(mb *Builder) web.EventFunc {
 		if err = mb.updateNameIsAllowed(ctx.R, &obj); err != nil {
 			return
 		}
+		old := wrapFirst(mb, ctx, &r)
+
 		if obj.Folder {
 			obj.File.FileName = ctx.Param(ParamName)
 		} else {
@@ -607,6 +605,7 @@ func rename(mb *Builder) web.EventFunc {
 		if err = db.Save(&obj).Error; err != nil {
 			return
 		}
+		mb.onEdit(ctx, old, obj)
 		presets.ShowMessage(&r, msgr.RenameUpdated, ColorSuccess)
 		web.AppendRunScripts(&r,
 			web.Plaid().EventFunc(ImageJumpPageEvent).
@@ -621,7 +620,7 @@ func createFolder(mb *Builder) web.EventFunc {
 		var (
 			dirName  = ctx.Param(ParamName)
 			parentID = ctx.ParamAsInt(ParamParentID)
-			m        = &media_library.MediaLibrary{Folder: true, ParentId: uint(parentID)}
+			m        = media_library.MediaLibrary{Folder: true, ParentId: uint(parentID)}
 		)
 		if err = mb.newFolderIsAllowed(ctx.R); err != nil {
 			return
@@ -637,9 +636,10 @@ func createFolder(mb *Builder) web.EventFunc {
 		}
 		m.UserID = uid
 		m.ParentId = uint(parentID)
-		if err = mb.saverFunc(mb.db, m, "", ctx); err != nil {
+		if err = mb.saverFunc(mb.db, &m, "", ctx); err != nil {
 			return
 		}
+		mb.onCreate(ctx, m)
 		r.RunScript = web.Plaid().
 			EventFunc(ImageJumpPageEvent).
 			Queries(ctx.Queries()).
@@ -650,16 +650,18 @@ func createFolder(mb *Builder) web.EventFunc {
 
 func wrapFirst(mb *Builder, ctx *web.EventContext, r *web.EventResponse) (obj media_library.MediaLibrary) {
 	var (
+		err   error
 		db    = mb.db
 		field = ctx.Param(ParamField)
 		id    = ctx.Param(ParamMediaIDS)
 		cfg   = ctx.Param(ParamCfg)
-		err   error
+		pMsgr = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 	)
 
 	err = db.Where("id = ?", id).First(&obj).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			presets.ShowMessage(r, pMsgr.RecordNotFound, ColorError)
 			renderFileChooserDialogContent(
 				ctx,
 				r,
@@ -667,7 +669,6 @@ func wrapFirst(mb *Builder, ctx *web.EventContext, r *web.EventResponse) (obj me
 				mb,
 				stringToCfg(cfg),
 			)
-			// TODO: prompt that the record has been deleted?
 			return
 		}
 		panic(err)
@@ -797,7 +798,7 @@ func moveToFolder(mb *Builder) web.EventFunc {
 	db := mb.db
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var (
-			selectFolderID = ctx.Param(ParamSelectFolderID)
+			selectFolderID = ctx.ParamAsInt(ParamSelectFolderID)
 			field          = ctx.Param(ParamField)
 			selectIDs      = strings.Split(ctx.Param(ParamSelectIDS), ",")
 			msgr           = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
@@ -816,10 +817,20 @@ func moveToFolder(mb *Builder) web.EventFunc {
 			}
 			ids = append(ids, selectID)
 		}
-		presets.ShowMessage(&r, msgr.MovedFailed, ColorWarning)
+		presets.ShowMessage(&r, msgr.MovedFailed, ColorError)
 		if len(ids) > 0 {
-			if err = db.Model(media_library.MediaLibrary{}).Where("id in  ?", ids).Update("parent_id", selectFolderID).Error; err != nil {
-				return
+			for _, findID := range ids {
+				var old, obj media_library.MediaLibrary
+				db.First(&obj, findID)
+				if obj.ID == 0 {
+					continue
+				}
+				db.First(&old, findID)
+				obj.ParentId = uint(selectFolderID)
+				if err = db.Save(&obj).Error; err != nil {
+					return
+				}
+				mb.onEdit(ctx, old, obj)
 			}
 			presets.ShowMessage(&r, msgr.MovedSuccess, ColorSuccess)
 		}
@@ -939,14 +950,24 @@ func CopyMediaLiMediaLibrary(mb *Builder, db *gorm.DB, id int, ctx *web.EventCon
 func copyFile(mb *Builder) web.EventFunc {
 	db := mb.db
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		id := ctx.ParamAsInt(ParamMediaIDS)
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
+		var (
+			id    = ctx.ParamAsInt(ParamMediaIDS)
+			msgr  = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
+			pMsgr = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+			m     media_library.MediaLibrary
+		)
 		if err = mb.copyIsAllowed(ctx.R); err != nil {
 			return
 		}
-		if _, err = CopyMediaLiMediaLibrary(mb, db, id, ctx); err != nil {
+		m, err = CopyMediaLiMediaLibrary(mb, db, id, ctx)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			presets.ShowMessage(&r, pMsgr.RecordNotFound, ColorError)
+			return r, nil
+		} else if err != nil {
 			return
 		}
+		mb.onCreate(ctx, m)
+
 		web.AppendRunScripts(&r,
 			web.Plaid().EventFunc(ImageJumpPageEvent).
 				Queries(ctx.Queries()).

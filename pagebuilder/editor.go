@@ -32,12 +32,15 @@ const (
 	ReloadRenderPageOrTemplateEvent  = "page_builder_ReloadRenderPageOrTemplateEvent"
 	ContainerPreviewEvent            = "page_builder_ContainerPreviewEvent"
 	ReplicateContainerEvent          = "page_builder_ReplicateContainerEvent"
+	EditContainerEvent               = "page_builder_EditContainerEvent"
+	UpdateContainerEvent             = "page_builder_UpdateContainerEvent"
 
 	paramPageID          = "pageID"
 	paramPageVersion     = "pageVersion"
 	paramLocale          = "locale"
 	paramStatus          = "status"
 	paramContainerID     = "containerID"
+	paramContainerUri    = "containerUri"
 	paramContainerDataID = "containerDataID"
 	paramContainerNew    = "new"
 	paramMoveResult      = "moveResult"
@@ -98,10 +101,14 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			isStag                               bool
 
 			containerDataID = ctx.Param(paramContainerDataID)
-			obj             = m.mb.NewModel()
+			obj             interface{}
 			msgr            = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 			title           string
 		)
+
+		if obj, err = m.pageBuilderModel(ctx); err != nil {
+			return
+		}
 
 		if m.tb == nil {
 			title = msgr.PageBuilder
@@ -114,9 +121,10 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 		if containerDataID != "" {
 			arr := strings.Split(containerDataID, "_")
 			if len(arr) >= 2 {
-				editEvent := web.GET().EventFunc(actions.Edit).
-					URL(fmt.Sprintf(`%s/%s`, b.prefix, arr[0])).
-					Query(presets.ParamID, arr[1]).
+				editEvent := web.Plaid().
+					EventFunc(EditContainerEvent).
+					Query(paramContainerUri, fmt.Sprintf(`%s/%s`, b.prefix, arr[0])).
+					Query(paramContainerID, arr[1]).
 					Query(presets.ParamPortalName, pageBuilderRightContentPortal).
 					Query(presets.ParamOverlay, actions.Content).Go()
 				editContainerDrawer = web.RunScript(fmt.Sprintf(`function(){%s}`, editEvent))
@@ -125,7 +133,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			editContainerDrawer = b.emptyEdit(ctx)
 		}
 		deviceToggle = b.deviceToggle(ctx)
-		if tabContent, err = m.pageContent(ctx, obj); err != nil {
+		if tabContent, err = m.pageContent(ctx); err != nil {
 			return
 		}
 		if p, ok := obj.(publish.StatusInterface); ok {

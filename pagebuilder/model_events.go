@@ -26,21 +26,73 @@ import (
 	"github.com/qor5/admin/v3/utils"
 )
 
+type pageBuilderModelKey struct{}
+
 func (b *ModelBuilder) registerFuncs() {
-	b.editor.RegisterEventFunc(ShowSortedContainerDrawerEvent, b.showSortedContainerDrawer)
-	b.editor.RegisterEventFunc(AddContainerEvent, b.addContainer)
-	b.editor.RegisterEventFunc(DeleteContainerConfirmationEvent, b.deleteContainerConfirmation)
-	b.editor.RegisterEventFunc(DeleteContainerEvent, b.deleteContainer)
-	b.editor.RegisterEventFunc(MoveContainerEvent, b.moveContainer)
-	b.editor.RegisterEventFunc(MoveUpDownContainerEvent, b.moveUpDownContainer)
-	b.editor.RegisterEventFunc(ToggleContainerVisibilityEvent, b.toggleContainerVisibility)
-	b.editor.RegisterEventFunc(RenameContainerDialogEvent, b.renameContainerDialog)
-	b.editor.RegisterEventFunc(RenameContainerEvent, b.renameContainer)
-	b.editor.RegisterEventFunc(ReloadRenderPageOrTemplateEvent, b.reloadRenderPageOrTemplate)
-	b.editor.RegisterEventFunc(MarkAsSharedContainerEvent, b.markAsSharedContainer)
-	b.editor.RegisterEventFunc(ContainerPreviewEvent, b.containerPreview)
-	b.editor.RegisterEventFunc(ReplicateContainerEvent, b.replicateContainer)
+	b.eventMiddleware = b.defaultWrapEvent
+	b.editor.RegisterEventFunc(ShowSortedContainerDrawerEvent, b.eventMiddleware(b.showSortedContainerDrawer))
+	b.editor.RegisterEventFunc(AddContainerEvent, b.eventMiddleware(b.addContainer))
+	b.editor.RegisterEventFunc(DeleteContainerConfirmationEvent, b.eventMiddleware(b.deleteContainerConfirmation))
+	b.editor.RegisterEventFunc(DeleteContainerEvent, b.eventMiddleware(b.deleteContainer))
+	b.editor.RegisterEventFunc(MoveContainerEvent, b.eventMiddleware(b.moveContainer))
+	b.editor.RegisterEventFunc(MoveUpDownContainerEvent, b.eventMiddleware(b.moveUpDownContainer))
+	b.editor.RegisterEventFunc(ToggleContainerVisibilityEvent, b.eventMiddleware(b.toggleContainerVisibility))
+	b.editor.RegisterEventFunc(RenameContainerDialogEvent, b.eventMiddleware(b.renameContainerDialog))
+	b.editor.RegisterEventFunc(RenameContainerEvent, b.eventMiddleware(b.renameContainer))
+	b.editor.RegisterEventFunc(ReloadRenderPageOrTemplateEvent, b.eventMiddleware(b.reloadRenderPageOrTemplate))
+	b.editor.RegisterEventFunc(MarkAsSharedContainerEvent, b.eventMiddleware(b.markAsSharedContainer))
+	b.editor.RegisterEventFunc(ContainerPreviewEvent, b.eventMiddleware(b.containerPreview))
+	b.editor.RegisterEventFunc(ReplicateContainerEvent, b.eventMiddleware(b.replicateContainer))
+	b.editor.RegisterEventFunc(EditContainerEvent, b.eventMiddleware(b.editContainer))
+	b.editor.RegisterEventFunc(UpdateContainerEvent, b.eventMiddleware(b.updateContainer))
 	b.preview = web.Page(b.previewContent)
+}
+
+func (b *ModelBuilder) setPageBuilderModel(obj interface{}, ctx *web.EventContext) {
+	ctx.WithContextValue(pageBuilderModelKey{}, obj)
+}
+
+func (b *ModelBuilder) pageBuilderModel(ctx *web.EventContext) (obj interface{}, err error) {
+	obj = ctx.ContextValue(pageBuilderModelKey{})
+	if obj == nil {
+		obj = b.mb.NewModel()
+		pageID, pageVersion, locale := b.getPrimaryColumnValuesBySlug(ctx)
+		if pageID == 0 {
+			return
+		}
+		g := b.db.Where("id = ? ", pageID)
+		if locale != "" {
+			g.Where("locale_code = ?", locale)
+		}
+		if pageVersion != "" {
+			g.Where("version = ?", pageVersion)
+		}
+		if err = g.First(obj).Error; err != nil {
+			return
+		}
+		b.setPageBuilderModel(obj, ctx)
+	}
+	return
+}
+
+func (b *ModelBuilder) defaultWrapEvent(in web.EventFunc) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		var (
+			obj  interface{}
+			msgr = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		)
+		if obj, err = b.pageBuilderModel(ctx); err != nil {
+			return
+		}
+		if p, ok := obj.(publish.StatusInterface); ok {
+			if p.EmbedStatus().Status == publish.StatusOnline || p.EmbedStatus().Status == publish.StatusOffline {
+				presets.ShowMessage(&r, msgr.TheResourceCanNotBeModified, ColorError)
+				web.AppendRunScripts(&r, web.Plaid().Reload().Go())
+				return
+			}
+		}
+		return in(ctx)
+	}
 }
 
 func (b *ModelBuilder) showSortedContainerDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
@@ -108,16 +160,15 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 		pushState.Query(paramContainerID, web.Var("element.param_id"))
 		clickColumnEvent = fmt.Sprintf(`vars.%s=element.container_data_id;`, paramContainerDataID) +
 			web.Plaid().
-				URL(web.Var(fmt.Sprintf(`"%s/"+element.label`, b.builder.prefix))).
-				EventFunc(actions.Edit).
+				EventFunc(EditContainerEvent).
+				Query(paramContainerUri, web.Var(fmt.Sprintf(`"%s/"+element.label`, b.builder.prefix))).
+				Query(paramContainerID, web.Var("element.model_id")).
 				Query(presets.ParamOverlay, actions.Content).
 				Query(presets.ParamPortalName, pageBuilderRightContentPortal).
-				Query(presets.ParamID, web.Var("element.model_id")).
 				Go() + ";" + pushState.RunPushState() +
 			";" + scrollToContainer(fmt.Sprintf(`element.label+"_"+element.model_id`))
 	}
 	renameEvent := web.Plaid().
-		URL(b.editorURL()).
 		EventFunc(RenameContainerEvent).Query(paramStatus, status).Query(paramContainerID, web.Var("element.param_id")).Go()
 
 	// container functions
@@ -392,7 +443,6 @@ func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.Event
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr    = presets.MustGetMessages(ctx.R)
 		okAction = web.Plaid().
-				URL(b.editorURL()).
 				EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
 		portalName = dialogPortalName
 	)
@@ -617,9 +667,8 @@ func (b *ModelBuilder) renameContainer(ctx *web.EventContext) (r web.EventRespon
 
 func (b *ModelBuilder) reloadRenderPageOrTemplate(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var body h.HTMLComponent
-	obj := b.mb.NewModel()
 
-	if body, err = b.renderPageOrTemplate(ctx, obj, true, true); err != nil {
+	if body, err = b.renderPageOrTemplate(ctx, true, true); err != nil {
 		return
 	}
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: editorPreviewContentPortal, Body: body})
@@ -716,5 +765,35 @@ func (b *ModelBuilder) replicateContainer(ctx *web.EventContext) (r web.EventRes
 		return
 	}
 	r.RunScript = web.Plaid().Query(paramContainerDataID, containerMb.getContainerDataID(modelID)).Query(paramContainerID, newContainerID).PushState(true).Go()
+	return
+}
+
+func (b *ModelBuilder) editContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var (
+		containerUri = ctx.Param(paramContainerUri)
+		containerID  = ctx.Param(paramContainerID)
+	)
+	r.RunScript = web.Plaid().URL(containerUri).
+		EventFunc(actions.Edit).
+		Query(presets.ParamID, containerID).
+		Query(presets.ParamPortalName, pageBuilderRightContentPortal).
+		Query(presets.ParamOverlay, actions.Content).
+		Go()
+	return
+}
+
+func (b *ModelBuilder) updateContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var (
+		containerUri = ctx.Param(paramContainerUri)
+		containerID  = ctx.Param(paramContainerID)
+	)
+	r.RunScript = web.Plaid().URL(containerUri).
+		EventFunc(actions.Update).
+		Query(presets.ParamID, containerID).
+		Query(presets.ParamPortalName, pageBuilderRightContentPortal).
+		ThenScript(web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).
+			Query(paramStatus, ctx.Param(paramStatus)).MergeQuery(true).Go()).
+		Query(presets.ParamOverlay, actions.Content).
+		Go()
 	return
 }

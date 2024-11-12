@@ -29,14 +29,17 @@ import (
 )
 
 type (
+	eventMiddlewareFunc func(in web.EventFunc) web.EventFunc
+
 	ModelBuilder struct {
-		name    string
-		mb      *presets.ModelBuilder
-		editor  *presets.ModelBuilder
-		db      *gorm.DB
-		builder *Builder
-		preview http.Handler
-		tb      *TemplateBuilder
+		name            string
+		mb              *presets.ModelBuilder
+		editor          *presets.ModelBuilder
+		db              *gorm.DB
+		builder         *Builder
+		preview         http.Handler
+		tb              *TemplateBuilder
+		eventMiddleware eventMiddlewareFunc
 	}
 )
 
@@ -145,7 +148,7 @@ func (b *ModelBuilder) addContainerToPage(ctx *web.EventContext, pageID int, con
 		tx.Where("model_name = ? AND locale_code = ?", modelName, locale).First(&dc)
 		if dc.ID != 0 && dc.ModelID != 0 {
 			tx.Where("id = ?", dc.ModelID).First(model)
-			reflectutils.Set(model, "ID", uint(0))
+			_ = reflectutils.Set(model, "ID", uint(0))
 		}
 		ctx.WithContextValue(gorm2op.CtxKeyDB{}, tx)
 		defer ctx.WithContextValue(gorm2op.CtxKeyDB{}, nil)
@@ -209,10 +212,9 @@ func (b *ModelBuilder) addContainerToPage(ctx *web.EventContext, pageID int, con
 	return
 }
 
-func (b *ModelBuilder) pageContent(ctx *web.EventContext, obj interface{}) (r web.PageResponse, err error) {
+func (b *ModelBuilder) pageContent(ctx *web.EventContext) (r web.PageResponse, err error) {
 	var body h.HTMLComponent
-
-	if body, err = b.renderPageOrTemplate(ctx, obj, true, true); err != nil {
+	if body, err = b.renderPageOrTemplate(ctx, true, true); err != nil {
 		return
 	}
 	r.Body = web.Portal(
@@ -241,22 +243,16 @@ func (b *ModelBuilder) primaryColumnValuesBySlug(slug string) (pageID int, pageV
 	return
 }
 
-func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, obj interface{}, isEditor, isIframe bool) (r h.HTMLComponent, err error) {
+func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, isEditor, isIframe bool) (r h.HTMLComponent, err error) {
 	var (
 		status                      = publish.StatusDraft
+		obj                         interface{}
 		pageID, pageVersion, locale = b.getPrimaryColumnValuesBySlug(ctx)
 	)
 	if pageID == 0 {
 		return nil, nil
 	}
-	g := b.db.Where("id = ? ", pageID)
-	if locale != "" {
-		g.Where("locale_code = ?", locale)
-	}
-	if pageVersion != "" {
-		g.Where("version = ?", pageVersion)
-	}
-	if err = g.First(obj).Error; err != nil {
+	if obj, err = b.pageBuilderModel(ctx); err != nil {
 		return
 	}
 	if p, ok := obj.(l10n.LocaleInterface); ok {
@@ -598,9 +594,12 @@ func (b *ModelBuilder) renderPreviewContainer(ctx *web.EventContext, obj interfa
 }
 
 func (b *ModelBuilder) previewContent(ctx *web.EventContext) (r web.PageResponse, err error) {
-	obj := b.mb.NewModel()
-	r.Body, err = b.renderPageOrTemplate(ctx, obj, false, false)
+	var obj interface{}
+	r.Body, err = b.renderPageOrTemplate(ctx, false, false)
 	if err != nil {
+		return
+	}
+	if obj, err = b.pageBuilderModel(ctx); err != nil {
 		return
 	}
 	if b.builder.seoBuilder != nil && b.builder.seoBuilder.GetSEO(obj) != nil {
@@ -893,4 +892,14 @@ func (b *ModelBuilder) newContainerContent(ctx *web.EventContext) h.HTMLComponen
 			).Class(W100, "py-0"),
 		).Class(W50).Color(ColorGreyLighten3),
 	).Class("d-inline-flex").Width(665).Height(460)
+}
+
+func (b *ModelBuilder) EventMiddleware(v eventMiddlewareFunc) *ModelBuilder {
+	b.eventMiddleware = v
+	return b
+}
+
+func (b *ModelBuilder) WrapEventMiddleware(w func(eventMiddlewareFunc) eventMiddlewareFunc) *ModelBuilder {
+	b.eventMiddleware = w(b.eventMiddleware)
+	return b
 }

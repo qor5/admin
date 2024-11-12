@@ -47,6 +47,7 @@ import (
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/role"
+	"github.com/qor5/admin/v3/seo"
 	"github.com/qor5/admin/v3/tiptap"
 	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/admin/v3/worker"
@@ -180,7 +181,7 @@ func NewConfig(db *gorm.DB, enableWork bool) Config {
 			// return supportedLanguages
 			return b.GetI18n().GetSupportLanguages()
 		})
-	mediab := media.New(db).AutoMigrate().CurrentUserID(func(ctx *web.EventContext) (id uint) {
+	mediab := media.New(db).AutoMigrate().Activity(ab).CurrentUserID(func(ctx *web.EventContext) (id uint) {
 		u := getCurrentUser(ctx.R)
 		if u == nil {
 			return
@@ -196,6 +197,10 @@ func NewConfig(db *gorm.DB, enableWork bool) Config {
 		}
 		return db
 	})
+	defer func() {
+		mediab.GetPresetsModelBuilder().Use(ab)
+		seoBuilder.GetPresetsModelBuilder().Use(ab)
+	}()
 
 	l10nBuilder := l10n.New(db)
 	l10nBuilder.
@@ -215,10 +220,9 @@ func NewConfig(db *gorm.DB, enableWork bool) Config {
 	// media_view.MediaLibraryPerPage = 3
 	// vips.UseVips(vips.Config{EnableGenerateWebp: true})
 	configureSeo(b, db, l10nBuilder.GetSupportLocaleCodes()...)
-
 	configMenuOrder(b)
 
-	configPost(b, db, publisher, ab)
+	configPost(b, db, publisher, ab, seoBuilder)
 
 	roleBuilder := role.New(db).
 		Resources([]*v.DefaultOptionItem{
@@ -343,7 +347,6 @@ func NewConfig(db *gorm.DB, enableWork bool) Config {
 	configureDemoCase(b, db)
 
 	configUser(b, ab, db, publisher, loginSessionBuilder)
-
 	b.Use(
 		mediab,
 		microb,
@@ -565,10 +568,11 @@ func configPost(
 	db *gorm.DB,
 	publisher *publish.Builder,
 	ab *activity.Builder,
+	seoBuilder *seo.Builder,
 ) *presets.ModelBuilder {
 	m := b.Model(&models.Post{})
 	defer func() {
-		m.Use(publisher, ab)
+		m.Use(publisher, ab, seoBuilder)
 		m.Detailing().SidePanelFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 			return ab.MustGetModelBuilder(m).NewTimelineCompo(ctx, obj, "_side")
 		})
@@ -657,7 +661,7 @@ func configPost(
 	})
 	m.Editing().Field("TitleWithSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)
 
-	dp := m.Detailing(publish.VersionsPublishBar, "Detail").Drawer(true)
+	dp := m.Detailing(publish.VersionsPublishBar, "Detail", seo.SeoDetailFieldName).Drawer(true)
 	detailSection := presets.NewSectionBuilder(m, "Detail").
 		Editing("Title", "TitleWithSlug", "HeroImage", "Body", "BodyImage")
 	detailSection.EditingField("TitleWithSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)

@@ -83,7 +83,7 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 					%s`, listingHref, web.GET().URL(listingHref).PushState(true).Go(),
 				),
 			),
-			h.H1("{{vars.pageTitle}}").Class("page-main-title"),
+			h.H1("{{vars.pageTitle}}").Class("page-main-title ml-4"),
 			versionBadge.Class("mt-2 ml-2"),
 		).Class("d-inline-flex align-center")
 	})
@@ -104,7 +104,15 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 	eb := pm.Editing().
 		WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
 			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-				p := obj.(*Page)
+				var (
+					p    = obj.(*Page)
+					msgr = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+				)
+
+				if p.Status.Status == publish.StatusOnline || p.Status.Status == publish.StatusOffline {
+					err.GlobalError(msgr.TheResourceCanNotBeModified)
+					return
+				}
 				if err = pageValidator(ctx, p, db, b.l10n); err.HaveErrors() {
 					return
 				}

@@ -132,7 +132,7 @@ func uploadFile(mb *Builder) web.EventFunc {
 				m.SelectedType = media_library.ALLOW_TYPE_FILE
 			}
 			if !mb.checkAllowType(m.SelectedType) {
-				presets.ShowMessage(&r, msgr.UnSupportFileType, "error")
+				presets.ShowMessage(&r, msgr.UnSupportFileType, ColorError)
 				return r, nil
 			}
 			err = m.File.Scan(fh)
@@ -144,9 +144,10 @@ func uploadFile(mb *Builder) web.EventFunc {
 			}
 			err = mb.saverFunc(mb.db, &m, "", ctx)
 			if err != nil {
-				presets.ShowMessage(&r, err.Error(), "error")
+				presets.ShowMessage(&r, err.Error(), ColorError)
 				return r, nil
 			}
+			mb.onCreate(ctx, m)
 		}
 
 		renderFileChooserDialogContent(ctx, &r, field, mb, cfg)
@@ -834,7 +835,8 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 					Class("d-flex align-center justify-center").
 					Height(cardHeight).Width(cardWidth),
 			).
-				Attr("v-for", "f in locals.fileChooserUploadingFiles").Cols("auto"),
+				Attr("v-for", "f in locals.fileChooserUploadingFiles").
+				Attr("style", "flex: 0 0 calc(100% / 5); max-width: calc(100% / 5);"),
 		),
 	)
 
