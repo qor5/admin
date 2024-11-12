@@ -40,6 +40,7 @@ func New(db *gorm.DB) *Builder {
 func (b *Builder) GetPresetsModelBuilder() *presets.ModelBuilder {
 	return b.mb
 }
+
 func (b *Builder) MediaLibraryPerPage(v int) *Builder {
 	b.mediaLibraryPerPage = v
 	return b
@@ -59,6 +60,7 @@ func (b *Builder) Searcher(v SearchFunc) *Builder {
 	b.searcher = v
 	return b
 }
+
 func (b *Builder) Activity(v *activity.Builder) *Builder {
 	b.ab = v
 	return b
@@ -117,18 +119,21 @@ func (b *Builder) allowTypeSelectOptions(msgr *Messages) (items []selectItem) {
 	}
 	return
 }
+
 func (b *Builder) onEdit(ctx *web.EventContext, old, obj media_library.MediaLibrary) {
 	if b.ab == nil {
 		return
 	}
 	_, _ = b.ab.OnEdit(ctx.R.Context(), old, obj)
 }
+
 func (b *Builder) onCreate(ctx *web.EventContext, obj media_library.MediaLibrary) {
 	if b.ab == nil {
 		return
 	}
 	_, _ = b.ab.OnCreate(ctx.R.Context(), obj)
 }
+
 func (b *Builder) onDelete(ctx *web.EventContext, objs []media_library.MediaLibrary) {
 	if b.ab == nil {
 		return
