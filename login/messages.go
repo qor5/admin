@@ -27,12 +27,13 @@ type Messages struct {
 	LoginWelcomeLabel string
 	LoginTitleLabel   string
 
-	LoginAccountLabel        string
-	LoginAccountPlaceholder  string
-	LoginPasswordLabel       string
-	LoginPasswordPlaceholder string
-	LoginSignInButtonLabel   string
-	LoginForgetPasswordLabel string
+	LoginAccountLabel         string
+	LoginAccountPlaceholder   string
+	LoginPasswordLabel        string
+	LoginPasswordPlaceholder  string
+	LoginSignInButtonLabel    string
+	LoginForgetPasswordLabel  string
+	LoginQor5DescriptionLabel string
 
 	LoginProviderGoogleText    string
 	LoginProviderMicrosoftText string
@@ -66,12 +67,13 @@ var Messages_en_US = &Messages{
 	LoginWelcomeLabel: "Welcome",
 	LoginTitleLabel:   "Qor Admin System",
 
-	LoginAccountLabel:        "Email",
-	LoginAccountPlaceholder:  "Please enter your email",
-	LoginPasswordLabel:       "Password",
-	LoginPasswordPlaceholder: "Please enter your password",
-	LoginSignInButtonLabel:   "Sign in",
-	LoginForgetPasswordLabel: "Forget your password?",
+	LoginAccountLabel:         "Email",
+	LoginAccountPlaceholder:   "Please enter your email",
+	LoginPasswordLabel:        "Password",
+	LoginPasswordPlaceholder:  "Please enter your password",
+	LoginSignInButtonLabel:    "Sign in",
+	LoginForgetPasswordLabel:  "Forget your password?",
+	LoginQor5DescriptionLabel: "Enterprise Systems, Startup Speed",
 
 	LoginProviderGoogleText:    "Sign in with Google",
 	LoginProviderMicrosoftText: "Sign in with Microsoft",
@@ -100,12 +102,13 @@ var Messages_zh_CN = &Messages{
 	LoginWelcomeLabel: "欢迎",
 	LoginTitleLabel:   "Qor 管理系统",
 
-	LoginAccountLabel:        "邮箱",
-	LoginAccountPlaceholder:  "请输入您的邮箱",
-	LoginPasswordLabel:       "密码",
-	LoginPasswordPlaceholder: "请输入您的密码",
-	LoginSignInButtonLabel:   "登录",
-	LoginForgetPasswordLabel: "忘记密码？",
+	LoginAccountLabel:         "邮箱",
+	LoginAccountPlaceholder:   "请输入您的邮箱",
+	LoginPasswordLabel:        "密码",
+	LoginPasswordPlaceholder:  "请输入您的密码",
+	LoginSignInButtonLabel:    "登录",
+	LoginForgetPasswordLabel:  "忘记密码？",
+	LoginQor5DescriptionLabel: "企业级系统，创业速度",
 
 	LoginProviderGoogleText:    "使用 Google 登录",
 	LoginProviderMicrosoftText: "使用 Microsoft 登录",
@@ -134,12 +137,13 @@ var Messages_ja_JP = &Messages{
 	LoginWelcomeLabel: "ようこそ",
 	LoginTitleLabel:   "Qor 管理システム",
 
-	LoginAccountLabel:        "メールアドレス",
-	LoginAccountPlaceholder:  "メールアドレスを入力してください",
-	LoginPasswordLabel:       "パスワード",
-	LoginPasswordPlaceholder: "パスワードを入力してください",
-	LoginSignInButtonLabel:   "サインイン",
-	LoginForgetPasswordLabel: "パスワードをお忘れですか？",
+	LoginAccountLabel:         "メールアドレス",
+	LoginAccountPlaceholder:   "メールアドレスを入力してください",
+	LoginPasswordLabel:        "パスワード",
+	LoginPasswordPlaceholder:  "パスワードを入力してください",
+	LoginSignInButtonLabel:    "サインイン",
+	LoginForgetPasswordLabel:  "パスワードをお忘れですか？",
+	LoginQor5DescriptionLabel: "エンタープライズシステム、スタートアップスピード",
 
 	LoginProviderGoogleText:    "Google でログイン",
 	LoginProviderMicrosoftText: "Microsoft でログイン",

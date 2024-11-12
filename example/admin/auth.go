@@ -15,6 +15,7 @@ import (
 	plogin "github.com/qor5/admin/v3/login"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/role"
+	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/login"
 	. "github.com/theplant/htmlgo"
 	"github.com/theplant/osenv"
@@ -144,7 +145,14 @@ func initLoginSessionBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Buil
 				return nil
 			}
 		}).TOTP(false).MaxRetryCount(0)
-	loginBuilder.LoginPageFunc(plogin.NewAdvancedLoginPage(nil)(loginBuilder.ViewHelper(), pb))
+	loginBuilder.LoginPageFunc(plogin.NewAdvancedLoginPage(func(ctx *web.EventContext, config *plogin.AdvancedLoginPageConfig) (*plogin.AdvancedLoginPageConfig, error) {
+		config.BrandLogo = RawHTML(`<svg width="61" height="24" viewBox="0 0 61 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+		<path fill-rule="evenodd" clip-rule="evenodd" d="M40.6667 -1.5H61V18.75H40.6667V-1.5ZM47.4445 5.25H54.2222V12H47.4445V5.25ZM47.4445 12V18.75H54.2222L47.4445 12Z" fill="#17A2F5"/>
+		<path d="M33.889 5.25041H27.1112V12.0004H33.889V5.25041Z" fill="#17A2F5"/>
+		<path fill-rule="evenodd" clip-rule="evenodd" d="M0 -1.5H20.3332V18.75L0 18.75V-1.5ZM6.77777 5.25H13.5555V12H6.77777V5.25ZM20.3333 25.5L20.3332 18.75L13.5555 18.75L20.3333 25.5Z" fill="#17A2F5"/>
+		</svg>`)
+		return config, nil
+	})(loginBuilder.ViewHelper(), pb))
 
 	genInitialUser(db)
 

@@ -16,6 +16,7 @@ import (
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	. "github.com/theplant/htmlgo"
+	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"golang.org/x/text/language/display"
 )
@@ -160,6 +161,7 @@ type AdvancedLoginPageConfig struct {
 	OAuthProviderDisplay func(provider *login.Provider) OAuthProviderDisplay
 	BrandLogo            HTMLComponent
 	LeftImage            HTMLComponent
+	Qor5DescriptionLabel string
 }
 
 func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *AdvancedLoginPageConfig) (*AdvancedLoginPageConfig, error)) func(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
@@ -168,14 +170,15 @@ func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *Advanced
 			msgr := i18n.MustGetModuleMessages(ctx.R, I18nAdminLoginKey, Messages_en_US).(*Messages)
 
 			config := &AdvancedLoginPageConfig{
-				WelcomeLabel:        msgr.LoginWelcomeLabel,
-				TitleLabel:          msgr.LoginTitleLabel,
-				AccountLabel:        msgr.LoginAccountLabel,
-				AccountPlaceholder:  msgr.LoginAccountPlaceholder,
-				PasswordLabel:       msgr.LoginPasswordLabel,
-				PasswordPlaceholder: msgr.LoginPasswordPlaceholder,
-				SignInButtonLabel:   msgr.LoginSignInButtonLabel,
-				ForgetPasswordLabel: msgr.LoginForgetPasswordLabel,
+				WelcomeLabel:         msgr.LoginWelcomeLabel,
+				TitleLabel:           msgr.LoginTitleLabel,
+				AccountLabel:         msgr.LoginAccountLabel,
+				AccountPlaceholder:   msgr.LoginAccountPlaceholder,
+				PasswordLabel:        msgr.LoginPasswordLabel,
+				PasswordPlaceholder:  msgr.LoginPasswordPlaceholder,
+				SignInButtonLabel:    msgr.LoginSignInButtonLabel,
+				ForgetPasswordLabel:  msgr.LoginForgetPasswordLabel,
+				Qor5DescriptionLabel: msgr.LoginQor5DescriptionLabel,
 				OAuthProviderDisplay: func(provider *login.Provider) OAuthProviderDisplay {
 					return OAuthProviderDisplay{
 						Logo: provider.Logo,
@@ -183,7 +186,8 @@ func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *Advanced
 					}
 				},
 				BrandLogo: nil,
-				LeftImage: VImg().Class("fill-height").Cover(true).Src("https://cdn.vuetifyjs.com/images/parallax/material2.jpg"),
+				// LeftImage: VImg().Class("fill-height").Cover(true).Src("https://cdn.vuetifyjs.com/images/parallax/material2.jpg"),
+				LeftImage: VImg().Attr("style", "height: 100vh").Cover(true).Src("https://cdn.vuetifyjs.com/images/parallax/material2.jpg"),
 			}
 			if customize != nil {
 				config, err = customize(ctx, config)
@@ -216,24 +220,19 @@ func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *Advanced
 			}
 			// i18n end
 
-			logoCompo := func() *HTMLTagBuilder {
-				return Div().Class("d-flex flex-row ga-6 px-6 py-2 rounded").Style("background-color: white;").Children(
-					RawHTML(`<svg width="61" height="24" viewBox="0 0 61 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path fill-rule="evenodd" clip-rule="evenodd" d="M40.6667 -1.5H61V18.75H40.6667V-1.5ZM47.4445 5.25H54.2222V12H47.4445V5.25ZM47.4445 12V18.75H54.2222L47.4445 12Z" fill="#17A2F5"/>
-<path d="M33.889 5.25041H27.1112V12.0004H33.889V5.25041Z" fill="#17A2F5"/>
-<path fill-rule="evenodd" clip-rule="evenodd" d="M0 -1.5H20.3332V18.75L0 18.75V-1.5ZM6.77777 5.25H13.5555V12H6.77777V5.25ZM20.3333 25.5L20.3332 18.75L13.5555 18.75L20.3333 25.5Z" fill="#17A2F5"/>
+			qor5LogoCompo := func() *h.HTMLTagBuilder {
+				return Div().Class("d-flex flex-row ga-4 text-disabled").Children(
+					RawHTML(`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M8.25147 5.33183V0L0.771729 5.33183V15.7658H15.7283V0L8.25147 5.33183Z" fill="#9E9E9E"/>
 </svg>`),
-					If(config.BrandLogo != nil, Components(
-						VDivider().Color(ColorGreyDarken3).Vertical(true),
-						config.BrandLogo,
-					)),
+					h.Div().Style("font-size: 12px").Text(config.Qor5DescriptionLabel),
 				)
 			}
 
 			leftCompo := VCol().Cols(0).Md(6).Class("hidden-md-and-down").Children(
 				config.LeftImage,
-				Div().Class("position-absolute").Style("top: 32px; left: 32px;").Children(
-					logoCompo(),
+				Div().Class("position-absolute").Style("bottom: 33px; left: 28px;").Children(
+					qor5LogoCompo(),
 				),
 			)
 
@@ -321,9 +320,7 @@ func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *Advanced
 			rightCompo := VCol().Cols(12).Md(6).Class("d-flex flex-column justify-center align-center").Children(
 				Div().Class("d-flex flex-column pa-4").Style("max-width: 455px; width: 100%").Children(
 					Div().Class("d-flex flex-row align-center ga-2 mb-5").Children(
-						Div().Class("hidden-lg-and-up mb-4").Children(
-							logoCompo(),
-						),
+						config.BrandLogo,
 						VSpacer(),
 						langCompo,
 					),
@@ -331,6 +328,11 @@ func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *Advanced
 					Div().Text(config.TitleLabel).Class("mb-16").Style("font-size: 42px; font-weight: 510;"),
 					userPassCompo,
 					oauthCompo,
+					Div().Class("hidden-lg-and-up").Class("mt-16").Children(
+						Div().Class("d-flex flex-column align-center").Children(
+							qor5LogoCompo(),
+						),
+					),
 				),
 			)
 
