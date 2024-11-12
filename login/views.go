@@ -16,7 +16,6 @@ import (
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	. "github.com/theplant/htmlgo"
-	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"golang.org/x/text/language/display"
 )
@@ -220,12 +219,12 @@ func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *Advanced
 			}
 			// i18n end
 
-			qor5LogoCompo := func() *h.HTMLTagBuilder {
+			qor5LogoCompo := func() *HTMLTagBuilder {
 				return Div().Class("d-flex flex-row ga-4 text-disabled").Children(
 					RawHTML(`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path fill-rule="evenodd" clip-rule="evenodd" d="M8.25147 5.33183V0L0.771729 5.33183V15.7658H15.7283V0L8.25147 5.33183Z" fill="#9E9E9E"/>
 </svg>`),
-					h.Div().Style("font-size: 12px").Text(config.Qor5DescriptionLabel),
+					Div().Style("font-size: 12px").Text(config.Qor5DescriptionLabel),
 				)
 			}
 
