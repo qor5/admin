@@ -273,7 +273,7 @@ func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *Advanced
 			if vh.UserPassEnabled() {
 				compo := Form().Class("login-form d-flex flex-column").Id("login-form").Method(http.MethodPost).Action(vh.PasswordLoginURL())
 				compo.AppendChildren(
-					DefaultViewCommon.Input("account", config.AccountPlaceholder, wIn.Account).Class("mb-5 text-truncate").Label(config.AccountLabel),
+					DefaultViewCommon.Input("account", config.AccountPlaceholder, wIn.Account).Class("mb-5").Label(config.AccountLabel),
 					DefaultViewCommon.PasswordInput("password", config.PasswordPlaceholder, wIn.Password, true).Class("mb-5").Label(config.PasswordLabel),
 					If(isRecaptchaEnabled,
 						// recaptcha response token
