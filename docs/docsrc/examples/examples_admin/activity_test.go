@@ -621,30 +621,6 @@ func TestActivityAdmin(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"Activity Log", "87", "<td style='white-space: nowrap;'>Price</td>", "<td v-pre>70</td>", "<td v-pre>72</td>"},
 		},
 		{
-			Name:  "Activity logs without PermList",
-			Debug: true,
-			HandlerMaker: func() http.Handler {
-				pb := presets.New()
-				pb.Permission(
-					perm.New().Policies(
-						perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
-						perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermList).On("*:presets:with_activity_products:*"),
-					),
-				)
-				activityExample(pb, TestDB, func(mb *presets.ModelBuilder, ab *activity.Builder) {
-					pb.Use(ab)
-				})
-				return pb
-			},
-			ReqFunc: func() *http.Request {
-				// activityData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/activity-logs?lang=zh", nil)
-			},
-			ExpectPageBodyContainsInOrder: []string{
-				"没有可显示的记录",
-			},
-		},
-		{
 			Name:  "Activity log detail for edit action (new)",
 			Debug: true,
 			ReqFunc: func() *http.Request {

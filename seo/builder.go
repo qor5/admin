@@ -12,6 +12,8 @@ import (
 	"strings"
 
 	"github.com/qor5/admin/v3/l10n"
+	"github.com/qor5/admin/v3/presets"
+
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -78,6 +80,7 @@ type Builder struct {
 	seoRoot   *SEO
 	inherited bool
 	afterSave func(ctx context.Context, settingName string, locale string) error // hook called after saving
+	mb        *presets.ModelBuilder
 }
 
 // @snippet_end

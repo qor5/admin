@@ -203,6 +203,7 @@ func NewConfig(db *gorm.DB, enableWork bool) Config {
 	})
 	defer func() {
 		mediab.GetPresetsModelBuilder().Use(ab)
+		seoBuilder.GetPresetsModelBuilder().Use(ab)
 	}()
 
 	l10nBuilder := l10n.New(db)
@@ -223,7 +224,6 @@ func NewConfig(db *gorm.DB, enableWork bool) Config {
 	// media_view.MediaLibraryPerPage = 3
 	// vips.UseVips(vips.Config{EnableGenerateWebp: true})
 	configureSeo(b, db, l10nBuilder.GetSupportLocaleCodes()...)
-
 	configMenuOrder(b)
 
 	configPost(b, db, publisher, ab, seoBuilder)

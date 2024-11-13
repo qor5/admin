@@ -178,7 +178,6 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 				vars.$pbRightDrawerOnMouseLeave = null
 				vars.$pbRightDrawerOnMouseDown = null
 				vars.$pbRightDrawerOnMouseMove = null
-				window.removeEventListener('load', vars.$PagebuilderResizeFn)
 				window.removeEventListener('resize', vars.$PagebuilderResizeFn)
 				vars.$PagebuilderResizeFn = null
 				vars.$pbRightThrottleTimer = null
