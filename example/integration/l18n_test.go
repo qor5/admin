@@ -9,7 +9,7 @@ import (
 )
 
 func TestL18n(t *testing.T) {
-	h := admin.TestL18nHandler(TestDB)
+	h, _ := admin.TestL18nHandler(TestDB)
 
 	dbr, _ := TestDB.DB()
 	profileData.TruncatePut(dbr)

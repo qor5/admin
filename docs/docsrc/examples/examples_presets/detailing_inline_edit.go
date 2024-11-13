@@ -315,7 +315,7 @@ func PresetsDetailSectionLabel(b *presets.Builder, db *gorm.DB) (
 		}
 	})
 	section1 := presets.NewSectionBuilder(cust, "section1").Label("section_with_label").Editing("Name")
-	section2 := presets.NewSectionBuilder(cust, "section2").Label("section_without_label").DisableLabel().Editing("Email")
+	section2 := presets.NewSectionBuilder(cust, "section2").Label("section_without_label").DisableLabel().Editing("Email").Viewing("Email")
 	creditCardssection := presets.NewSectionBuilder(cust, "CreditCards").Label("section_list_with_label").IsList(&CreditCard{}).
 		Editing("Name").
 		ElementShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {

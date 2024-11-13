@@ -1,7 +1,6 @@
 package activity
 
 import (
-	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -47,6 +46,7 @@ type ModelBuilder struct {
 	ignoredFields []string                     // ignored fields
 	typeHandlers  map[reflect.Type]TypeHandler // type handlers
 	link          func(any) string             // display the model link on the admin detail page
+	label         func() string                // display the model label on the admin detail page
 	beforeCreate  func(ctx context.Context, log *ActivityLog) error
 }
 
@@ -176,7 +176,7 @@ func (amb *ModelBuilder) WrapperSaveFunc(in presets.SaveFunc) presets.SaveFunc {
 
 func (amb *ModelBuilder) installPresetModelBuilder(mb *presets.ModelBuilder) {
 	amb.presetModel = mb
-	amb.LinkFunc(func(a any) string {
+	amb.link = func(a any) string {
 		id := presets.ObjectID(a)
 		if id == "" {
 			return ""
@@ -185,7 +185,10 @@ func (amb *ModelBuilder) installPresetModelBuilder(mb *presets.ModelBuilder) {
 			return mb.Info().DetailingHref(id)
 		}
 		return ""
-	})
+	}
+	amb.label = func() string {
+		return mb.Info().URIName()
+	}
 
 	pb := mb.GetPresetsBuilder()
 	if amb.ab.GetLogModelBuilder(pb) == nil {
@@ -345,6 +348,11 @@ func (mb *ModelBuilder) parseColumns(keys []string) []string {
 		columns = append(columns, f.DBName)
 	}
 	return columns
+}
+
+func (mb *ModelBuilder) LabelFunc(f func() string) *ModelBuilder {
+	mb.label = f
+	return mb
 }
 
 func (mb *ModelBuilder) LinkFunc(f func(any) string) *ModelBuilder {
@@ -533,8 +541,8 @@ func (mb *ModelBuilder) create(
 		ModelLink:  modelLink,
 		Scope:      scope,
 	}
-	if mb.presetModel != nil {
-		log.ModelLabel = cmp.Or(mb.presetModel.Info().URIName(), log.ModelLabel)
+	if mb.label != nil {
+		log.ModelLabel = mb.label()
 	}
 	log.CreatedAt = db.NowFunc()
 
