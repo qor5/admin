@@ -9,6 +9,7 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
+	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/stretchr/testify/require"
 	"github.com/theplant/gofixtures"
@@ -37,6 +38,29 @@ func TestPublish(t *testing.T) {
 				return httptest.NewRequest("GET", "/with-publish-products", nil)
 			},
 			ExpectPageBodyContainsInOrder: []string{"Hello Product"},
+		},
+		{
+			Name:  "Index Page (with ListSubqueryConditions)",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				pb := presets.New()
+				publishExample(pb, TestDB, func(mb *presets.ModelBuilder, pb *publish.Builder) {
+					pb.ListSubqueryConditions(func(ctx *web.EventContext, mb *presets.ModelBuilder) ([]*presets.SQLCondition, error) {
+						return []*presets.SQLCondition{
+							{
+								Query: "name <> ?",
+								Args:  []interface{}{"Hello Product"},
+							},
+						}, nil
+					})
+				})
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				publishData.TruncatePut(dbr)
+				return httptest.NewRequest("GET", "/with-publish-products", nil)
+			},
+			ExpectPageBodyNotContains: []string{"Hello Product"},
 		},
 		{
 			Name:  "Not Found Page",
