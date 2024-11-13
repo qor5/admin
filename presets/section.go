@@ -1083,7 +1083,12 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 			ctx.Flash = &vErr
 			needSave = false
 			if vErr.GetGlobalError() != "" {
-				ShowMessage(&r, vErr.GetGlobalError(), "warning")
+				ShowMessage(&r, vErr.GetGlobalError(), TypeWarning)
+			} else if len(vErr.FieldErrors()) > 0 {
+				for _, fieldErr := range vErr.FieldErrors() {
+					ShowMessage(&r, strings.Join(fieldErr, ""), TypeError)
+					break
+				}
 			}
 		}
 	}
@@ -1091,7 +1096,12 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 		ctx.Flash = &vErr
 		needSave = false
 		if vErr.GetGlobalError() != "" {
-			ShowMessage(&r, vErr.GetGlobalError(), "warning")
+			ShowMessage(&r, vErr.GetGlobalError(), TypeWarning)
+		} else if len(vErr.FieldErrors()) > 0 {
+			for _, fieldErr := range vErr.FieldErrors() {
+				ShowMessage(&r, strings.Join(fieldErr, ""), TypeError)
+				break
+			}
 		}
 	}
 
