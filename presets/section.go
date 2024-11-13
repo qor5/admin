@@ -530,11 +530,12 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 	disableEditBtn := b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
 	saveBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Save")).PrependIcon("mdi-check").Size(SizeSmall).Variant(VariantFlat).Color(ColorPrimary).Disabled(disableEditBtn).
 		Attr("style", "text-transform: none;").
-		Attr("@click", cancelChangeEvent+web.Plaid().
+		Attr("@click", web.Plaid().
 			URL(ctx.R.URL.Path).
 			EventFunc(b.EventSave()).
 			// Query(SectionFieldName, b.name).
 			Query(ParamID, id).
+			Query(ParamOverlayAfterUpdateScript, onChangeEvent).
 			Go())
 
 	hiddenComp := h.Div()
