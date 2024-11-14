@@ -161,6 +161,8 @@ type AdvancedLoginPageConfig struct {
 	BrandLogo            HTMLComponent
 	LeftImage            HTMLComponent
 	Qor5DescriptionLabel string
+	RightMaxWidth        string
+	PageTitle            string
 }
 
 func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *AdvancedLoginPageConfig) (*AdvancedLoginPageConfig, error)) func(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
@@ -185,8 +187,10 @@ func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *Advanced
 					}
 				},
 				BrandLogo: nil,
-				// LeftImage: VImg().Class("fill-height").Cover(true).Src("https://cdn.vuetifyjs.com/images/parallax/material2.jpg"),
-				LeftImage: VImg().Attr("style", "height: 100vh").Cover(true).Src("https://cdn.vuetifyjs.com/images/parallax/material2.jpg"),
+				LeftImage: VImg().Class("fill-height").Cover(true).Src("https://cdn.vuetifyjs.com/images/parallax/material2.jpg"),
+				// LeftImage: VImg().Attr("style", "height: 100vh").Cover(true).Src("https://cdn.vuetifyjs.com/images/parallax/material2.jpg"),
+				RightMaxWidth: "455px",
+				PageTitle:     msgr.LoginTitleLabel,
 			}
 			if customize != nil {
 				config, err = customize(ctx, config)
@@ -267,7 +271,7 @@ func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *Advanced
 
 			var userPassCompo HTMLComponent
 			if vh.UserPassEnabled() {
-				compo := Form().Class("d-flex flex-column").Id("login-form").Method(http.MethodPost).Action(vh.PasswordLoginURL())
+				compo := Form().Class("login-form d-flex flex-column").Id("login-form").Method(http.MethodPost).Action(vh.PasswordLoginURL())
 				compo.AppendChildren(
 					DefaultViewCommon.Input("account", config.AccountPlaceholder, wIn.Account).Class("mb-5").Label(config.AccountLabel),
 					DefaultViewCommon.PasswordInput("password", config.PasswordPlaceholder, wIn.Password, true).Class("mb-5").Label(config.PasswordLabel),
@@ -317,14 +321,14 @@ func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *Advanced
 			}
 
 			rightCompo := VCol().Cols(12).Md(6).Class("d-flex flex-column justify-center align-center").Children(
-				Div().Class("d-flex flex-column pa-4").Style("max-width: 455px; width: 100%").Children(
+				Div().Class("d-flex flex-column pa-4").Style(fmt.Sprintf("max-width: %s; width: 100%%", config.RightMaxWidth)).Children(
 					Div().Class("d-flex flex-row align-center ga-2 mb-5").Children(
 						config.BrandLogo,
 						VSpacer(),
 						langCompo,
 					),
 					Div().Text(config.WelcomeLabel).Class("mb-4 text-h4"),
-					Div().Text(config.TitleLabel).Class("mb-16").Style("font-size: 42px; font-weight: 510;"),
+					Div().Text(config.TitleLabel).Class("mb-10 text-h2").Style("font-size: 42px;"),
 					userPassCompo,
 					oauthCompo,
 					Div().Class("hidden-lg-and-up").Class("mt-16").Children(
@@ -335,13 +339,28 @@ func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *Advanced
 				),
 			)
 
-			r.PageTitle = config.TitleLabel
+			ctx.Injector.HeadHTML(`
+			<style>
+				.login-form input {
+					white-space: nowrap;
+					overflow: hidden;
+					text-overflow: ellipsis;
+				}
+				.login-form input:focus::placeholder {
+					color: transparent;
+				}
+			</style>
+			`)
+
+			r.PageTitle = config.PageTitle
 			r.Body = Components(
-				DefaultViewCommon.Notice(vh, i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages), ctx.W, ctx.R),
 				VRow().NoGutters(true).
 					Attr(":class", "$vuetify.display.mdAndDown ? 'fill-height justify-center bg-grey-lighten-5':'fill-height justify-center'").Children(
 					leftCompo,
 					rightCompo,
+				),
+				Div().Class("position-absolute").Style("top: 0px; left: 0px; right: 0px;").Children(
+					DefaultViewCommon.Notice(vh, i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages), ctx.W, ctx.R),
 				),
 			)
 
