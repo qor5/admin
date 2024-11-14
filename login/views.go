@@ -328,7 +328,7 @@ func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *Advanced
 						langCompo,
 					),
 					Div().Text(config.WelcomeLabel).Class("mb-4 text-h4"),
-					Div().Text(config.TitleLabel).Class("mb-16").Style("font-size: 42px; font-weight: 510;"),
+					Div().Text(config.TitleLabel).Class("mb-10 text-h2").Style("font-size: 42px;"),
 					userPassCompo,
 					oauthCompo,
 					Div().Class("hidden-lg-and-up").Class("mt-16").Children(
