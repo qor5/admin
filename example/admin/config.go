@@ -298,7 +298,7 @@ func NewConfig(db *gorm.DB, enableWork bool) Config {
 					}
 					liveFilterItem, err := publish.NewLiveFilterItem(ctx.R.Context(), "")
 					if err != nil {
-						panic(liveFilterItem)
+						panic(err)
 					}
 					return []*vx.FilterItem{item, liveFilterItem}
 				})

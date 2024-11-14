@@ -355,8 +355,10 @@ func (c *ListingCompo) toolbarSearch(ctx context.Context) h.HTMLComponent {
 	var filterSearch h.HTMLComponent
 	if c.lb.filterDataFunc != nil {
 		fd := c.lb.filterDataFunc(evCtx)
-		fd.SetByQueryString(evCtx, c.FilterQuery)
-		filterSearch = c.filterSearch(ctx, fd)
+		if len(fd) > 0 {
+			fd.SetByQueryString(evCtx, c.FilterQuery)
+			filterSearch = c.filterSearch(ctx, fd)
+		}
 	}
 
 	textFieldSearch := c.textFieldSearch(ctx)
@@ -423,11 +425,13 @@ func (c *ListingCompo) processFilter(evCtx *web.EventContext) (h.HTMLComponent, 
 	var filterScript h.HTMLComponent
 	if c.lb.filterDataFunc != nil {
 		fd := c.lb.filterDataFunc(evCtx)
-		cond, args, vErr := fd.SetByQueryString(evCtx, c.FilterQuery)
-		if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
-			filterScript = web.RunScript(fmt.Sprintf(`(el)=>{%s}`, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), "error")))
+		if len(fd) > 0 {
+			cond, args, vErr := fd.SetByQueryString(evCtx, c.FilterQuery)
+			if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
+				filterScript = web.RunScript(fmt.Sprintf(`(el)=>{%s}`, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), "error")))
+			}
+			return filterScript, []*SQLCondition{{Query: cond, Args: args}}
 		}
-		return filterScript, []*SQLCondition{{Query: cond, Args: args}}
 	}
 	return nil, nil
 }

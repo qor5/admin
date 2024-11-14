@@ -17,6 +17,7 @@ import (
 	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
@@ -37,9 +38,8 @@ type Builder struct {
 	afterInstallFuncs []func()
 	autoSchedule      bool
 
-	listSubqueryConditions func(ctx *web.EventContext, mb *presets.ModelBuilder) ([]*presets.SQLCondition, error)
-	publish                PublishFunc
-	unpublish              UnPublishFunc
+	publish   PublishFunc
+	unpublish UnPublishFunc
 }
 
 type ContextValueFunc func(ctx context.Context) context.Context
@@ -150,7 +150,18 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.Model
 	}
 
 	lb := mb.Listing()
-	lb.WrapSearchFunc(makeSearchFunc(b, mb, db))
+	lb.WrapSearchFunc(makeSearchFunc(mb, db))
+	lb.WrapFilterDataFunc(func(in presets.FilterDataFunc) presets.FilterDataFunc {
+		return func(ctx *web.EventContext) vx.FilterData {
+			fd := in(ctx)
+			for _, item := range fd {
+				if item.Key == "f_"+activity.KeyHasUnreadNotes {
+					item.SQLCondition = ListSubqueryConditionQueryPrefix + item.SQLCondition
+				}
+			}
+			return fd
+		}
+	})
 	lb.RowMenu().RowMenuItem("Delete").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
 		// DeleteRowMenu should be disabled when using the version interface
 		return nil
@@ -215,12 +226,9 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.Model
 	configureVersionListDialog(db, b, pb, mb)
 }
 
-func (b *Builder) ListSubqueryConditions(f func(ctx *web.EventContext, mb *presets.ModelBuilder) ([]*presets.SQLCondition, error)) *Builder {
-	b.listSubqueryConditions = f
-	return b
-}
+const ListSubqueryConditionQueryPrefix = "__PUBLISH_LIST_SUBQUERY_CONDITION__: "
 
-func makeSearchFunc(b *Builder, mb *presets.ModelBuilder, db *gorm.DB) func(searcher presets.SearchFunc) presets.SearchFunc {
+func makeSearchFunc(mb *presets.ModelBuilder, db *gorm.DB) func(searcher presets.SearchFunc) presets.SearchFunc {
 	return func(searcher presets.SearchFunc) presets.SearchFunc {
 		return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 			stmt := &gorm.Statement{DB: db}
@@ -231,18 +239,16 @@ func makeSearchFunc(b *Builder, mb *presets.ModelBuilder, db *gorm.DB) func(sear
 			var wheres []string
 			var args []any
 
-			if b.listSubqueryConditions != nil {
-				subqueryConditions, err := b.listSubqueryConditions(ctx, mb)
-				if err != nil {
-					return nil, err
-				}
-				if len(subqueryConditions) > 0 {
-					for _, c := range subqueryConditions {
-						wheres = append(wheres, fmt.Sprintf("(%s)", c.Query))
-						args = append(args, c.Args...)
-					}
+			var newSQLConditions []*presets.SQLCondition
+			for _, cond := range params.SQLConditions {
+				if strings.HasPrefix(cond.Query, ListSubqueryConditionQueryPrefix) {
+					wheres = append(wheres, fmt.Sprintf("(%s)", strings.TrimPrefix(cond.Query, ListSubqueryConditionQueryPrefix)))
+					args = append(args, cond.Args...)
+				} else {
+					newSQLConditions = append(newSQLConditions, cond)
 				}
 			}
+			params.SQLConditions = newSQLConditions
 
 			for _, f := range stmt.Schema.Fields {
 				if f.Name == "DeletedAt" {

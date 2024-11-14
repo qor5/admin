@@ -45,13 +45,14 @@ func TestPublish(t *testing.T) {
 			HandlerMaker: func() http.Handler {
 				pb := presets.New()
 				publishExample(pb, TestDB, func(mb *presets.ModelBuilder, pb *publish.Builder) {
-					pb.ListSubqueryConditions(func(ctx *web.EventContext, mb *presets.ModelBuilder) ([]*presets.SQLCondition, error) {
-						return []*presets.SQLCondition{
-							{
-								Query: "name <> ?",
+					mb.Listing().WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
+						return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
+							params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
+								Query: publish.ListSubqueryConditionQueryPrefix + "name <> ?",
 								Args:  []interface{}{"Hello Product"},
-							},
-						}, nil
+							})
+							return in(ctx, params)
+						}
 					})
 				})
 				return pb

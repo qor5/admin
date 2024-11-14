@@ -22,6 +22,17 @@ func (b *ListingBuilder) FilterDataFunc(v FilterDataFunc) {
 	}
 }
 
+func (b *ListingBuilder) WrapFilterDataFunc(w func(in FilterDataFunc) FilterDataFunc) (r *ListingBuilder) {
+	if b.filterDataFunc == nil {
+		b.filterDataFunc = w(func(ctx *web.EventContext) vuetifyx.FilterData {
+			return nil
+		})
+	} else {
+		b.filterDataFunc = w(b.filterDataFunc)
+	}
+	return b
+}
+
 func (b *ListingBuilder) FilterTabsFunc(v FilterTabsFunc) {
 	if v == nil {
 		b.filterTabsFunc = nil
