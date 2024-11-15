@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -618,14 +619,41 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 	filterScript, filterConds := c.processFilter(evCtx)
 	searchParams.SQLConditions = append(searchParams.SQLConditions, filterConds...)
 
+	var searchResult *SearchResult
 	if c.lb.relayPagination != nil {
 		searchParams.RelayPagination = c.lb.relayPagination
-		searchParams.RelayPaginateRequest = c.prepareRelayPaginateRequest(searchParams.OrderBys, int(searchParams.PerPage))
-	}
 
-	searchResult, err := c.lb.Searcher(evCtx, searchParams)
-	if err != nil {
-		panic(errors.Wrap(err, "searcher error"))
+		pr := c.prepareRelayPaginateRequest(searchParams.OrderBys, int(searchParams.PerPage))
+		searchParams.RelayPaginateRequest = pr
+
+		var err error
+		searchResult, err = c.lb.Searcher(evCtx, searchParams)
+		if err != nil {
+			panic(errors.Wrap(err, "searcher error"))
+		}
+
+		// For table display scenarios, after the data changes
+		// the display of the first page needs special processing
+		if pr.Before != nil && pr.Last != nil &&
+			!searchResult.PageInfo.HasPreviousPage && searchResult.PageInfo.HasNextPage {
+			nodesValue := reflect.ValueOf(searchResult.Nodes)
+			if nodesValue.Kind() == reflect.Slice && nodesValue.Len() < *(pr.Last) {
+				searchParams.RelayPaginateRequest = &relay.PaginateRequest[any]{
+					First:    pr.Last,
+					OrderBys: searchParams.OrderBys,
+				}
+				searchResult, err = c.lb.Searcher(evCtx, searchParams)
+				if err != nil {
+					panic(errors.Wrap(err, "searcher error"))
+				}
+			}
+		}
+	} else {
+		var err error
+		searchResult, err = c.lb.Searcher(evCtx, searchParams)
+		if err != nil {
+			panic(errors.Wrap(err, "searcher error"))
+		}
 	}
 
 	btnConfigColumns, columns, err := c.getColumns(ctx)
