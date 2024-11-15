@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"net/url"
 
+	_ "embed"
+
 	"github.com/pquerna/otp"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
@@ -165,6 +167,9 @@ type AdvancedLoginPageConfig struct {
 	PageTitle            string
 }
 
+//go:embed embed/defaultLeftImage.jpg
+var defaultLeftImage []byte
+
 func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *AdvancedLoginPageConfig) (*AdvancedLoginPageConfig, error)) func(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 	return func(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 		return pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
@@ -187,7 +192,8 @@ func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *Advanced
 					}
 				},
 				BrandLogo: nil,
-				LeftImage: VImg().Class("fill-height").Cover(true).Src("https://cdn.vuetifyjs.com/images/parallax/material2.jpg"),
+				LeftImage: VImg().Class("fill-height").Cover(true).Src("data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(defaultLeftImage)),
+				// LeftImage: VImg().Class("fill-height").Cover(true).Src("https://cdn.vuetifyjs.com/images/parallax/material2.jpg"),
 				// LeftImage: VImg().Attr("style", "height: 100vh").Cover(true).Src("https://cdn.vuetifyjs.com/images/parallax/material2.jpg"),
 				RightMaxWidth: "455px",
 				PageTitle:     msgr.LoginTitleLabel,
@@ -223,19 +229,17 @@ func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *Advanced
 			}
 			// i18n end
 
-			qor5LogoCompo := func() *HTMLTagBuilder {
-				return Div().Class("d-flex flex-row ga-4 text-disabled").Children(
-					RawHTML(`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path fill-rule="evenodd" clip-rule="evenodd" d="M8.25147 5.33183V0L0.771729 5.33183V15.7658H15.7283V0L8.25147 5.33183Z" fill="#9E9E9E"/>
-</svg>`),
-					Div().Style("font-size: 12px").Text(config.Qor5DescriptionLabel),
-				)
-			}
-
 			leftCompo := VCol().Cols(0).Md(6).Class("hidden-md-and-down").Children(
 				config.LeftImage,
-				Div().Class("position-absolute").Style("bottom: 33px; left: 28px;").Children(
-					qor5LogoCompo(),
+				Div().Class("position-absolute").Style("top: 50px; left: 50px;").Children(
+					RawHTML(
+						`<svg width="61" height="27" viewBox="0 0 61 27" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<path fill-rule="evenodd" clip-rule="evenodd" d="M40.6667 0H61V20.25H40.6667V0ZM47.4445 6.75H54.2222V13.5H47.4445V6.75ZM47.4445 13.5V20.25H54.2222L47.4445 13.5Z" fill="#17A2F5"/>
+							<path d="M33.889 6.75041H27.1112V13.5004H33.889V6.75041Z" fill="#17A2F5"/>
+							<path fill-rule="evenodd" clip-rule="evenodd" d="M0 0H20.3332V20.25L0 20.25V0ZM6.77777 6.75H13.5555V13.5H6.77777V6.75ZM20.3333 27L20.3332 20.25L13.5555 20.25L20.3333 27Z" fill="#17A2F5"/>
+						</svg>
+						`,
+					),
 				),
 			)
 
@@ -331,11 +335,6 @@ func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *Advanced
 					Div().Text(config.TitleLabel).Class("mb-10 text-h2").Style("font-size: 42px;"),
 					userPassCompo,
 					oauthCompo,
-					Div().Class("hidden-lg-and-up").Class("mt-16").Children(
-						Div().Class("d-flex flex-column align-center").Children(
-							qor5LogoCompo(),
-						),
-					),
 				),
 			)
 

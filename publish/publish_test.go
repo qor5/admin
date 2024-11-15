@@ -68,7 +68,7 @@ func (p *Product) GetPublishActions(ctx context.Context, db *gorm.DB, storage os
 		})
 	}
 
-	if val, ok := ctx.Value(skipList).(bool); ok && val {
+	if val, ok := ctx.Value(ctxKeySkipList{}).(bool); ok && val {
 		return
 	}
 	actions = append(actions, &publish.PublishAction{
@@ -84,7 +84,7 @@ func (p *Product) GetUnPublishActions(ctx context.Context, db *gorm.DB, storage 
 		Url:      p.OnlineUrl,
 		IsDelete: true,
 	})
-	if val, ok := ctx.Value(skipList).(bool); ok && val {
+	if val, ok := ctx.Value(ctxKeySkipList{}).(bool); ok && val {
 		return
 	}
 	actions = append(actions, &publish.PublishAction{
@@ -222,7 +222,7 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
-const skipList = "skip_list"
+type ctxKeySkipList struct{}
 
 type ProductWithError struct {
 	Product
@@ -288,8 +288,8 @@ func TestPublishVersionContentToS3(t *testing.T) {
 
 	p := publish.New(db, storage)
 	// publish v1
-	skipListTrueContext := context.WithValue(context.Background(), skipList, true)
-	skipListFalseContext := context.WithValue(context.Background(), skipList, false)
+	skipListTrueContext := context.WithValue(context.Background(), ctxKeySkipList{}, true)
+	skipListFalseContext := context.WithValue(context.Background(), ctxKeySkipList{}, false)
 	if err := p.Publish(skipListTrueContext, &productV1); err != nil {
 		t.Error(err)
 	}
@@ -576,6 +576,81 @@ func TestSchedulePublish(t *testing.T) {
 		err = schedulePublisher.Run(context.Background(), ProductWithSchedulePublisherDBScope{
 			Product: productV1,
 		})
+		require.NoError(t, err)
+		require.Equal(t, "", storage.Objects["test/product/1/index.html"])
+	}
+
+	finderCtx := publish.WithScheduleRecordsFinder(context.Background(), func(ctx context.Context, operation publish.ScheduleOperation, b *publish.Builder, db *gorm.DB, records any) error {
+		switch operation {
+		case publish.ScheduleOperationPublish:
+			if err := db.Where("scheduled_start_at <= ? AND name <> ?", db.NowFunc(), "should_ignored_by_finder").
+				Order("scheduled_start_at").Find(records).Error; err != nil {
+				return err
+			}
+		case publish.ScheduleOperationUnPublish:
+			if err := db.Where("scheduled_end_at <= ? AND name <> ?", db.NowFunc(), "should_ignored_by_finder").
+				Order("scheduled_end_at").Find(records).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	finderWithErrCtx := publish.WithScheduleRecordsFinder(context.Background(), func(ctx context.Context, operation publish.ScheduleOperation, b *publish.Builder, db *gorm.DB, records any) error {
+		return fmt.Errorf("finder error")
+	})
+
+	productV1.ScheduledEndAt = nil
+	{
+		productV1.Name = "should_ignored_by_finder"
+		startAt := db.NowFunc().Add(-24 * time.Hour)
+		productV1.ScheduledStartAt = &startAt
+
+		err := db.Save(&productV1).Error
+		require.NoError(t, err)
+
+		// expect error
+		err = schedulePublisher.Run(finderWithErrCtx, productV1)
+		require.ErrorContains(t, err, "finder error")
+
+		// expect ignored
+		err = schedulePublisher.Run(finderCtx, productV1)
+		require.NoError(t, err)
+		require.Equal(t, "", storage.Objects["test/product/1/index.html"])
+
+		// expect ok
+		productV1.Name = "3"
+		err = db.Save(&productV1).Error
+		require.NoError(t, err)
+
+		err = schedulePublisher.Run(finderCtx, productV1)
+		require.NoError(t, err)
+		require.Equal(t, "13", storage.Objects["test/product/1/index.html"])
+	}
+
+	productV1.ScheduledStartAt = nil
+	{
+		productV1.Name = "should_ignored_by_finder"
+		endAt := startAt.Add(time.Second * 2)
+		productV1.ScheduledEndAt = &endAt
+
+		err := db.Save(&productV1).Error
+		require.NoError(t, err)
+
+		// expect error
+		err = schedulePublisher.Run(finderWithErrCtx, productV1)
+		require.ErrorContains(t, err, "finder error")
+
+		// expect ignored
+		err = schedulePublisher.Run(finderCtx, productV1)
+		require.NoError(t, err)
+		require.Equal(t, "13", storage.Objects["test/product/1/index.html"])
+
+		// expect ok
+		productV1.Name = "3"
+		err = db.Save(&productV1).Error
+		require.NoError(t, err)
+
+		err = schedulePublisher.Run(finderCtx, productV1)
 		require.NoError(t, err)
 		require.Equal(t, "", storage.Objects["test/product/1/index.html"])
 	}
