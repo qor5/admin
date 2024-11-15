@@ -60,7 +60,7 @@ func (op *DataOperatorBuilder) Search(evCtx *web.EventContext, params *presets.S
 
 	var p relay.Pagination[any]
 	var req *relay.PaginateRequest[any]
-	ctx := relay.WithSkipEdges(evCtx.R.Context())
+	ctx := evCtx.R.Context()
 	if params.RelayPagination != nil {
 		ctx = context.WithValue(ctx, ctxKeyDBForRelay{}, wh)
 		p, err = params.RelayPagination(evCtx)
@@ -94,6 +94,7 @@ func (op *DataOperatorBuilder) Search(evCtx *web.EventContext, params *presets.S
 				req.After = lo.ToPtr(cursor.EncodeOffsetCursor(offset - 1))
 			}
 		}
+		ctx = relay.WithSkip(ctx, relay.Skip{Edges: true})
 	}
 
 	resp, err := p.Paginate(ctx, req)
@@ -106,8 +107,14 @@ func (op *DataOperatorBuilder) Search(evCtx *web.EventContext, params *presets.S
 	for i := 0; i < len(resp.Nodes); i++ {
 		nodes.Index(i).Set(reflect.ValueOf(resp.Nodes[i]))
 	}
+
+	pageInfo := resp.PageInfo
+	if pageInfo == nil {
+		// In fact, the current scenario does not use SkipPageInfo, so it will not be triggered here.
+		pageInfo = &relay.PageInfo{}
+	}
 	return &presets.SearchResult{
-		PageInfo:   resp.PageInfo,
+		PageInfo:   *pageInfo,
 		TotalCount: resp.TotalCount,
 		Nodes:      nodes.Interface(),
 	}, nil

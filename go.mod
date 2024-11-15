@@ -39,7 +39,7 @@ require (
 	github.com/theplant/gofixtures v1.1.3
 	github.com/theplant/htmlgo v1.0.3
 	github.com/theplant/osenv v0.0.2
-	github.com/theplant/relay v0.2.1
+	github.com/theplant/relay v0.3.1
 	github.com/theplant/sliceutils v0.0.0-20200406042209-89153d988eb1
 	github.com/theplant/testenv v0.0.1
 	github.com/theplant/testingutils v0.0.2
@@ -91,7 +91,7 @@ require (
 	github.com/go-playground/form v3.1.4+incompatible // indirect
 	github.com/go-playground/form/v4 v4.2.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
+	github.com/golang-jwt/jwt/v4 v4.5.1 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect

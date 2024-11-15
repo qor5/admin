@@ -34,11 +34,11 @@ func relayPagination(f func(db *gorm.DB) relay.ApplyCursorsFunc[any], skipTotalC
 		relay.AppendCursorMiddleware(cursorMiddlewares...),
 	)
 	return func(ctx *web.EventContext) (relay.Pagination[any], error) {
-		return relay.PaginationFunc[any](func(ctx context.Context, req *relay.PaginateRequest[any]) (*relay.PaginateResponse[any], error) {
-			ctx = relay.WithSkipEdges(ctx)
-			if skipTotalCount {
-				ctx = relay.WithSkipTotalCount(ctx)
-			}
+		return relay.PaginationFunc[any](func(ctx context.Context, req *relay.PaginateRequest[any]) (*relay.Connection[any], error) {
+			ctx = relay.WithSkip(ctx, relay.Skip{
+				Edges:      true,
+				TotalCount: skipTotalCount,
+			})
 			return p.Paginate(ctx, req)
 		}), nil
 	}
