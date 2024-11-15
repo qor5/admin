@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"net/url"
 
+	_ "embed"
+
 	"github.com/pquerna/otp"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
@@ -160,7 +162,13 @@ type AdvancedLoginPageConfig struct {
 	OAuthProviderDisplay func(provider *login.Provider) OAuthProviderDisplay
 	BrandLogo            HTMLComponent
 	LeftImage            HTMLComponent
+	Qor5DescriptionLabel string
+	RightMaxWidth        string
+	PageTitle            string
 }
+
+//go:embed embed/defaultLeftImage.jpg
+var defaultLeftImage []byte
 
 func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *AdvancedLoginPageConfig) (*AdvancedLoginPageConfig, error)) func(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 	return func(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
@@ -168,14 +176,15 @@ func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *Advanced
 			msgr := i18n.MustGetModuleMessages(ctx.R, I18nAdminLoginKey, Messages_en_US).(*Messages)
 
 			config := &AdvancedLoginPageConfig{
-				WelcomeLabel:        msgr.LoginWelcomeLabel,
-				TitleLabel:          msgr.LoginTitleLabel,
-				AccountLabel:        msgr.LoginAccountLabel,
-				AccountPlaceholder:  msgr.LoginAccountPlaceholder,
-				PasswordLabel:       msgr.LoginPasswordLabel,
-				PasswordPlaceholder: msgr.LoginPasswordPlaceholder,
-				SignInButtonLabel:   msgr.LoginSignInButtonLabel,
-				ForgetPasswordLabel: msgr.LoginForgetPasswordLabel,
+				WelcomeLabel:         msgr.LoginWelcomeLabel,
+				TitleLabel:           msgr.LoginTitleLabel,
+				AccountLabel:         msgr.LoginAccountLabel,
+				AccountPlaceholder:   msgr.LoginAccountPlaceholder,
+				PasswordLabel:        msgr.LoginPasswordLabel,
+				PasswordPlaceholder:  msgr.LoginPasswordPlaceholder,
+				SignInButtonLabel:    msgr.LoginSignInButtonLabel,
+				ForgetPasswordLabel:  msgr.LoginForgetPasswordLabel,
+				Qor5DescriptionLabel: msgr.LoginQor5DescriptionLabel,
 				OAuthProviderDisplay: func(provider *login.Provider) OAuthProviderDisplay {
 					return OAuthProviderDisplay{
 						Logo: provider.Logo,
@@ -183,7 +192,11 @@ func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *Advanced
 					}
 				},
 				BrandLogo: nil,
-				LeftImage: VImg().Class("fill-height").Cover(true).Src("https://cdn.vuetifyjs.com/images/parallax/material2.jpg"),
+				LeftImage: VImg().Class("fill-height").Cover(true).Src("data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(defaultLeftImage)),
+				// LeftImage: VImg().Class("fill-height").Cover(true).Src("https://cdn.vuetifyjs.com/images/parallax/material2.jpg"),
+				// LeftImage: VImg().Attr("style", "height: 100vh").Cover(true).Src("https://cdn.vuetifyjs.com/images/parallax/material2.jpg"),
+				RightMaxWidth: "455px",
+				PageTitle:     msgr.LoginTitleLabel,
 			}
 			if customize != nil {
 				config, err = customize(ctx, config)
@@ -216,24 +229,17 @@ func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *Advanced
 			}
 			// i18n end
 
-			logoCompo := func() *HTMLTagBuilder {
-				return Div().Class("d-flex flex-row ga-6 px-6 py-2 rounded").Style("background-color: white;").Children(
-					RawHTML(`<svg width="61" height="24" viewBox="0 0 61 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path fill-rule="evenodd" clip-rule="evenodd" d="M40.6667 -1.5H61V18.75H40.6667V-1.5ZM47.4445 5.25H54.2222V12H47.4445V5.25ZM47.4445 12V18.75H54.2222L47.4445 12Z" fill="#17A2F5"/>
-<path d="M33.889 5.25041H27.1112V12.0004H33.889V5.25041Z" fill="#17A2F5"/>
-<path fill-rule="evenodd" clip-rule="evenodd" d="M0 -1.5H20.3332V18.75L0 18.75V-1.5ZM6.77777 5.25H13.5555V12H6.77777V5.25ZM20.3333 25.5L20.3332 18.75L13.5555 18.75L20.3333 25.5Z" fill="#17A2F5"/>
-</svg>`),
-					If(config.BrandLogo != nil, Components(
-						VDivider().Color(ColorGreyDarken3).Vertical(true),
-						config.BrandLogo,
-					)),
-				)
-			}
-
 			leftCompo := VCol().Cols(0).Md(6).Class("hidden-md-and-down").Children(
 				config.LeftImage,
-				Div().Class("position-absolute").Style("top: 32px; left: 32px;").Children(
-					logoCompo(),
+				Div().Class("position-absolute").Style("top: 50px; left: 50px;").Children(
+					RawHTML(
+						`<svg width="61" height="27" viewBox="0 0 61 27" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<path fill-rule="evenodd" clip-rule="evenodd" d="M40.6667 0H61V20.25H40.6667V0ZM47.4445 6.75H54.2222V13.5H47.4445V6.75ZM47.4445 13.5V20.25H54.2222L47.4445 13.5Z" fill="#17A2F5"/>
+							<path d="M33.889 6.75041H27.1112V13.5004H33.889V6.75041Z" fill="#17A2F5"/>
+							<path fill-rule="evenodd" clip-rule="evenodd" d="M0 0H20.3332V20.25L0 20.25V0ZM6.77777 6.75H13.5555V13.5H6.77777V6.75ZM20.3333 27L20.3332 20.25L13.5555 20.25L20.3333 27Z" fill="#17A2F5"/>
+						</svg>
+						`,
+					),
 				),
 			)
 
@@ -269,7 +275,7 @@ func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *Advanced
 
 			var userPassCompo HTMLComponent
 			if vh.UserPassEnabled() {
-				compo := Form().Class("d-flex flex-column").Id("login-form").Method(http.MethodPost).Action(vh.PasswordLoginURL())
+				compo := Form().Class("login-form d-flex flex-column").Id("login-form").Method(http.MethodPost).Action(vh.PasswordLoginURL())
 				compo.AppendChildren(
 					DefaultViewCommon.Input("account", config.AccountPlaceholder, wIn.Account).Class("mb-5").Label(config.AccountLabel),
 					DefaultViewCommon.PasswordInput("password", config.PasswordPlaceholder, wIn.Password, true).Class("mb-5").Label(config.PasswordLabel),
@@ -319,28 +325,41 @@ func NewAdvancedLoginPage(customize func(ctx *web.EventContext, config *Advanced
 			}
 
 			rightCompo := VCol().Cols(12).Md(6).Class("d-flex flex-column justify-center align-center").Children(
-				Div().Class("d-flex flex-column pa-4").Style("max-width: 455px; width: 100%").Children(
+				Div().Class("d-flex flex-column pa-4").Style(fmt.Sprintf("max-width: %s; width: 100%%", config.RightMaxWidth)).Children(
 					Div().Class("d-flex flex-row align-center ga-2 mb-5").Children(
-						Div().Class("hidden-lg-and-up mb-4").Children(
-							logoCompo(),
-						),
+						config.BrandLogo,
 						VSpacer(),
 						langCompo,
 					),
 					Div().Text(config.WelcomeLabel).Class("mb-4 text-h4"),
-					Div().Text(config.TitleLabel).Class("mb-16").Style("font-size: 42px; font-weight: 510;"),
+					Div().Text(config.TitleLabel).Class("mb-10 text-h2").Style("font-size: 42px;"),
 					userPassCompo,
 					oauthCompo,
 				),
 			)
 
-			r.PageTitle = config.TitleLabel
+			ctx.Injector.HeadHTML(`
+			<style>
+				.login-form input {
+					white-space: nowrap;
+					overflow: hidden;
+					text-overflow: ellipsis;
+				}
+				.login-form input:focus::placeholder {
+					color: transparent;
+				}
+			</style>
+			`)
+
+			r.PageTitle = config.PageTitle
 			r.Body = Components(
-				DefaultViewCommon.Notice(vh, i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages), ctx.W, ctx.R),
 				VRow().NoGutters(true).
 					Attr(":class", "$vuetify.display.mdAndDown ? 'fill-height justify-center bg-grey-lighten-5':'fill-height justify-center'").Children(
 					leftCompo,
 					rightCompo,
+				),
+				Div().Class("position-absolute").Style("top: 0px; left: 0px; right: 0px;").Children(
+					DefaultViewCommon.Notice(vh, i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages), ctx.W, ctx.R),
 				),
 			)
 
