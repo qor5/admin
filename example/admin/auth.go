@@ -146,11 +146,14 @@ func initLoginSessionBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Buil
 			}
 		}).TOTP(false).MaxRetryCount(0)
 	loginBuilder.LoginPageFunc(plogin.NewAdvancedLoginPage(func(ctx *web.EventContext, config *plogin.AdvancedLoginPageConfig) (*plogin.AdvancedLoginPageConfig, error) {
-		config.BrandLogo = RawHTML(`<svg width="61" height="24" viewBox="0 0 61 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-		<path fill-rule="evenodd" clip-rule="evenodd" d="M40.6667 -1.5H61V18.75H40.6667V-1.5ZM47.4445 5.25H54.2222V12H47.4445V5.25ZM47.4445 12V18.75H54.2222L47.4445 12Z" fill="#17A2F5"/>
-		<path d="M33.889 5.25041H27.1112V12.0004H33.889V5.25041Z" fill="#17A2F5"/>
-		<path fill-rule="evenodd" clip-rule="evenodd" d="M0 -1.5H20.3332V18.75L0 18.75V-1.5ZM6.77777 5.25H13.5555V12H6.77777V5.25ZM20.3333 25.5L20.3332 18.75L13.5555 18.75L20.3333 25.5Z" fill="#17A2F5"/>
-		</svg>`)
+		// config.BrandLogo = RawHTML(
+		// 	`<svg width="61" height="27" viewBox="0 0 61 27" fill="none" xmlns="http://www.w3.org/2000/svg">
+		// 		<path fill-rule="evenodd" clip-rule="evenodd" d="M40.6667 0H61V20.25H40.6667V0ZM47.4445 6.75H54.2222V13.5H47.4445V6.75ZM47.4445 13.5V20.25H54.2222L47.4445 13.5Z" fill="#17A2F5"/>
+		// 		<path d="M33.889 6.75041H27.1112V13.5004H33.889V6.75041Z" fill="#17A2F5"/>
+		// 		<path fill-rule="evenodd" clip-rule="evenodd" d="M0 0H20.3332V20.25L0 20.25V0ZM6.77777 6.75H13.5555V13.5H6.77777V6.75ZM20.3333 27L20.3332 20.25L13.5555 20.25L20.3333 27Z" fill="#17A2F5"/>
+		// 	</svg>
+		// 	`,
+		// )
 		return config, nil
 	})(loginBuilder.ViewHelper(), pb))
 
