@@ -585,9 +585,9 @@ func TestPageBuilderCampaign(t *testing.T) {
 					PageURL("/pages/1_2024-05-20-v01").
 					EventFunc("section_save_Page").
 					Query(presets.ParamID, "1_2024-05-20-v01").
-					AddField("Page.Title", "123").
-					AddField("Page.Slug", "123").
-					AddField("Page.CategoryID", "2").
+					AddField("Title", "123").
+					AddField("Slug", "123").
+					AddField("CategoryID", "2").
 					BuildEventFuncRequest()
 			},
 			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {

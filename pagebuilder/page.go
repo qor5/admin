@@ -71,19 +71,19 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 				Color(ColorPrimary).Size(SizeSmall).Class("px-1 mx-1").Attr("style", "height:20px")
 		}
 
-		// listingHref := pm.Info().ListingHref()
+		listingHref := pm.Info().ListingHref()
 		return h.Div(
-			// VBtn("").Size(SizeXSmall).Icon("mdi-arrow-left").Tile(true).Variant(VariantOutlined).Attr("@click",
-			// 	fmt.Sprintf(`
-			// 		const last = vars.__history.last();
-			// 		if (last && last.url && last.url.startsWith(%q)) {
-			// 			$event.view.window.history.back();
-			// 			return;
-			// 		}
-			// 		%s`, listingHref, web.GET().URL(listingHref).PushState(true).Go(),
-			// 	),
-			// ),
-			h.H1("{{vars.pageTitle}}").Class("page-main-title"),
+			VBtn("").Size(SizeXSmall).Icon("mdi-arrow-left").Tile(true).Variant(VariantOutlined).Attr("@click",
+				fmt.Sprintf(`
+					const last = vars.__history.last();
+					if (last && last.url && last.url.startsWith(%q)) {
+						$event.view.window.history.back();
+						return;
+					}
+					%s`, listingHref, web.GET().URL(listingHref).PushState(true).Go(),
+				),
+			),
+			h.H1("{{vars.pageTitle}}").Class("page-main-title ml-4"),
 			versionBadge.Class("mt-2 ml-2"),
 		).Class("d-inline-flex align-center")
 	})
@@ -100,26 +100,26 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 			"Path":  msgr.ListHeaderPath,
 		}, nil
 	}))
-	eb := pm.Editing().Creating(names...).
+
+	eb := pm.Editing().
 		WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
 			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-				p := obj.(*Page)
+				var (
+					p    = obj.(*Page)
+					msgr = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+				)
+
+				if p.Status.Status == publish.StatusOnline || p.Status.Status == publish.StatusOffline {
+					err.GlobalError(msgr.TheResourceCanNotBeModified)
+					return
+				}
 				if err = pageValidator(ctx, p, db, b.l10n); err.HaveErrors() {
 					return
 				}
-				err = in(obj, ctx)
 				return
 			}
-		})
-	eb.WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
-		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-			p := obj.(*Page)
-			if err = pageValidator(ctx, p, db, b.l10n); err.HaveErrors() {
-				return
-			}
-			return in(obj, ctx)
-		}
-	})
+		}).Creating(names...)
+
 	titleFiled := eb.GetField("Title")
 	if titleFiled != nil {
 		titleFiled.LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
@@ -139,7 +139,7 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 				msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 				return comp.(*vx.VXFieldBuilder).
 					Label(msgr.Slug).
-					Attr(web.VField(field.FormKey, strings.TrimPrefix(p.Slug, "/"))...).
+					Attr(presets.VFieldError(field.FormKey, strings.TrimPrefix(p.Slug, "/"), field.Errors)...).
 					Disabled(field.Disabled).Attr("prefix", "/")
 			}
 		}).LazyWrapSetterFunc(func(in presets.FieldSetterFunc) presets.FieldSetterFunc {
@@ -165,12 +165,11 @@ func (b *Builder) defaultPageInstall(pb *presets.Builder, pm *presets.ModelBuild
 			complete := presets.SelectField(obj, field, ctx).
 				Multiple(false).Chips(false).
 				Label(msgr.Category).
-				Items(categories).ItemTitle("Path").ItemValue("ID").
-				ErrorMessages(field.Errors...)
+				Items(categories).ItemTitle("Path").ItemValue("ID")
 			if p.CategoryID > 0 {
-				complete.Attr(web.VField(field.FormKey, p.CategoryID)...)
+				complete.Attr(presets.VFieldError(field.FormKey, p.CategoryID, field.Errors)...)
 			} else {
-				complete.Attr(web.VField(field.FormKey, "")...)
+				complete.Attr(presets.VFieldError(field.FormKey, "", field.Errors)...)
 			}
 			return complete
 		})

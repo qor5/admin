@@ -8,12 +8,11 @@ import (
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/qor5/web/v3"
+	v "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
-
-	v "github.com/qor5/x/v3/ui/vuetify"
-	vx "github.com/qor5/x/v3/ui/vuetifyx"
 
 	"github.com/qor5/admin/v3/presets"
 )
@@ -149,7 +148,13 @@ func configureDemoCase(b *presets.Builder, db *gorm.DB) {
 		panic(err)
 	}
 	mb := b.Model(&DemoCase{})
-	mb.Editing("Name")
+	mb.Editing("Name").ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		p := obj.(*DemoCase)
+		if p.Name == "" {
+			err.FieldError("Name", "Name Can`t Empty")
+		}
+		return
+	})
 	mb.Listing("ID", "Name")
 	detailing := mb.Detailing(
 		"FieldSection",
@@ -174,41 +179,13 @@ func configureDemoCase(b *presets.Builder, db *gorm.DB) {
 	return
 }
 
-func DemoCaseTextField(obj interface{}, section, editField, field, label string, vErr web.ValidationErrors) *vx.VXFieldBuilder {
-	fieldName := fmt.Sprintf("%s.%s", editField, field)
-	formKey := fmt.Sprintf("%s.%s", section, fieldName)
-	return vx.VXField().
-		Label(label).
-		Attr(web.VField(formKey, reflectutils.MustGet(obj, fieldName))...).
-		ErrorMessages(vErr.GetFieldErrors(formKey)...)
-}
-
-func DemoCaseSelect(obj interface{}, section, editField, field, label string, vErr web.ValidationErrors, items interface{}) *vx.VXSelectBuilder {
-	fieldName := fmt.Sprintf("%s.%s", editField, field)
-	formKey := fmt.Sprintf("%s.%s", section, fieldName)
-	return vx.VXSelect().
-		Label(label).
-		Items(items).
-		ItemTitle("Name").
-		ItemValue("ID").
-		Attr(web.VField(formKey, reflectutils.MustGet(obj, fieldName))...).
-		ErrorMessages(vErr.GetFieldErrors(formKey)...)
-}
-
-func DemoCaseCheckBox(obj interface{}, section, editField, field, label string) *vx.VXCheckboxBuilder {
-	fieldName := fmt.Sprintf("%s.%s", editField, field)
-	formKey := fmt.Sprintf("%s.%s", section, fieldName)
-	return vx.VXCheckbox().
-		Label(label).
-		Attr(web.VField(formKey, reflectutils.MustGet(obj, fieldName))...)
-}
-
+// configs
 func configVxField(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder) {
 	sectionName := "FieldSection"
 	editField := "FieldData"
 	label := "vx-field"
 	section := generateSection(detailing, mb, sectionName, editField, label).
-		WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
+		WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
 			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 				if in != nil {
 					in(obj, ctx)
@@ -218,7 +195,7 @@ func configVxField(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder
 					return
 				}
 				if len(p.FieldData.TextValidate) < 5 {
-					err.FieldError(fmt.Sprintf("%s.%s.TextValidate", sectionName, editField), "input more than 5 chars")
+					err.FieldError(fmt.Sprintf("%s.TextValidate", editField), "input more than 5 chars")
 				}
 
 				return
@@ -239,9 +216,9 @@ func configVxField(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder
 						Label("Text(Readonly)").
 						ModelValue("This is Readonly Vx-Field").
 						Readonly(true),
-					DemoCaseTextField(obj, sectionName, editField, "Text", "Text", vErr).
+					DemoCaseTextField(obj, editField, "Text", "Text", vErr).
 						Tips("This is Tips").Clearable(true),
-					DemoCaseTextField(obj, sectionName, editField, "TextValidate", "TextValidate(input more than 5 chars)", vErr).Required(true).Clearable(true),
+					DemoCaseTextField(obj, editField, "TextValidate", "TextValidate(input more than 5 chars)", vErr).Required(true).Clearable(true),
 				),
 			)
 		})
@@ -253,7 +230,7 @@ func configVxFieldArea(detailing *presets.DetailingBuilder, mb *presets.ModelBui
 	editField := "FieldTextareaData"
 	label := "vx-field(type textarea)"
 	section := generateSection(detailing, mb, sectionName, editField, label).
-		WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
+		WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
 			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 				if in != nil {
 					in(obj, ctx)
@@ -264,7 +241,7 @@ func configVxFieldArea(detailing *presets.DetailingBuilder, mb *presets.ModelBui
 				}
 
 				if len(p.FieldTextareaData.TextareaValidate) < 10 {
-					err.FieldError(fmt.Sprintf("%s.%s.TextareaValidate", sectionName, editField), "input more than 10 chars")
+					err.FieldError(fmt.Sprintf("%s.TextareaValidate", editField), "input more than 10 chars")
 				}
 				return
 			}
@@ -286,10 +263,10 @@ func configVxFieldArea(detailing *presets.DetailingBuilder, mb *presets.ModelBui
 						ModelValue("This is Readonly Vx-Field type Textarea").
 						Readonly(true).
 						Type("textarea"),
-					DemoCaseTextField(obj, sectionName, editField, "Textarea", "Textarea", vErr).
+					DemoCaseTextField(obj, editField, "Textarea", "Textarea", vErr).
 						Tips("This is Textarea Tips").
 						Type("textarea").Clearable(true),
-					DemoCaseTextField(obj, sectionName, editField, "TextareaValidate", "TextareaValidate(input more than 10 chars)", vErr).Required(true).
+					DemoCaseTextField(obj, editField, "TextareaValidate", "TextareaValidate(input more than 10 chars)", vErr).Required(true).
 						Type("textarea").Clearable(true),
 				),
 			)
@@ -302,7 +279,7 @@ func configVxFieldPassword(detailing *presets.DetailingBuilder, mb *presets.Mode
 	editField := "FieldPasswordData"
 	label := "vx-field(type password)"
 	section := generateSection(detailing, mb, sectionName, editField, label).
-		WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
+		WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
 			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 				if in != nil {
 					in(obj, ctx)
@@ -312,7 +289,7 @@ func configVxFieldPassword(detailing *presets.DetailingBuilder, mb *presets.Mode
 					return
 				}
 				if len(p.FieldPasswordData.Password) < 5 {
-					err.FieldError(fmt.Sprintf("%s.%s.Password", sectionName, editField), "password more than 5 chars")
+					err.FieldError(fmt.Sprintf("%s.Password", editField), "password more than 5 chars")
 				}
 				return
 			}
@@ -334,12 +311,13 @@ func configVxFieldPassword(detailing *presets.DetailingBuilder, mb *presets.Mode
 						ModelValue("This is Disabled Vx-Field type Password").
 						Disabled(true).
 						Type("password"),
-					DemoCaseTextField(obj, sectionName, editField, "Password", "Password(More Than 5 chars)", vErr).
+					DemoCaseTextField(obj, editField, "Password", "Password(More Than 5 chars)", vErr).
 						Tips("Password tips").
 						Type("password").
+						Required(true).
 						Clearable(true).
 						PasswordVisibleToggle(true),
-					DemoCaseTextField(obj, sectionName, editField, "PasswordDefault", "PasswordDefault", vErr).
+					DemoCaseTextField(obj, editField, "PasswordDefault", "PasswordDefault", vErr).
 						Tips("PasswordDefault tips").
 						Clearable(true).
 						Type("password").
@@ -356,7 +334,7 @@ func configVxFieldNumber(detailing *presets.DetailingBuilder, mb *presets.ModelB
 	editField := "FieldNumberData"
 	label := "vx-field(type number)"
 	section := generateSection(detailing, mb, sectionName, editField, label).
-		WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
+		WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
 			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 				if in != nil {
 					in(obj, ctx)
@@ -366,7 +344,7 @@ func configVxFieldNumber(detailing *presets.DetailingBuilder, mb *presets.ModelB
 					return
 				}
 				if p.FieldNumberData.NumberValidate <= 0 {
-					err.FieldError(fmt.Sprintf("%s.%s.NumberValidate", sectionName, editField), "input greater than 0")
+					err.FieldError(fmt.Sprintf("%s.NumberValidate", editField), "input greater than 0")
 				}
 				return
 			}
@@ -386,11 +364,11 @@ func configVxFieldNumber(detailing *presets.DetailingBuilder, mb *presets.ModelB
 						Label("Number(Readonly)").
 						ModelValue("This is Readonly Vx-Field type Number").
 						Readonly(true),
-					DemoCaseTextField(obj, sectionName, editField, "Number", "Number", vErr).
+					DemoCaseTextField(obj, editField, "Number", "Number", vErr).
 						Tips("Number tips").
 						Clearable(true).
 						Type("number"),
-					DemoCaseTextField(obj, sectionName, editField, "NumberValidate", "NumberValidate( > 0)", vErr).
+					DemoCaseTextField(obj, editField, "NumberValidate", "NumberValidate( > 0)", vErr).
 						Tips("NumberValidate tips").
 						Clearable(true).
 						Type("number"),
@@ -405,7 +383,7 @@ func configVxSelect(detailing *presets.DetailingBuilder, mb *presets.ModelBuilde
 	editField := "SelectData"
 	label := "vx-select"
 	section := generateSection(detailing, mb, sectionName, editField, label).
-		WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
+		WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
 			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 				if in != nil {
 					in(obj, ctx)
@@ -414,11 +392,11 @@ func configVxSelect(detailing *presets.DetailingBuilder, mb *presets.ModelBuilde
 				if p.ID == 0 {
 					return
 				}
-				if len(p.SelectData.AutoComplete) == 1 {
-					err.FieldError(fmt.Sprintf("%s.%s.AutoComplete", sectionName, editField), "select more than 1 item")
+				if len(p.SelectData.AutoComplete) <= 1 {
+					err.FieldError(fmt.Sprintf("%s.AutoComplete", editField), "select more than 1 item")
 				}
 				if p.SelectData.NormalSelect == 8 {
-					err.FieldError(fmt.Sprintf("%s.%s.NormalSelect", sectionName, editField), "can`t select Trevor")
+					err.FieldError(fmt.Sprintf("%s.NormalSelect", editField), "can`t select Trevor")
 				}
 				return
 			}
@@ -441,14 +419,13 @@ func configVxSelect(detailing *presets.DetailingBuilder, mb *presets.ModelBuilde
 			return h.Components(
 				v.VRow(
 					v.VCol(
-						DemoCaseSelect(obj, sectionName, editField, "AutoComplete", "AutoComplete(select more than 1 item)", vErr, items).
+						DemoCaseSelect(obj, editField, "AutoComplete", "AutoComplete(select more than 1 item)", vErr, items).
 							Type("autocomplete").Multiple(true).Chips(true).ClosableChips(true).Clearable(true),
 					),
 				),
 				v.VRow(
 					v.VCol(
-						DemoCaseSelect(obj, sectionName, editField, "NormalSelect", "", vErr, items).
-							Attr(":rules", `[(value) => value !== 8 || "can't select Trevor"]`).
+						DemoCaseSelect(obj, editField, "NormalSelect", "", vErr, items).
 							Type("autocomplete"),
 					),
 				),
@@ -466,7 +443,7 @@ func configVxCheckBox(detailing *presets.DetailingBuilder, mb *presets.ModelBuil
 			return h.Components(
 				v.VRow(
 					v.VCol(
-						DemoCaseCheckBox(obj, sectionName, editField, "Checkbox", "Checkbox").
+						DemoCaseCheckBox(obj, editField, "Checkbox", "Checkbox").
 							TrueLabel("True").
 							TrueIconColor(v.ColorPrimary).
 							FalseLabel("False").
@@ -478,31 +455,6 @@ func configVxCheckBox(detailing *presets.DetailingBuilder, mb *presets.ModelBuil
 			)
 		})
 	detailing.Section(section)
-}
-
-func cardRows(title string, splitCols int, comp ...h.HTMLComponent) *v.VCardBuilder {
-	var (
-		rows   []h.HTMLComponent
-		result int
-		row    = v.VRow()
-	)
-
-	for i, c := range comp {
-		if i/splitCols == result {
-			if i%splitCols == 0 {
-				row = v.VRow()
-				rows = append(rows, row)
-			} else if i%splitCols == splitCols-1 {
-				result++
-			}
-			row.AppendChildren(v.VCol(c).Class("text-center"))
-		}
-	}
-	return v.VCard(
-		v.VCardItem(
-			rows...,
-		),
-	).Title(title).Class("pa-2 my-4")
 }
 
 func configVxDialog(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder) {
@@ -520,14 +472,15 @@ func configVxDialog(detailing *presets.DetailingBuilder, mb *presets.ModelBuilde
 					h.H2(label).Class("section-title"),
 				).Class("section-title-wrap"),
 				cardRows("Activator", 5,
-					h.Components(h.Div(h.Text("v-model")).Class("mb-2"),
+					h.Div(
+						h.Div(h.Text("v-model")).Class("mb-2"),
 						v.VBtn("Open Dialog").Color(v.ColorPrimary).
 							Attr("@click", "locals.dialogVisible=true"),
 						vx.VXDialog().
 							Attr("v-model", "locals.dialogVisible").
 							Title("ModelValue").
 							Text(text),
-					),
+					).Class("text-center"),
 					dialogActivator("Open Dialog", "Activator Slot", text, v.ColorSecondary).Title("Conform"),
 				),
 
@@ -575,48 +528,12 @@ func configVxDialog(detailing *presets.DetailingBuilder, mb *presets.ModelBuilde
 	detailing.Section(section)
 }
 
-func generateSection(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder, section, editField, label string) *presets.SectionBuilder {
-	return presets.NewSectionBuilder(mb, section).Label(label).Editing(editField).
-		ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			p := obj.(*DemoCase)
-			j := jsoniter.Config{
-				EscapeHTML: false,
-			}.Froze()
-			data := reflectutils.MustGet(p, editField)
-			jsonBytes, _ := j.MarshalIndent(data, "", "    ")
-			return vx.VXReadonlyField().Value(string(jsonBytes)).Label(editField)
-		})
-}
-
-func DemoCaseDatepicker(obj interface{}, section, editField, field, label string, vErr web.ValidationErrors) *vx.VXDatePickerBuilder {
-	fieldName := fmt.Sprintf("%s.%s", editField, field)
-	formKey := fmt.Sprintf("%s.%s", section, fieldName)
-	val := reflectutils.MustGet(obj, fieldName)
-	return vx.VXDatepicker().
-		Clearable(true).
-		Label(label).
-		Attr(web.VField(formKey, val)...).
-		Placeholder(field).
-		ErrorMessages(vErr.GetFieldErrors(formKey)...)
-}
-
-func DemoCaseRangePicker(obj interface{}, section, editField, field, label string, vErr web.ValidationErrors) *vx.VXRangePickerBuilder {
-	fieldName := fmt.Sprintf("%s.%s", editField, field)
-	formKey := fmt.Sprintf("%s.%s", section, fieldName)
-	val := reflectutils.MustGet(obj, fieldName)
-	return vx.VXRangePicker().
-		Clearable(true).
-		Label(label).
-		Attr(web.VField(formKey, val)...).
-		ErrorMessages(vErr.GetFieldErrors(formKey)...)
-}
-
 func configVxDatepicker(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder) {
 	label := "vx-datepicker"
 	sectionName := "DatepickerSection"
 	editField := "DatepickerData"
 	section := generateSection(detailing, mb, sectionName, editField, label).
-		WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
+		WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
 			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 				if in != nil {
 					in(obj, ctx)
@@ -626,13 +543,13 @@ func configVxDatepicker(detailing *presets.DetailingBuilder, mb *presets.ModelBu
 					return
 				}
 				if p.DatepickerData.Date == 0 {
-					err.FieldError(fmt.Sprintf("%s.%s.Date", "DatepickerSection", "DatepickerData"), "Date is required")
+					err.FieldError(fmt.Sprintf("%s.Date", "DatepickerData"), "Date is required")
 				}
 				if p.DatepickerData.DateTime == 0 {
-					err.FieldError(fmt.Sprintf("%s.%s.DateTime", "DatepickerSection", "DatepickerData"), "DateTime is required")
+					err.FieldError(fmt.Sprintf("%s.DateTime", "DatepickerData"), "DateTime is required")
 				}
-				if p.DatepickerData.DateRange == nil || p.DatepickerData.DateRange[1] < p.DatepickerData.DateRange[0] {
-					err.FieldError(fmt.Sprintf("%s.%s.DateRange", "DatepickerSection", "DatepickerData"), "End later than Start")
+				if p.DatepickerData.DateRange == nil || p.DatepickerData.DateRange[1] <= p.DatepickerData.DateRange[0] {
+					err.FieldError(fmt.Sprintf("%s.DateRange", "DatepickerData"), "End later than Start")
 				}
 				return
 			}
@@ -645,43 +562,27 @@ func configVxDatepicker(detailing *presets.DetailingBuilder, mb *presets.ModelBu
 			return h.Components(
 				v.VRow(
 					v.VCol(
-						DemoCaseDatepicker(obj, sectionName, editField, "Date", "date-picker(required,Within five days before and after)", vErr).
+						DemoCaseDatepicker(obj, editField, "Date", "date-picker(required,Within five days before and after)", vErr).
 							DatePickerProps(map[string]string{
 								"min": time.Now().AddDate(0, 0, -5).Format("2006-01-02"),
 								"max": time.Now().AddDate(0, 0, 5).Format("2006-01-02"),
 							}),
 					),
 					v.VCol(
-						DemoCaseDatepicker(obj, sectionName, editField, "DateTime", "datetime-picker(required)", vErr).Type("datetimepicker"),
+						DemoCaseDatepicker(obj, editField, "DateTime", "datetime-picker(required)", vErr).Type("datetimepicker"),
 					),
 				),
 				v.VRow(
 					v.VCol(
-						DemoCaseRangePicker(obj, sectionName, editField, "DateRange", "range-picker(end>start)", vErr).Placeholder([]string{"Start", "End"}),
+						DemoCaseRangePicker(obj, editField, "DateRange", "range-picker(end>start)", vErr).Placeholder([]string{"Start", "End"}),
 					),
 					v.VCol(
-						DemoCaseRangePicker(obj, sectionName, editField, "DateRangeNeedConfirm", "range-picker (needConfirm)", vErr).NeedConfirm(true).Placeholder([]string{"Begin", "End"}),
+						DemoCaseRangePicker(obj, editField, "DateRangeNeedConfirm", "range-picker (needConfirm)", vErr).NeedConfirm(true).Placeholder([]string{"Begin", "End"}),
 					),
 				),
 			)
 		})
 	detailing.Section(section)
-}
-
-func dialogActivator(btn, label, text, color string) *vx.VXDialogBuilder {
-	return vx.VXDialog(
-		web.Slot(
-			h.Div(h.Text(label)).Class("mb-2"),
-			v.VBtn(btn).Color(color).Attr("v-bind", "activatorProps"),
-		).Name("activator").Scope("{props: { activatorProps }}"),
-	).Text(text)
-}
-
-func avatarView[T comparable](sizes []T, show func(T) string) (comps []h.HTMLComponent) {
-	for _, size := range sizes {
-		comps = append(comps, h.Components(h.Div(h.Text(show(size))).Class("mb-2"), vx.VXAvatar().Name("ShaoXing").Size(fmt.Sprint(size))))
-	}
-	return
 }
 
 func configVxAvatar(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder) {
@@ -707,4 +608,105 @@ func configVxAvatar(detailing *presets.DetailingBuilder, mb *presets.ModelBuilde
 		).VSlot("{locals}").Init("{dialogVisible:false}")
 	})
 	detailing.Section(section)
+}
+
+// view component
+func dialogActivator(btn, label, text, color string) *vx.VXDialogBuilder {
+	return vx.VXDialog(
+		web.Slot(
+			h.Div(
+				h.Div(h.Text(label)).Class("mb-2"),
+				v.VBtn(btn).Color(color).Attr("v-bind", "activatorProps"),
+			).Class("text-center"),
+		).Name("activator").Scope("{props: { activatorProps }}"),
+	).Text(text)
+}
+
+func generateSection(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder, section, editField, label string) *presets.SectionBuilder {
+	return presets.NewSectionBuilder(mb, section).Label(label).Editing(editField).
+		ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			p := obj.(*DemoCase)
+			j := jsoniter.Config{
+				EscapeHTML: false,
+			}.Froze()
+			data := reflectutils.MustGet(p, editField)
+			jsonBytes, _ := j.MarshalIndent(data, "", "    ")
+			return vx.VXReadonlyField().Value(string(jsonBytes)).Label(editField)
+		})
+}
+
+func avatarView[T comparable](sizes []T, show func(T) string) (comps []h.HTMLComponent) {
+	for _, size := range sizes {
+		comps = append(comps, h.Div(
+			h.Div(h.Text(show(size))).Class("mb-2"), vx.VXAvatar().Name("ShaoXing").Size(fmt.Sprint(size)),
+		).Class("text-center"))
+	}
+	return
+}
+
+func cardRows(title string, splitCols int, comp ...h.HTMLComponent) *v.VCardBuilder {
+	var (
+		rows   []h.HTMLComponent
+		result int
+		row    = v.VRow()
+	)
+
+	for i, c := range comp {
+		if i/splitCols == result {
+			if i%splitCols == 0 {
+				row = v.VRow()
+				rows = append(rows, row)
+			} else if i%splitCols == splitCols-1 {
+				result++
+			}
+			row.AppendChildren(v.VCol(c))
+		}
+	}
+	return v.VCard(
+		v.VCardItem(
+			rows...,
+		),
+	).Title(title).Class("pa-2 my-4")
+}
+
+// vx library Compoents
+func DemoCaseDatepicker(obj interface{}, editField, field, label string, vErr web.ValidationErrors) *vx.VXDatePickerBuilder {
+	formKey := fmt.Sprintf("%s.%s", editField, field)
+	return vx.VXDatepicker().
+		Clearable(true).
+		Label(label).
+		Placeholder(field).
+		Attr(presets.VFieldError(formKey, reflectutils.MustGet(obj, formKey), vErr.GetFieldErrors(formKey))...)
+}
+
+func DemoCaseRangePicker(obj interface{}, editField, field, label string, vErr web.ValidationErrors) *vx.VXRangePickerBuilder {
+	formKey := fmt.Sprintf("%s.%s", editField, field)
+	return vx.VXRangePicker().
+		Clearable(true).
+		Label(label).
+		Attr(presets.VFieldError(formKey, reflectutils.MustGet(obj, formKey), vErr.GetFieldErrors(formKey))...)
+}
+
+func DemoCaseTextField(obj interface{}, editField, field, label string, vErr web.ValidationErrors) *vx.VXFieldBuilder {
+	formKey := fmt.Sprintf("%s.%s", editField, field)
+	return vx.VXField().
+		Label(label).
+		Attr(presets.VFieldError(formKey, reflectutils.MustGet(obj, formKey), vErr.GetFieldErrors(formKey))...)
+}
+
+func DemoCaseSelect(obj interface{}, editField, field, label string, vErr web.ValidationErrors, items interface{}) *vx.VXSelectBuilder {
+	formKey := fmt.Sprintf("%s.%s", editField, field)
+	return vx.VXSelect().
+		Label(label).
+		Items(items).
+		ItemTitle("Name").
+		ItemValue("ID").
+		Attr(presets.VFieldError(formKey, reflectutils.MustGet(obj, formKey), vErr.GetFieldErrors(formKey))...)
+}
+
+func DemoCaseCheckBox(obj interface{}, editField, field, label string) *vx.VXCheckboxBuilder {
+	formKey := fmt.Sprintf("%s.%s", editField, field)
+	return vx.VXCheckbox().
+		Label(label).
+		Attr(web.VField(formKey, reflectutils.MustGet(obj, formKey))...)
 }

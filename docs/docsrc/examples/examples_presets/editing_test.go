@@ -230,7 +230,7 @@ func TestPresetsEditingSection(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/companies?__execute_event__=presets_Update").
-					AddField("section1.Name", "Terry").
+					AddField("Name", "Terry").
 					BuildEventFuncRequest()
 			},
 			ExpectRunScriptContainsInOrder: []string{"Terry"},
@@ -242,7 +242,7 @@ func TestPresetsEditingSection(t *testing.T) {
 				companyData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/companies?__execute_event__=section_save_section1").
-					AddField("section1.Name", "terryterryterry").
+					AddField("Name", "terryterryterry").
 					BuildEventFuncRequest()
 			},
 			ExpectRunScriptContainsInOrder: []string{`too long name`},

@@ -54,6 +54,7 @@ func PresetsDetailInlineEditDetails(b *presets.Builder, db *gorm.DB) (
 	section := presets.NewSectionBuilder(cust, "Details").
 		Editing("Name", "Email", "Description", "Avatar")
 	dp.Section(section)
+	cust.Editing("Details").Section(section.Clone())
 
 	return
 }
@@ -289,6 +290,18 @@ func PresetsDetailSectionLabel(b *presets.Builder, db *gorm.DB) (
 
 	cust = b.Model(&Customer{})
 	dp = cust.Detailing("section1", "section2", "CreditCards", "Notes").Drawer(true)
+	cust.Editing().WrapFetchFunc(func(in presets.FetchFunc) presets.FetchFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
+			c := obj.(*Customer)
+			if c.CreditCards == nil {
+				c.CreditCards = []*CreditCard{{Name: "Only is mock card, can't be save"}}
+			}
+			if c.Notes == nil {
+				c.Notes = []*Note{{Content: "Only is mock note, can't be save"}}
+			}
+			return c, nil
+		}
+	})
 	cust.Detailing().WrapFetchFunc(func(in presets.FetchFunc) presets.FetchFunc {
 		return func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
 			c := obj.(*Customer)
@@ -342,8 +355,17 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 
 	cust = b.Model(&Customer{})
 	// section will use Editing().ValidateFunc() as validateFunc default
-	cust.Editing().ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+	cust.Editing("name_section", "email_section").ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		customer := obj.(*Customer)
+		if len(customer.Name) > 6 {
+			err.FieldError("name_section.Name", "customer name must no longer than 6")
+		}
+		if len(customer.Name) > 20 {
+			err.GlobalError("customer name must no longer than 20")
+		}
+		if customer.Name == "" {
+			err.GlobalError("customer name must not be empty")
+		}
 		if customer.Email == "" {
 			err.GlobalError("customer email must not be empty")
 		}
@@ -372,25 +394,8 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 		return v.VTextField().
 			Variant(v.VariantOutlined).
 			Density(v.DensityCompact).
-			Attr(web.VField("name_section.Name", customer.Name)...).
+			Attr(web.VField("Name", customer.Name)...).
 			ErrorMessages(vErr.GetFieldErrors("name_section.Name")...)
-	}).WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
-		return in
-	}).WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
-		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-			err = in(obj, ctx)
-			customer := obj.(*Customer)
-			if len(customer.Name) > 6 {
-				err.FieldError("name_section.Name", "customer name must no longer than 6")
-			}
-			if len(customer.Name) > 20 {
-				err.GlobalError("customer name must no longer than 20")
-			}
-			if customer.Name == "" {
-				err.GlobalError("customer name must not be empty")
-			}
-			return
-		}
 	})
 
 	emailSection := presets.NewSectionBuilder(cust, "email_section").
@@ -405,13 +410,11 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 			return v.VTextField().
 				Variant(v.VariantOutlined).
 				Density(v.DensityCompact).
-				Attr(web.VField("email_section.Email", customer.Name)...).
+				Attr(web.VField("Email", customer.Name)...).
 				ErrorMessages(vErr.GetFieldErrors("email_section.Email")...)
-		}).SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		return cust.Editing().Saver(obj, id, ctx)
-	})
+		})
 
-	cardsSection := presets.NewSectionBuilder(cust, "CreditCards").IsList(&CreditCard{}).Editing("Name").
+	cardsSection := presets.NewSectionBuilder(cust, "CreditCards").IsList(&CreditCard{}).Editing("CreditCards").
 		ElementEditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			card := obj.(*CreditCard)
 			var errText []string
@@ -427,6 +430,8 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 		})
 
 	dp.Section(nameSection, emailSection, cardsSection)
+	cust.Editing("name_section", "email_section")
+	cust.Editing().Section(nameSection.Clone(), emailSection.Clone())
 	return
 }
 
@@ -544,50 +549,5 @@ func PresetsDetailListSection(b *presets.Builder, db *gorm.DB) (cust *presets.Mo
 	cardsSection2 := presets.NewSectionBuilder(cust, "CreditCards2").Label("cards2").IsList(&CreditCard{}).AlwaysShowListLabel().
 		Editing("Name", "Phone").Viewing("Name", "Phone")
 	dp.Section(cardsSection1, cardsSection2)
-	return
-}
-
-func PresetsSectionError(b *presets.Builder, db *gorm.DB) (cust *presets.ModelBuilder,
-	cl *presets.ListingBuilder,
-	ce *presets.EditingBuilder,
-	dp *presets.DetailingBuilder,
-) {
-	err := db.AutoMigrate(&UserCreditCard{})
-	if err != nil {
-		panic(err)
-	}
-	b.DataOperator(gorm2op.DataOperator(db))
-	cust = b.Model(&UserCreditCard{})
-	dp = cust.Detailing("Name", "CreditCards", "CreditCards2").Drawer(true)
-	dp.WrapFetchFunc(func(in presets.FetchFunc) presets.FetchFunc {
-		return func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
-			o, _ := in(obj, id, ctx)
-			us := o.(*UserCreditCard)
-			if len(us.CreditCards2) == 0 {
-				us.CreditCards2 = nil
-			}
-			return us, nil
-		}
-	})
-	namesection := presets.NewSectionBuilder(cust, "Name").Editing("Name").
-		WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
-			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-				err.GlobalError("name section validator error")
-				return
-			}
-		})
-
-	cardsSection1 := presets.NewSectionBuilder(cust, "CreditCards").Label("cards").IsList(&CreditCard{}).AlwaysShowListLabel().
-		Editing("Name", "Phone").Viewing("Name", "Phone")
-	cardsSection1.WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
-		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-			err.GlobalError("cards section validator error")
-			return
-		}
-	})
-
-	cardsSection2 := presets.NewSectionBuilder(cust, "CreditCards2").Label("cards2").IsList(&CreditCard{}).AlwaysShowListLabel().
-		Editing("Name", "Phone").Viewing("Name", "Phone")
-	dp.Section(namesection, cardsSection1, cardsSection2)
 	return
 }

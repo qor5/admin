@@ -42,10 +42,9 @@ type DataOperator interface {
 }
 
 type (
-	SetterFunc         func(obj interface{}, ctx *web.EventContext)
-	FieldSetterFunc    func(obj interface{}, field *FieldContext, ctx *web.EventContext) (err error)
-	ValidateFunc       func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors)
-	OnChangeActionFunc func(id string, ctx *web.EventContext) (s string)
+	SetterFunc      func(obj interface{}, ctx *web.EventContext)
+	FieldSetterFunc func(obj interface{}, field *FieldContext, ctx *web.EventContext) (err error)
+	ValidateFunc    func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors)
 )
 
 type (

@@ -142,7 +142,7 @@ func TestPermWithoutID(t *testing.T) {
 						BuildEventFuncRequest()
 					return req
 				},
-				ExpectPortalUpdate0ContainsInOrder: []string{"v-assign='[form, {\"name_section.Name\":\"OldName\"}]' :error-messages='null' :disabled='false'></vx-field>"},
+				ExpectPortalUpdate0ContainsInOrder: []string{`<vx-field label='Name' v-model='form["Name"]' :error-messages='form["Name_FieldErrorMessages"]' v-assign='[form, {"Name":"OldName","Name_FieldErrorMessages":null}]' :disabled='false'></vx-field>`},
 			},
 			Role: models.RoleViewer,
 		},
@@ -157,7 +157,7 @@ func TestPermWithoutID(t *testing.T) {
 						BuildEventFuncRequest()
 					return req
 				},
-				ExpectPortalUpdate0ContainsInOrder: []string{"v-assign='[form, {\"name_section.Name\":\"OldName\"}]' :error-messages='null' :disabled='false'></vx-field>"},
+				ExpectPortalUpdate0ContainsInOrder: []string{`<vx-field label='Name' v-model='form["Name"]' :error-messages='form["Name_FieldErrorMessages"]' v-assign='[form, {"Name":"OldName","Name_FieldErrorMessages":null}]' :disabled='false'></vx-field>`},
 			},
 			Role: models.RoleEditor,
 		},
@@ -263,7 +263,7 @@ func TestSectionEditPerm(t *testing.T) {
 					admin.OrdersExampleData.TruncatePut(dbr)
 					req := multipartestutils.NewMultipartBuilder().
 						PageURL("/orders?__execute_event__=section_save_source_section&id=6").
-						AddField("source_section.Source", "newSource").
+						AddField("Source", "newSource").
 						BuildEventFuncRequest()
 					return req
 				},
@@ -279,7 +279,7 @@ func TestSectionEditPerm(t *testing.T) {
 					admin.OrdersExampleData.TruncatePut(dbr)
 					req := multipartestutils.NewMultipartBuilder().
 						PageURL("/orders?__execute_event__=section_save_source_section&id=6").
-						AddField("source_section.Source", "newSource").
+						AddField("Source", "newSource").
 						BuildEventFuncRequest()
 					return req
 				},

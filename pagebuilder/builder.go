@@ -162,11 +162,6 @@ func (b *Builder) PageStyle(v h.HTMLComponent) (r *Builder) {
 	return b
 }
 
-func (b *Builder) AutoSaveReload(v bool) (r *Builder) {
-	b.autoSaveReload = v
-	return b
-}
-
 func (b *Builder) AutoMigrate() (r *Builder) {
 	err := AutoMigrate(b.db)
 	if err != nil {
@@ -442,7 +437,7 @@ func (b *Builder) configTemplateAndPage(pb *presets.Builder, r *ModelBuilder) {
 	}
 	b.configPublish(r)
 	b.useAllPlugin(pm)
-
+	b.seoDisableEditOnline(pm)
 	// dp.TabsPanels()
 }
 
@@ -462,6 +457,34 @@ func (b *Builder) useAllPlugin(pm *presets.ModelBuilder) {
 	if b.l10n != nil {
 		pm.Use(b.l10n)
 	}
+}
+
+func (b *Builder) seoDisableEditOnline(pm *presets.ModelBuilder) {
+	if !pm.HasDetailing() || pm.Detailing().GetField(seo.SeoDetailFieldName) == nil {
+		return
+	}
+	pm.Detailing().Field(seo.SeoDetailFieldName).GetComponent().(*presets.SectionBuilder).WrapComponentEditBtnFunc(func(in presets.ObjectBoolFunc) presets.ObjectBoolFunc {
+		return func(obj interface{}, ctx *web.EventContext) bool {
+			var (
+				p      = obj.(publish.StatusInterface)
+				status = p.EmbedStatus().Status
+			)
+			return !(status == publish.StatusOnline || status == publish.StatusOffline)
+		}
+	}).WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
+		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			var (
+				p      = obj.(publish.StatusInterface)
+				status = p.EmbedStatus().Status
+				msgr   = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+			)
+			if status == publish.StatusOnline || status == publish.StatusOffline {
+				err.GlobalError(msgr.TheResourceCanNotBeModified)
+				return
+			}
+			return in(obj, ctx)
+		}
+	})
 }
 
 func (b *Builder) preparePlugins() {
@@ -487,7 +510,7 @@ func (b *Builder) preparePlugins() {
 	if b.mediaBuilder == nil {
 		b.mediaBuilder = media.New(b.db)
 	}
-	b.ps.Use(b.mediaBuilder, publisher, seoBuilder)
+	b.ps.Use(b.mediaBuilder, publisher)
 }
 
 func (b *Builder) configDetailLayoutFunc(
@@ -500,18 +523,7 @@ func (b *Builder) configDetailLayoutFunc(
 		return publish.DefaultVersionBar(db)(obj, ctx)
 	})
 	pm.Detailing().Title(func(ctx *web.EventContext, obj any, style presets.DetailingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error) {
-		var pageAppbarContent []h.HTMLComponent
-		pageAppbarContent = h.Components(
-			VToolbarTitle(
-				b.GetPageTitle()(ctx),
-			),
-			VSpacer(),
-			publish.DefaultVersionBar(db)(obj, ctx),
-		)
-		title = defaultTitle
-		titleCompo = h.Div(
-			pageAppbarContent...,
-		).Class("d-flex align-center  justify-space-between  w-100")
+		title = b.GetPageTitle()(ctx)
 		return
 	})
 	return
@@ -541,6 +553,17 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 	db := b.db
 
 	lb := pm.Listing("Name", "Path", "Description")
+	pm.WrapMustGetMessages(func(f func(r *http.Request) *presets.Messages) func(r *http.Request) *presets.Messages {
+		return func(r *http.Request) *presets.Messages {
+			messages := f(r)
+			if b.l10n == nil {
+				return messages
+			}
+			msgr := i18n.MustGetModuleMessages(r, I18nPageBuilderKey, Messages_en_US).(*Messages)
+			messages.DeleteConfirmationText = msgr.CategoryDeleteConfirmationText
+			return messages
+		}
+	})
 	pm.LabelName(func(evCtx *web.EventContext, singular bool) string {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		if singular {
@@ -589,7 +612,7 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			comp := in(obj, field, ctx)
 			if p, ok := comp.(*vx.VXFieldBuilder); ok {
-				p.Attr(web.VField(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"))...).
+				p.Attr(presets.VFieldError(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"), field.Errors)...).
 					Attr("prefix", "/")
 			}
 			return comp
@@ -601,20 +624,22 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 	})
 
 	eb.DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		cs := obj.(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)
-		ID := cs["id"]
-		Locale := cs[l10n.SlugLocaleCode]
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		var (
+			cs   = obj.(presets.SlugDecoder).PrimaryColumnValuesBySlug(id)
+			ID   = cs[presets.ParamID]
+			msgr = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 
-		var count int64
-		if err = db.Model(&Page{}).Where("category_id = ? AND locale_code = ?", ID, Locale).Count(&count).Error; err != nil {
+			count int64
+		)
+
+		if err = db.Model(&Page{}).Where("category_id = ?", ID).Count(&count).Error; err != nil {
 			return
 		}
 		if count > 0 {
 			err = errors.New(msgr.UnableDeleteCategoryMsg)
 			return
 		}
-		if err = db.Model(&Category{}).Where("id = ? AND locale_code = ?", ID, Locale).Delete(&Category{}).Error; err != nil {
+		if err = db.Model(&Category{}).Where("id = ?", ID).Delete(&Category{}).Error; err != nil {
 			return
 		}
 		return
@@ -941,6 +966,9 @@ func (b *ContainerBuilder) setFieldsLazyWrapComponentFunc(fields *presets.Fields
 		field.LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
 			return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 				comp := in(obj, field, ctx)
+				if ctx.Param(presets.ParamOverlay) != actions.Content {
+					return comp
+				}
 				formKey := field.ModelInfo.URIName() + "_" + field.FormKey
 				if p, ok := comp.(TagInterface); ok {
 					p.SetAttr("ref", formKey)
@@ -1025,22 +1053,35 @@ func (b *ContainerBuilder) Install() {
 			web.Listen(
 				b.mb.NotifRowUpdated(),
 				web.Plaid().
-					URL(b.mb.Info().ListingHref()).
-					EventFunc(actions.Update).
-					Query(presets.ParamID, web.Var("payload.id")).
+					EventFunc(UpdateContainerEvent).
+					Query(paramContainerUri, b.mb.Info().ListingHref()).
+					Query(paramContainerID, web.Var("payload.id")).
 					Query(presets.ParamPortalName, pageBuilderRightContentPortal).
 					Query(presets.ParamOverlay, actions.Content).
-					ThenScript(web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).
-						Query(paramStatus, ctx.Param(paramStatus)).MergeQuery(true).Go()).
 					Go(),
 			),
+			web.Listen(
+				b.mb.NotifModelsValidate(),
+				fmt.Sprintf(`if(payload.passed){%s}`,
+					web.Plaid().
+						EventFunc(UpdateContainerEvent).
+						Query(paramContainerUri, b.mb.Info().ListingHref()).
+						Query(paramContainerID, web.Var("payload.id")).
+						Query(presets.ParamPortalName, pageBuilderRightContentPortal).
+						Query(presets.ParamOverlay, actions.Content).
+						ThenScript(web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).
+							Query(paramStatus, ctx.Param(paramStatus)).MergeQuery(true).Go()).
+						Go(),
+				),
+			),
 			h.If(b.builder.autoSaveReload,
+
 				web.Listen(
 					b.mb.NotifModelsUpdated(),
 					web.Plaid().
-						URL(b.mb.Info().ListingHref()).
-						EventFunc(actions.Edit).
-						Query(presets.ParamID, web.Var("payload.ids[0]")).
+						EventFunc(EditContainerEvent).
+						Query(paramContainerUri, b.mb.Info().ListingHref()).
+						Query(paramContainerID, web.Var("payload.ids[0]")).
 						Query(presets.ParamPortalName, pageBuilderRightContentPortal).
 						Query(presets.ParamOverlay, actions.Content).Go(),
 				),
@@ -1137,9 +1178,6 @@ func (b *ContainerBuilder) Editing(vs ...interface{}) *presets.EditingBuilder {
 
 func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 	eb := b.mb.Editing()
-	eb.OnChangeActionFunc(func(id string, ctx *web.EventContext) (s string) {
-		return web.Emit(b.mb.NotifRowUpdated(), presets.PayloadRowUpdated{Id: id})
-	})
 	eb.AppendTabsPanelFunc(func(obj interface{}, ctx *web.EventContext) (tab h.HTMLComponent, content h.HTMLComponent) {
 		if ctx.R.FormValue(paramOpenFromSharedContainer) != "1" {
 			return nil, nil
@@ -1332,20 +1370,23 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
-	editAction := fmt.Sprintf(`vars.%s=container_data_id;`, paramContainerDataID) +
-		web.Plaid().
-			PushState(true).
-			MergeQuery(true).
-			Query(paramContainerDataID, web.Var("container_data_id")).
-			Query(paramContainerID, web.Var("container_id")).
-			RunPushState() + ";" +
-		web.POST().
-			EventFunc(actions.Edit).
-			URL(web.Var(fmt.Sprintf(`"%s/"+arr[0]`, b.prefix))).
-			Query(presets.ParamID, web.Var("arr[1]")).
-			Query(presets.ParamOverlay, actions.Content).
-			Query(presets.ParamPortalName, pageBuilderRightContentPortal).
-			Go()
+	editAction := web.POST().
+		BeforeScript(
+			fmt.Sprintf(`vars.%s=container_data_id;`, paramContainerDataID)+
+				web.Plaid().
+					PushState(true).
+					MergeQuery(true).
+					Query(paramContainerDataID, web.Var("container_data_id")).
+					Query(paramContainerID, web.Var("container_id")).
+					RunPushState(),
+		).
+		EventFunc(EditContainerEvent).
+		MergeQuery(true).
+		Query(paramContainerUri, web.Var(fmt.Sprintf(`"%s/"+arr[0]`, b.prefix))).
+		Query(paramContainerID, web.Var("arr[1]")).
+		Query(presets.ParamOverlay, actions.Content).
+		Query(presets.ParamPortalName, pageBuilderRightContentPortal).
+		Go()
 	addAction := web.Plaid().MergeQuery(true).PushState(true).Query(paramContainerID, web.Var("container_id")).RunPushState() +
 		`;vars.containerPreview=false;vars.overlayEl.refs.overlay.showByIframe(vars.el.refs.scrollIframe,rect);vars.overlay=true;` +
 		addVirtualELeToContainer(web.Var("container_data_id"))

@@ -84,8 +84,8 @@ func TestDemoCase(t *testing.T) {
 					PageURL("/demo-cases/1").
 					EventFunc("section_save_FieldSection").
 					Query(presets.ParamID, "1").
-					AddField("FieldSection.FieldData.Text", "123").
-					AddField("FieldSection.FieldData.TextValidate", "12345").
+					AddField("FieldData.Text", "123").
+					AddField("FieldData.TextValidate", "12345").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -107,8 +107,8 @@ func TestDemoCase(t *testing.T) {
 					PageURL("/demo-cases/1").
 					EventFunc("section_save_FieldSection").
 					Query(presets.ParamID, "1").
-					AddField("FieldSection.FieldData.Text", "123").
-					AddField("FieldSection.FieldData.TextValidate", "1234").
+					AddField("FieldData.Text", "123").
+					AddField("FieldData.TextValidate", "1234").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -123,8 +123,8 @@ func TestDemoCase(t *testing.T) {
 					PageURL("/demo-cases/1").
 					EventFunc("section_save_FieldTextareaSection").
 					Query(presets.ParamID, "1").
-					AddField("FieldTextareaSection.FieldTextareaData.Textarea", "456").
-					AddField("FieldTextareaSection.FieldTextareaData.TextareaValidate", "1234567890").
+					AddField("FieldTextareaData.Textarea", "456").
+					AddField("FieldTextareaData.TextareaValidate", "1234567890").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -146,8 +146,8 @@ func TestDemoCase(t *testing.T) {
 					PageURL("/demo-cases/1").
 					EventFunc("section_save_FieldTextareaSection").
 					Query(presets.ParamID, "1").
-					AddField("FieldTextareaSection.FieldTextData.Textarea", "1234").
-					AddField("FieldTextareaSection.FieldTextData.TextareaValidate", "1234").
+					AddField("FieldTextData.Textarea", "1234").
+					AddField("FieldTextData.TextareaValidate", "1234").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -162,7 +162,7 @@ func TestDemoCase(t *testing.T) {
 					PageURL("/demo-cases/1").
 					EventFunc("section_save_FieldPasswordSection").
 					Query(presets.ParamID, "1").
-					AddField("FieldPasswordSection.FieldPasswordData.Password", "12345").
+					AddField("FieldPasswordData.Password", "12345").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -184,7 +184,7 @@ func TestDemoCase(t *testing.T) {
 					PageURL("/demo-cases/1").
 					EventFunc("section_save_FieldPasswordSection").
 					Query(presets.ParamID, "1").
-					AddField("FieldPasswordSection.FieldPasswordData.Password", "1234").
+					AddField("FieldPasswordData.Password", "1234").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -199,8 +199,8 @@ func TestDemoCase(t *testing.T) {
 					PageURL("/demo-cases/1").
 					EventFunc("section_save_FieldNumberSection").
 					Query(presets.ParamID, "1").
-					AddField("FieldNumberSection.FieldNumberData.Number", "0").
-					AddField("FieldNumberSection.FieldNumberData.NumberValidate", "20").
+					AddField("FieldNumberData.Number", "0").
+					AddField("FieldNumberData.NumberValidate", "20").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -222,8 +222,8 @@ func TestDemoCase(t *testing.T) {
 					PageURL("/demo-cases/1").
 					EventFunc("section_save_FieldNumberSection").
 					Query(presets.ParamID, "1").
-					AddField("FieldNumberSection.FieldNumberData.Number", "20").
-					AddField("FieldNumberSection.FieldNumberData.NumberValidate", "0").
+					AddField("FieldNumberData.Number", "20").
+					AddField("FieldNumberData.NumberValidate", "0").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -238,9 +238,9 @@ func TestDemoCase(t *testing.T) {
 					PageURL("/demo-cases/1").
 					EventFunc("section_save_SelectSection").
 					Query(presets.ParamID, "1").
-					AddField("SelectSection.SelectData.AutoComplete[0]", "1").
-					AddField("SelectSection.SelectData.AutoComplete[1]", "2").
-					AddField("SelectSection.SelectData.NormalSelect", "3").
+					AddField("SelectData.AutoComplete[0]", "1").
+					AddField("SelectData.AutoComplete[1]", "2").
+					AddField("SelectData.NormalSelect", "3").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -272,8 +272,8 @@ func TestDemoCase(t *testing.T) {
 					PageURL("/demo-cases/1").
 					EventFunc("section_save_SelectSection").
 					Query(presets.ParamID, "1").
-					AddField("SelectSection.SelectData.AutoComplete[0]", "1").
-					AddField("SelectSection.SelectData.NormalSelect", "8").
+					AddField("SelectData.AutoComplete[0]", "1").
+					AddField("SelectData.NormalSelect", "8").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -288,7 +288,7 @@ func TestDemoCase(t *testing.T) {
 					PageURL("/demo-cases/1").
 					EventFunc("section_save_CheckboxSection").
 					Query(presets.ParamID, "1").
-					AddField("CheckboxSection.CheckboxData.Checkbox", "true").
+					AddField("CheckboxData.Checkbox", "true").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -310,12 +310,58 @@ func TestDemoCase(t *testing.T) {
 					PageURL("/demo-cases/1").
 					EventFunc("section_save_DatepickerSection").
 					Query(presets.ParamID, "1").
-					AddField("DatepickerSection.DatepickerData.Date", "0").
-					AddField("DatepickerSection.DatepickerData.DateTime", "0").
+					AddField("DatepickerData.Date", "0").
+					AddField("DatepickerData.DateTime", "0").
 					BuildEventFuncRequest()
 				return req
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Date is required", "DateTime is required", "End later than Start"},
+		},
+		{
+			Name:  "Demo Case DatePicker Date Validate Event",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				demoCaseData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/demo-cases/1").
+					EventFunc("section_validate_DatepickerSection").
+					Query(presets.ParamID, "1").
+					AddField("DatepickerData.Date", "0").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"Date is required"},
+		},
+		{
+			Name:  "Demo Case DatePicker Validate Datetime Event",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				demoCaseData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/demo-cases/1").
+					EventFunc("section_validate_DatepickerSection").
+					Query(presets.ParamID, "1").
+					AddField("DatepickerData.DateTime", "0").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"DateTime is required"},
+		},
+		{
+			Name:  "Demo Case DatePicker Validate DateRange Event",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				demoCaseData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/demo-cases/1").
+					EventFunc("section_validate_DatepickerSection").
+					Query(presets.ParamID, "1").
+					AddField("DatepickerData.DateRange[0]", "0").
+					AddField("DatepickerData.DateRange[1]", "0").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"End later than Start"},
 		},
 	}
 

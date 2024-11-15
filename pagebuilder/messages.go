@@ -92,6 +92,9 @@ type Messages struct {
 	AddPageTemplate            string
 	Name                       string
 	Description                string
+
+	CategoryDeleteConfirmationText string
+	TheResourceCanNotBeModified    string
 }
 
 var Messages_en_US = &Messages{
@@ -177,9 +180,11 @@ var Messages_en_US = &Messages{
 	AreWantDeleteContainer: func(v string) string {
 		return fmt.Sprintf("Are you sure you want to delete %v?", v)
 	},
-	AddPageTemplate: "Add Page Template",
-	Name:            "Name",
-	Description:     "Description",
+	AddPageTemplate:                "Add Page Template",
+	Name:                           "Name",
+	Description:                    "Description",
+	CategoryDeleteConfirmationText: "this will remove all the records in all localized languages",
+	TheResourceCanNotBeModified:    "The resource can not be modified",
 }
 
 var Messages_zh_CN = &Messages{
@@ -268,6 +273,9 @@ var Messages_zh_CN = &Messages{
 	AddPageTemplate: "添加页面模版",
 	Name:            "名称",
 	Description:     "说明",
+
+	CategoryDeleteConfirmationText: "这将删除所有本地化语言中的所有记录",
+	TheResourceCanNotBeModified:    "该资源无法被修改",
 }
 
 var Messages_ja_JP = &Messages{
@@ -353,9 +361,11 @@ var Messages_ja_JP = &Messages{
 	AreWantDeleteContainer: func(v string) string {
 		return fmt.Sprintf("%v を削除してもよろしいですか?", v)
 	},
-	AddPageTemplate: "ページテンプレートを追加",
-	Name:            "名前",
-	Description:     "説明",
+	AddPageTemplate:                "ページテンプレートを追加",
+	Name:                           "名前",
+	Description:                    "説明",
+	CategoryDeleteConfirmationText: "これは、すべてのローカライズされた言語のすべてのレコードを削除します",
+	TheResourceCanNotBeModified:    "このリソースは変更できません",
 }
 
 type ModelsI18nModulePage struct {

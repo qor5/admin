@@ -41,6 +41,8 @@ type Messages struct {
 	FiltersDateDays                            string
 	FiltersDateMonths                          string
 	FiltersDateAnd                             string
+	FiltersDateStartAt                         string
+	FiltersDateEndAt                           string
 	FiltersDateTo                              string
 	FiltersDateClear                           string
 	FiltersDateOK                              string
@@ -92,6 +94,8 @@ type Messages struct {
 	HumanizeTimeLongWhile string
 
 	LeaveBeforeUnsubmit string
+
+	RecordNotFound string
 }
 
 func (msgr *Messages) CreatingObjectTitle(modelName string) string {
@@ -181,6 +185,8 @@ var Messages_en_US = &Messages{
 	FiltersDateDays:              "days",
 	FiltersDateMonths:            "months",
 	FiltersDateAnd:               "and",
+	FiltersDateStartAt:           "Start at",
+	FiltersDateEndAt:             "End at",
 	FiltersDateTo:                "to",
 	FiltersDateClear:             "Clear",
 	FiltersDateOK:                "OK",
@@ -232,6 +238,8 @@ var Messages_en_US = &Messages{
 	HumanizeTimeLongWhile: "a long while %s",
 
 	LeaveBeforeUnsubmit: "If you leave before submitting the form, you will lose all the unsaved input.",
+
+	RecordNotFound: "record not found",
 }
 
 var Messages_zh_CN = &Messages{
@@ -267,6 +275,8 @@ var Messages_zh_CN = &Messages{
 	FiltersDateDays:              "天",
 	FiltersDateMonths:            "月",
 	FiltersDateAnd:               "和",
+	FiltersDateStartAt:           "开始于",
+	FiltersDateEndAt:             "结束于",
 	FiltersDateTo:                "至",
 	FiltersDateClear:             "清空",
 	FiltersDateOK:                "确定",
@@ -318,6 +328,8 @@ var Messages_zh_CN = &Messages{
 	HumanizeTimeLongWhile: "很久之%s",
 
 	LeaveBeforeUnsubmit: "如果您在提交表单之前离开，您将丢失所有未保存的输入。",
+
+	RecordNotFound: "记录未找到",
 }
 
 var Messages_ja_JP = &Messages{
@@ -353,6 +365,8 @@ var Messages_ja_JP = &Messages{
 	FiltersDateDays:              "日",
 	FiltersDateMonths:            "ヶ月",
 	FiltersDateAnd:               "と",
+	FiltersDateStartAt:           "開始",
+	FiltersDateEndAt:             "終了",
 	FiltersDateTo:                "に",
 	FiltersDateClear:             "消去する",
 	FiltersDateOK:                "OK",
@@ -404,4 +418,6 @@ var Messages_ja_JP = &Messages{
 	HumanizeTimeLongWhile: "a long while %s",
 
 	LeaveBeforeUnsubmit: "フォームを送信する前に離れると、すべての未保存の入力が失われます。",
+
+	RecordNotFound: "レコードが見つかりません",
 }

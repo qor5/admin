@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
@@ -35,13 +36,12 @@ func NewSectionBuilder(mb *ModelBuilder, name string) (r *SectionBuilder) {
 			label: name,
 		},
 		mb: mb,
-		validator: func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-			if mb.editing.Validator != nil {
-				return mb.editing.Validator(obj, ctx)
-			}
-			return err
+		saver: func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			return mb.editing.Saver(obj, id, ctx)
 		},
-		setter:            nil,
+		validator: func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			return
+		},
 		componentViewFunc: nil,
 		componentEditFunc: nil,
 		saveBtnFunc: func(obj interface{}, ctx *web.EventContext) bool {
@@ -73,10 +73,7 @@ func NewSectionBuilder(mb *ModelBuilder, name string) (r *SectionBuilder) {
 	r.editingFB.defaults = mb.writeFields.defaults
 	r.viewingFB.Model(mb.model)
 	r.viewingFB.defaults = mb.p.detailFieldDefaults
-	r.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		return mb.editing.Saver(obj, id, ctx)
-	})
-	r.UnmarshalFunc(r.DefaultUnmarshalFunc)
+	// r.setter = r.defaultUnmarshalFunc
 	// d.Field(name).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	// 	panic("you must set ViewComponentFunc and EditComponentFunc if you want to use SectionsBuilder")
 	// })
@@ -93,14 +90,14 @@ func NewSectionBuilder(mb *ModelBuilder, name string) (r *SectionBuilder) {
 // show, edit: fetcher => setter
 type SectionBuilder struct {
 	NameLabel
-	mb                *ModelBuilder
-	isUsed            bool
-	isRegistered      bool
-	isEdit            bool
-	unmarshalFunc     func(ctx *web.EventContext, obj interface{}) error
-	comp              FieldComponentFunc
-	saver             SaveFunc
-	setter            SetterFunc
+	mb           *ModelBuilder
+	isUsed       bool
+	isRegistered bool
+	isEdit       bool
+	comp         FieldComponentFunc
+	saver        SaveFunc
+	setter       func(obj interface{}, ctx *web.EventContext) error
+	// validate object in save section event
 	validator         ValidateFunc
 	hiddenFuncs       []ObjectComponentFunc
 	componentViewFunc FieldComponentFunc
@@ -158,6 +155,11 @@ func (b *SectionBuilder) FieldComponent(obj interface{}, field *FieldContext, ct
 	return b.comp(obj, field, ctx)
 }
 
+func (b *SectionBuilder) WrapValidator(w func(in ValidateFunc) ValidateFunc) (r *SectionBuilder) {
+	b.validator = w(b.validator)
+	return b
+}
+
 func (b *SectionBuilder) ComponentEditBtnFunc(v ObjectBoolFunc) *SectionBuilder {
 	if v == nil {
 		panic("value required")
@@ -186,12 +188,6 @@ func (b *SectionBuilder) WrapComponentHoverFunc(w func(in ObjectBoolFunc) Object
 
 func (b *SectionBuilder) WrapSaveBtnFunc(w func(in ObjectBoolFunc) ObjectBoolFunc) (r *SectionBuilder) {
 	b.saveBtnFunc = w(b.componentHoverFunc)
-	return b
-}
-
-// WrapValidateFunc only used in detailing
-func (b *SectionBuilder) WrapValidateFunc(w func(in ValidateFunc) ValidateFunc) (r *SectionBuilder) {
-	b.validator = w(b.validator)
 	return b
 }
 
@@ -251,7 +247,6 @@ func (b *SectionBuilder) IsList(v interface{}) (r *SectionBuilder) {
 	r = b
 	r.editingFB.Model(v)
 	r.isList = true
-	r.UnmarshalFunc(r.DefaultListUnmarshalFunc)
 	r.elementUnmarshaler = r.DefaultElementUnmarshal()
 
 	return
@@ -263,7 +258,7 @@ func (b *SectionBuilder) Editing(fields ...interface{}) (r *SectionBuilder) {
 	b.editingFB = *b.editingFB.Only(fields...)
 	if b.componentEditFunc == nil {
 		b.EditComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return b.editingFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, b.name, ctx)
+			return b.editingFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, "", ctx)
 		})
 	}
 	if b.isList {
@@ -282,13 +277,13 @@ func (b *SectionBuilder) Viewing(fields ...interface{}) (r *SectionBuilder) {
 	b.viewingFB = *b.viewingFB.Only(fields...)
 	if b.componentViewFunc == nil {
 		b.ViewComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return b.viewingFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, b.name, ctx)
+			return b.viewingFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, "", ctx)
 		})
 	}
 	if b.isList {
 		if b.elementViewFunc == nil {
 			b.ElementShowComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-				return b.viewingFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, field.FormKey, ctx)
+				return b.viewingFB.toComponentWithModifiedIndexes(field.ModelInfo, obj, "", ctx)
 			})
 		}
 	}
@@ -311,25 +306,12 @@ func (b *SectionBuilder) SaveFunc(v SaveFunc) (r *SectionBuilder) {
 	return b
 }
 
-func (b *SectionBuilder) WrapSaveFunc(w func(in SaveFunc) SaveFunc) (r *SectionBuilder) {
-	b.saver = w(b.saver)
-	return b
-}
-
-func (b *SectionBuilder) UnmarshalFunc(v func(ctx *web.EventContext, obj interface{}) error) (r *SectionBuilder) {
-	if v == nil {
-		panic("value required")
-	}
-	b.unmarshalFunc = v
-	return b
-}
-
-func (b *SectionBuilder) WrapSetterFunc(w func(in SetterFunc) SetterFunc) (r *SectionBuilder) {
+func (b *SectionBuilder) WrapSetterFunc(w func(in func(obj interface{}, ctx *web.EventContext) error) func(obj interface{}, ctx *web.EventContext) error) (r *SectionBuilder) {
 	b.setter = w(b.setter)
 	return b
 }
 
-func (b *SectionBuilder) SetterFunc(v SetterFunc) (r *SectionBuilder) {
+func (b *SectionBuilder) SetterFunc(v func(obj interface{}, ctx *web.EventContext) error) (r *SectionBuilder) {
 	if v == nil {
 		panic("value required")
 	}
@@ -434,7 +416,7 @@ func (b *SectionBuilder) ComponentFunc(v FieldComponentFunc) *SectionBuilder {
 }
 
 func (b *SectionBuilder) ListFieldPrefix(index int) string {
-	return fmt.Sprintf("%s[%b]", b.name, index)
+	return fmt.Sprintf("%s[%d]", b.name, index)
 }
 
 func (b *SectionBuilder) registerEvent() {
@@ -444,6 +426,7 @@ func (b *SectionBuilder) registerEvent() {
 	b.isRegistered = true
 	b.mb.RegisterEventFunc(b.EventSave(), b.SaveDetailField)
 	b.mb.RegisterEventFunc(b.EventEdit(), b.EditDetailField)
+	b.mb.RegisterEventFunc(b.EventValidate(), b.ValidateDetailField)
 	b.mb.RegisterEventFunc(b.EventDelete(), b.DeleteDetailListField)
 	b.mb.RegisterEventFunc(b.EventCreate(), b.CreateDetailListField)
 }
@@ -454,6 +437,10 @@ func (b *SectionBuilder) EventEdit() string {
 
 func (b *SectionBuilder) EventSave() string {
 	return fmt.Sprintf("section_save_%s", b.name)
+}
+
+func (b *SectionBuilder) EventValidate() string {
+	return fmt.Sprintf("section_validate_%s", b.name)
 }
 
 func (b *SectionBuilder) EventDelete() string {
@@ -586,23 +573,63 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 			).Class("section-body"),
 		)
 	}
+	operateID := fmt.Sprint(time.Now().UnixNano())
+	onChangeEvent += fmt.Sprintf(`if (!vars.__FormFieldIsUpdating){
+	  vars.__currentValidateKeys = [];	
+	  const endKey = %q	;
+	  for (let key in form) {
+		if (key.endsWith(endKey)){continue}
+		if (form[key] !== oldForm[key]) {
+			vars.__currentValidateKeys.push(key+endKey)
+		}
+	}
+%s
+}`, ErrorMessagePostfix,
+		web.Plaid().URL(ctx.R.URL.Path).
+			BeforeScript(fmt.Sprintf(`vars.__ValidateOperateID=%q`, operateID)).
+			EventFunc(b.EventValidate()).
+			Query(ParamID, id).
+			Query(ParamOperateID, operateID).
+			Go())
+
+	comps := h.Components(
+		h.Div().Style("display:none").Attr("v-on-mounted", `({window})=>{
+		vars.__FormUpdatingFunc = ()=>{ vars.__FormFieldIsUpdating = true}
+		vars.__FormUpdatedFunc = ()=>{ window.setTimeout(()=>{vars.__FormFieldIsUpdating = false},600)}
+		}`),
+		web.Listen(b.mb.NotifModelsSectionValidate(b.name),
+			`
+			vars.__FormUpdatingFunc();
+			for (const key in payload.form){
+				if (vars.__currentValidateKeys){
+					if(vars.__currentValidateKeys.lastIndexOf(key)>=0){
+						form[key] = payload.form[key]
+						}
+					}else{
+						form[key] = payload.form[key]
+						}
+				}
+			vars.__FormUpdatedFunc();`))
+
 	if b.isEdit {
 		return h.Div(
 			web.Scope(
+				comps,
 				content,
 				hiddenComp,
-			).OnChange(onChangeEvent).UseDebounce(150),
+			).OnChange(onChangeEvent).UseDebounce(500),
 		)
 	}
 	return h.Div(
 		web.Scope(
+			comps,
 			content,
 			hiddenComp,
-		).VSlot("{ form }").OnChange(onChangeEvent).UseDebounce(150),
+		).VSlot("{ form }").OnChange(onChangeEvent).UseDebounce(500),
 	)
 }
 
-func (b *SectionBuilder) DefaultUnmarshalFunc(ctx *web.EventContext, obj interface{}) (err error) {
+func (b *SectionBuilder) defaultUnmarshalFunc(obj interface{}, ctx *web.EventContext) (err error) {
 	if tf := reflect.TypeOf(obj).Kind(); tf != reflect.Ptr {
 		return fmt.Errorf("model %#+v must be pointer", obj)
 	}
@@ -612,27 +639,6 @@ func (b *SectionBuilder) DefaultUnmarshalFunc(ctx *web.EventContext, obj interfa
 		return
 	}
 	return
-}
-
-func (b *SectionBuilder) DefaultListUnmarshalFunc(ctx *web.EventContext, obj interface{}) (err error) {
-	var index int64
-	index, err = strconv.ParseInt(ctx.Queries().Get(b.SaveBtnKey()), 10, 32)
-	if err != nil {
-		return
-	}
-
-	listObj := reflect.ValueOf(reflectutils.MustGet(obj, b.name))
-	if !listObj.IsValid() || listObj.Len() == int(index) {
-		b.appendElement(obj)
-		listObj = reflect.ValueOf(reflectutils.MustGet(obj, b.name))
-	}
-	elementObj := listObj.Index(int(index)).Interface()
-	formObj := reflect.New(reflect.TypeOf(b.editingFB.model).Elem()).Interface()
-	if err = b.elementUnmarshaler(elementObj, formObj, b.ListFieldPrefix(int(index)), ctx); err != nil {
-		return
-	}
-	listObj.Index(int(index)).Set(reflect.ValueOf(elementObj))
-	return nil
 }
 
 func (b *SectionBuilder) buildElementRows(list interface{}, deletedID, editID, saveID, listLen int, unsaved bool, ctx *web.EventContext) *h.HTMLTagBuilder {
@@ -766,11 +772,11 @@ func (b *SectionBuilder) DeleteBtnKey() string {
 }
 
 func (b *SectionBuilder) ListElementIsEditing(index int) string {
-	return fmt.Sprintf("%s_%s[%b].%s", deletedHiddenNamePrefix, b.name, index, sectionListFieldEditing)
+	return fmt.Sprintf("%s_%s[%d].%s", deletedHiddenNamePrefix, b.name, index, sectionListFieldEditing)
 }
 
 func (b *SectionBuilder) ListElementPortalName(index int) string {
-	return fmt.Sprintf("DetailElementPortal_%s_%b", b.name, index)
+	return fmt.Sprintf("DetailElementPortal_%s_%d", b.name, index)
 }
 
 func (b *SectionBuilder) FieldPortalName() string {
@@ -793,7 +799,7 @@ func (b *SectionBuilder) showElement(obj any, index int, ctx *web.EventContext) 
 	content := b.elementViewFunc(obj, &FieldContext{
 		ModelInfo: b.mb.modelInfo,
 		Name:      b.name,
-		FormKey:   fmt.Sprintf("%s[%b]", b.name, index),
+		FormKey:   fmt.Sprintf("%s[%d]", b.name, index),
 		Label:     b.label,
 	}, ctx)
 
@@ -856,9 +862,9 @@ func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, ctx *we
 		h.Div(
 			b.elementEditFunc(obj, &FieldContext{
 				ModelInfo: b.mb.modelInfo,
-				Name:      fmt.Sprintf("%s[%b]", b.name, index),
-				FormKey:   fmt.Sprintf("%s[%b]", b.name, index),
-				Label:     fmt.Sprintf("%s[%b]", b.label, index),
+				Name:      fmt.Sprintf("%s[%d]", b.name, index),
+				FormKey:   fmt.Sprintf("%s[%d]", b.name, index),
+				Label:     fmt.Sprintf("%s[%d]", b.label, index),
 			}, ctx),
 		).Class("flex-grow-1"),
 		h.Div(deleteBtn).Class("d-flex pl-3"),
@@ -903,25 +909,27 @@ func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, ctx *we
 
 func (b *SectionBuilder) DefaultElementUnmarshal() func(toObj, formObj any, prefix string, ctx *web.EventContext) error {
 	return func(toObj, formObj any, prefix string, ctx *web.EventContext) (err error) {
-		if tf := reflect.TypeOf(toObj).Kind(); tf != reflect.Ptr {
-			return fmt.Errorf("model %#+v must be pointer", toObj)
-		}
-		oldForm := &multipart.Form{
-			Value: (map[string][]string)(http.Header(ctx.R.MultipartForm.Value).Clone()),
-		}
-		newForm := &multipart.Form{
-			Value: make(map[string][]string),
-		}
-		// prefix.key => key
-		for k, v := range oldForm.Value {
-			if strings.HasPrefix(k, prefix+".") {
-				newForm.Value[strings.TrimPrefix(k, prefix+".")] = v
+		if b.isList {
+			if tf := reflect.TypeOf(toObj).Kind(); tf != reflect.Ptr {
+				return fmt.Errorf("model %#+v must be pointer", toObj)
 			}
+			oldForm := &multipart.Form{
+				Value: (map[string][]string)(http.Header(ctx.R.MultipartForm.Value).Clone()),
+			}
+			newForm := &multipart.Form{
+				Value: make(map[string][]string),
+			}
+			// prefix.key => key
+			for k, v := range oldForm.Value {
+				if strings.HasPrefix(k, prefix+".") {
+					newForm.Value[strings.TrimPrefix(k, prefix+".")] = v
+				}
+			}
+			ctx2 := &web.EventContext{R: new(http.Request)}
+			ctx2.R.MultipartForm = newForm
+			ctx = ctx2
 		}
-		ctx2 := &web.EventContext{R: new(http.Request)}
-		ctx2.R.MultipartForm = newForm
-
-		_ = ctx2.UnmarshalForm(formObj)
+		_ = ctx.UnmarshalForm(formObj)
 		for _, f := range b.editingFB.fields {
 			name := f.name
 			info := b.mb.modelInfo
@@ -998,13 +1006,14 @@ func (b *SectionBuilder) EditDetailField(ctx *web.EventContext) (r web.EventResp
 	if b.isList {
 		return b.EditDetailListField(ctx)
 	}
+
 	obj := b.mb.NewModel()
-	obj, err = b.mb.detailing.GetFetchFunc()(obj, ctx.Param(ParamID), ctx)
+	obj, err = b.mb.editing.Fetcher(obj, ctx.Queries().Get(ParamID), ctx)
 	if err != nil {
 		return
 	}
-	if b.setter != nil {
-		b.setter(obj, ctx)
+	if b.mb.editing.Setter != nil {
+		b.mb.editing.Setter(obj, ctx)
 	}
 
 	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
@@ -1039,12 +1048,12 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 	}
 
 	obj := b.mb.NewModel()
-	obj, err = b.mb.detailing.GetFetchFunc()(obj, id, ctx)
+	obj, err = b.mb.editing.Fetcher(obj, ctx.Queries().Get(ParamID), ctx)
 	if err != nil {
 		return
 	}
-	if b.setter != nil {
-		b.setter(obj, ctx)
+	if b.mb.editing.Setter != nil {
+		b.mb.editing.Setter(obj, ctx)
 	}
 
 	if isCancel {
@@ -1060,12 +1069,24 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 		return
 	}
 
-	if err = b.unmarshalFunc(ctx, obj); err != nil {
-		ShowMessage(&r, err.Error(), "warning")
-		return r, nil
+	if Verr := b.editingFB.Unmarshal(obj, b.mb.Info(), true, ctx); Verr.HaveErrors() {
+		ShowMessage(&r, Verr.Error(), "warning")
+		return
+	}
+	if b.setter != nil {
+		b.setter(obj, ctx)
 	}
 
 	needSave := true
+	if b.mb.editing.Validator != nil {
+		if vErr := b.mb.editing.Validator(obj, ctx); vErr.HaveErrors() {
+			ctx.Flash = &vErr
+			needSave = false
+			if vErr.GetGlobalError() != "" {
+				ShowMessage(&r, vErr.GetGlobalError(), "warning")
+			}
+		}
+	}
 	if vErr := b.validator(obj, ctx); vErr.HaveErrors() {
 		ctx.Flash = &vErr
 		needSave = false
@@ -1102,6 +1123,61 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 	return r, nil
 }
 
+func (b *SectionBuilder) ValidateDetailField(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var (
+		id        = ctx.Param(ParamID)
+		operateID = ctx.Param(ParamOperateID)
+		obj       = b.mb.NewModel()
+		vErr      web.ValidationErrors
+	)
+
+	defer func() {
+		web.AppendRunScripts(&r,
+			fmt.Sprintf(`if (vars.__ValidateOperateID==%q){%s}`, operateID,
+				web.Emit(
+					b.mb.NotifModelsSectionValidate(b.name),
+					PayloadModelsSetter{
+						Form:   b.editingFB.ToErrorMessagesForm(ctx, &vErr),
+						Id:     id,
+						Passed: !vErr.HaveErrors(),
+					},
+				),
+			),
+		)
+		if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
+			web.AppendRunScripts(&r, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), ColorWarning))
+		}
+	}()
+
+	if id != "" {
+		var err1 error
+		obj, err1 = b.mb.editing.Fetcher(obj, id, ctx)
+		if err1 != nil {
+			vErr.GlobalError(err1.Error())
+			return
+		}
+	}
+	if b.setter != nil {
+		b.setter(obj, ctx)
+	}
+
+	vErr = b.editingFB.Unmarshal(obj, b.mb.Info(), false, ctx)
+	if vErr.HaveErrors() {
+		return
+	}
+	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+		vErr.GlobalError(perm.PermissionDenied.Error())
+		return
+	}
+	if b.validator != nil {
+		if vErr = b.validator(obj, ctx); vErr.HaveErrors() {
+			return
+		}
+	}
+
+	return
+}
+
 // EditDetailListField Event: click detail list field element edit button
 func (b *SectionBuilder) EditDetailListField(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var index int64
@@ -1112,12 +1188,12 @@ func (b *SectionBuilder) EditDetailListField(ctx *web.EventContext) (r web.Event
 	}
 
 	obj := b.mb.NewModel()
-	obj, err = b.mb.detailing.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
+	obj, err = b.mb.editing.Fetcher(obj, ctx.Queries().Get(ParamID), ctx)
 	if err != nil {
 		return
 	}
-	if b.setter != nil {
-		b.setter(obj, ctx)
+	if b.mb.editing.Setter != nil {
+		b.mb.editing.Setter(obj, ctx)
 	}
 
 	if unsaved {
@@ -1152,12 +1228,12 @@ func (b *SectionBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Event
 	index = ctx.ParamAsInt(b.SaveBtnKey())
 
 	obj := b.mb.NewModel()
-	obj, err = b.mb.detailing.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
+	obj, err = b.mb.editing.Fetcher(obj, ctx.Queries().Get(ParamID), ctx)
 	if err != nil {
 		return
 	}
-	if b.setter != nil {
-		b.setter(obj, ctx)
+	if b.mb.editing.Setter != nil {
+		b.mb.editing.Setter(obj, ctx)
 	}
 
 	if isCancel {
@@ -1179,12 +1255,43 @@ func (b *SectionBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Event
 		return
 	}
 
-	if err = b.unmarshalFunc(ctx, obj); err != nil {
-		ShowMessage(&r, err.Error(), "warning")
+	listObj := reflect.ValueOf(reflectutils.MustGet(obj, b.name))
+	if !listObj.IsValid() || listObj.Len() == int(index) {
+		b.appendElement(obj)
+		listObj = reflect.ValueOf(reflectutils.MustGet(obj, b.name))
+	}
+	elementObj := listObj.Index(int(index)).Interface()
+	newForm := new(multipart.Form)
+	newForm.Value = make(map[string][]string)
+	for key, val := range ctx.R.MultipartForm.Value {
+		prefix := fmt.Sprintf("%s[%d].", b.name, index)
+		if strings.HasPrefix(key, prefix) {
+			newForm.Value[strings.TrimPrefix(key, prefix)] = val
+		}
+	}
+	oldForm := ctx.R.MultipartForm
+	ctx.R.MultipartForm = newForm
+	if Verr := b.editingFB.Unmarshal(elementObj, b.mb.Info(), true, ctx); Verr.HaveErrors() {
+		ShowMessage(&r, Verr.Error(), "warning")
 		return r, nil
+	}
+	ctx.R.MultipartForm = oldForm
+	listObj.Index(int(index)).Set(reflect.ValueOf(elementObj))
+
+	if b.setter != nil {
+		b.setter(obj, ctx)
 	}
 
 	needSave := true
+	if b.mb.editing.Validator != nil {
+		if vErr := b.mb.editing.Validator(obj, ctx); vErr.HaveErrors() {
+			ctx.Flash = &vErr
+			needSave = false
+			if vErr.GetGlobalError() != "" {
+				ShowMessage(&r, vErr.GetGlobalError(), "warning")
+			}
+		}
+	}
 	if vErr := b.validator(obj, ctx); vErr.HaveErrors() {
 		ctx.Flash = &vErr
 		needSave = false
@@ -1234,12 +1341,12 @@ func (b *SectionBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.Eve
 	}
 
 	obj := b.mb.NewModel()
-	obj, err = b.mb.detailing.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
+	obj, err = b.mb.editing.Fetcher(obj, ctx.Queries().Get(ParamID), ctx)
 	if err != nil {
 		return
 	}
-	if b.setter != nil {
-		b.setter(obj, ctx)
+	if b.mb.editing.Setter != nil {
+		b.mb.editing.Setter(obj, ctx)
 	}
 
 	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
@@ -1254,11 +1361,13 @@ func (b *SectionBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.Eve
 	}
 
 	needSave := true
-	if vErr := b.validator(obj, ctx); vErr.HaveErrors() {
-		ctx.Flash = &vErr
-		needSave = false
-		if vErr.GetGlobalError() != "" {
-			ShowMessage(&r, vErr.GetGlobalError(), "warning")
+	if b.mb.editing.Validator != nil {
+		if vErr := b.mb.editing.Validator(obj, ctx); vErr.HaveErrors() {
+			ctx.Flash = &vErr
+			needSave = false
+			if vErr.GetGlobalError() != "" {
+				ShowMessage(&r, vErr.GetGlobalError(), "warning")
+			}
 		}
 	}
 
@@ -1287,12 +1396,12 @@ func (b *SectionBuilder) DeleteDetailListField(ctx *web.EventContext) (r web.Eve
 // CreateDetailListField Event: click detail list field element Add row button
 func (b *SectionBuilder) CreateDetailListField(ctx *web.EventContext) (r web.EventResponse, err error) {
 	obj := b.mb.NewModel()
-	obj, err = b.mb.detailing.GetFetchFunc()(obj, ctx.Queries().Get(ParamID), ctx)
+	obj, err = b.mb.editing.Fetcher(obj, ctx.Queries().Get(ParamID), ctx)
 	if err != nil {
 		return
 	}
-	if b.setter != nil {
-		b.setter(obj, ctx)
+	if b.mb.editing.Setter != nil {
+		b.mb.editing.Setter(obj, ctx)
 	}
 
 	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {

@@ -29,6 +29,7 @@ const (
 	ParamOverlayUpdateID          = "overlay_update_id"
 	ParamAfterDeleteEvent         = "presets_after_delete_event"
 	ParamPortalName               = "portal_name"
+	ParamOperateID                = "operate_id"
 
 	VarsPresetsDataChanged = "presetsDataChanged"
 
@@ -41,3 +42,7 @@ const (
 )
 
 var PhraseHasPresetsDataChanged = fmt.Sprintf("Object.values(vars.%s).some(value => value === true)", VarsPresetsDataChanged)
+
+const (
+	ErrorMessagePostfix = "_FieldErrorMessages"
+)

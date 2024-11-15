@@ -32,12 +32,15 @@ const (
 	ReloadRenderPageOrTemplateEvent  = "page_builder_ReloadRenderPageOrTemplateEvent"
 	ContainerPreviewEvent            = "page_builder_ContainerPreviewEvent"
 	ReplicateContainerEvent          = "page_builder_ReplicateContainerEvent"
+	EditContainerEvent               = "page_builder_EditContainerEvent"
+	UpdateContainerEvent             = "page_builder_UpdateContainerEvent"
 
 	paramPageID          = "pageID"
 	paramPageVersion     = "pageVersion"
 	paramLocale          = "locale"
 	paramStatus          = "status"
 	paramContainerID     = "containerID"
+	paramContainerUri    = "containerUri"
 	paramContainerDataID = "containerDataID"
 	paramContainerNew    = "new"
 	paramMoveResult      = "moveResult"
@@ -98,10 +101,14 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			isStag                               bool
 
 			containerDataID = ctx.Param(paramContainerDataID)
-			obj             = m.mb.NewModel()
+			obj             interface{}
 			msgr            = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 			title           string
 		)
+
+		if obj, err = m.pageBuilderModel(ctx); err != nil {
+			return
+		}
 
 		if m.tb == nil {
 			title = msgr.PageBuilder
@@ -114,9 +121,10 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 		if containerDataID != "" {
 			arr := strings.Split(containerDataID, "_")
 			if len(arr) >= 2 {
-				editEvent := web.GET().EventFunc(actions.Edit).
-					URL(fmt.Sprintf(`%s/%s`, b.prefix, arr[0])).
-					Query(presets.ParamID, arr[1]).
+				editEvent := web.Plaid().
+					EventFunc(EditContainerEvent).
+					Query(paramContainerUri, fmt.Sprintf(`%s/%s`, b.prefix, arr[0])).
+					Query(paramContainerID, arr[1]).
 					Query(presets.ParamPortalName, pageBuilderRightContentPortal).
 					Query(presets.ParamOverlay, actions.Content).Go()
 				editContainerDrawer = web.RunScript(fmt.Sprintf(`function(){%s}`, editEvent))
@@ -125,7 +133,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			editContainerDrawer = b.emptyEdit(ctx)
 		}
 		deviceToggle = b.deviceToggle(ctx)
-		if tabContent, err = m.pageContent(ctx, obj); err != nil {
+		if tabContent, err = m.pageContent(ctx); err != nil {
 			return
 		}
 		if p, ok := obj.(publish.StatusInterface); ok {
@@ -166,10 +174,13 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 		}
 		r.Body = h.Components(
 			h.Div().Style("display:none").
-				Attr("v-on-unmounted", fmt.Sprintf(`()=>{
+				Attr("v-on-unmounted", fmt.Sprintf(`({window})=>{
 				vars.$pbRightDrawerOnMouseLeave = null
 				vars.$pbRightDrawerOnMouseDown = null
 				vars.$pbRightDrawerOnMouseMove = null
+				window.removeEventListener('resize', vars.$PagebuilderResizeFn)
+				vars.$PagebuilderResizeFn = null
+				vars.$pbRightThrottleTimer = null
 			}`)).
 				Attr("v-on-mounted", fmt.Sprintf(`({ref, window, computed})=>{
 				vars.$pbLeftDrawerFolded = window.localStorage.getItem("$pbLeftDrawerFolded") === '1'
@@ -182,6 +193,25 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 				vars.$pbRightDrawerHighlight = false
 				vars.$pbRightDrawerIsDragging = false
 				vars.$window = window
+				vars.$pbRightThrottleTimer = null
+
+				vars.$PagebuilderResizeFn = () => {
+					if(vars.$pbRightDrawerFolded) return
+					
+					if(vars.$pbRightThrottleTimer) return
+
+					vars.$pbRightThrottleTimer = window.setTimeout(() => {
+						const halfWindowWidth = window.innerWidth / 2
+						vars.$pbRightThrottleTimer = null
+						if((vars.$pbRightDrawerWidth > halfWindowWidth) && (vars.$pbRightDrawerWidth > 350)) {
+						vars.$pbRightAdjustableWidth =  halfWindowWidth
+					} 
+						window.localStorage.setItem("$pbRightAdjustableWidth", vars.$pbRightAdjustableWidth)
+					},300)
+				}
+
+				vars.$PagebuilderResizeFn()
+				window.addEventListener('resize', vars.$PagebuilderResizeFn)
 
 				function addInlineStyle(css) {
 					const style = window.document.createElement('style');
@@ -498,8 +528,8 @@ func (b *Builder) containerWrapper(r *h.HTMLTagBuilder, ctx *web.EventContext, i
 		if isReadonly {
 			r.AppendChildren(h.Div().Class("wrapper-shadow"))
 		} else {
-			r.AppendChildren(h.Div().Class("inner-shadow"))
 			r = h.Div(
+				h.Div().Class("inner-shadow"),
 				r.Attr("onclick", "event.stopPropagation();document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('highlight')});this.parentElement.classList.add('highlight');"+pmb.postMessage(EventEdit)),
 				h.Div(
 					h.Div(h.Text(input.DisplayName)).Class("title"),

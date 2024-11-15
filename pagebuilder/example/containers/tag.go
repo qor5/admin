@@ -1,11 +1,12 @@
 package containers
 
 import (
-	"github.com/qor5/admin/v3/pagebuilder"
-	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	v "github.com/qor5/x/v3/ui/vuetify"
 	. "github.com/theplant/htmlgo"
+
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/presets"
 )
 
 type tag struct {
@@ -40,7 +41,7 @@ func SetTagComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder) {
 	fb.Field("FontColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return v.VAutocomplete().
 			Variant(v.FieldVariantUnderlined).
-			Attr(web.VField(field.FormKey, field.Value(obj))...).
+			Attr(presets.VFieldError(field.FormKey, field.Value(obj), field.Errors)...).
 			Label(field.Label).
 			Items(TagFontColors)
 	})
@@ -48,7 +49,7 @@ func SetTagComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder) {
 	fb.Field("BackgroundColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return v.VAutocomplete().
 			Variant(v.FieldVariantUnderlined).
-			Attr(web.VField(field.FormKey, field.Value(obj))...).
+			Attr(presets.VFieldError(field.FormKey, field.Value(obj), field.Errors)...).
 			Label(field.Label).
 			Items(TagBackgroundColors)
 	})
@@ -56,7 +57,7 @@ func SetTagComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder) {
 	fb.Field("Icon").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return v.VAutocomplete().
 			Variant(v.FieldVariantUnderlined).
-			Attr(web.VField(field.FormKey, field.Value(obj))...).
+			Attr(presets.VFieldError(field.FormKey, field.Value(obj), field.Errors)...).
 			Label(field.Label).
 			Items(TagIcons)
 	})
