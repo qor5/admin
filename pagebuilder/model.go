@@ -15,7 +15,6 @@ import (
 
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
-	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
@@ -266,7 +265,7 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, isEditor, isI
 	if status != publish.StatusDraft && isEditor {
 		isReadonly = true
 	}
-	if !isReadonly && b.mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil {
+	if !isReadonly && isEditor && b.mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil {
 		isReadonly = true
 	}
 	var comps []h.HTMLComponent
@@ -596,10 +595,7 @@ func (b *ModelBuilder) renderPreviewContainer(ctx *web.EventContext, obj interfa
 
 func (b *ModelBuilder) previewContent(ctx *web.EventContext) (r web.PageResponse, err error) {
 	var obj interface{}
-	if b.mb.Info().Verifier().Do(presets.PermGet).WithReq(ctx.R).IsAllowed() != nil {
-		r.Body = h.Text(perm.PermissionDenied.Error())
-		return
-	}
+
 	r.Body, err = b.renderPageOrTemplate(ctx, false, false)
 	if err != nil {
 		return
