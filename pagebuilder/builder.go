@@ -117,6 +117,8 @@ const (
 	paramOpenFromSharedContainer = "open_from_shared_container"
 
 	PageBuilderPreviewCard = "PageBuilderPreviewCard"
+
+	WrapHandlerKey = "pageBuilderWrapHandlerKey"
 )
 
 func New(prefix string, db *gorm.DB, b *presets.Builder) *Builder {
@@ -140,7 +142,6 @@ func newBuilder(prefix string, db *gorm.DB, b *presets.Builder) *Builder {
 	r.categoryInstall = r.defaultCategoryInstall
 	r.pageInstall = r.defaultPageInstall
 	r.pageLayoutFunc = defaultPageLayoutFunc
-
 	r.ps = presets.New().
 		BrandTitle("Page Builder").
 		DataOperator(gorm2op.DataOperator(db)).
@@ -148,6 +149,15 @@ func newBuilder(prefix string, db *gorm.DB, b *presets.Builder) *Builder {
 		I18n(b.GetI18n()).
 		DetailLayoutFunc(r.pageEditorLayout)
 	r.ps.Permission(b.GetPermission())
+	b.AddWrapHandler(WrapHandlerKey, func(in http.Handler) (out http.Handler) {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			if strings.HasPrefix(req.RequestURI, r.ps.GetURIPrefix()) && strings.HasSuffix(req.RequestURI, "/preview") {
+				r.ServeHTTP(w, req)
+				return
+			}
+			in.ServeHTTP(w, req)
+		})
+	})
 	return r
 }
 
@@ -1346,6 +1356,10 @@ func republishRelatedOnlinePages(pageURL string) web.EventFunc {
 func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, mb := range b.models {
 		if strings.Index(r.RequestURI, b.prefix+"/"+mb.mb.Info().URIName()+"/preview") >= 0 {
+			if mb.mb.Info().Verifier().Do(presets.PermGet).WithReq(r).IsAllowed() != nil {
+				_, _ = w.Write([]byte(perm.PermissionDenied.Error()))
+				return
+			}
 			mb.preview.ServeHTTP(w, r)
 			return
 		}
