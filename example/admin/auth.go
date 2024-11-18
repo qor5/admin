@@ -166,7 +166,7 @@ func initLoginSessionBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Buil
 			if !ok {
 				return false
 			}
-			return user.GetAccountName() == loginInitialUserEmail
+			return user.GetAccountName() == loginInitialUserEmail && user.OAuthIdentifier == ""
 		}).
 		TablePrefix("cms_").
 		AutoMigrate()
