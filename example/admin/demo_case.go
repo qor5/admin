@@ -710,3 +710,5 @@ func DemoCaseCheckBox(obj interface{}, editField, field, label string) *vx.VXChe
 		Label(label).
 		Attr(web.VField(formKey, reflectutils.MustGet(obj, formKey))...)
 }
+
+// test code
