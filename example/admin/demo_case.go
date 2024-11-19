@@ -682,26 +682,32 @@ func configVxTabs(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder)
 				v.VRow(
 					v.VCol(h.Text("no underline-border")).Cols(3),
 					v.VCol(vx.VXTabs(
-						v.VTab(h.Text("Tab1")),
-						v.VTab(h.Text("Tab2")),
-						v.VTab(h.Text("Tab3")),
-					)).Cols(9),
+						v.VTab(h.Text("Tab1")).Value(1),
+						v.VTab(h.Text("Tab2")).Value(2),
+						v.VTab(h.Text("Tab3")).Value(3),
+					).Attr("v-model", "locals.tab1"),
+						h.Div(h.Text("current tab value:{{ locals.tab1 }}")),
+					).Cols(9),
 				),
 				v.VRow(
 					v.VCol(h.Text("underline-border: contain")).Cols(3),
 					v.VCol(vx.VXTabs(
-						v.VTab(h.Text("Tab1")),
-						v.VTab(h.Text("Tab2")),
-						v.VTab(h.Text("Tab3")),
-					).UnderlineBorder("contain")).Cols(9),
+						v.VTab(h.Text("Tab1")).Value(1),
+						v.VTab(h.Text("Tab2")).Value(2),
+						v.VTab(h.Text("Tab3")).Value(3),
+					).Attr("v-model", "locals.tab2").UnderlineBorder("contain"),
+						h.Div(h.Text("current tab value:{{ locals.tab2 }}")),
+					).Cols(9),
 				),
 				v.VRow(
 					v.VCol(h.Text("underline-border: full")).Cols(3),
 					v.VCol(vx.VXTabs(
-						v.VTab(h.Text("Tab1")),
-						v.VTab(h.Text("Tab2")),
-						v.VTab(h.Text("Tab3")),
-					).UnderlineBorder("full")).Cols(9),
+						v.VTab(h.Text("Tab1")).Value(1),
+						v.VTab(h.Text("Tab2")).Value(2),
+						v.VTab(h.Text("Tab3")).Value(3),
+					).Attr("v-model", "locals.tab3").UnderlineBorder("full"),
+						h.Div(h.Text("current tab value:{{ locals.tab3 }}")),
+					).Cols(9),
 				),
 
 				v.VRow(
@@ -712,6 +718,7 @@ func configVxTabs(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder)
 							v.VTab(h.Text("Tab2")).Value("tab-2"),
 							v.VTab(h.Text("Tab3")).Value("tab-3"),
 						).Attr("v-model", "locals.currentTab").UnderlineBorder("full"),
+						h.Div(h.Text("current tab value:{{ locals.currentTab }}")),
 						v.VTabsWindow(
 							v.VTabsWindowItem(
 								v.VCard(v.VCardText(h.Div(h.Text("tab-1")).Class("border border-dashed text-primary font-weight-bold border-primary text-center border-opacity-100 pa-4"))).Elevation(0),
@@ -726,7 +733,7 @@ func configVxTabs(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder)
 					).Cols(12),
 				),
 			).Class("section-wrap with-border-b"),
-		).VSlot("{locals}").Init("{currentTab: 'tab-1'}")
+		).VSlot("{locals}").Init("{currentTab: 'tab-1', tab1:1, tab2:2, tab3:3}")
 	})
 	detailing.Section(section)
 }
