@@ -579,6 +579,14 @@ func (b *EditingBuilder) doUpdate(
 	if usingB.Validator != nil {
 		if vErr = usingB.Validator(obj, ctx); vErr.HaveErrors() {
 			usingB.UpdateOverlayContent(ctx, r, obj, "", &vErr)
+
+			if len(vErr.FieldErrors()) > 0 {
+				for _, fieldErr := range vErr.FieldErrors() {
+					ShowMessage(r, strings.Join(fieldErr, ""), TypeError)
+					break
+				}
+			}
+
 			return created, &vErr
 		}
 	}
