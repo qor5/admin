@@ -397,8 +397,7 @@ func fileOrFolderComponent(
 
 	card := VCard(
 		h.If(inMediaLibrary && (mb.moveToIsAllowed(ctx.R) == nil || mb.deleteIsAllowed(ctx.R, nil) == nil),
-			VCheckbox().
-				Color(ColorPrimary).
+			vx.VXCheckbox().
 				Attr(":model-value", fmt.Sprintf(`locals.select_ids.includes(%v)`, f.ID)).
 				Attr("@update:model-value", checkEvent).
 				Attr("@click", "$event.stopPropagation()").
