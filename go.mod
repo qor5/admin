@@ -26,7 +26,7 @@ require (
 	github.com/pquerna/otp v1.4.0
 	github.com/qor/oss v0.0.0-20240729105053-88484a799a79
 	github.com/qor5/web v1.3.2
-	github.com/qor5/web/v3 v3.0.11-0.20241030093604-4c400ec73a70
+	github.com/qor5/web/v3 v3.0.11-0.20241119071744-64183ed803ad
 	github.com/qor5/x/v3 v3.0.13-0.20241101072411-b20608aa4865
 	github.com/samber/lo v1.47.0
 	github.com/shurcooL/sanitized_anchor_name v1.0.0
@@ -50,7 +50,7 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
-	golang.org/x/text v0.19.0
+	golang.org/x/text v0.20.0
 	gorm.io/driver/postgres v1.5.9
 	gorm.io/driver/sqlite v1.5.6
 	gorm.io/gorm v1.25.11
@@ -167,7 +167,7 @@ require (
 	golang.org/x/image v0.18.0 // indirect
 	golang.org/x/net v0.27.0 // indirect
 	golang.org/x/oauth2 v0.21.0 // indirect
-	golang.org/x/sync v0.8.0 // indirect
+	golang.org/x/sync v0.9.0 // indirect
 	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240513163218-0867130af1f8 // indirect
@@ -178,6 +178,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-// replace github.com/qor5/web/v3 => ../web
+replace github.com/qor5/web/v3 => ../web
 
 // replace github.com/qor5/x/v3 => ../x

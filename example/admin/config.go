@@ -18,7 +18,6 @@ import (
 	"github.com/qor/oss"
 	"github.com/qor/oss/filesystem"
 	"github.com/qor/oss/s3"
-	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/login"
 	"github.com/qor5/x/v3/perm"
@@ -29,6 +28,8 @@ import (
 	"github.com/theplant/osenv"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
+
+	"github.com/qor5/web/v3"
 
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/autosync"
@@ -660,7 +661,18 @@ func configPost(
 		}
 	})
 	m.Editing().Field("TitleWithSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)
-
+	m.Editing().ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		if ctx.Param(presets.ParamID) != "" {
+			p := obj.(*models.Post)
+			if p.Title == "" {
+				err.FieldError("Title", "Title Is Required")
+			}
+			if p.TitleWithSlug == "" {
+				err.FieldError("TitleWithSlug", "TitleWithSlug Is Required")
+			}
+		}
+		return
+	})
 	dp := m.Detailing(publish.VersionsPublishBar, "Detail", seo.SeoDetailFieldName).Drawer(true)
 	detailSection := presets.NewSectionBuilder(m, "Detail").
 		Editing("Title", "TitleWithSlug", "HeroImage", "Body", "BodyImage")
