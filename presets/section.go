@@ -581,8 +581,9 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 	}
 	operateID := fmt.Sprint(time.Now().UnixNano())
 	onChangeEvent += fmt.Sprintf(`if (!vars.__FormFieldIsUpdating){
-	  vars.__currentValidateKeys = [];	
+	  vars.__currentValidateKeys = vars.__currentValidateKeys??[];
 	  const endKey = %q	;
+	  	
 	  for (let key in form) {
 		if (key.endsWith(endKey)){continue}
 		if (form[key] !== oldForm[key]) {
@@ -615,6 +616,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 						form[key] = payload.form[key]
 						}
 				}
+            vars.__currentValidateKeys = [];
 			vars.__FormUpdatedFunc();`))
 
 	if b.isEdit {
