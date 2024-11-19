@@ -321,7 +321,12 @@ func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent
 			).Cols(cols),
 		)
 	})
-	simpleReload := web.Plaid().MergeQuery(true).Go()
+	simpleReload := web.Plaid().
+		URL(mb.Info().ListingHref()).
+		EventFunc(ReloadTemplateContentEvent).
+		MergeQuery(true).
+		Queries(ctx.Queries()).
+		Go()
 	return h.Div(
 
 		VContainer(

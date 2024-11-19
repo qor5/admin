@@ -9,9 +9,11 @@ import (
 	"strings"
 	"time"
 
+	h "github.com/theplant/htmlgo"
+
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/media/media_library"
-	h "github.com/theplant/htmlgo"
+	"github.com/qor5/admin/v3/presets"
 )
 
 type QorSEOSetting struct {
@@ -192,4 +194,8 @@ func GetOpenGraphMetadataString(metadata []OpenGraphMetadata) string {
 	w := csv.NewWriter(buf)
 	w.WriteAll(records)
 	return buf.String()
+}
+
+func (b *Builder) GetPresetsModelBuilder() *presets.ModelBuilder {
+	return b.mb
 }

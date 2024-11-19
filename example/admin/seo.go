@@ -3,10 +3,11 @@ package admin
 import (
 	"net/http"
 
+	"gorm.io/gorm"
+
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/seo"
-	"gorm.io/gorm"
 )
 
 // @snippet_begin(SeoExample)

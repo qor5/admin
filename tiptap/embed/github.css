@@ -51,7 +51,8 @@
   --color-attention-subtle: #fff8c5;
   --color-danger-fg: #cf222e;
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans",
+    Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   font-size: 16px;
   line-height: 1.5;
   color: var(--color-fg-default);
@@ -118,12 +119,30 @@
   vertical-align: text-bottom;
   fill: currentcolor;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github h1:hover .anchor .octicon-link::before,
-.vuetify-pro-tiptap-editor__content.markdown-theme-github h2:hover .anchor .octicon-link::before,
-.vuetify-pro-tiptap-editor__content.markdown-theme-github h3:hover .anchor .octicon-link::before,
-.vuetify-pro-tiptap-editor__content.markdown-theme-github h4:hover .anchor .octicon-link::before,
-.vuetify-pro-tiptap-editor__content.markdown-theme-github h5:hover .anchor .octicon-link::before,
-.vuetify-pro-tiptap-editor__content.markdown-theme-github h6:hover .anchor .octicon-link::before {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  h1:hover
+  .anchor
+  .octicon-link::before,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  h2:hover
+  .anchor
+  .octicon-link::before,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  h3:hover
+  .anchor
+  .octicon-link::before,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  h4:hover
+  .anchor
+  .octicon-link::before,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  h5:hover
+  .anchor
+  .octicon-link::before,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  h6:hover
+  .anchor
+  .octicon-link::before {
   display: inline-block;
   width: 16px;
   height: 16px;
@@ -194,19 +213,23 @@
   display: inline-block;
   float: none;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github img[data-display=inline] {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  img[data-display="inline"] {
   padding-right: 12px;
   padding-left: 12px;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github img[data-display=block] {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  img[data-display="block"] {
   display: block;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github img[data-display=left] {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  img[data-display="left"] {
   float: left;
   padding-right: 12px;
   padding-left: 0;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github img[data-display=right] {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  img[data-display="right"] {
   float: right;
   padding-right: 0;
   padding-left: 12px;
@@ -240,29 +263,34 @@
   font-size: inherit;
   line-height: inherit;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github [type=button],
-.vuetify-pro-tiptap-editor__content.markdown-theme-github [type=reset],
-.vuetify-pro-tiptap-editor__content.markdown-theme-github [type=submit] {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github [type="button"],
+.vuetify-pro-tiptap-editor__content.markdown-theme-github [type="reset"],
+.vuetify-pro-tiptap-editor__content.markdown-theme-github [type="submit"] {
   appearance: button;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github [type=checkbox],
-.vuetify-pro-tiptap-editor__content.markdown-theme-github [type=radio] {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github [type="checkbox"],
+.vuetify-pro-tiptap-editor__content.markdown-theme-github [type="radio"] {
   box-sizing: border-box;
   padding: 0;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github [type=number]::-webkit-inner-spin-button,
-.vuetify-pro-tiptap-editor__content.markdown-theme-github [type=number]::-webkit-outer-spin-button {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  [type="number"]::-webkit-inner-spin-button,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  [type="number"]::-webkit-outer-spin-button {
   height: auto;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github [type=search]::-webkit-search-cancel-button,
-.vuetify-pro-tiptap-editor__content.markdown-theme-github [type=search]::-webkit-search-decoration {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  [type="search"]::-webkit-search-cancel-button,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  [type="search"]::-webkit-search-decoration {
   appearance: none;
 }
 .vuetify-pro-tiptap-editor__content.markdown-theme-github ::input-placeholder {
   color: inherit;
   opacity: 0.54;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github ::-webkit-file-upload-button {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  ::-webkit-file-upload-button {
   font: inherit;
   appearance: button;
 }
@@ -297,43 +325,60 @@
 .vuetify-pro-tiptap-editor__content.markdown-theme-github details summary {
   cursor: pointer;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github details:not([open]) > *:not(summary) {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  details:not([open])
+  > *:not(summary) {
   display: none !important;
 }
 .vuetify-pro-tiptap-editor__content.markdown-theme-github a:focus,
-.vuetify-pro-tiptap-editor__content.markdown-theme-github [role=button]:focus,
-.vuetify-pro-tiptap-editor__content.markdown-theme-github input[type=radio]:focus,
-.vuetify-pro-tiptap-editor__content.markdown-theme-github input[type=checkbox]:focus {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github [role="button"]:focus,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  input[type="radio"]:focus,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  input[type="checkbox"]:focus {
   outline: 2px solid var(--color-accent-fg);
   outline-offset: -2px;
   box-shadow: none;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github a:focus:not(:focus-visible),
-.vuetify-pro-tiptap-editor__content.markdown-theme-github [role=button]:focus:not(:focus-visible),
-.vuetify-pro-tiptap-editor__content.markdown-theme-github input[type=radio]:focus:not(:focus-visible),
-.vuetify-pro-tiptap-editor__content.markdown-theme-github input[type=checkbox]:focus:not(:focus-visible) {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  a:focus:not(:focus-visible),
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  [role="button"]:focus:not(:focus-visible),
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  input[type="radio"]:focus:not(:focus-visible),
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  input[type="checkbox"]:focus:not(:focus-visible) {
   outline: solid 1px transparent;
 }
 .vuetify-pro-tiptap-editor__content.markdown-theme-github a:focus-visible,
-.vuetify-pro-tiptap-editor__content.markdown-theme-github [role=button]:focus-visible,
-.vuetify-pro-tiptap-editor__content.markdown-theme-github input[type=radio]:focus-visible,
-.vuetify-pro-tiptap-editor__content.markdown-theme-github input[type=checkbox]:focus-visible {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  [role="button"]:focus-visible,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  input[type="radio"]:focus-visible,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  input[type="checkbox"]:focus-visible {
   outline: 2px solid var(--color-accent-fg);
   outline-offset: -2px;
   box-shadow: none;
 }
 .vuetify-pro-tiptap-editor__content.markdown-theme-github a:not([class]):focus,
-.vuetify-pro-tiptap-editor__content.markdown-theme-github a:not([class]):focus-visible,
-.vuetify-pro-tiptap-editor__content.markdown-theme-github input[type=radio]:focus,
-.vuetify-pro-tiptap-editor__content.markdown-theme-github input[type=radio]:focus-visible,
-.vuetify-pro-tiptap-editor__content.markdown-theme-github input[type=checkbox]:focus,
-.vuetify-pro-tiptap-editor__content.markdown-theme-github input[type=checkbox]:focus-visible {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  a:not([class]):focus-visible,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  input[type="radio"]:focus,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  input[type="radio"]:focus-visible,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  input[type="checkbox"]:focus,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  input[type="checkbox"]:focus-visible {
   outline-offset: 0;
 }
 .vuetify-pro-tiptap-editor__content.markdown-theme-github kbd {
   display: inline-block;
   padding: 3px 5px;
-  font: 11px ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font: 11px ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
   line-height: 10px;
   color: var(--color-fg-default);
   vertical-align: middle;
@@ -412,13 +457,15 @@
 .vuetify-pro-tiptap-editor__content.markdown-theme-github tt,
 .vuetify-pro-tiptap-editor__content.markdown-theme-github code,
 .vuetify-pro-tiptap-editor__content.markdown-theme-github samp {
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
   font-size: 12px;
 }
 .vuetify-pro-tiptap-editor__content.markdown-theme-github pre {
   margin-top: 0;
   margin-bottom: 0;
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
   font-size: 12px;
   word-wrap: normal;
 }
@@ -428,8 +475,10 @@
   vertical-align: text-bottom;
   fill: currentcolor;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github input::-webkit-outer-spin-button,
-.vuetify-pro-tiptap-editor__content.markdown-theme-github input::-webkit-inner-spin-button {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  input::-webkit-outer-spin-button,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  input::-webkit-inner-spin-button {
   margin: 0;
   appearance: none;
   appearance: none;
@@ -467,10 +516,14 @@
   margin-top: 0;
   margin-bottom: 16px;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github blockquote > :first-child {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  blockquote
+  > :first-child {
   margin-top: 0;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github blockquote > :last-child {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  blockquote
+  > :last-child {
   margin-bottom: 0;
 }
 .vuetify-pro-tiptap-editor__content.markdown-theme-github h1 .octicon-link,
@@ -491,12 +544,30 @@
 .vuetify-pro-tiptap-editor__content.markdown-theme-github h6:hover .anchor {
   text-decoration: none;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github h1:hover .anchor .octicon-link,
-.vuetify-pro-tiptap-editor__content.markdown-theme-github h2:hover .anchor .octicon-link,
-.vuetify-pro-tiptap-editor__content.markdown-theme-github h3:hover .anchor .octicon-link,
-.vuetify-pro-tiptap-editor__content.markdown-theme-github h4:hover .anchor .octicon-link,
-.vuetify-pro-tiptap-editor__content.markdown-theme-github h5:hover .anchor .octicon-link,
-.vuetify-pro-tiptap-editor__content.markdown-theme-github h6:hover .anchor .octicon-link {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  h1:hover
+  .anchor
+  .octicon-link,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  h2:hover
+  .anchor
+  .octicon-link,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  h3:hover
+  .anchor
+  .octicon-link,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  h4:hover
+  .anchor
+  .octicon-link,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  h5:hover
+  .anchor
+  .octicon-link,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  h6:hover
+  .anchor
+  .octicon-link {
   visibility: visible;
 }
 .vuetify-pro-tiptap-editor__content.markdown-theme-github h1 tt,
@@ -540,16 +611,16 @@
   padding: 0;
   list-style-type: none;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github ol[type=a] {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ol[type="a"] {
   list-style-type: lower-alpha;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github ol[type=A] {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ol[type="A"] {
   list-style-type: upper-alpha;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github ol[type=i] {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ol[type="i"] {
   list-style-type: lower-roman;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github ol[type=I] {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github ol[type="I"] {
   list-style-type: upper-roman;
 }
 .vuetify-pro-tiptap-editor__content.markdown-theme-github ol[type="1"] {
@@ -597,16 +668,18 @@
   background-color: var(--color-canvas-default);
   border-top: 1px solid var(--color-border-muted);
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github table tr:nth-child(2n) {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  table
+  tr:nth-child(2n) {
   background-color: var(--color-canvas-subtle);
 }
 .vuetify-pro-tiptap-editor__content.markdown-theme-github table img {
   background-color: transparent;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github img[align=right] {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github img[align="right"] {
   padding-left: 20px;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github img[align=left] {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github img[align="left"] {
   padding-right: 20px;
 }
 .vuetify-pro-tiptap-editor__content.markdown-theme-github .emoji {
@@ -642,13 +715,18 @@
   overflow: hidden;
   clear: both;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github span.align-center > span {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  span.align-center
+  > span {
   display: block;
   margin: 13px auto 0;
   overflow: hidden;
   text-align: center;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github span.align-center span img {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  span.align-center
+  span
+  img {
   margin: 0 auto;
   text-align: center;
 }
@@ -657,13 +735,18 @@
   overflow: hidden;
   clear: both;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github span.align-right > span {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  span.align-right
+  > span {
   display: block;
   margin: 13px 0 0;
   overflow: hidden;
   text-align: right;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github span.align-right span img {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  span.align-right
+  span
+  img {
   margin: 0;
   text-align: right;
 }
@@ -682,7 +765,9 @@
   margin-left: 13px;
   overflow: hidden;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github span.float-right > span {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  span.float-right
+  > span {
   display: block;
   margin: 13px auto 0;
   overflow: hidden;
@@ -769,10 +854,12 @@
   background: var(--color-canvas-subtle);
   border-top: 0;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github [data-footnote-ref]::before {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  [data-footnote-ref]::before {
   content: "[";
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github [data-footnote-ref]::after {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  [data-footnote-ref]::after {
   content: "]";
 }
 .vuetify-pro-tiptap-editor__content.markdown-theme-github .footnotes {
@@ -791,7 +878,9 @@
 .vuetify-pro-tiptap-editor__content.markdown-theme-github .footnotes li {
   position: relative;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github .footnotes li:target::before {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  .footnotes
+  li:target::before {
   position: absolute;
   inset: -8px -8px -8px -24px;
   pointer-events: none;
@@ -802,7 +891,10 @@
 .vuetify-pro-tiptap-editor__content.markdown-theme-github .footnotes li:target {
   color: var(--color-fg-default);
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github .footnotes .data-footnote-backref g-emoji {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  .footnotes
+  .data-footnote-backref
+  g-emoji {
   font-family: monospace;
 }
 .vuetify-pro-tiptap-editor__content.markdown-theme-github .pl-c {
@@ -918,30 +1010,45 @@
 .vuetify-pro-tiptap-editor__content.markdown-theme-github .task-list-item {
   list-style-type: none;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github .task-list-item label {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  .task-list-item
+  label {
   font-weight: var(--base-text-weight-normal, 400);
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github .task-list-item.enabled label {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  .task-list-item.enabled
+  label {
   cursor: pointer;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github .task-list-item + .task-list-item {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  .task-list-item
+  + .task-list-item {
   margin-top: 4px;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github .task-list-item .handle {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  .task-list-item
+  .handle {
   display: none;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github .task-list-item-checkbox {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  .task-list-item-checkbox {
   margin: 0 0.2em 0.25em -1.4em;
   vertical-align: middle;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github .contains-task-list:dir(rtl) .task-list-item-checkbox {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  .contains-task-list:dir(rtl)
+  .task-list-item-checkbox {
   margin: 0 -1.6em 0.25em 0.2em;
 }
 .vuetify-pro-tiptap-editor__content.markdown-theme-github .contains-task-list {
   position: relative;
 }
-.vuetify-pro-tiptap-editor__content.markdown-theme-github .contains-task-list:hover .task-list-item-convert-container,
-.vuetify-pro-tiptap-editor__content.markdown-theme-github .contains-task-list:focus-within .task-list-item-convert-container {
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  .contains-task-list:hover
+  .task-list-item-convert-container,
+.vuetify-pro-tiptap-editor__content.markdown-theme-github
+  .contains-task-list:focus-within
+  .task-list-item-convert-container {
   display: block;
   width: auto;
   height: 24px;
@@ -951,5 +1058,3 @@
 .vuetify-pro-tiptap-editor__content.markdown-theme-github::-webkit-calendar-picker-indicator {
   filter: invert(50%);
 }
-
-/*# sourceMappingURL=github.css.map */

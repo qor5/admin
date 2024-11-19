@@ -2,18 +2,22 @@ package media
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 
+	"gorm.io/gorm"
+
 	"github.com/qor5/admin/v3/media/base"
 
-	"github.com/qor5/admin/v3/media/media_library"
-	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/ui/cropper"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
+
+	"github.com/qor5/admin/v3/media/media_library"
+	"github.com/qor5/admin/v3/presets"
 )
 
 const ParamMediaIDS = "media_ids"
@@ -29,19 +33,25 @@ func getParams(ctx *web.EventContext) (field string, id int, thumb string, cfg *
 
 func loadImageCropper(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		db := mb.db
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
-		field, id, thumb, cfg := getParams(ctx)
+		var (
+			m                     media_library.MediaLibrary
+			db                    = mb.db
+			msgr                  = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
+			pMsgr                 = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+			field, id, thumb, cfg = getParams(ctx)
+		)
 
-		var m media_library.MediaLibrary
-		err = db.Find(&m, id).Error
-		if err != nil {
+		err = db.First(&m, id).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			err = nil
+			presets.ShowMessage(&r, pMsgr.RecordNotFound, ColorError)
+		} else if err != nil {
 			return
 		}
-
-		moption := m.GetMediaOption()
-
-		size := moption.Sizes[thumb]
+		var (
+			moption = m.GetMediaOption()
+			size    = moption.Sizes[thumb]
+		)
 		if size == nil && thumb != base.DefaultSizeKey {
 			return
 		}
@@ -101,12 +111,13 @@ func loadImageCropper(mb *Builder) web.EventFunc {
 
 func cropImage(b *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		db := b.db
-		cropOption := ctx.R.FormValue("CropOption")
-		// log.Println(cropOption, ctx.Event.Params)
-		field, id, thumb, cfg := getParams(ctx)
-
-		mb := &media_library.MediaBox{}
+		var (
+			db                    = b.db
+			cropOption            = ctx.R.FormValue("CropOption")
+			field, id, thumb, cfg = getParams(ctx)
+			mb                    = &media_library.MediaBox{}
+			pMsgr                 = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+		)
 		err = mb.Scan(ctx.R.FormValue(fmt.Sprintf("%s.Values", field)))
 		if err != nil {
 			panic(err)
@@ -118,11 +129,18 @@ func cropImage(b *Builder) web.EventFunc {
 				panic(err)
 			}
 
-			var m media_library.MediaLibrary
-			err = db.Find(&m, id).Error
-			if err != nil {
+			var (
+				old media_library.MediaLibrary
+				m   media_library.MediaLibrary
+			)
+			err = db.First(&m, id).Error
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				presets.ShowMessage(&r, pMsgr.RecordNotFound, ColorError)
+				return r, nil
+			} else if err != nil {
 				return
 			}
+			db.Find(&old, id)
 
 			moption := m.GetMediaOption()
 			if moption.CropOptions == nil {
@@ -139,12 +157,12 @@ func cropImage(b *Builder) web.EventFunc {
 			if err != nil {
 				return
 			}
-
 			err = b.saverFunc(db, &m, strconv.Itoa(id), ctx)
 			if err != nil {
 				presets.ShowMessage(&r, err.Error(), "error")
 				return r, nil
 			}
+			b.onEdit(ctx, old, m)
 
 			mb.Url = m.File.Url
 			mb.FileSizes = m.File.FileSizes

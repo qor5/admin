@@ -7,8 +7,6 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
-	"github.com/qor5/admin/v3/activity"
-	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/stateful"
 	"github.com/qor5/x/v3/i18n"
@@ -17,6 +15,9 @@ import (
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/exp/maps"
 	"golang.org/x/text/language"
+
+	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/presets"
 )
 
 func (b *ProfileBuilder) Install(pb *presets.Builder) error {
@@ -343,15 +344,15 @@ func (c *ProfileCompo) userCardCompo(ctx context.Context, user *Profile, vmodel 
 	}
 	var clickLogout string
 	if c.b.lsb != nil {
-		clickLogout = web.Plaid().URL(c.b.lsb.GetLoginBuilder().LogoutURL).Go()
+		clickLogout = c.b.lsb.GetLoginBuilder().LogoutURL
 	} else {
-		clickLogout = web.Plaid().URL(c.b.logoutURL).Go()
+		clickLogout = c.b.logoutURL
 	}
 	buttons := []h.HTMLComponent{
 		h.Iff(c.b.lsb != nil, func() h.HTMLComponent {
 			return v.VBtn(msgr.ViewLoginSessions).Variant(v.VariantTonal).Color(v.ColorSecondary).Attr("@click", c.b.lsb.OpenSessionsDialog())
 		}),
-		v.VBtn(msgr.Logout).Variant(v.VariantTonal).Color(v.ColorError).Attr("@click", clickLogout),
+		v.VBtn(msgr.Logout).Variant(v.VariantTonal).Color(v.ColorError).Attr("onclick", fmt.Sprintf("window.location.href=%q", clickLogout)),
 	}
 	if c.b.customizeButtons != nil {
 		var err error

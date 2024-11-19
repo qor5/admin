@@ -142,7 +142,7 @@ func TestPermWithoutID(t *testing.T) {
 						BuildEventFuncRequest()
 					return req
 				},
-				ExpectPortalUpdate0ContainsInOrder: []string{"v-assign='[form, {\"Name\":\"OldName\"}]' :error-messages='null' :disabled='false'></vx-field>"},
+				ExpectPortalUpdate0ContainsInOrder: []string{`<vx-field label='Name' v-model='form["Name"]' :error-messages='form["Name_FieldErrorMessages"]' v-assign='[form, {"Name":"OldName","Name_FieldErrorMessages":null}]' :disabled='false'></vx-field>`},
 			},
 			Role: models.RoleViewer,
 		},
@@ -157,7 +157,7 @@ func TestPermWithoutID(t *testing.T) {
 						BuildEventFuncRequest()
 					return req
 				},
-				ExpectPortalUpdate0ContainsInOrder: []string{"v-assign='[form, {\"Name\":\"OldName\"}]' :error-messages='null' :disabled='false'></vx-field>"},
+				ExpectPortalUpdate0ContainsInOrder: []string{`<vx-field label='Name' v-model='form["Name"]' :error-messages='form["Name_FieldErrorMessages"]' v-assign='[form, {"Name":"OldName","Name_FieldErrorMessages":null}]' :disabled='false'></vx-field>`},
 			},
 			Role: models.RoleEditor,
 		},
