@@ -376,6 +376,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 						form[key] = payload.form[key]
 						}
 				}
+			    vars.__currentValidateKeys = [];
 				vars.__FormUpdatedFunc();`),
 			b.ToComponent(b.mb.Info(), obj, ctx),
 		),
@@ -422,7 +423,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 			Go())
 	} else {
 		onChangeEvent += fmt.Sprintf(`if (!vars.__FormFieldIsUpdating){
-	  vars.__currentValidateKeys = [];	
+	  vars.__currentValidateKeys = vars.__currentValidateKeys??[];
 	  const endKey = %q	;
 	  for (let key in form) {
 		if (key.endsWith(endKey)){continue}
@@ -543,7 +544,7 @@ func (b *EditingBuilder) FetchAndUnmarshal(id string, removeDeletedAndSort bool,
 func (b *EditingBuilder) doUpdate(
 	ctx *web.EventContext,
 	r *web.EventResponse,
-	// will not close drawer/dialog
+// will not close drawer/dialog
 	silent bool,
 ) (created bool, err error) {
 	id := ctx.R.FormValue(ParamID)
