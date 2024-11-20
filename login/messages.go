@@ -8,6 +8,7 @@ import (
 type Messages struct {
 	SessionTableHeaderTime           string
 	SessionTableHeaderDevice         string
+	SessionTableHeaderLocation       string
 	SessionTableHeaderIPAddress      string
 	SessionTableHeaderStatus         string
 	SessionsDialogTitle              string
@@ -23,6 +24,7 @@ type Messages struct {
 	Available                        string
 	Unavailable                      string
 	SuccessfullyRename               string
+	LocationUnknown                  string
 
 	LoginWelcomeLabel string
 	LoginTitleLabel   string
@@ -48,6 +50,7 @@ func (m *Messages) UnreadMessages(n int) string {
 var Messages_en_US = &Messages{
 	SessionTableHeaderTime:           "Time",
 	SessionTableHeaderDevice:         "Device",
+	SessionTableHeaderLocation:       "Location",
 	SessionTableHeaderIPAddress:      "IP Address",
 	SessionTableHeaderStatus:         "Status",
 	SessionsDialogTitle:              "Login Sessions",
@@ -63,6 +66,7 @@ var Messages_en_US = &Messages{
 	Available:                        "Available",
 	Unavailable:                      "Unavailable",
 	SuccessfullyRename:               "Successfully renamed",
+	LocationUnknown:                  "Unknown",
 
 	LoginWelcomeLabel: "Welcome",
 	LoginTitleLabel:   "Qor Admin System",
@@ -83,6 +87,7 @@ var Messages_en_US = &Messages{
 var Messages_zh_CN = &Messages{
 	SessionTableHeaderTime:           "时间",
 	SessionTableHeaderDevice:         "设备",
+	SessionTableHeaderLocation:       "位置",
 	SessionTableHeaderIPAddress:      "IP地址",
 	SessionTableHeaderStatus:         "状态",
 	SessionsDialogTitle:              "登录会话",
@@ -98,6 +103,7 @@ var Messages_zh_CN = &Messages{
 	Available:                        "可用",
 	Unavailable:                      "不可用",
 	SuccessfullyRename:               "成功重命名",
+	LocationUnknown:                  "未知",
 
 	LoginWelcomeLabel: "欢迎",
 	LoginTitleLabel:   "Qor 管理系统",
@@ -118,6 +124,7 @@ var Messages_zh_CN = &Messages{
 var Messages_ja_JP = &Messages{
 	SessionTableHeaderTime:           "時間",
 	SessionTableHeaderDevice:         "デバイス",
+	SessionTableHeaderLocation:       "位置",
 	SessionTableHeaderIPAddress:      "IPアドレス",
 	SessionTableHeaderStatus:         "ステータス",
 	SessionsDialogTitle:              "ログインセッション",
@@ -133,6 +140,7 @@ var Messages_ja_JP = &Messages{
 	Available:                        "利用可能",
 	Unavailable:                      "利用不可",
 	SuccessfullyRename:               "名前が変更されました",
+	LocationUnknown:                  "不明",
 
 	LoginWelcomeLabel: "ようこそ",
 	LoginTitleLabel:   "Qor 管理システム",

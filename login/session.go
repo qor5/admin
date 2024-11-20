@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/login/location"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
@@ -449,8 +450,9 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 
 	type sessionWrapper struct {
 		*LoginSession
-		Time   string
-		Status string
+		Time     string
+		Status   string
+		Location string
 	}
 	now := b.db.NowFunc()
 	wrappers := make([]*sessionWrapper, 0, len(sessions))
@@ -463,6 +465,13 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 		}
 		if isPublicUser {
 			w.IP = msgr.HideIPAddressTips
+			w.Location = msgr.HideIPAddressTips
+		} else {
+			// TODO: error handling
+			w.Location, _ = location.GetLocation(i18n.LanguageTagFromContext(ctx.R.Context(), language.English), w.IP)
+			if w.Location == "" {
+				w.Location = msgr.LocationUnknown
+			}
 		}
 		if v.ExpiredAt.Before(now) {
 			w.Status = msgr.SessionStatusExpired
@@ -475,10 +484,11 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 		wrappers = append(wrappers, w)
 	}
 	tableHeaders := []dataTableHeader{
-		{msgr.SessionTableHeaderTime, "Time", "25%", false},
+		{msgr.SessionTableHeaderTime, "Time", "20%", false},
 		{msgr.SessionTableHeaderDevice, "Device", "25%", false},
-		{msgr.SessionTableHeaderIPAddress, "IP", "25%", false},
-		{msgr.SessionTableHeaderStatus, "Status", "25%", false},
+		{msgr.SessionTableHeaderLocation, "Location", "20%", false},
+		{msgr.SessionTableHeaderIPAddress, "IP", "15%", false},
+		{msgr.SessionTableHeaderStatus, "Status", "20%", false},
 	}
 	table := v.VDataTable().Headers(tableHeaders).Items(wrappers).ItemsPerPage(-1).HideDefaultFooter(true)
 
