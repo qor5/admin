@@ -18,6 +18,9 @@ func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *we
 	css := "https://the-plant.com/assets/app/container.4f902c4.css"
 	domain := "https://example.qor5.theplant-dev.com"
 
+	// tailwind ecosystem resources
+	taiWindJs = ""
+
 	head := h.Components(
 		input.SeoTags,
 		input.CanonicalLink,
