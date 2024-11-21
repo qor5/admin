@@ -3,6 +3,7 @@ package activity
 import (
 	"cmp"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 
@@ -386,7 +387,7 @@ func setupDetailing(b *presets.Builder, dp *presets.DetailingBuilder, op *gorm2o
 						),
 						VCardText().Class("mt-3 pa-3 border-thin rounded").Children(
 							h.Div().Class("d-flex flex-column").Children(
-								h.Pre(note.Note).Attr("v-pre", true).Class("text-body-2 text-wrap"),
+								h.Div().Class("text-body-2").Style("white-space: pre-wrap").Text(fmt.Sprintf(`{{%q}}`, note.Note)),
 								h.Iff(!note.LastEditedAt.IsZero(), func() h.HTMLComponent {
 									return h.Div().Class("text-caption font-italic").Style("color: #757575").Children(
 										h.Text(msgr.LastEditedAt(pmsgr.HumanizeTime(note.LastEditedAt))),
