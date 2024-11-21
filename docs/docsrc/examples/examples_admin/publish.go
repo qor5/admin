@@ -75,6 +75,10 @@ func (p *WithPublishProduct) GetUnPublishActions(ctx context.Context, db *gorm.D
 
 // @snippet_end
 func PublishExample(b *presets.Builder, db *gorm.DB) http.Handler {
+	return publishExample(b, db, nil)
+}
+
+func publishExample(b *presets.Builder, db *gorm.DB, customize func(mb *presets.ModelBuilder, pb *publish.Builder)) http.Handler {
 	err := db.AutoMigrate(&WithPublishProduct{})
 	if err != nil {
 		panic(err)
@@ -112,6 +116,11 @@ func PublishExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	publisher := publish.New(db, nil).Activity(ab)
 	b.Use(publisher)
 	mb.Use(publisher)
+
+	if customize != nil {
+		customize(mb, publisher)
+	}
+
 	// run the publisher job if Schedule is used
 	go publish.RunPublisher(context.Background(), db, nil, publisher)
 	// @snippet_end
