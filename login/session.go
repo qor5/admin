@@ -65,13 +65,14 @@ type SessionBuilder struct {
 	once              sync.Once
 	calledAutoMigrate atomic.Bool // auto migrate flag
 
-	lb           *login.Builder
-	dbPrimitive  *gorm.DB // primitive db
-	db           *gorm.DB // global db with table prefix scope
-	tablePrefix  string
-	amb          *activity.ModelBuilder
-	pb           *presets.Builder
-	isPublicUser func(user any) bool
+	disableIPCheck bool
+	lb             *login.Builder
+	dbPrimitive    *gorm.DB // primitive db
+	db             *gorm.DB // global db with table prefix scope
+	tablePrefix    string
+	amb            *activity.ModelBuilder
+	pb             *presets.Builder
+	isPublicUser   func(user any) bool
 }
 
 func NewSessionBuilder(lb *login.Builder, db *gorm.DB) *SessionBuilder {
@@ -125,6 +126,11 @@ func AutoMigrateSession(db *gorm.DB, tablePrefix string) error {
 		}
 	}
 	return nil
+}
+
+func (b *SessionBuilder) DisableIPCheck(disabled bool) *SessionBuilder {
+	b.disableIPCheck = disabled
+	return b
 }
 
 func (b *SessionBuilder) GetLoginBuilder() *login.Builder {
@@ -238,8 +244,10 @@ func (b *SessionBuilder) IsSessionValid(r *http.Request, uid string) (valid bool
 		return false, nil
 	}
 	// IP check
-	if sess.IP != ip(r) {
-		return false, nil
+	if !b.disableIPCheck {
+		if sess.IP != ip(r) {
+			return false, nil
+		}
 	}
 	return true, nil
 }
