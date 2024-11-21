@@ -28,6 +28,8 @@ type (
 		SelectData        SelectData        `gorm:"type:json"`
 		CheckboxData      CheckboxData      `gorm:"type:json"`
 		DatepickerData    DatepickerData    `gorm:"type:json"`
+		PaginatorData     PaginationData    `gorm:"type:json"`
+		TabsData          TabsData          `gorm:"type:json"`
 	}
 	FieldData struct {
 		Text         string
@@ -51,6 +53,14 @@ type (
 	}
 	CheckboxData struct {
 		Checkbox bool
+	}
+
+	PaginationData struct {
+		Current int
+	}
+
+	TabsData struct {
+		Tab []string
 	}
 
 	DemoSelectItem struct {
@@ -142,6 +152,28 @@ func (c *DatepickerData) Value() (driver.Value, error) {
 	return json.Marshal(c)
 }
 
+func (c *PaginationData) Scan(value interface{}) error {
+	if bytes, ok := value.([]byte); ok {
+		return json.Unmarshal(bytes, c)
+	}
+	return nil
+}
+
+func (c *PaginationData) Value() (driver.Value, error) {
+	return json.Marshal(c)
+}
+
+func (c *TabsData) Scan(value interface{}) error {
+	if bytes, ok := value.([]byte); ok {
+		return json.Unmarshal(bytes, c)
+	}
+	return nil
+}
+
+func (c *TabsData) Value() (driver.Value, error) {
+	return json.Marshal(c)
+}
+
 func configureDemoCase(b *presets.Builder, db *gorm.DB) {
 	err := db.AutoMigrate(&DemoCase{})
 	if err != nil {
@@ -166,6 +198,8 @@ func configureDemoCase(b *presets.Builder, db *gorm.DB) {
 		"DatepickerSection",
 		"DialogSection",
 		"AvatarSection",
+		"PaginationSection",
+		"TabsSection",
 	)
 	configVxField(detailing, mb)
 	configVxFieldArea(detailing, mb)
@@ -176,6 +210,8 @@ func configureDemoCase(b *presets.Builder, db *gorm.DB) {
 	configVxDatepicker(detailing, mb)
 	configVxDialog(detailing, mb)
 	configVxAvatar(detailing, mb)
+	configVxPagination(detailing, mb)
+	configVxTabs(detailing, mb)
 	return
 }
 
@@ -606,6 +642,98 @@ func configVxAvatar(detailing *presets.DetailingBuilder, mb *presets.ModelBuilde
 				),
 			).Class("section-wrap with-border-b"),
 		).VSlot("{locals}").Init("{dialogVisible:false}")
+	})
+	detailing.Section(section)
+}
+
+func configVxPagination(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder) {
+	label := "vx-pagination"
+	sectionName := "PaginationSection"
+	section := presets.NewSectionBuilder(mb, sectionName).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return web.Scope(
+			h.Div(
+				h.H2(label).Class("section-title"),
+			).Class("section-title-wrap"),
+			h.Div(
+
+				v.VRow(
+					v.VCol(
+						vx.VXPagination().Size("small").Length(99999),
+					),
+					v.VCol(
+						vx.VXPagination().Length(99999),
+					),
+				),
+			).Class("section-wrap with-border-b"),
+		).VSlot("{locals}").Init("{dialogVisible:false}")
+	})
+	detailing.Section(section)
+}
+
+func configVxTabs(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder) {
+	label := "vx-tabs"
+	sectionName := "TabsSection"
+	section := presets.NewSectionBuilder(mb, sectionName).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return web.Scope(
+			h.Div(
+				h.Div(
+					h.H2(label).Class("section-title"),
+				).Class("section-title-wrap"),
+				v.VRow(
+					v.VCol(h.Text("no underline-border")).Cols(3),
+					v.VCol(vx.VXTabs(
+						v.VTab(h.Text("Tab1")).Value(1),
+						v.VTab(h.Text("Tab2")).Value(2),
+						v.VTab(h.Text("Tab3")).Value(3),
+					).Attr("v-model", "locals.tab1"),
+						h.Div(h.Text("current tab value:{{ locals.tab1 }}")),
+					).Cols(9),
+				),
+				v.VRow(
+					v.VCol(h.Text("underline-border: contain")).Cols(3),
+					v.VCol(vx.VXTabs(
+						v.VTab(h.Text("Tab1")).Value(1),
+						v.VTab(h.Text("Tab2")).Value(2),
+						v.VTab(h.Text("Tab3")).Value(3),
+					).Attr("v-model", "locals.tab2").UnderlineBorder("contain"),
+						h.Div(h.Text("current tab value:{{ locals.tab2 }}")),
+					).Cols(9),
+				),
+				v.VRow(
+					v.VCol(h.Text("underline-border: full")).Cols(3),
+					v.VCol(vx.VXTabs(
+						v.VTab(h.Text("Tab1")).Value(1),
+						v.VTab(h.Text("Tab2")).Value(2),
+						v.VTab(h.Text("Tab3")).Value(3),
+					).Attr("v-model", "locals.tab3").UnderlineBorder("full"),
+						h.Div(h.Text("current tab value:{{ locals.tab3 }}")),
+					).Cols(9),
+				),
+
+				v.VRow(
+					v.VCol(h.Text("works with v-tabs-window")).Cols(12),
+					v.VCol(
+						vx.VXTabs(
+							v.VTab(h.Text("Tab1")).Value("tab-1"),
+							v.VTab(h.Text("Tab2")).Value("tab-2"),
+							v.VTab(h.Text("Tab3")).Value("tab-3"),
+						).Attr("v-model", "locals.currentTab").UnderlineBorder("full"),
+						h.Div(h.Text("current tab value:{{ locals.currentTab }}")),
+						v.VTabsWindow(
+							v.VTabsWindowItem(
+								v.VCard(v.VCardText(h.Div(h.Text("tab-1")).Class("border border-dashed text-primary font-weight-bold border-primary text-center border-opacity-100 pa-4"))).Elevation(0),
+							).Value("tab-1"),
+							v.VTabsWindowItem(
+								v.VCard(v.VCardText(h.Div(h.Text("tab-2")).Class("border border-dashed text-primary font-weight-bold border-primary text-center border-opacity-100 pa-4"))).Elevation(0),
+							).Value("tab-2"),
+							v.VTabsWindowItem(
+								v.VCard(v.VCardText(h.Div(h.Text("tab-3")).Class("border border-dashed text-primary font-weight-bold border-primary text-center border-opacity-100 pa-4"))).Elevation(0),
+							).Value("tab-3"),
+						).Attr("v-model", "locals.currentTab"),
+					).Cols(12),
+				),
+			).Class("section-wrap with-border-b"),
+		).VSlot("{locals}").Init("{currentTab: 'tab-1', tab1:1, tab2:2, tab3:3}")
 	})
 	detailing.Section(section)
 }

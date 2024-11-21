@@ -310,10 +310,10 @@ github.com/qor/oss v0.0.0-20240729105053-88484a799a79 h1:MXQCoxxGj15XjuOSdhkLrPs
 github.com/qor/oss v0.0.0-20240729105053-88484a799a79/go.mod h1:FDxJAVwmZ1j8ITcKJExFlzkTYuUor1dBKZgNVWqEqlM=
 github.com/qor5/web v1.3.2 h1:zw796YJeDLe8vRwGR1cM+uS1ZuSkPutchBEXv2GgOhI=
 github.com/qor5/web v1.3.2/go.mod h1:LszskQJbFQDJwOeZC6j6afOiHxxyjrzz8B3zuBwfgKQ=
-github.com/qor5/web/v3 v3.0.11-0.20241030093604-4c400ec73a70 h1:pQoePHKwvgdcKLYLGNNaDQeHMbfPbS6b/Y6R2ZQ2Ay4=
-github.com/qor5/web/v3 v3.0.11-0.20241030093604-4c400ec73a70/go.mod h1:32vdHHcZb2JimlcaclW9hLUyimdXjrllZDHTh3rl6d0=
-github.com/qor5/x/v3 v3.0.13-0.20241114031653-6c758f341d19 h1:3FdS+7gwPpf8SKzEmeGsuCyr4YRWwThwfiKARFv15Hg=
-github.com/qor5/x/v3 v3.0.13-0.20241114031653-6c758f341d19/go.mod h1:5VphExceHH72Q9hmayIH6CGJNBqswsWVGtpz3QOZ/zA=
+github.com/qor5/web/v3 v3.0.11 h1:4J/DbKPl3tYtXRCgqIMCUXSs+bgWkqhvdp/NeGFk/9E=
+github.com/qor5/web/v3 v3.0.11/go.mod h1:32vdHHcZb2JimlcaclW9hLUyimdXjrllZDHTh3rl6d0=
+github.com/qor5/x/v3 v3.0.13 h1:9ifASmJIrQ4jqz105jNS9lsHl4uIwGQ4aqw+I69F+Iw=
+github.com/qor5/x/v3 v3.0.13/go.mod h1:QLn8B+adYmg8OAvohZZ/HUU8hzL4i/3xll2IL9v4B6E=
 github.com/robfig/cron/v3 v3.0.1/go.mod h1:eQICP3HwyT7UooqI/z+Ov+PtYAWygg1TEWWzGIFLtro=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.12.0 h1:exVL4IDcn6na9z1rAb56Vxr+CgyK3nn3O+epU5NdKM8=
@@ -388,8 +388,8 @@ github.com/theplant/inject v0.0.1 h1:Iq7IULL4OgrRYZzEYGKaXhh60aVDjG+3NEezUlr8+iM
 github.com/theplant/inject v0.0.1/go.mod h1:vuuYp7lKifex8HfI4izobKSqulfhpWIvGvW2/pP4Rqo=
 github.com/theplant/osenv v0.0.2 h1:SI2I/gLQQj5pQgpBQ8YKx/u4i7KE7yG2Gmr/ZORuxn8=
 github.com/theplant/osenv v0.0.2/go.mod h1:gUdlLzvmJb/dyBmXk+qEWiIhAN1tmVhYktzK1HHEz3c=
-github.com/theplant/relay v0.2.1 h1:K3SnePRTm/p4usrrrkUNsdg/nBZMzY0TEzAfIdawsqE=
-github.com/theplant/relay v0.2.1/go.mod h1:pF6+UcAs0UEbZ4rnjB8/upjZD8y8xA2iQwqkffkKE2g=
+github.com/theplant/relay v0.3.1 h1:1PwRsqF5Qoa4bRabdcedGOHuoEPyATJpld4CU+/Diew=
+github.com/theplant/relay v0.3.1/go.mod h1:pF6+UcAs0UEbZ4rnjB8/upjZD8y8xA2iQwqkffkKE2g=
 github.com/theplant/sliceutils v0.0.0-20200406042209-89153d988eb1 h1:EP+XW/tiUH8Cr1MSu7wKhpUnt4QzbVv5J5CoB6R32S4=
 github.com/theplant/sliceutils v0.0.0-20200406042209-89153d988eb1/go.mod h1:+y978w//UsVK85wVF9XJey9qTGDv+4kQc8v3Mf/ZjmE=
 github.com/theplant/testenv v0.0.1 h1:L9ygUPZDrHwRoMDfopXuq1+szEs05pYUwcFaZtSZ4X0=
