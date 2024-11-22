@@ -279,6 +279,72 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, isEditor, isI
 
 func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext, obj interface{}, locale string, isEditor, isIframe, isReadonly bool) (r h.HTMLComponent) {
 	r = h.Components(comps...)
+	_, width := b.builder.getDevice(ctx)
+
+	defer func() {
+		if isEditor && isIframe {
+			r = h.Div(
+				h.Div(r).Style("display:flex;justify-content: center"),
+			).Class("ma-2").
+				Attr("v-on-mounted", `({el,watch,window})=>{
+
+				let iframeWidth = el.firstElementChild.firstElementChild.style.width.replace("px","") 
+				if(iframeWidth=='100%'||!parseFloat(iframeWidth)){
+					iframeWidth =  window.innerWidth
+				}
+				const setStyleTransform = (element,scale,skipPercentage)=>{
+					element.style.transformOrigin="0 0";
+					element.style.transform = "scale("+scale +")";
+					if (skipPercentage){return}
+					const backScale = (1/scale)
+					const percentage=backScale * 100 + "%";
+					element.style.width = percentage;
+					element.style.height = percentage;
+				}
+				const setEditorStyle = (iframeDocument,selector,scale,currentWidth)=>{
+				let skipPercentage = true;
+				if(selector=='.inner-shadow'){
+					skipPercentage = false;
+				}
+				for (const editor of iframeDocument.querySelectorAll(selector)){
+					if(selector=='.editor-add'){
+						editor.style.width = currentWidth +"px";
+					}
+					setStyleTransform(editor,scale,skipPercentage)
+					}
+				}
+				const setAllEditorStyle = (iframeDocument,scale,currentWidth)=>{
+						setEditorStyle(iframeDocument,'.editor-bar',scale,currentWidth)
+						setEditorStyle(iframeDocument,'.editor-add',scale,currentWidth)
+						setEditorStyle(iframeDocument,'.inner-shadow',scale,currentWidth)
+					}
+				const setTransform = ()=>{
+					const iframe = vars.el.refs.scrollIframe.querySelector('iframe');
+      				const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+					let currentWidth = el.getBoundingClientRect().width
+					console.log(currentWidth,iframeWidth)
+					el.firstElementChild.setAttribute("style","display:flex;justify-content: center")
+					if (currentWidth>=iframeWidth){
+					setAllEditorStyle(iframeDocument,1,"100%")
+					return	
+					}
+					const scale = (currentWidth/iframeWidth)
+					setStyleTransform(el.firstElementChild,scale,false)
+					const backScale = (1/scale)
+					setAllEditorStyle(iframeDocument,backScale,currentWidth)
+				}
+				vars.__setTransform = ()=>{
+					window.setTimeout(()=>{
+						setTransform()
+					},200)
+				}
+				setTransform()
+			}	
+`)
+		}
+
+	}()
+
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 	var (
 		title string
@@ -316,7 +382,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			}
 
 			.inner-shadow {
-				pointer-events: none;
+              pointer-events: none;
 			  position: absolute;
 			  width: 100%;
 			  height: 100%;
@@ -455,7 +521,6 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 					).Class("front"),
 				).Attr(newCtx.Injector.HTMLLangAttrs()...),
 			}
-			_, width := b.builder.getDevice(ctx)
 
 			scrollIframe := vx.VXScrollIframe().
 				Srcdoc(h.MustString(r, ctx.R.Context())).

@@ -186,7 +186,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 				vars.$PagebuilderResizeFn = null
 				vars.$pbRightThrottleTimer = null
 			}`)).
-				Attr("v-on-mounted", fmt.Sprintf(`({ref, window, computed})=>{
+				Attr("v-on-mounted", fmt.Sprintf(`({ref, window, computed,watch})=>{
 				vars.$pbLeftDrawerFolded = window.localStorage.getItem("$pbLeftDrawerFolded") === '1'
 				vars.$pbRightDrawerFolded = window.localStorage.getItem("$pbRightDrawerFolded") === '1'
 				vars.$pbLeftDrawerWidth = computed(()=>vars.$pbLeftDrawerFolded ? 32 : 350)
@@ -199,6 +199,12 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 				vars.$window = window
 				vars.$pbRightThrottleTimer = null
 
+				watch(()=>vars.$pbRightDrawerWidth,()=>{
+					if (vars.__setTransform){vars.__setTransform()}
+				})
+				watch(()=>vars.$pbLeftDrawerWidth,()=>{
+					if (vars.__setTransform){vars.__setTransform()}
+				})
 				vars.$PagebuilderResizeFn = () => {
 					if(vars.$pbRightDrawerFolded) return
 					
@@ -371,7 +377,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 				addOverlay,
 				vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction(ctx)),
 				tabContent.Body.(h.HTMLComponent),
-			).Attr(web.VAssign("vars", "{overlayEl:$}")...).Class("ma-2"),
+			).Attr(web.VAssign("vars", "{overlayEl:$}")...),
 		)
 		r.PageTitle = m.mb.Info().Label()
 		return
@@ -386,6 +392,9 @@ func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string)
 	for _, d := range b.devices {
 		if d.Name == device {
 			style = d.Width
+			if style == "" {
+				style = "100%"
+			}
 			return
 		}
 	}
@@ -534,7 +543,7 @@ func (b *Builder) containerWrapper(r *h.HTMLTagBuilder, ctx *web.EventContext, i
 		} else {
 			r = h.Div(
 				h.Div().Class("inner-shadow"),
-				r.Attr("onclick", "event.stopPropagation();document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('highlight')});this.parentElement.classList.add('highlight');"+pmb.postMessage(EventEdit)),
+				h.Div(h.Div(r).Style("pointer-events:none")).Attr("onclick", "event.stopPropagation();document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('highlight')});this.parentElement.classList.add('highlight');"+pmb.postMessage(EventEdit)),
 				h.Div(
 					h.Div(h.Text(input.DisplayName)).Class("title"),
 					h.Div(
@@ -544,9 +553,20 @@ func (b *Builder) containerWrapper(r *h.HTMLTagBuilder, ctx *web.EventContext, i
 					).Class("editor-bar-buttons"),
 				).Class("editor-bar"),
 				h.Div(
-					h.Div().Class("add"),
-					h.Button("").Children(h.I("add").Class("material-icons")).Attr("onclick", pmb.postMessage(EventAdd)),
-				).Class("editor-add"),
+					h.Div().Class("inner-shadow"),
+					h.Div(
+						h.Div(h.Text(input.DisplayName)).Class("title"),
+						h.Div(
+							h.Button("").Children(h.I("arrow_upward").Class("material-icons")).Attr("onclick", pmb.postMessage(EventUp)),
+							h.Button("").Children(h.I("arrow_downward").Class("material-icons")).Attr("onclick", pmb.postMessage(EventDown)),
+							h.Button("").Children(h.I("delete").Class("material-icons")).Attr("onclick", pmb.postMessage(EventDelete)),
+						).Class("editor-bar-buttons"),
+					).Class("editor-bar"),
+					h.Div(
+						h.Div().Class("add"),
+						h.Button("").Children(h.I("add").Class("material-icons")).Attr("onclick", pmb.postMessage(EventAdd)),
+					).Class("editor-add"),
+				).Class("editor"),
 			).Class("wrapper-shadow").ClassIf("highlight", ctx.Param(paramContainerDataID) == containerDataID)
 		}
 	}
