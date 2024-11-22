@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta content="yes" name="apple-mobile-web-app-capable" />
+    <meta content="black" name="apple-mobile-web-app-status-bar-style" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <meta name="format-detection" content="telephone=no" />
+    <link
+      href="https://the-plant.com/assets/app/container.4f902c4.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <link
+      href="https://rsms.me/inter/inter.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <script type="text/javascript" src="https://cdn.tailwindcss.com"></script>
+    <script
+      type="text/javascript"
+      src="//unpkg.com/alpinejs"
+      defer="true"
+    ></script>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+    />
+    <script type="text/javascript">
+      try {
+        tailwind.config = {
+          theme: {
+            extend: {
+              fontFamily: {
+                sans: ['InterVariable', 'sans-serif'],
+              },
+            },
+          },
+        }
+      } catch (error) {
+        console.log(error)
+      }
+    </script>
+
+    <style>
+      .tailwind-scope {
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        a,
+        p {
+          font-family: InterVariable, system-ui, sans-serif;
+          line-height: initial;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="tailwind-scope">
+      <div class="flex-wrap lg:h-[400px] md:h-[300px] bg-gray-100">
+        <div
+          class="mx-auto max-w-5xl lg:flex md:flex items-center justify-center h-full lg:px-14 lg:py-0 md:py-0 p-7"
+        >
+          <div class="lg:w-auto md:w-auto flex justify-start">
+            <img
+              src="https://via.placeholder.com/308x252"
+              alt="Left-aligned image"
+              class="w-full"
+            />
+          </div>
+          <div
+            class="lg:flex md:flex flex-col lg:h-[252px] md:h-[183px] justify-between lg:flex-1 md:w-full text-left lg:pl-20 md:pl-10 lg:mt-0 md:mt-0 lg:text-left md:text-left text-center mt-8"
+          >
+            <div>
+              <h1
+                class="text-3xl md:text-2xl text-black opacity-80 font-bold mb-1"
+              >
+                Testimonial introduction copy goes here, lorem ipsum dolor sit
+                amet.
+              </h1>
+              <p class="text-black opacity-80 font-medium sm:text-sm">
+                “Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                suspendisse tincidunt sagitis eros. Quisque quis euismod lorem"
+              </p>
+            </div>
+            <div>
+              <h2
+                class="text-2xl md:text-xl text-black opacity-80 font-bold mb-2 lg:mt-0 md:mt-0 mt-8"
+              >
+                Author Name
+              </h2>
+              <p
+                class="text-pretty text-black opacity-80 font-medium sm:text-sm"
+              >
+                Co-Founder and CEO of Company
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
