@@ -553,20 +553,9 @@ func (b *Builder) containerWrapper(r *h.HTMLTagBuilder, ctx *web.EventContext, i
 					).Class("editor-bar-buttons"),
 				).Class("editor-bar"),
 				h.Div(
-					h.Div().Class("inner-shadow"),
-					h.Div(
-						h.Div(h.Text(input.DisplayName)).Class("title"),
-						h.Div(
-							h.Button("").Children(h.I("arrow_upward").Class("material-icons")).Attr("onclick", pmb.postMessage(EventUp)),
-							h.Button("").Children(h.I("arrow_downward").Class("material-icons")).Attr("onclick", pmb.postMessage(EventDown)),
-							h.Button("").Children(h.I("delete").Class("material-icons")).Attr("onclick", pmb.postMessage(EventDelete)),
-						).Class("editor-bar-buttons"),
-					).Class("editor-bar"),
-					h.Div(
-						h.Div().Class("add"),
-						h.Button("").Children(h.I("add").Class("material-icons")).Attr("onclick", pmb.postMessage(EventAdd)),
-					).Class("editor-add"),
-				).Class("editor"),
+					h.Div().Class("add"),
+					h.Button("").Children(h.I("add").Class("material-icons")).Attr("onclick", pmb.postMessage(EventAdd)),
+				).Class("editor-add"),
 			).Class("wrapper-shadow").ClassIf("highlight", ctx.Param(paramContainerDataID) == containerDataID)
 		}
 	}

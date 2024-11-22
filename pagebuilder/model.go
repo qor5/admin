@@ -287,7 +287,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 				h.Div(r).Style("display:flex;justify-content: center"),
 			).Class("ma-2").
 				Attr("v-on-mounted", `({el,watch,window})=>{
-
+				const iframe = vars.el.refs.scrollIframe.querySelector('iframe');
 				let iframeWidth = el.firstElementChild.firstElementChild.style.width.replace("px","") 
 				if(iframeWidth=='100%'||!parseFloat(iframeWidth)){
 					iframeWidth =  window.innerWidth
@@ -319,10 +319,8 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 						setEditorStyle(iframeDocument,'.inner-shadow',scale,currentWidth)
 					}
 				const setTransform = ()=>{
-					const iframe = vars.el.refs.scrollIframe.querySelector('iframe');
       				const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
 					let currentWidth = el.getBoundingClientRect().width
-					console.log(currentWidth,iframeWidth)
 					el.firstElementChild.setAttribute("style","display:flex;justify-content: center")
 					if (currentWidth>=iframeWidth){
 					setAllEditorStyle(iframeDocument,1,"100%")
@@ -338,7 +336,8 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 						setTransform()
 					},200)
 				}
-				setTransform()
+				iframe.addEventListener('load',setTransform)
+				
 			}	
 `)
 		}
