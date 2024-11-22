@@ -104,7 +104,7 @@ func RegisterHeroContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 func HeroBody(data *Hero, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	// if there is no image, use default image "https://via.placeholder.com/308x252"
 	imgUrl := ""
-	if data.ImgArea.Image.Url == "" {
+	if data.ImgArea.Image.URL() == "" {
 		imgUrl = "https://via.placeholder.com/308x252"
 	}
 
