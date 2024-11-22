@@ -327,7 +327,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 					return	
 					}
 					const scale = (currentWidth/iframeWidth)
-					setStyleTransform(el.firstElementChild,scale,false)
+					setStyleTransform(iframe,scale,false)
 					const backScale = (1/scale)
 					setAllEditorStyle(iframeDocument,backScale,currentWidth)
 				}
