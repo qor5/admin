@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/qor/oss"
 	"github.com/qor5/admin/v3/publish"
+	"github.com/qor5/x/v3/oss"
 	"github.com/stretchr/testify/require"
 	"github.com/theplant/sliceutils"
 	"github.com/theplant/testenv"
@@ -172,7 +172,7 @@ type MockStorage struct {
 	Objects map[string]string
 }
 
-func (m *MockStorage) Get(path string) (f *os.File, err error) {
+func (m *MockStorage) Get(ctx context.Context, path string) (f *os.File, err error) {
 	content, exist := m.Objects[path]
 	if !exist {
 		err = fmt.Errorf("NoSuchKey: %s", path)
@@ -188,7 +188,7 @@ func (m *MockStorage) Get(path string) (f *os.File, err error) {
 	return
 }
 
-func (m *MockStorage) Put(path string, r io.Reader) (*oss.Object, error) {
+func (m *MockStorage) Put(ctx context.Context, path string, r io.Reader) (*oss.Object, error) {
 	fmt.Println("Calling mock s3 client - Put: ", path)
 	b, err := io.ReadAll(r)
 	if err != nil {
@@ -202,7 +202,7 @@ func (m *MockStorage) Put(path string, r io.Reader) (*oss.Object, error) {
 	return &oss.Object{}, nil
 }
 
-func (m *MockStorage) Delete(path string) error {
+func (m *MockStorage) Delete(ctx context.Context, path string) error {
 	fmt.Println("Calling mock s3 client - Delete: ", path)
 	delete(m.Objects, path)
 	return nil
@@ -760,7 +760,7 @@ func assertContentDeleted(t *testing.T, url string, storage oss.StorageInterface
 	t.Helper()
 
 	t.Helper()
-	_, err := storage.Get(url)
+	_, err := storage.Get(context.Background(), url)
 	if err == nil {
 		t.Errorf("content for %s should be deleted", url)
 	}
@@ -783,7 +783,7 @@ func assertNoVersionUpdateStatus(t *testing.T, db *gorm.DB, p *ProductWithoutVer
 
 func assertUploadFile(t *testing.T, content string, url string, storage oss.StorageInterface) {
 	t.Helper()
-	f, err := storage.Get(url)
+	f, err := storage.Get(context.Background(), url)
 	if err != nil {
 		t.Fatal(err)
 	}

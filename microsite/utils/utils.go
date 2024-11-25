@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -8,7 +9,7 @@ import (
 	"path"
 	"time"
 
-	"github.com/qor/oss"
+	"github.com/qor5/x/v3/oss"
 )
 
 func Upload(storage oss.StorageInterface, path string, reader io.Reader) (err error) {
@@ -22,7 +23,7 @@ func Upload(storage oss.StorageInterface, path string, reader io.Reader) (err er
 			log.Printf("upload: %s, time_spent_ms: %s \n", path, fmt.Sprintf("%f", float64(timeFinish.Sub(timeBegin))/float64(time.Millisecond)))
 		}
 	}()
-	_, err = storage.Put(path, reader)
+	_, err = storage.Put(context.Background(), path, reader)
 	if err != nil {
 		err = errors.New(fmt.Sprintf("upload error: %v, path: %v", err, path))
 		return
@@ -64,7 +65,7 @@ func DeleteObjects(storage oss.StorageInterface, paths []string) (err error) {
 	}
 
 	for _, v := range paths {
-		err = storage.Delete(v)
+		err = storage.Delete(context.Background(), v)
 		if err != nil {
 			err = errors.New(fmt.Sprintf("delete error: %v, path: %v", err, v))
 			return

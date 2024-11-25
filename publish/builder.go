@@ -11,12 +11,12 @@ import (
 	"sync"
 
 	"github.com/iancoleman/strcase"
-	"github.com/qor/oss"
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/oss"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
@@ -601,13 +601,14 @@ func (b *Builder) defaultUnPublish(ctx context.Context, record any) (err error) 
 }
 
 func UploadOrDelete(objs []*PublishAction, storage oss.StorageInterface) (err error) {
+	ctx := context.Background()
 	for _, obj := range objs {
 		if obj.IsDelete {
 			fmt.Printf("deleting %s \n", obj.Url)
-			err = storage.Delete(obj.Url)
+			err = storage.Delete(ctx, obj.Url)
 		} else {
 			fmt.Printf("uploading %s \n", obj.Url)
-			_, err = storage.Put(obj.Url, strings.NewReader(obj.Content))
+			_, err = storage.Put(ctx, obj.Url, strings.NewReader(obj.Content))
 		}
 		if err != nil {
 			return
@@ -645,6 +646,7 @@ func setPrimaryKeysConditionWithoutFields(db *gorm.DB, record interface{}, s *sc
 }
 
 func (b *Builder) FullUrl(uri string) (s string) {
-	s, _ = b.storage.GetURL(uri)
-	return strings.TrimSuffix(b.storage.GetEndpoint(), "/") + "/" + strings.Trim(s, "/")
+	ctx := context.Background()
+	s, _ = b.storage.GetURL(ctx, uri)
+	return strings.TrimSuffix(b.storage.GetEndpoint(ctx), "/") + "/" + strings.Trim(s, "/")
 }
