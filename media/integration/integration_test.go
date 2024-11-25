@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/qor/oss/filesystem"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/multipartestutils"
+	"github.com/qor5/x/v3/oss/filesystem"
 	"github.com/theplant/testenv"
 	"gorm.io/gorm"
 

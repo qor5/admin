@@ -5,16 +5,15 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/qor/oss/filesystem"
-	"github.com/qor5/web/v3"
-	. "github.com/qor5/web/v3/multipartestutils"
-	"github.com/theplant/gofixtures"
-
 	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/media/media_library"
 	media_oss "github.com/qor5/admin/v3/media/oss"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
+	"github.com/qor5/web/v3"
+	. "github.com/qor5/web/v3/multipartestutils"
+	"github.com/qor5/x/v3/oss/filesystem"
+	"github.com/theplant/gofixtures"
 )
 
 var allowTypesMediaData = gofixtures.Data(gofixtures.Sql(`

@@ -5,11 +5,9 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/qor5/admin/v3/utils"
-
 	"github.com/qor5/admin/v3/l10n"
-
-	"github.com/qor/oss"
+	"github.com/qor5/admin/v3/utils"
+	"github.com/qor5/x/v3/oss"
 	"gorm.io/gorm"
 )
 
