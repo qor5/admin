@@ -534,7 +534,7 @@ func (b *Builder) containerWrapper(r *h.HTMLTagBuilder, ctx *web.EventContext, i
 		} else {
 			r = h.Div(
 				h.Div().Class("inner-shadow"),
-				r.Attr("onclick", "event.stopPropagation();document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('highlight')});this.parentElement.classList.add('highlight');"+pmb.postMessage(EventEdit)),
+				h.Div(h.Div(r).Attr("style", "pointer-events:none")).Attr("onclick", "event.stopPropagation();document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('highlight')});this.parentElement.classList.add('highlight');"+pmb.postMessage(EventEdit)),
 				h.Div(
 					h.Div(h.Text(input.DisplayName)).Class("title"),
 					h.Div(
