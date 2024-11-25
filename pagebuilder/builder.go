@@ -1481,7 +1481,7 @@ func (b *Builder) setDefaultDevices() {
 		// {Name: DeviceComputer, Width: "", Icon: "mdi-desktop-mac"},
 		// {Name: DevicePhone, Width: "414px", Icon: "mdi-tablet-android"},
 		// {Name: DeviceTablet, Width: "768px", Icon: "mdi-tablet"},
-		{Name: DeviceComputer, Width: "", Icon: "mdi-monitor"},
+		{Name: DeviceComputer, Width: "1440px", Icon: "mdi-monitor"},
 		{Name: DevicePhone, Width: "414px", Icon: "mdi-cellphone"},
 		{Name: DeviceTablet, Width: "768px", Icon: "mdi-tablet"},
 	}

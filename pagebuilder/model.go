@@ -323,7 +323,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			  opacity: 0;
 			  top: 0;
 			  left: 0;
-			  box-shadow: 3px 3px 0 0px #3E63DD inset, -3px 3px 0 0px #3E63DD inset,3px -3px 0 0px #3E63DD inset;
+			  box-shadow: 2px 2px 0 0px #3E63DD inset, -2px 2px 0 0px #3E63DD inset,2px -2px 0 0px #3E63DD inset;
 				z-index:201;
 			}
 			
@@ -339,7 +339,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			.editor-add div {
 			  width: 100%;
 			  background-color: #3E63DD;
-			  height: 3px;
+			  height: 2px;
 			}
 			
 			.editor-add button {
@@ -363,10 +363,10 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			}
 			
 			.wrapper-shadow:hover .editor-add div {
-			  height: 6px;
+			  height: 4px;
 			}
 			.highlight .editor-add div{
-              height: 3px !important;	
+              height: 2px !important;	
 			}		
 			.editor-bar {
 			  position: absolute;
