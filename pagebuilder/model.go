@@ -461,6 +461,23 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 				Srcdoc(h.MustString(r, ctx.R.Context())).
 				IframeHeightName(cookieHeightName).
 				IframeHeight(iframeValue).
+				Attr("v-on-mounted", fmt.Sprintf(`({el,window}) => {
+							if(vars.__pageBuilderContentScroll && (vars.__pageBuilderContentScroll.top||vars.__pageBuilderContentScroll.left)){
+							const {top,left} = vars.__pageBuilderContentScroll;
+							const iframe = el.querySelector("iframe")
+							iframe.addEventListener('load',()=>{
+								el.scrollTop = top;
+								el.scrollLeft = left;
+							})
+							}
+							el.__handleIframeScroll = (event) => {
+								vars.__pageBuilderContentScroll = {top:event.target.scrollTop,left:event.target.scrollLeft};
+
+							}
+							el.addEventListener('scroll', el.__handleIframeScroll)
+						}`)).Attr("v-on-unmounted", `({el}) => {
+							el.removeEventListener('scroll', el.__handleIframeScroll);
+						}`).
 				Width(width).Attr("ref", "scrollIframe").VirtualElementText(msgr.NewContainer)
 			if isEditor {
 				scrollIframe.Attr(web.VAssign("vars", `{el:$}`)...)
