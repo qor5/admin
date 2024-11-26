@@ -11,6 +11,7 @@ type Messages struct {
 	SessionTableHeaderLocation       string
 	SessionTableHeaderIPAddress      string
 	SessionTableHeaderStatus         string
+	SessionTableHeaderActions        string
 	SessionsDialogTitle              string
 	SessionStatusExpired             string
 	SessionStatusActive              string
@@ -18,6 +19,7 @@ type Messages struct {
 	HideIPAddressTips                string
 	ExpireOtherSessions              string
 	SuccessfullyExpiredOtherSessions string
+	SuccessfullyExpiredSessions      string
 	UnreadMessagesTemplate           string
 	ViewLoginSessions                string
 	Logout                           string
@@ -53,6 +55,7 @@ var Messages_en_US = &Messages{
 	SessionTableHeaderLocation:       "Location",
 	SessionTableHeaderIPAddress:      "IP Address",
 	SessionTableHeaderStatus:         "Status",
+	SessionTableHeaderActions:        "Actions",
 	SessionsDialogTitle:              "Login Sessions",
 	SessionStatusExpired:             "Expired",
 	SessionStatusActive:              "Active",
@@ -60,6 +63,7 @@ var Messages_en_US = &Messages{
 	HideIPAddressTips:                "Invisible due to security concerns",
 	ExpireOtherSessions:              "Sign out all other sessions",
 	SuccessfullyExpiredOtherSessions: "All other sessions have successfully been signed out.",
+	SuccessfullyExpiredSessions:      "Session has successfully been signed out.",
 	UnreadMessagesTemplate:           "{n} unread notes",
 	ViewLoginSessions:                "View login sessions",
 	Logout:                           "Logout",
@@ -90,6 +94,7 @@ var Messages_zh_CN = &Messages{
 	SessionTableHeaderLocation:       "位置",
 	SessionTableHeaderIPAddress:      "IP地址",
 	SessionTableHeaderStatus:         "状态",
+	SessionTableHeaderActions:        "操作",
 	SessionsDialogTitle:              "登录会话",
 	SessionStatusExpired:             "已过期",
 	SessionStatusActive:              "有效",
@@ -97,6 +102,7 @@ var Messages_zh_CN = &Messages{
 	HideIPAddressTips:                "由于安全原因，隐藏",
 	ExpireOtherSessions:              "登出所有其他会话",
 	SuccessfullyExpiredOtherSessions: "所有其他会话已成功登出。",
+	SuccessfullyExpiredSessions:      "会话已成功登出。",
 	UnreadMessagesTemplate:           "未读 {n} 条",
 	ViewLoginSessions:                "查看登录会话",
 	Logout:                           "登出",
@@ -127,6 +133,7 @@ var Messages_ja_JP = &Messages{
 	SessionTableHeaderLocation:       "位置",
 	SessionTableHeaderIPAddress:      "IPアドレス",
 	SessionTableHeaderStatus:         "ステータス",
+	SessionTableHeaderActions:        "アクション",
 	SessionsDialogTitle:              "ログインセッション",
 	SessionStatusExpired:             "期限切れ",
 	SessionStatusActive:              "有効",
@@ -134,6 +141,7 @@ var Messages_ja_JP = &Messages{
 	HideIPAddressTips:                "セキュリティ保護のため表示できません",
 	ExpireOtherSessions:              "他のすべてのセッションからサインアウトする",
 	SuccessfullyExpiredOtherSessions: "他のすべてのセッションは正常にサインアウトされました。",
+	SuccessfullyExpiredSessions:      "セッションは正常にサインアウトされました。",
 	UnreadMessagesTemplate:           "{n} 件の未読",
 	ViewLoginSessions:                "ログインセッションを表示",
 	Logout:                           "ログアウト",

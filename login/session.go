@@ -49,6 +49,7 @@ func (b *SessionBuilder) installPreset(pb *presets.Builder) error {
 	mb := b.pb.Model(&LoginSessionsDialog{}).URIName(uriNameLoginSessionsDialog).InMenu(false)
 	mb.RegisterEventFunc(eventLoginSessionsDialog, b.handleEventLoginSessionsDialog)
 	mb.RegisterEventFunc(eventExpireOtherSessions, b.handleEventExpireOtherSessions)
+	mb.RegisterEventFunc(eventExpireSession, b.handleEventExpireSession)
 	return nil
 }
 
@@ -221,6 +222,17 @@ func (b *SessionBuilder) ExpireOtherSessions(r *http.Request, uid string) error 
 	return nil
 }
 
+func (b *SessionBuilder) ExpireSession(uid, tokenHash string) error {
+	if err := b.db.Model(&LoginSession{}).
+		Where("user_id = ? and token_hash = ?", uid, tokenHash).
+		Updates(map[string]any{
+			"expired_at": b.db.NowFunc(),
+		}).Error; err != nil {
+		return errors.Wrap(err, "login: failed to expire session")
+	}
+	return nil
+}
+
 func (b *SessionBuilder) IsSessionValid(r *http.Request, uid string) (valid bool, err error) {
 	token := login.GetSessionToken(b.lb, r)
 	if token == "" {
@@ -385,6 +397,7 @@ const (
 	uriNameLoginSessionsDialog = "login-sessions-dialog"
 	eventLoginSessionsDialog   = "loginSession_eventLoginSessionsDialog"
 	eventExpireOtherSessions   = "loginSession_eventExpireOtherSessions"
+	eventExpireSession         = "loginSession_eventExpireSession"
 )
 
 func (b *SessionBuilder) OpenSessionsDialog() string {
@@ -484,13 +497,29 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 		wrappers = append(wrappers, w)
 	}
 	tableHeaders := []dataTableHeader{
-		{msgr.SessionTableHeaderTime, "Time", "20%", false},
-		{msgr.SessionTableHeaderDevice, "Device", "25%", false},
-		{msgr.SessionTableHeaderLocation, "Location", "20%", false},
-		{msgr.SessionTableHeaderIPAddress, "IP", "15%", false},
-		{msgr.SessionTableHeaderStatus, "Status", "20%", false},
+		{Title: msgr.SessionTableHeaderTime, Key: "Time", Sortable: false},
+		{Title: msgr.SessionTableHeaderDevice, Key: "Device", Sortable: false},
+		{Title: msgr.SessionTableHeaderLocation, Key: "Location", Sortable: false},
+		{Title: msgr.SessionTableHeaderIPAddress, Key: "IP", Sortable: false},
+		{Title: msgr.SessionTableHeaderStatus, Key: "Status", Sortable: false},
+		{Title: msgr.SessionTableHeaderActions, Key: "Actions", Sortable: false},
 	}
-	table := v.VDataTable().Headers(tableHeaders).Items(wrappers).ItemsPerPage(-1).HideDefaultFooter(true)
+	table := v.VDataTable().Headers(tableHeaders).Items(wrappers).ItemsPerPage(-1).HideDefaultFooter(true).Children(
+		web.Slot().Name("item.Actions").Scope("{ item }").Children(
+			h.Div(
+				v.VBtn(msgr.Logout).
+					Size(v.SizeSmall).
+					Attr(":disabled", fmt.Sprintf(`item.Status == '%s'`, msgr.SessionStatusExpired)).
+					Attr("@click", web.POST().
+						URL("/"+uriNameLoginSessionsDialog).
+						EventFunc(eventExpireSession).
+						Query("uid", web.Var("item.UserID")).
+						Query("token_hash", web.Var("item.TokenHash")).
+						Go(),
+					),
+			),
+		),
+	)
 
 	body := web.Scope().VSlot("{locals: xlocals}").Init("{dialog:true}").Children(
 		v.VDialog().Attr("v-model", "xlocals.dialog").Width("60%").MaxWidth(828).Scrollable(true).Children(
@@ -553,5 +582,30 @@ func (b *SessionBuilder) handleEventExpireOtherSessions(ctx *web.EventContext) (
 
 	presets.ShowMessage(&r, msgr.SuccessfullyExpiredOtherSessions, "")
 	web.AppendRunScripts(&r, web.Plaid().MergeQuery(true).Go())
+	return
+}
+
+func (b *SessionBuilder) handleEventExpireSession(ctx *web.EventContext) (r web.EventResponse, err error) {
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nAdminLoginKey, Messages_en_US).(*Messages)
+
+	user := login.GetCurrentUser(ctx.R)
+	if user == nil {
+		return r, errors.New("login: user not found")
+	}
+	isPublicUser := false
+	if b.isPublicUser != nil {
+		isPublicUser = b.isPublicUser(user)
+	}
+	if isPublicUser {
+		return r, perm.PermissionDenied
+	}
+	uid, tokenHash := ctx.R.FormValue("uid"), ctx.R.FormValue("token_hash")
+
+	if err = b.ExpireSession(uid, tokenHash); err != nil {
+		return r, err
+	}
+
+	presets.ShowMessage(&r, msgr.SuccessfullyExpiredSessions, "")
+	web.AppendRunScripts(&r, web.Plaid().URL("/"+uriNameLoginSessionsDialog).EventFunc(eventLoginSessionsDialog).MergeQuery(true).Go())
 	return
 }
