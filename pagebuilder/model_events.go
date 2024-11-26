@@ -39,7 +39,7 @@ func (b *ModelBuilder) registerFuncs() {
 	b.editor.RegisterEventFunc(ToggleContainerVisibilityEvent, b.eventMiddleware(b.toggleContainerVisibility))
 	b.editor.RegisterEventFunc(RenameContainerDialogEvent, b.eventMiddleware(b.renameContainerDialog))
 	b.editor.RegisterEventFunc(RenameContainerEvent, b.eventMiddleware(b.renameContainer))
-	b.editor.RegisterEventFunc(ReloadRenderPageOrTemplateEvent, b.eventMiddleware(b.reloadRenderPageOrTemplate))
+	b.editor.RegisterEventFunc(ReloadRenderPageOrTemplateEvent, b.reloadRenderPageOrTemplate)
 	b.editor.RegisterEventFunc(MarkAsSharedContainerEvent, b.eventMiddleware(b.markAsSharedContainer))
 	b.editor.RegisterEventFunc(ContainerPreviewEvent, b.eventMiddleware(b.containerPreview))
 	b.editor.RegisterEventFunc(ReplicateContainerEvent, b.eventMiddleware(b.replicateContainer))
@@ -443,7 +443,7 @@ func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.Event
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr    = presets.MustGetMessages(ctx.R)
 		okAction = web.Plaid().
-				EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
+			EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
 		portalName = dialogPortalName
 	)
 
