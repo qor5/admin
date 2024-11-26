@@ -11,6 +11,7 @@ type Messages struct {
 	SessionTableHeaderLocation       string
 	SessionTableHeaderIPAddress      string
 	SessionTableHeaderStatus         string
+	SessionTableHeaderLastActiveTime string
 	SessionTableHeaderActions        string
 	SessionsDialogTitle              string
 	SessionStatusExpired             string
@@ -55,6 +56,7 @@ var Messages_en_US = &Messages{
 	SessionTableHeaderLocation:       "Location",
 	SessionTableHeaderIPAddress:      "IP Address",
 	SessionTableHeaderStatus:         "Status",
+	SessionTableHeaderLastActiveTime: "Last Active Time",
 	SessionTableHeaderActions:        "Actions",
 	SessionsDialogTitle:              "Login Sessions",
 	SessionStatusExpired:             "Expired",
@@ -94,6 +96,7 @@ var Messages_zh_CN = &Messages{
 	SessionTableHeaderLocation:       "位置",
 	SessionTableHeaderIPAddress:      "IP地址",
 	SessionTableHeaderStatus:         "状态",
+	SessionTableHeaderLastActiveTime: "最后活跃时间",
 	SessionTableHeaderActions:        "操作",
 	SessionsDialogTitle:              "登录会话",
 	SessionStatusExpired:             "已过期",
@@ -133,6 +136,7 @@ var Messages_ja_JP = &Messages{
 	SessionTableHeaderLocation:       "位置",
 	SessionTableHeaderIPAddress:      "IPアドレス",
 	SessionTableHeaderStatus:         "ステータス",
+	SessionTableHeaderLastActiveTime: "最終アクティブ",
 	SessionTableHeaderActions:        "アクション",
 	SessionsDialogTitle:              "ログインセッション",
 	SessionStatusExpired:             "期限切れ",

@@ -56,11 +56,12 @@ func (b *SessionBuilder) installPreset(pb *presets.Builder) error {
 type LoginSession struct {
 	gorm.Model
 
-	UserID    string    `gorm:"index;not null"`
-	Device    string    `gorm:"not null"`
-	IP        string    `gorm:"not null"`
-	TokenHash string    `gorm:"index;not null"`
-	ExpiredAt time.Time `gorm:"not null"`
+	UserID       string    `gorm:"index;not null"`
+	Device       string    `gorm:"not null"`
+	IP           string    `gorm:"not null"`
+	TokenHash    string    `gorm:"index;not null"`
+	ExpiredAt    time.Time `gorm:"not null"`
+	LastActiveAt time.Time // TODO: `gorm:"not null"` need to clear history data
 }
 
 type SessionBuilder struct {
@@ -160,11 +161,12 @@ func (b *SessionBuilder) CreateSession(r *http.Request, uid string) error {
 	token := login.GetSessionToken(b.lb, r)
 	client := uaparser.NewFromSaved().Parse(r.Header.Get("User-Agent"))
 	if err := b.db.Create(&LoginSession{
-		UserID:    uid,
-		Device:    fmt.Sprintf("%v - %v", client.UserAgent.Family, client.Os.Family),
-		IP:        ip(r),
-		TokenHash: getStringHash(token, LoginTokenHashLen),
-		ExpiredAt: b.db.NowFunc().Add(time.Duration(b.lb.GetSessionMaxAge()) * time.Second),
+		UserID:       uid,
+		Device:       fmt.Sprintf("%v - %v", client.UserAgent.Family, client.Os.Family),
+		IP:           ip(r),
+		TokenHash:    getStringHash(token, LoginTokenHashLen),
+		ExpiredAt:    b.db.NowFunc().Add(time.Duration(b.lb.GetSessionMaxAge()) * time.Second),
+		LastActiveAt: b.db.NowFunc(),
 	}).Error; err != nil {
 		return errors.Wrap(err, "login: failed to create session")
 	}
@@ -257,6 +259,19 @@ func (b *SessionBuilder) IsSessionValid(r *http.Request, uid string) (valid bool
 	return true, nil
 }
 
+func (b *SessionBuilder) UpdateSessionLastActive(r *http.Request, uid string) error {
+	token := login.GetSessionToken(b.lb, r)
+	tokenHash := getStringHash(token, LoginTokenHashLen)
+	if err := b.db.Model(&LoginSession{}).
+		Where("user_id = ? and token_hash = ?", uid, tokenHash).
+		Updates(map[string]any{
+			"last_active_at": b.db.NowFunc(),
+		}).Error; err != nil {
+		return errors.Wrap(err, "login: failed to update session last active")
+	}
+	return nil
+}
+
 func (b *SessionBuilder) Middleware(cfgs ...login.MiddlewareConfig) func(next http.Handler) http.Handler {
 	middleware := b.lb.Middleware(cfgs...)
 	return func(next http.Handler) http.Handler {
@@ -277,13 +292,21 @@ func (b *SessionBuilder) validateSessionToken() func(next http.Handler) http.Han
 				return
 			}
 
-			valid, err := b.IsSessionValid(r, presets.MustObjectID(user))
+			uid := presets.MustObjectID(user)
+
+			valid, err := b.IsSessionValid(r, uid)
 			if err != nil || !valid {
 				if r.URL.Path == b.lb.LogoutURL {
 					next.ServeHTTP(w, r)
 					return
 				}
 				http.Redirect(w, r, b.lb.LogoutURL, http.StatusFound)
+				return
+			}
+
+			if err = b.UpdateSessionLastActive(r, uid); err != nil {
+				// TODO: handle error
+				next.ServeHTTP(w, r)
 				return
 			}
 
@@ -463,18 +486,20 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 
 	type sessionWrapper struct {
 		*LoginSession
-		Time     string
-		Status   string
-		Location string
+		Time           string
+		Status         string
+		Location       string
+		LastActiveTime string
 	}
 	now := b.db.NowFunc()
 	wrappers := make([]*sessionWrapper, 0, len(sessions))
 	activeCount := 0
 	for _, v := range sessions {
 		w := &sessionWrapper{
-			LoginSession: v,
-			Time:         pmsgr.HumanizeTime(v.CreatedAt),
-			Status:       msgr.SessionStatusActive,
+			LoginSession:   v,
+			Time:           pmsgr.HumanizeTime(v.CreatedAt),
+			Status:         msgr.SessionStatusActive,
+			LastActiveTime: pmsgr.HumanizeTime(v.LastActiveAt),
 		}
 		if isPublicUser {
 			w.IP = msgr.HideIPAddressTips
@@ -502,6 +527,7 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 		{Title: msgr.SessionTableHeaderLocation, Key: "Location", Sortable: false},
 		{Title: msgr.SessionTableHeaderIPAddress, Key: "IP", Sortable: false},
 		{Title: msgr.SessionTableHeaderStatus, Key: "Status", Sortable: false},
+		{Title: msgr.SessionTableHeaderLastActiveTime, Key: "LastActiveTime", Sortable: false},
 		{Title: msgr.SessionTableHeaderActions, Key: "Actions", Sortable: false},
 	}
 	table := v.VDataTable().Headers(tableHeaders).Items(wrappers).ItemsPerPage(-1).HideDefaultFooter(true).Children(
