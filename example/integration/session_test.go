@@ -137,6 +137,23 @@ func TestSession(t *testing.T) {
 	}
 
 	{
+		// change ip
+		r, err := http.NewRequest("GET", "/", nil)
+		require.NoError(t, err)
+		r.AddCookie(&http.Cookie{Name: "auth", Value: "token1"})
+		r.Header.Set("X-Forwarded-For", "192.168.1.1")
+		valid, err := sb.IsSessionValid(r, uid)
+		require.NoError(t, err)
+		require.False(t, valid)
+
+		// disable ip check
+		sb.DisableIPCheck(true)
+		valid, err = sb.IsSessionValid(r, uid)
+		require.NoError(t, err)
+		require.True(t, valid)
+	}
+
+	{
 		before := db.NowFunc()
 
 		var sessions []*login.LoginSession
