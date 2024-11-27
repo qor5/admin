@@ -23,7 +23,8 @@ import (
 )
 
 const (
-	LoginTokenHashLen = 8 // The hash string length of the token stored in the DB.
+	LoginTokenHashLen      = 8 // The hash string length of the token stored in the DB.
+	GracePeriodAfterExtend = 1 * time.Minute
 )
 
 func (b *SessionBuilder) Install(pb *presets.Builder) error {
@@ -54,11 +55,13 @@ func (b *SessionBuilder) installPreset(pb *presets.Builder) error {
 type LoginSession struct {
 	gorm.Model
 
-	UserID    string    `gorm:"index;not null"`
-	Device    string    `gorm:"not null"`
-	IP        string    `gorm:"not null"`
-	TokenHash string    `gorm:"index;not null"`
-	ExpiredAt time.Time `gorm:"not null"`
+	UserID        string    `gorm:"size:36;index;not null"`
+	Device        string    `gorm:"size:128;not null"`
+	IP            string    `gorm:"size:128;not null"`
+	TokenHash     string    `gorm:"size:36;index;not null"`
+	ExpiredAt     time.Time `gorm:"not null"`
+	ExtendedAt    time.Time `gorm:"index;not null"`
+	LastTokenHash string    `gorm:"size:36;index;not null"`
 }
 
 type SessionBuilder struct {
@@ -158,11 +161,12 @@ func (b *SessionBuilder) CreateSession(r *http.Request, uid string) error {
 	token := login.GetSessionToken(b.lb, r)
 	client := uaparser.NewFromSaved().Parse(r.Header.Get("User-Agent"))
 	if err := b.db.Create(&LoginSession{
-		UserID:    uid,
-		Device:    fmt.Sprintf("%v - %v", client.UserAgent.Family, client.Os.Family),
-		IP:        ip(r),
-		TokenHash: getStringHash(token, LoginTokenHashLen),
-		ExpiredAt: b.db.NowFunc().Add(time.Duration(b.lb.GetSessionMaxAge()) * time.Second),
+		UserID:     uid,
+		Device:     fmt.Sprintf("%v - %v", client.UserAgent.Family, client.Os.Family),
+		IP:         ip(r),
+		TokenHash:  getStringHash(token, LoginTokenHashLen),
+		ExtendedAt: b.db.NowFunc(),
+		ExpiredAt:  b.db.NowFunc().Add(time.Duration(b.lb.GetSessionMaxAge()) * time.Second),
 	}).Error; err != nil {
 		return errors.Wrap(err, "login: failed to create session")
 	}
@@ -176,8 +180,10 @@ func (b *SessionBuilder) ExtendSession(r *http.Request, uid string, oldToken str
 	if err := b.db.Model(&LoginSession{}).
 		Where("user_id = ? and token_hash = ?", uid, oldTokenHash).
 		Updates(map[string]any{
-			"token_hash": tokenHash,
-			"expired_at": b.db.NowFunc().Add(time.Duration(b.lb.GetSessionMaxAge()) * time.Second),
+			"token_hash":      tokenHash,
+			"last_token_hash": oldTokenHash,
+			"extended_at":     b.db.NowFunc(),
+			"expired_at":      b.db.NowFunc().Add(time.Duration(b.lb.GetSessionMaxAge()) * time.Second),
 		}).Error; err != nil {
 		return errors.Wrap(err, "login: failed to extend session")
 	}
@@ -188,7 +194,10 @@ func (b *SessionBuilder) ExpireCurrentSession(r *http.Request, uid string) error
 	token := login.GetSessionToken(b.lb, r)
 	tokenHash := getStringHash(token, LoginTokenHashLen)
 	if err := b.db.Model(&LoginSession{}).
-		Where("user_id = ? and token_hash = ?", uid, tokenHash).
+		Where(
+			"user_id = ? and (token_hash = ? OR (last_token_hash = ? AND extended_at > ?))",
+			uid, tokenHash, tokenHash, b.db.NowFunc().Add(-GracePeriodAfterExtend),
+		).
 		Updates(map[string]any{
 			"expired_at": b.db.NowFunc(),
 		}).Error; err != nil {
@@ -210,8 +219,12 @@ func (b *SessionBuilder) ExpireAllSessions(uid string) error {
 
 func (b *SessionBuilder) ExpireOtherSessions(r *http.Request, uid string) error {
 	token := login.GetSessionToken(b.lb, r)
+	tokenHash := getStringHash(token, LoginTokenHashLen)
 	if err := b.db.Model(&LoginSession{}).
-		Where("user_id = ? AND token_hash != ?", uid, getStringHash(token, LoginTokenHashLen)).
+		Where(
+			"user_id = ? AND token_hash <> ? AND last_token_hash <> ? AND expired_at > ?",
+			uid, tokenHash, tokenHash, b.db.NowFunc(),
+		).
 		Updates(map[string]any{
 			"expired_at": b.db.NowFunc(),
 		}).Error; err != nil {
@@ -225,10 +238,12 @@ func (b *SessionBuilder) IsSessionValid(r *http.Request, uid string) (valid bool
 	if token == "" {
 		return false, nil
 	}
+	tokenHash := getStringHash(token, LoginTokenHashLen)
 	sess := LoginSession{}
-	if err = b.db.Where("user_id = ? and token_hash = ?", uid, getStringHash(token, LoginTokenHashLen)).
-		First(&sess).
-		Error; err != nil {
+	if err = b.db.Where(
+		"user_id = ? and (token_hash = ? OR (last_token_hash = ? AND extended_at > ?))",
+		uid, tokenHash, tokenHash, b.db.NowFunc().Add(-GracePeriodAfterExtend),
+	).First(&sess).Error; err != nil {
 		if err != gorm.ErrRecordNotFound {
 			return false, errors.Wrap(err, "login: failed to find session")
 		}
