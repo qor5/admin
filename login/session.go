@@ -208,7 +208,7 @@ func (b *SessionBuilder) ExpireCurrentSession(r *http.Request, uid string) error
 
 func (b *SessionBuilder) ExpireAllSessions(uid string) error {
 	if err := b.db.Model(&LoginSession{}).
-		Where("user_id = ?", uid).
+		Where("user_id = ? AND expired_at > ?", uid, b.db.NowFunc()).
 		Updates(map[string]any{
 			"expired_at": b.db.NowFunc(),
 		}).Error; err != nil {
