@@ -179,19 +179,22 @@ func (b *SessionBuilder) CreateSession(r *http.Request, uid string) error {
 	return nil
 }
 
-func (b *SessionBuilder) ExtendSession(r *http.Request, uid string, oldToken string) error {
-	token := login.GetSessionToken(b.lb, r)
-	tokenHash := getStringHash(token, LoginTokenHashLen)
+func (b *SessionBuilder) ExtendSession(r *http.Request, uid string, oldToken, newToken string) error {
+	newTokenHash := getStringHash(newToken, LoginTokenHashLen)
 	oldTokenHash := getStringHash(oldToken, LoginTokenHashLen)
-	if err := b.db.Model(&LoginSession{}).
+	result := b.db.Model(&LoginSession{}).
 		Where("user_id = ? and token_hash = ?", uid, oldTokenHash).
 		Updates(map[string]any{
-			"token_hash":      tokenHash,
+			"token_hash":      newTokenHash,
 			"last_token_hash": oldTokenHash,
 			"extended_at":     b.db.NowFunc(),
 			"expired_at":      b.db.NowFunc().Add(time.Duration(b.lb.GetSessionMaxAge()) * time.Second),
-		}).Error; err != nil {
-		return errors.Wrap(err, "login: failed to extend session")
+		})
+	if result.Error != nil {
+		return errors.Wrap(result.Error, "failed to extend session")
+	}
+	if result.RowsAffected == 0 {
+		return login.ErrShouldNotExtend
 	}
 	return nil
 }
@@ -385,8 +388,9 @@ func (b *SessionBuilder) setup() (r *SessionBuilder) {
 						return err
 					}
 					oldToken := extraVals[0].(string)
+					newToken := extraVals[1].(string)
 					return cmp.Or(
-						b.ExtendSession(r, presets.MustObjectID(user), oldToken),
+						b.ExtendSession(r, presets.MustObjectID(user), oldToken, newToken),
 						logAction(r, user, "extend-session"),
 					)
 				}

@@ -85,8 +85,8 @@ func TestSession(t *testing.T) {
 		// extend session
 		r, err := http.NewRequest("GET", "/", nil)
 		require.NoError(t, err)
-		r.AddCookie(&http.Cookie{Name: "auth", Value: "token1"})
-		err = sb.ExtendSession(r, uid, "token0")
+		r.AddCookie(&http.Cookie{Name: "auth", Value: "token0"})
+		err = sb.ExtendSession(r, uid, "token0", "token1")
 		require.NoError(t, err)
 
 		// check session info after extend
