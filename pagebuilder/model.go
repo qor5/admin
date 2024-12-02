@@ -462,8 +462,8 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 				IframeHeightName(cookieHeightName).
 				IframeHeight(iframeValue).
 				Attr("v-on-mounted", fmt.Sprintf(`({el,window}) => {
-							if(vars.__pageBuilderContentScroll && (vars.__pageBuilderContentScroll.top||vars.__pageBuilderContentScroll.left)){
-							const {top,left} = vars.__pageBuilderContentScroll;
+							if(vars.pageBuilderContentScroll && (vars.pageBuilderContentScroll.top||vars.pageBuilderContentScroll.left)){
+							const {top,left} = vars.pageBuilderContentScroll;
 							const iframe = el.querySelector("iframe")
 							iframe.addEventListener('load',()=>{
 								el.scrollTop = top;
@@ -471,7 +471,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 							})
 							}
 							el.__handleIframeScroll = (event) => {
-								vars.__pageBuilderContentScroll = {top:event.target.scrollTop,left:event.target.scrollLeft};
+								vars.pageBuilderContentScroll = {top:event.target.scrollTop,left:event.target.scrollLeft};
 
 							}
 							el.addEventListener('scroll', el.__handleIframeScroll)
