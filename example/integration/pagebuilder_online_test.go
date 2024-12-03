@@ -1,11 +1,15 @@
 package integration_test
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	. "github.com/qor5/web/v3/multipartestutils"
+	"github.com/qor5/x/v3/oss"
+	"github.com/stretchr/testify/require"
 	"github.com/theplant/gofixtures"
 
 	"github.com/qor5/admin/v3/example/admin"
@@ -27,9 +31,32 @@ SELECT setval('container_headers_id_seq', 10, true);
 
 `, []string{"page_builder_pages", "page_builder_containers", "container_headers"}))
 
+type StorageWithError struct {
+	oss.StorageInterface
+	ErrGetURL error
+}
+
+func (s *StorageWithError) GetURL(ctx context.Context, path string) (string, error) {
+	if s.ErrGetURL != nil {
+		return "", s.ErrGetURL
+	}
+	return s.StorageInterface.GetURL(ctx, path)
+}
+
 func TestPageBuilderOnline(t *testing.T) {
-	h := admin.TestHandler(TestDB, nil)
 	dbr, _ := TestDB.DB()
+
+	t.Run("Check previewDevelopUrl(panic)", func(t *testing.T) {
+		h, _ := admin.TestHandlerComplex(TestDB, nil, false, admin.WithStorageWrapper(func(si oss.StorageInterface) oss.StorageInterface {
+			return &StorageWithError{StorageInterface: si, ErrGetURL: errors.New("get url error")}
+		}))
+		pageBuilderOnlineData.TruncatePut(dbr)
+		require.Panics(t, func() {
+			h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/pages/10_2024-05-21-v01_International", nil))
+		})
+	})
+
+	h := admin.TestHandler(TestDB, nil)
 
 	cases := []TestCase{
 		{
