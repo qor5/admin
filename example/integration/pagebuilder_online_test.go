@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	. "github.com/qor5/web/v3/multipartestutils"
@@ -31,6 +32,15 @@ func TestPageBuilderOnline(t *testing.T) {
 	dbr, _ := TestDB.DB()
 
 	cases := []TestCase{
+		{
+			Name:  "Check previewDevelopUrl",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderOnlineData.TruncatePut(dbr)
+				return httptest.NewRequest("GET", "/pages/10_2024-05-21-v01_International", nil)
+			},
+			ExpectPageBodyContainsInOrder: []string{`<a href='example-publish.s3.ap-northeast-1.amazonaws.com/'>example-publish.s3.ap-northeast-1.amazonaws.com/</a>`},
+		},
 		{
 			Name:  "PageBuilder Online Wrap EditContainerEvent",
 			Debug: true,

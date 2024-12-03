@@ -2,13 +2,14 @@ package publish
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
 	"slices"
 	"sort"
 	"strings"
 	"sync"
+
+	"github.com/pkg/errors"
 
 	"github.com/iancoleman/strcase"
 	"github.com/qor5/admin/v3/activity"
@@ -529,7 +530,7 @@ func (b *Builder) defaultPublish(ctx context.Context, record any) (err error) {
 			}
 		}
 
-		if err = UploadOrDelete(objs, b.storage); err != nil {
+		if err = UploadOrDelete(ctx, objs, b.storage); err != nil {
 			return
 		}
 
@@ -584,7 +585,7 @@ func (b *Builder) defaultUnPublish(ctx context.Context, record any) (err error) 
 			}
 		}
 
-		if err = UploadOrDelete(objs, b.storage); err != nil {
+		if err = UploadOrDelete(ctx, objs, b.storage); err != nil {
 			return
 		}
 
@@ -600,8 +601,7 @@ func (b *Builder) defaultUnPublish(ctx context.Context, record any) (err error) 
 	return
 }
 
-func UploadOrDelete(objs []*PublishAction, storage oss.StorageInterface) (err error) {
-	ctx := context.Background()
+func UploadOrDelete(ctx context.Context, objs []*PublishAction, storage oss.StorageInterface) (err error) {
 	for _, obj := range objs {
 		if obj.IsDelete {
 			fmt.Printf("deleting %s \n", obj.Url)
@@ -645,8 +645,10 @@ func setPrimaryKeysConditionWithoutFields(db *gorm.DB, record interface{}, s *sc
 	return db.Where(strings.Join(querys, " AND "), args...)
 }
 
-func (b *Builder) FullUrl(uri string) (s string) {
-	ctx := context.Background()
-	s, _ = b.storage.GetURL(ctx, uri)
-	return strings.TrimSuffix(b.storage.GetEndpoint(ctx), "/") + "/" + strings.Trim(s, "/")
+func (b *Builder) FullUrl(ctx context.Context, uri string) (string, error) {
+	s, err := b.storage.GetURL(ctx, uri)
+	if err != nil {
+		return "", errors.Wrap(err, "get url")
+	}
+	return strings.TrimSuffix(b.storage.GetEndpoint(ctx), "/") + "/" + strings.Trim(s, "/"), nil
 }
