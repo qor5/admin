@@ -366,6 +366,20 @@ func (b *Builder) vSeoReadonly(obj interface{}, fieldPrefix, locale string, seo 
 		}
 		keywordsComps = append(keywordsComps, h.Span(keyword))
 	}
+	var openGraphInformationComp h.HTMLComponent
+	if setting.OpenGraphURL == "" && setting.OpenGraphTitle == "" && setting.OpenGraphType == "" && setting.OpenGraphDescription == "" && setting.OpenGraphImageURL == "" {
+		openGraphInformationComp = h.Text(msgr.BlankOpenGraphInformationTips)
+	} else {
+		openGraphInformationComp = h.Components(
+			h.If(
+				strings.HasPrefix(setting.OpenGraphImageURL, "http://") ||
+					strings.HasPrefix(setting.OpenGraphImageURL, "https://"),
+				VImg().Src(setting.OpenGraphImageURL).Width(300)),
+			h.Div(h.Span(setting.OpenGraphTitle)).Class("text-subtitle-1 mt-2"),
+			h.Div(h.Span(setting.OpenGraphDescription)).Class("text-body-2 mt-2"),
+			h.Div(h.A().Text(setting.OpenGraphURL).Href(setting.OpenGraphURL)).Class("text-body-2 mt-2"))
+	}
+
 	return h.Components(
 		h.Div(
 			h.Span(msgr.SEOPreview).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
@@ -382,13 +396,7 @@ func (b *Builder) vSeoReadonly(obj interface{}, fieldPrefix, locale string, seo 
 		).Class("mt-7"),
 		VCard(
 			VCardText(
-				h.If(
-					strings.HasPrefix(setting.OpenGraphImageURL, "http://") ||
-						strings.HasPrefix(setting.OpenGraphImageURL, "https://"),
-					VImg().Src(setting.OpenGraphImageURL).Width(300)),
-				h.Div(h.Span(setting.OpenGraphTitle)).Class("text-subtitle-1 mt-2"),
-				h.Div(h.Span(setting.OpenGraphDescription)).Class("text-body-2 mt-2"),
-				h.Div(h.A().Text(setting.OpenGraphURL).Href(setting.OpenGraphURL)).Class("text-body-2 mt-2"),
+				openGraphInformationComp,
 			).Class("pa-0"),
 		).Class("pa-6 mt-2").Color(ColorPrimaryLighten2),
 		h.Div(
