@@ -39,7 +39,7 @@ type ActivityLog struct {
 	Hidden     bool   `gorm:"index;default:false;not null;"`
 	ModelName  string `gorm:"index;not null;"`
 	ModelKeys  string `gorm:"index;not null;"`
-	ModelLabel string `gorm:"not null;"`
+	ModelLabel string `gorm:"not null;"` // IMPROVE: need named resource sign
 	ModelLink  string `gorm:"not null;"`
 	Detail     string `gorm:"not null;"`
 	Scope      string `gorm:"index;"`
