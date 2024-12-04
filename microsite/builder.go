@@ -1,9 +1,9 @@
 package microsite
 
 import (
-	"github.com/qor/oss"
-	"github.com/qor/oss/filesystem"
 	"github.com/qor5/admin/v3/publish"
+	"github.com/qor5/x/v3/oss"
+	"github.com/qor5/x/v3/oss/filesystem"
 	"gorm.io/gorm"
 )
 

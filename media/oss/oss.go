@@ -2,12 +2,13 @@ package oss
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"strings"
 
-	"github.com/qor/oss"
-	"github.com/qor/oss/filesystem"
 	"github.com/qor5/admin/v3/media/base"
+	"github.com/qor5/x/v3/oss"
+	"github.com/qor5/x/v3/oss/filesystem"
 )
 
 var (
@@ -29,7 +30,7 @@ var DefaultURLTemplateHandler = func(oss OSS, option *base.Option) (url string) 
 		url = URLTemplate
 	}
 
-	url = strings.Join([]string{strings.TrimSuffix(Storage.GetEndpoint(), "/"), strings.TrimPrefix(url, "/")}, "/")
+	url = strings.Join([]string{strings.TrimSuffix(Storage.GetEndpoint(context.Background()), "/"), strings.TrimPrefix(url, "/")}, "/")
 	if strings.HasPrefix(url, "/") {
 		return url
 	}
@@ -49,7 +50,7 @@ func (o OSS) GetURLTemplate(option *base.Option) (url string) {
 
 // DefaultStoreHandler used to store reader with default Storage
 var DefaultStoreHandler = func(oss OSS, path string, option *base.Option, reader io.Reader) error {
-	_, err := Storage.Put(path, reader)
+	_, err := Storage.Put(context.Background(), path, reader)
 	return err
 }
 
@@ -60,7 +61,7 @@ func (o OSS) Store(path string, option *base.Option, reader io.Reader) error {
 
 // DefaultRetrieveHandler used to retrieve file
 var DefaultRetrieveHandler = func(oss OSS, path string) (base.FileInterface, error) {
-	result, err := Storage.GetStream(path)
+	result, err := Storage.GetStream(context.Background(), path)
 	if f, ok := result.(base.FileInterface); ok {
 		return f, err
 	}
@@ -85,7 +86,7 @@ func (o OSS) Retrieve(path string) (base.FileInterface, error) {
 func (o OSS) URL(styles ...string) string {
 	url := o.Base.URL(styles...)
 
-	newurl, err := Storage.GetURL(url)
+	newurl, err := Storage.GetURL(context.Background(), url)
 	if err != nil || newurl == "" {
 		return url
 	}
@@ -96,7 +97,7 @@ func (o OSS) URL(styles ...string) string {
 func (o OSS) String() string {
 	url := o.Base.URL()
 
-	newurl, err := Storage.GetURL(url)
+	newurl, err := Storage.GetURL(context.Background(), url)
 	if err != nil || newurl == "" {
 		return url
 	}
