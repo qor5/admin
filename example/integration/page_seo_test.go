@@ -64,7 +64,8 @@ func TestPageSeoTemplate(t *testing.T) {
 				return httptest.NewRequest("GET", "/page_builder/pages/preview?id=10_2024-05-21-v01_International", nil)
 			},
 			ExpectPageBodyContainsInOrder: []string{"/system/media_libraries/18/file.og.jpeg"},
-		}, {
+		},
+		{
 			Name:  "Global SEO Delete OpenGraphImage",
 			Debug: true,
 			ReqFunc: func() *http.Request {
@@ -82,7 +83,6 @@ func TestPageSeoTemplate(t *testing.T) {
 				if m.Setting.OpenGraphImageFromMediaLibrary.URL() != "" {
 					t.Fatalf("delete OpenGraphImage failed :%v", m.Setting.OpenGraphImageFromMediaLibrary.URL())
 				}
-
 			},
 		},
 	}
