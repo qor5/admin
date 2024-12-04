@@ -133,17 +133,20 @@ func (b *Builder) configEditing(seoModel *presets.ModelBuilder) {
 
 	// Customize the Saver to trigger the invocation of the `afterSave` hook function (if available)
 	// when updating the global seo.
-	editing.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		seoSetting := obj.(*QorSEOSetting)
-		if err = b.db.Updates(obj).Error; err != nil {
-			return err
-		}
-		if b.afterSave != nil {
-			if err = b.afterSave(ctx.R.Context(), seoSetting.Name, seoSetting.LocaleCode); err != nil {
-				return err
+	editing.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			if err = in(obj, id, ctx); err != nil {
+				return
 			}
+			seoSetting := obj.(*QorSEOSetting)
+
+			if b.afterSave != nil {
+				if err = b.afterSave(ctx.R.Context(), seoSetting.Name, seoSetting.LocaleCode); err != nil {
+					return err
+				}
+			}
+			return
 		}
-		return nil
 	})
 
 	// configure variables field
