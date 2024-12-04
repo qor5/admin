@@ -85,7 +85,24 @@ var (
 		"Will reset and import initial data if set to true", false)
 )
 
-func NewConfig(db *gorm.DB, enableWork bool) Config {
+type ConfigOption func(opts *configOptions)
+
+type configOptions struct {
+	StorageWrapper func(oss.StorageInterface) oss.StorageInterface
+}
+
+func WithStorageWrapper(fn func(oss.StorageInterface) oss.StorageInterface) ConfigOption {
+	return func(opts *configOptions) {
+		opts.StorageWrapper = fn
+	}
+}
+
+func NewConfig(db *gorm.DB, enableWork bool, opts ...ConfigOption) Config {
+	options := &configOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	if err := db.AutoMigrate(
 		&models.Post{},
 		&models.InputDemo{},
@@ -152,6 +169,9 @@ func NewConfig(db *gorm.DB, enableWork bool) Config {
 		ACL:      string(types.ObjectCannedACLBucketOwnerFullControl),
 		Endpoint: publishURL,
 	}))
+	if options.StorageWrapper != nil {
+		PublishStorage = options.StorageWrapper(PublishStorage)
+	}
 	b := presets.New().DataOperator(gorm2op.DataOperator(db)).RightDrawerWidth("700")
 	defer b.Build()
 
