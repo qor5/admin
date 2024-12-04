@@ -7,8 +7,8 @@ import (
 	"slices"
 	"strconv"
 
-	"github.com/qor/oss"
 	"github.com/qor5/admin/v3/utils"
+	"github.com/qor5/x/v3/oss"
 	"github.com/theplant/sliceutils"
 	"gorm.io/gorm"
 )
@@ -97,7 +97,7 @@ type ListPublisher interface {
 
 // model is a empty struct
 // example: Product{}
-func (b *ListPublishBuilder) Run(_ context.Context, model interface{}) (err error) {
+func (b *ListPublishBuilder) Run(ctx context.Context, model interface{}) (err error) {
 	// If model is Product{}
 	// Generate a records: []*Product{}
 	records := reflect.MakeSlice(reflect.SliceOf(reflect.New(reflect.TypeOf(model)).Type()), 0, 0).Interface()
@@ -167,7 +167,7 @@ func (b *ListPublishBuilder) Run(_ context.Context, model interface{}) (err erro
 	objs = b.publishActionsFunc(b.db, lp, needPublishResults, indexResult)
 
 	err = utils.Transact(b.db, func(tx *gorm.DB) (err1 error) {
-		if err1 = UploadOrDelete(objs, b.storage); err1 != nil {
+		if err1 = UploadOrDelete(ctx, objs, b.storage); err1 != nil {
 			return
 		}
 

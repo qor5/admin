@@ -21,9 +21,9 @@ const (
 	exportOrdersURL = "/export-orders"
 )
 
-func TestHandlerComplex(db *gorm.DB, u *models.User, enableWork bool) (http.Handler, Config) {
+func TestHandlerComplex(db *gorm.DB, u *models.User, enableWork bool, opts ...ConfigOption) (http.Handler, Config) {
 	mux := http.NewServeMux()
-	c := NewConfig(db, enableWork)
+	c := NewConfig(db, enableWork, opts...)
 	if u == nil {
 		u = &models.User{
 			Model: gorm.Model{ID: 888},

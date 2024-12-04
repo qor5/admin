@@ -6,9 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/qor/oss/filesystem"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/multipartestutils"
+	"github.com/qor5/x/v3/oss/filesystem"
+	"github.com/stretchr/testify/require"
 	"github.com/theplant/testenv"
 	"gorm.io/gorm"
 
@@ -178,7 +179,7 @@ func TestCopy(t *testing.T) {
 	}
 }
 
-func TestUnCachedURL(t *testing.T) {
+func TestURL(t *testing.T) {
 	b := media_library.MediaBox{
 		Url: "test.jpg",
 	}
@@ -201,5 +202,14 @@ func TestUnCachedURL(t *testing.T) {
 	if m.File.URLNoCached() != "" {
 		t.Fatalf("set uncached url empty error %v", m.File.URLNoCached())
 		return
+	}
+	{
+		b := oss.OSS{}
+		b.Url = "test.jpg"
+		require.Equal(t, "test.jpg", b.URL())
+		require.Equal(t, "test.jpg", b.String())
+		b.Url = ""
+		require.Equal(t, "", b.URL())
+		require.Equal(t, "", b.String())
 	}
 }
