@@ -11,16 +11,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3control"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
-	"github.com/qor/oss"
-	"github.com/qor/oss/filesystem"
-	"github.com/qor/oss/s3"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/login"
+	"github.com/qor5/x/v3/oss"
+	"github.com/qor5/x/v3/oss/filesystem"
+	"github.com/qor5/x/v3/oss/s3"
 	"github.com/qor5/x/v3/perm"
 	v "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
@@ -86,7 +85,24 @@ var (
 		"Will reset and import initial data if set to true", false)
 )
 
-func NewConfig(db *gorm.DB, enableWork bool) Config {
+type ConfigOption func(opts *configOptions)
+
+type configOptions struct {
+	StorageWrapper func(oss.StorageInterface) oss.StorageInterface
+}
+
+func WithStorageWrapper(fn func(oss.StorageInterface) oss.StorageInterface) ConfigOption {
+	return func(opts *configOptions) {
+		opts.StorageWrapper = fn
+	}
+}
+
+func NewConfig(db *gorm.DB, enableWork bool, opts ...ConfigOption) Config {
+	options := &configOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	if err := db.AutoMigrate(
 		&models.Post{},
 		&models.InputDemo{},
@@ -141,21 +157,21 @@ func NewConfig(db *gorm.DB, enableWork bool) Config {
 	// ab.Model(l).SkipDelete().SkipCreate()
 	// @snippet_end
 
-	sess := session.Must(session.NewSession())
 	media_oss.Storage = s3.New(&s3.Config{
 		Bucket:   s3Bucket,
 		Region:   s3Region,
-		ACL:      s3control.S3CannedAccessControlListBucketOwnerFullControl,
+		ACL:      string(types.ObjectCannedACLBucketOwnerFullControl),
 		Endpoint: s3Endpoint,
-		Session:  sess,
 	})
 	PublishStorage = microsite_utils.NewClient(s3.New(&s3.Config{
 		Bucket:   s3PublishBucket,
 		Region:   s3PublishRegion,
-		ACL:      s3control.S3CannedAccessControlListBucketOwnerFullControl,
-		Session:  sess,
+		ACL:      string(types.ObjectCannedACLBucketOwnerFullControl),
 		Endpoint: publishURL,
 	}))
+	if options.StorageWrapper != nil {
+		PublishStorage = options.StorageWrapper(PublishStorage)
+	}
 	b := presets.New().DataOperator(gorm2op.DataOperator(db)).RightDrawerWidth("700")
 	defer b.Build()
 
@@ -398,7 +414,7 @@ func configListModel(b *presets.Builder, ab *activity.Builder, publisher *publis
 
 					content = append(content,
 						h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, mb.Info().Label(), field.Label)))
-					domain := PublishStorage.GetEndpoint()
+					domain := PublishStorage.GetEndpoint(ctx.R.Context())
 					if this.OnlineUrl != "" {
 						p := this.OnlineUrl
 						content = append(content, h.A(h.Text(p)).Href(domain+p))
@@ -423,7 +439,7 @@ func configListModel(b *presets.Builder, ab *activity.Builder, publisher *publis
 
 				content = append(content,
 					h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, mb.Info().Label(), field.Label)))
-				domain := PublishStorage.GetEndpoint()
+				domain := PublishStorage.GetEndpoint(ctx.R.Context())
 				if this.OnlineUrl != "" {
 					p := this.GetListUrl(strconv.Itoa(this.PageNumber))
 					content = append(content, h.A(h.Text(p)).Href(domain+p))

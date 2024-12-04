@@ -2,7 +2,6 @@ package publish
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
 	"slices"
@@ -10,13 +9,15 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/pkg/errors"
+
 	"github.com/iancoleman/strcase"
-	"github.com/qor/oss"
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/oss"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
@@ -529,7 +530,7 @@ func (b *Builder) defaultPublish(ctx context.Context, record any) (err error) {
 			}
 		}
 
-		if err = UploadOrDelete(objs, b.storage); err != nil {
+		if err = UploadOrDelete(ctx, objs, b.storage); err != nil {
 			return
 		}
 
@@ -584,7 +585,7 @@ func (b *Builder) defaultUnPublish(ctx context.Context, record any) (err error) 
 			}
 		}
 
-		if err = UploadOrDelete(objs, b.storage); err != nil {
+		if err = UploadOrDelete(ctx, objs, b.storage); err != nil {
 			return
 		}
 
@@ -600,14 +601,14 @@ func (b *Builder) defaultUnPublish(ctx context.Context, record any) (err error) 
 	return
 }
 
-func UploadOrDelete(objs []*PublishAction, storage oss.StorageInterface) (err error) {
+func UploadOrDelete(ctx context.Context, objs []*PublishAction, storage oss.StorageInterface) (err error) {
 	for _, obj := range objs {
 		if obj.IsDelete {
 			fmt.Printf("deleting %s \n", obj.Url)
-			err = storage.Delete(obj.Url)
+			err = storage.Delete(ctx, obj.Url)
 		} else {
 			fmt.Printf("uploading %s \n", obj.Url)
-			_, err = storage.Put(obj.Url, strings.NewReader(obj.Content))
+			_, err = storage.Put(ctx, obj.Url, strings.NewReader(obj.Content))
 		}
 		if err != nil {
 			return
@@ -644,7 +645,10 @@ func setPrimaryKeysConditionWithoutFields(db *gorm.DB, record interface{}, s *sc
 	return db.Where(strings.Join(querys, " AND "), args...)
 }
 
-func (b *Builder) FullUrl(uri string) (s string) {
-	s, _ = b.storage.GetURL(uri)
-	return strings.TrimSuffix(b.storage.GetEndpoint(), "/") + "/" + strings.Trim(s, "/")
+func (b *Builder) FullUrl(ctx context.Context, uri string) (string, error) {
+	s, err := b.storage.GetURL(ctx, uri)
+	if err != nil {
+		return "", errors.Wrap(err, "get url")
+	}
+	return strings.TrimSuffix(b.storage.GetEndpoint(ctx), "/") + "/" + strings.Trim(s, "/"), nil
 }
