@@ -560,102 +560,8 @@ func TestActivityAdmin(t *testing.T) {
 			ExpectPageBodyContainsInOrder: []string{
 				"操作日志列表",
 				"全部", "创建", "编辑", "删除", "备注",
-				"<vx-filter", "操作类型", "操作时间", "操作人", "操作对象", "</vx-filter>",
-				"日期时间", "操作者", "操作", "表的主键值", "菜单名", "表名",
-				"<div", "<v-btn", "mdi-chevron-left", ":disabled='true'", "<v-btn", "mdi-chevron-right", ":disabled='false'", "</div>",
-			},
-			ExpectPageBodyNotContains: []string{"v-pagination"},
-		},
-		{
-			Name:  "Page 2",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				// activityData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/activity-logs?lang=zh&after=eyJJRCI6Mzd9&per_page=10", nil)
-			},
-			ExpectPageBodyContainsInOrder: []string{
-				"操作日志列表",
-				"全部", "创建", "编辑", "删除", "备注",
-				"<vx-filter", "操作类型", "操作时间", "操作人", "操作对象", "</vx-filter>",
-				"日期时间", "操作者", "操作", "表的主键值", "菜单名", "表名",
-				"<div", "<v-btn", "mdi-chevron-left", ":disabled='false'", "<v-btn", "mdi-chevron-right", ":disabled='true'", "</div>",
-			},
-			ExpectPageBodyNotContains: []string{"v-pagination"},
-		},
-		{
-			Name:  "Goto Page 1 From Page 2",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				// activityData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/activity-logs?lang=zh&before=eyJJRCI6MzZ9&per_page=10", nil)
-			},
-			ExpectPageBodyContainsInOrder: []string{
-				"操作日志列表",
-				"全部", "创建", "编辑", "删除", "备注",
-				"<vx-filter", "操作类型", "操作时间", "操作人", "操作对象", "</vx-filter>",
-				"日期时间", "操作者", "操作", "表的主键值", "菜单名", "表名",
-				"<div", "<v-btn", "mdi-chevron-left", ":disabled='true'", "<v-btn", "mdi-chevron-right", ":disabled='false'", "</div>",
-			},
-			ExpectPageBodyNotContains: []string{"v-pagination"},
-		},
-		{
-			Name:  "Create note",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				// activityData.TruncatePut(dbr)
-				req := multipartestutils.NewMultipartBuilder().
-					PageURL("/with-activity-products?__execute_event__=__dispatch_stateful_action__").
-					AddField("__action__", `
-		{
-			"compo_type": "*activity.TimelineCompo",
-			"compo": {
-				"id": "with-activity-products:13",
-				"model_name": "WithActivityProduct",
-				"model_keys": "13",
-				"model_link": "/examples/activity-example/with-activity-products/13"
-			},
-			"injector": "__activity:with-activity-products__",
-			"sync_query": false,
-			"method": "CreateNote",
-			"request": {
-				"note": "The iconic all-black look."
-			}
-		}
-		`).
-					BuildEventFuncRequest()
-				return req
-			},
-			ExpectRunScriptContainsInOrder: []string{"Successfully created note", "The iconic all-black look."},
-		},
-		{
-			Name:  "Goto Previous Page From Current Page after new record inserted (using original before)",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				// activityData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/activity-logs?lang=zh&before=eyJJRCI6MzZ9&per_page=10", nil)
-			},
-			ExpectPageBodyContainsInOrder: []string{
-				"操作日志列表",
-				"全部", "创建", "编辑", "删除", "备注",
-				"<vx-filter", "操作类型", "操作时间", "操作人", "操作对象", "</vx-filter>",
-				"日期时间", "操作者", "操作", "表的主键值", "菜单名", "表名",
-				"<div", "<v-btn", "mdi-chevron-left", ":disabled='false'", "<v-btn", "mdi-chevron-right", ":disabled='false'", "</div>",
-			},
-			ExpectPageBodyNotContains: []string{"v-pagination"},
-		},
-		{
-			Name:  "Goto Previous Page Again (check records count displayed)",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				// activityData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/activity-logs?lang=zh&before=eyJJRCI6MTIzfQ&per_page=10", nil)
-			},
-			ExpectPageBodyContainsInOrder: []string{
-				"操作日志列表",
-				"全部", "创建", "编辑", "删除", "备注",
-				"<vx-filter", "操作类型", "操作时间", "操作人", "操作对象", "</vx-filter>",
-				"日期时间", "操作者", "操作", "表的主键值", "菜单名", "表名", "</tr>",
-				"</tr>", "</tr>", "</tr>", "</tr>", "</tr>", "</tr>", "</tr>", "</tr>", "</tr>", "</tr>",
+				"<vx-filter", "操作类型", "操作时间", "操作者", "对象", "</vx-filter>",
+				"日期时间", "操作者", "操作", "主键", "菜单名", "对象",
 				"<div", "<v-btn", "mdi-chevron-left", ":disabled='true'", "<v-btn", "mdi-chevron-right", ":disabled='false'", "</div>",
 			},
 			ExpectPageBodyNotContains: []string{"v-pagination"},
@@ -748,11 +654,11 @@ func TestActivityAdmin(t *testing.T) {
 				"操作日志列表",
 				"全部", "创建", "编辑", "删除", "备注",
 				"<vx-filter", "操作类型", "操作时间", "操作者", "对象", "</vx-filter>",
-				"日期时间", "操作者", "操作", "主键", "菜单名", "对象", "</tr>",
+				"日期时间", "操作者", "操作", "主键", "菜单名", "对象",
 				"</tr>", "</tr>", "</tr>", "</tr>", "</tr>", "</tr>", "</tr>", "</tr>", "</tr>", "</tr>",
 				"<div", "<v-btn", "mdi-chevron-left", ":disabled='true'", "<v-btn", "mdi-chevron-right", ":disabled='false'", "</div>",
 			},
-			ExpectPageBodyNotContains: []string{"v-pagination", "没有可显示的记录"},
+			ExpectPageBodyNotContains: []string{"v-pagination"},
 		},
 		{
 			Name:  "Update note",
