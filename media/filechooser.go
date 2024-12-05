@@ -747,9 +747,7 @@ func (mb *Builder) mediaLibraryBottomOperations(field string, ctx *web.EventCont
 				VPagination().
 					Length(pagesCount).
 					TotalVisible(5).
-					NextIcon("mdi-page-last").
-					PrevIcon("mdi-page-first").
-					ModelValue(int(currentPageInt)).
+					ModelValue(currentPageInt).
 					Attr("@update:model-value", web.Plaid().
 						FieldValue(currentPageName(field), web.Var("$event")).
 						EventFunc(ImageJumpPageEvent).
