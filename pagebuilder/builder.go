@@ -99,7 +99,6 @@ type Builder struct {
 	templateEnabled               bool
 	expendContainers              bool
 	pageEnabled                   bool
-	autoSaveReload                bool
 	disabledNormalContainersGroup bool
 	previewOpenNewTab             bool
 	previewContainer              bool
@@ -962,62 +961,6 @@ func (b *Builder) RegisterModelContainer(name string, mb *presets.ModelBuilder) 
 	return
 }
 
-type TagInterface interface {
-	SetAttr(k string, v interface{})
-}
-
-func (b *ContainerBuilder) setFieldsLazyWrapComponentFunc(fields *presets.FieldsBuilder) {
-	for _, fieldName := range fields.FieldNames() {
-		field := fields.GetField(fieldName.(string))
-		if field.GetNestedFieldsBuilder() != nil {
-			b.setFieldsLazyWrapComponentFunc(field.GetNestedFieldsBuilder())
-			continue
-		}
-		field.LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
-			return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-				comp := in(obj, field, ctx)
-				if ctx.Param(presets.ParamOverlay) != actions.Content {
-					return comp
-				}
-				formKey := field.ModelInfo.URIName() + "_" + field.FormKey
-				if p, ok := comp.(TagInterface); ok {
-					p.SetAttr("ref", formKey)
-					return h.Div(comp).Attr("v-on-mounted", fmt.Sprintf(`({el,window})=>{
-		const refName = "%s";
-		vars.__currentFocusUpdating = false;
-		vars.__currentFocusPos = 0
-		el.__handelSection = (event)=>{
-		const editor = event.target.editor
-		if (editor){
-			vars.__currentFocusPos = editor.state.doc.content.size - editor.state.selection.from
-			}else{
-				vars.__currentFocusPos = event.target.value.length - event.target.selectionStart
-			}
-		vars.__currentFocusPos *=-1	
-		}
-		el.__handleFocusIn=()=>{
-			vars.__currentFocusRefName = refName;
-		};
-		el.__handleFocusOut=(event)=>{
-			el.__handelSection(event);
-			if(vars.__currentFocusUpdating){return}
-			vars.__currentFocusRefName ="";
-		};
-		el.addEventListener("focusin",el.__handleFocusIn);
-		el.addEventListener("focusout",el.__handleFocusOut);
-	   }`, formKey)).Attr("v-on-unmounted", `({el})=>{
-		el.removeEventListener("focusin",el.__handleFocusIn);
-		el.removeEventListener("focusout",el.__handleFocusOut);
-}`).Attr("v-before-unmount", `({el})=>{
-	vars.__currentFocusUpdating = true;
-}`)
-				}
-				return comp
-			}
-		})
-	}
-}
-
 func (b *ContainerBuilder) Install() {
 	editing := b.mb.Editing()
 	editing.WrapIdCurrentActive(func(in presets.IdCurrentActiveProcessor) presets.IdCurrentActiveProcessor {
@@ -1030,9 +973,6 @@ func (b *ContainerBuilder) Install() {
 			return
 		}
 	})
-	if b.builder.autoSaveReload {
-		b.setFieldsLazyWrapComponentFunc(&editing.FieldsBuilder)
-	}
 	editing.AppendHiddenFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		if portalName := ctx.Param(presets.ParamPortalName); portalName != pageBuilderRightContentPortal {
 			return nil
@@ -1082,18 +1022,6 @@ func (b *ContainerBuilder) Install() {
 						ThenScript(web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).
 							Query(paramStatus, ctx.Param(paramStatus)).MergeQuery(true).Go()).
 						Go(),
-				),
-			),
-			h.If(b.builder.autoSaveReload,
-
-				web.Listen(
-					b.mb.NotifModelsUpdated(),
-					web.Plaid().
-						EventFunc(EditContainerEvent).
-						Query(paramContainerUri, b.mb.Info().ListingHref()).
-						Query(paramContainerID, web.Var("payload.ids[0]")).
-						Query(presets.ParamPortalName, pageBuilderRightContentPortal).
-						Query(presets.ParamOverlay, actions.Content).Go(),
 				),
 			),
 		)
