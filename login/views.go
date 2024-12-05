@@ -470,6 +470,19 @@ func defaultResetPasswordLinkSentPage(vh *login.ViewHelper, pb *presets.Builder)
 	})
 }
 
+func ZxcvbnLogicComponent() HTMLComponent {
+	return Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf(`({window})=>{
+		var tag = window.document.createElement("script");
+		tag.src = %q;
+		tag.onload= function(){
+			vars.meter_score = function(x){
+				return x ? window.zxcvbn(x).score+1 : 0;
+			};
+		}
+		window.document.getElementsByTagName("head")[0].appendChild(tag);
+	}`, login.ZxcvbnJSURL))
+}
+
 func defaultResetPasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 	return pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
@@ -517,8 +530,6 @@ func defaultResetPasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.Pag
 			}
 		}
 
-		DefaultViewCommon.InjectZxcvbn(ctx)
-
 		r.Body = Div(
 			DefaultViewCommon.Notice(vh, msgr, ctx.W, ctx.R),
 			Div(
@@ -529,6 +540,7 @@ func defaultResetPasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.Pag
 					Div(
 						Label(msgr.ResetPasswordLabel).Class(DefaultViewCommon.LabelClass).For("password"),
 						DefaultViewCommon.PasswordInputWithStrengthMeter(DefaultViewCommon.PasswordInput("password", msgr.ResetPasswordLabel, wIn.Password, true), "password", wIn.Password),
+						ZxcvbnLogicComponent(),
 					),
 					Div(
 						Label(msgr.ResetPasswordConfirmLabel).Class(DefaultViewCommon.LabelClass).For("confirm_password"),
@@ -554,8 +566,6 @@ func defaultChangePasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.Pa
 
 		wIn := vh.GetWrongChangePasswordInputFlash(ctx.W, ctx.R)
 
-		DefaultViewCommon.InjectZxcvbn(ctx)
-
 		r.PageTitle = msgr.ChangePasswordPageTitle
 
 		r.Body = Div(
@@ -570,6 +580,7 @@ func defaultChangePasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.Pa
 					Div(
 						Label(msgr.ChangePasswordNewLabel).Class(DefaultViewCommon.LabelClass).For("password"),
 						DefaultViewCommon.PasswordInputWithStrengthMeter(DefaultViewCommon.PasswordInput("password", msgr.ChangePasswordNewPlaceholder, wIn.NewPassword, true), "password", wIn.NewPassword),
+						ZxcvbnLogicComponent(),
 					).Class("mt-6"),
 					Div(
 						Label(msgr.ChangePasswordNewConfirmLabel).Class(DefaultViewCommon.LabelClass).For("confirm_password"),

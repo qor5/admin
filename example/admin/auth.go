@@ -144,7 +144,7 @@ func initLoginSessionBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Buil
 
 				return nil
 			}
-		}).TOTP(false).MaxRetryCount(0)
+		}).TOTP(false).MaxRetryCount(5)
 	loginBuilder.LoginPageFunc(plogin.NewAdvancedLoginPage(func(ctx *web.EventContext, config *plogin.AdvancedLoginPageConfig) (*plogin.AdvancedLoginPageConfig, error) {
 		// config.BrandLogo = RawHTML(
 		// 	`<svg width="61" height="27" viewBox="0 0 61 27" fill="none" xmlns="http://www.w3.org/2000/svg">

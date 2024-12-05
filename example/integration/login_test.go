@@ -61,7 +61,7 @@ func TestLogin(t *testing.T) {
 				mux := http.NewServeMux()
 				c := admin.NewConfig(TestDB, false)
 				loginSessionBuilder := c.GetLoginSessionBuilder()
-				loginBuilder := c.GetLoginSessionBuilder().GetLoginBuilder()
+				loginBuilder := loginSessionBuilder.GetLoginBuilder()
 				loginBuilder.LoginPageFunc(plogin.NewAdvancedLoginPage(func(ctx *web.EventContext, config *plogin.AdvancedLoginPageConfig) (*plogin.AdvancedLoginPageConfig, error) {
 					config.WelcomeLabel = "Hello"
 					return config, nil
