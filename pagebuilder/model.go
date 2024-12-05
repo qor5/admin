@@ -461,7 +461,9 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 				Srcdoc(h.MustString(r, ctx.R.Context())).
 				IframeHeightName(cookieHeightName).
 				IframeHeight(iframeValue).
+				Attr("@load", "vars.__pageBuilderAddContainerBtnDisabled=false").
 				Attr("v-on-mounted", fmt.Sprintf(`({el,window}) => {
+							vars.__pageBuilderAddContainerBtnDisabled = true;
 							if(vars.pageBuilderContentScroll && (vars.pageBuilderContentScroll.top||vars.pageBuilderContentScroll.left)){
 							const {top,left} = vars.pageBuilderContentScroll;
 							const iframe = el.querySelector("iframe")
