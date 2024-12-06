@@ -38,7 +38,6 @@ import (
 	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/media/base"
 	"github.com/qor5/admin/v3/media/media_library"
-	media_oss "github.com/qor5/admin/v3/media/oss"
 	"github.com/qor5/admin/v3/microsite"
 	microsite_utils "github.com/qor5/admin/v3/microsite/utils"
 	"github.com/qor5/admin/v3/pagebuilder"
@@ -142,13 +141,13 @@ func NewConfig(db *gorm.DB, enableWork bool) Config {
 	// @snippet_end
 
 	sess := session.Must(session.NewSession())
-	media_oss.Storage = s3.New(&s3.Config{
-		Bucket:   s3Bucket,
-		Region:   s3Region,
-		ACL:      s3control.S3CannedAccessControlListBucketOwnerFullControl,
-		Endpoint: s3Endpoint,
-		Session:  sess,
-	})
+	// media_oss.Storage = s3.New(&s3.Config{
+	// 	Bucket:   s3Bucket,
+	// 	Region:   s3Region,
+	// 	ACL:      s3control.S3CannedAccessControlListBucketOwnerFullControl,
+	// 	Endpoint: s3Endpoint,
+	// 	Session:  sess,
+	// })
 	PublishStorage = microsite_utils.NewClient(s3.New(&s3.Config{
 		Bucket:   s3PublishBucket,
 		Region:   s3PublishRegion,
@@ -282,6 +281,7 @@ func NewConfig(db *gorm.DB, enableWork bool) Config {
 	configNestedFieldDemo(b, db)
 
 	pageBuilder := example.ConfigPageBuilder(db, "/page_builder", ``, b)
+
 	pageBuilder.
 		Media(mediab).
 		L10n(l10nBuilder).
