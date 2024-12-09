@@ -14,6 +14,7 @@ const (
 	PermUpdateName  = "perm_media_library_update_name"
 	PermMovieTo     = "perm_media_library_move_to"
 	PermCopy        = "perm_media_library_copy"
+	PermCopyURL     = "perm_media_library_copy_url"
 	PermNewFolder   = "perm_media_library_new_folder"
 	PermListFolders = "perm_media_library_list_folders"
 )
@@ -24,6 +25,9 @@ func (mb *Builder) uploadIsAllowed(r *http.Request) error {
 
 func (mb *Builder) copyIsAllowed(r *http.Request) error {
 	return mb.mb.Info().Verifier().Do(PermCopy).WithReq(r).IsAllowed()
+}
+func (mb *Builder) copyURLIsAllowed(r *http.Request) error {
+	return mb.mb.Info().Verifier().Do(PermCopyURL).WithReq(r).IsAllowed()
 }
 
 func (mb *Builder) moveToIsAllowed(r *http.Request) error {
