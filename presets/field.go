@@ -463,7 +463,7 @@ func (b *FieldsBuilder) SetObjectFields(fromObj interface{}, toObj interface{}, 
 		if err1 != nil {
 			var vErr1 *web.ValidationErrors
 			if errors.As(err1, &vErr1) {
-				vErr = *vErr.Merge(vErr1)
+				_ = vErr.Merge(vErr1)
 			} else if web.IsValidationGlobalError(err1) {
 				vErr.GlobalError(err1.Error())
 			} else {
