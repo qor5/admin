@@ -1006,8 +1006,7 @@ func (b *ContainerBuilder) Install() {
 					EventFunc(UpdateContainerEvent).
 					Query(paramContainerUri, b.mb.Info().ListingHref()).
 					Query(paramContainerID, web.Var("payload.id")).
-					Query(presets.ParamPortalName, pageBuilderRightContentPortal).
-					Query(presets.ParamOverlay, actions.Content).
+					Query(paramStatus, ctx.Param(paramStatus)).
 					Go(),
 			),
 			web.Listen(
@@ -1017,10 +1016,7 @@ func (b *ContainerBuilder) Install() {
 						EventFunc(UpdateContainerEvent).
 						Query(paramContainerUri, b.mb.Info().ListingHref()).
 						Query(paramContainerID, web.Var("payload.id")).
-						Query(presets.ParamPortalName, pageBuilderRightContentPortal).
-						Query(presets.ParamOverlay, actions.Content).
-						ThenScript(web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).
-							Query(paramStatus, ctx.Param(paramStatus)).MergeQuery(true).Go()).
+						Query(paramStatus, ctx.Param(paramStatus)).
 						Go(),
 				),
 			),
@@ -1336,6 +1332,7 @@ func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
 		EventFunc(DeleteContainerConfirmationEvent).
 		Query(paramContainerID, web.Var("container_id")).
 		Query(paramContainerName, web.Var("display_name")).
+		Query(paramStatus, ctx.Param(paramStatus)).
 		Go()
 	moveAction := web.Plaid().
 		EventFunc(MoveUpDownContainerEvent).
@@ -1419,7 +1416,8 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 	var comps []h.HTMLComponent
 	ctx.R.Form.Del(web.EventFuncIDName)
 	device := ctx.Param(paramsDevice)
-	for _, d := range b.getDevices() {
+	devices := b.getDevices()
+	for _, d := range devices {
 		if device == "" && d.Name == b.defaultDevice {
 			device = d.Name
 		}
@@ -1438,9 +1436,10 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 		).Class("pa-2 rounded-lg ").
 			Mandatory(true).
 			Attr("v-model", "toggleLocals.activeDevice").
-			Attr("@update:model-value", web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).
-				PushState(true).MergeQuery(true).Query(paramsDevice, web.Var("toggleLocals.activeDevice")).Go()),
-	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %q}`, device))
+			Attr("@update:model-value", fmt.Sprintf("const device = toggleLocals.devices.find(device => device.Name === toggleLocals.activeDevice);vars.__scrollIframeWidth=device ? device.Width : '';")+
+				web.Plaid().
+					PushState(true).MergeQuery(true).Query(paramsDevice, web.Var("toggleLocals.activeDevice")).RunPushState()),
+	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %q,devices:%v}`, device, h.JSONString(devices)))
 }
 
 func (b *Builder) GetModelBuilder(mb *presets.ModelBuilder) *ModelBuilder {

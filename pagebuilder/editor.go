@@ -20,21 +20,22 @@ import (
 )
 
 const (
-	AddContainerEvent                = "page_builder_AddContainerEvent"
-	DeleteContainerConfirmationEvent = "page_builder_DeleteContainerConfirmationEvent"
-	DeleteContainerEvent             = "page_builder_DeleteContainerEvent"
-	MoveContainerEvent               = "page_builder_MoveContainerEvent"
-	MoveUpDownContainerEvent         = "page_builder_MoveUpDownContainerEvent"
-	ToggleContainerVisibilityEvent   = "page_builder_ToggleContainerVisibilityEvent"
-	MarkAsSharedContainerEvent       = "page_builder_MarkAsSharedContainerEvent"
-	RenameContainerDialogEvent       = "page_builder_RenameContainerDialogEvent"
-	RenameContainerEvent             = "page_builder_RenameContainerEvent"
-	ShowSortedContainerDrawerEvent   = "page_builder_ShowSortedContainerDrawerEvent"
-	ReloadRenderPageOrTemplateEvent  = "page_builder_ReloadRenderPageOrTemplateEvent"
-	ContainerPreviewEvent            = "page_builder_ContainerPreviewEvent"
-	ReplicateContainerEvent          = "page_builder_ReplicateContainerEvent"
-	EditContainerEvent               = "page_builder_EditContainerEvent"
-	UpdateContainerEvent             = "page_builder_UpdateContainerEvent"
+	AddContainerEvent                   = "page_builder_AddContainerEvent"
+	DeleteContainerConfirmationEvent    = "page_builder_DeleteContainerConfirmationEvent"
+	DeleteContainerEvent                = "page_builder_DeleteContainerEvent"
+	MoveContainerEvent                  = "page_builder_MoveContainerEvent"
+	MoveUpDownContainerEvent            = "page_builder_MoveUpDownContainerEvent"
+	ToggleContainerVisibilityEvent      = "page_builder_ToggleContainerVisibilityEvent"
+	MarkAsSharedContainerEvent          = "page_builder_MarkAsSharedContainerEvent"
+	RenameContainerDialogEvent          = "page_builder_RenameContainerDialogEvent"
+	RenameContainerEvent                = "page_builder_RenameContainerEvent"
+	ShowSortedContainerDrawerEvent      = "page_builder_ShowSortedContainerDrawerEvent"
+	ReloadRenderPageOrTemplateEvent     = "page_builder_ReloadRenderPageOrTemplateEvent"
+	ReloadRenderPageOrTemplateBodyEvent = "page_builder_ReloadRenderPageOrTemplateBodyEvent"
+	ContainerPreviewEvent               = "page_builder_ContainerPreviewEvent"
+	ReplicateContainerEvent             = "page_builder_ReplicateContainerEvent"
+	EditContainerEvent                  = "page_builder_EditContainerEvent"
+	UpdateContainerEvent                = "page_builder_UpdateContainerEvent"
 
 	paramPageID          = "pageID"
 	paramPageVersion     = "pageVersion"
@@ -57,13 +58,11 @@ const (
 	DeviceTablet   = "tablet"
 	DeviceComputer = "computer"
 
-	EventUp                 = "up"
-	EventDown               = "down"
-	EventDelete             = "delete"
-	EventAdd                = "add"
-	EventEdit               = "edit"
-	iframeHeightName        = "_iframeHeight"
-	iframePreviewHeightName = "_iframePreviewHeight"
+	EventUp     = "up"
+	EventDown   = "down"
+	EventDelete = "delete"
+	EventAdd    = "add"
+	EventEdit   = "edit"
 )
 
 const (
@@ -147,7 +146,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 		if !isStag && m.mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil {
 			isStag = true
 		}
-		afterLeaveEvent := removeVirtualElement() + "vars.emptyIframe = true;" + scrollToContainer(fmt.Sprintf("vars.%s", paramContainerDataID))
+		afterLeaveEvent := removeVirtualElement() + scrollToContainer(fmt.Sprintf("vars.%s", paramContainerDataID))
 		addOverlay := vx.VXOverlay(m.newContainerContent(ctx)).
 			MaxWidth(665).
 			Attr("ref", "overlay").
