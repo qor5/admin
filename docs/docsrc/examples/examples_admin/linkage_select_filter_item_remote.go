@@ -27,27 +27,42 @@ func LinkageSelectFilterItemRemoteExample(b *presets.Builder, mux examples.Muxer
 	remoteUrl := "/examples/api/linkage-select-server"
 	eb.Field("ProvinceCityDistrict").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*examples_presets.Address)
-
+		if field.Errors == nil {
+			field.Errors = []string{}
+		}
 		return vx.VXLinkageSelectRemote().
-			Attr(web.VField(field.Name,
+			Attr(presets.VFieldError(field.Name,
 				[]*Item{
 					getItem(p.Province),
 					getItem(p.City),
 					getItem(p.District),
-				})...).
+				}, field.Errors)...).
 			Labels(labels...).
 			RemoteUrl(remoteUrl).
 			IsPaging(true).
 			LevelStart(1)
 	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 		var vs []string
+		vErr := &web.ValidationErrors{}
+		hasErr := false
 		for i := 0; i < 3; i++ {
-			vs = append(vs, ctx.R.FormValue(fmt.Sprintf("ProvinceCityDistrict[%v].Name", i)))
+			val := ctx.Param(fmt.Sprintf("%s[%v].Name", field.FormKey, i))
+			vs = append(vs, val)
+			msg := ""
+			if val == "" {
+				hasErr = true
+				msg = "Not Empty"
+			}
+			vErr.FieldError(field.FormKey, msg)
 		}
+
 		m := obj.(*examples_presets.Address)
 		m.Province = vs[0]
 		m.City = vs[1]
 		m.District = vs[2]
+		if hasErr {
+			return vErr
+		}
 		return nil
 	})
 
