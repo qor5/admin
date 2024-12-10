@@ -26,6 +26,7 @@ func (mb *Builder) uploadIsAllowed(r *http.Request) error {
 func (mb *Builder) copyIsAllowed(r *http.Request) error {
 	return mb.mb.Info().Verifier().Do(PermCopy).WithReq(r).IsAllowed()
 }
+
 func (mb *Builder) copyURLIsAllowed(r *http.Request) error {
 	return mb.mb.Info().Verifier().Do(PermCopyURL).WithReq(r).IsAllowed()
 }
