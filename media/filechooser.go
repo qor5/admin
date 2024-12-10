@@ -264,6 +264,8 @@ func fileComponent(mb *Builder, field string, tab string, ctx *web.EventContext,
 		} else {
 			fullSrc = fmt.Sprintf("'http://'+$event.view.window.location.host+%q", src)
 		}
+	} else {
+		fullSrc = fmt.Sprintf("'%q'", src)
 	}
 	*menus = append(*menus,
 		h.If(mb.copyIsAllowed(ctx.R) == nil,
