@@ -42,17 +42,17 @@ func RegisterEth(pb *pagebuilder.Builder, db *gorm.DB) {
 		})
 	cb := vb.Model(&Eth{})
 	ed := cb.Editing()
-	f1 := ed.Field("AddTopSpace").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+	f1 := ed.Field("AddTopSpace").Label("tab1").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return ed.Clone().Only("AddTopSpace", "AddBottomSpace").ToComponent(cb.GetModelBuilder().Info(), obj, ctx)
 
 	})
-	f2 := ed.Field("Heading").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+	f2 := ed.Field("Heading").Label("Tab2").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return ed.Clone().Only("AnchorID", "Heading").ToComponent(cb.GetModelBuilder().Info(), obj, ctx)
 	})
 
 	tb := presets.NewTabsFieldBuilder().
 		TabsOrderFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) []string {
-			return []string{"tab1", "tab2"}
+			return []string{"AddTopSpace", "Heading"}
 		})
 	ed.Viewing("AnchorID").Field("AnchorID").Tab(tb).AppendTabs(f1).AppendTabs(f2)
 }
