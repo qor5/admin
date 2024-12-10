@@ -9,7 +9,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
@@ -326,12 +325,7 @@ func setupDetailing(dp *presets.DetailingBuilder, op *gorm2op.DataOperatorBuilde
 									return h.Tr(h.Td(h.Text(msgr.ModelLink)), h.Td(
 										VBtn(msgr.MoreInfo).Class("text-none text-overline d-flex align-center").
 											Variant(VariantTonal).Color(ColorPrimary).Size(SizeXSmall).PrependIcon("mdi-open-in-new").
-											Attr("@click", web.POST().
-												EventFunc(actions.DetailingDrawer).
-												Query(presets.ParamOverlay, actions.Dialog).
-												URL(log.ModelLink).
-												Go(),
-											),
+											Attr("@click", web.Plaid().PushStateURL(log.ModelLink).Go()),
 									))
 								}),
 								h.Tr(h.Td(h.Text(msgr.ModelCreatedAt)), h.Td(h.Text(log.CreatedAt.Format(timeFormat)))),
