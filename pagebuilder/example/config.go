@@ -48,6 +48,7 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, b *presets.Builder) *p
 		&containers.PageTitle{},
 		&containers.ListContentLite{},
 		&containers.ListContentWithImage{},
+		&containers.Eth{},
 	)
 	if err != nil {
 		panic(err)
@@ -62,6 +63,7 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, b *presets.Builder) *p
 	imagePrefix := "/assets/images"
 	pb.Images(http.StripPrefix(path.Join(prefix, imagePrefix), http.FileServer(http.FS(fSys))), imagePrefix)
 	containers.RegisterHeader(pb)
+	containers.RegisterEth(pb, db)
 	containers.RegisterFooter(pb)
 	containers.RegisterVideoBannerContainer(pb)
 	containers.RegisterHeadingContainer(pb, db)

@@ -177,6 +177,15 @@ func (b *FieldBuilder) Component(v FieldComponentInterface) (r *FieldBuilder) {
 	return b
 }
 
+func (b *FieldsBuilder) Viewing(vs ...string) (r *FieldsBuilder) {
+	for _, f := range b.fields {
+		if !slices.Contains(vs, f.name) {
+			f.hidden = true
+		}
+	}
+	return b
+}
+
 // WrapperFieldLabel a snippet for LazyWrapComponentFunc
 func WrapperFieldLabel(mapper func(evCtx *web.EventContext, obj interface{}, field *FieldContext) (name2label map[string]string, err error)) func(in FieldComponentFunc) FieldComponentFunc {
 	return func(in FieldComponentFunc) FieldComponentFunc {
@@ -800,7 +809,9 @@ func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interfa
 	if b.fieldsLayout == nil {
 		layout = make([]interface{}, 0, len(b.fields))
 		for _, f := range b.fields {
-			layout = append(layout, f.name)
+			if !f.hidden {
+				layout = append(layout, f.name)
+			}
 		}
 	} else {
 		layout = b.fieldsLayout
