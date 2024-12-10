@@ -6,8 +6,8 @@ import (
 	"encoding/base64"
 	"net/http"
 
-	"github.com/qor/oss/filesystem"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/oss/filesystem"
 	"github.com/qor5/x/v3/perm"
 	"github.com/qor5/x/v3/ui/vuetify"
 	. "github.com/theplant/htmlgo"

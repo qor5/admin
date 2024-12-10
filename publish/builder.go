@@ -2,7 +2,6 @@ package publish
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
 	"slices"
@@ -10,13 +9,16 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/pkg/errors"
+
 	"github.com/iancoleman/strcase"
-	"github.com/qor/oss"
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/oss"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
@@ -150,6 +152,17 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.Model
 
 	lb := mb.Listing()
 	lb.WrapSearchFunc(makeSearchFunc(mb, db))
+	lb.WrapFilterDataFunc(func(in presets.FilterDataFunc) presets.FilterDataFunc {
+		return func(ctx *web.EventContext) vx.FilterData {
+			fd := in(ctx)
+			for _, item := range fd {
+				if item.Key == "f_"+activity.KeyHasUnreadNotes {
+					item.SQLCondition = ListSubqueryConditionQueryPrefix + item.SQLCondition
+				}
+			}
+			return fd
+		}
+	})
 	lb.RowMenu().RowMenuItem("Delete").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
 		// DeleteRowMenu should be disabled when using the version interface
 		return nil
@@ -214,6 +227,8 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.Model
 	configureVersionListDialog(db, b, pb, mb)
 }
 
+const ListSubqueryConditionQueryPrefix = "__PUBLISH_LIST_SUBQUERY_CONDITION__: "
+
 func makeSearchFunc(mb *presets.ModelBuilder, db *gorm.DB) func(searcher presets.SearchFunc) presets.SearchFunc {
 	return func(searcher presets.SearchFunc) presets.SearchFunc {
 		return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
@@ -222,11 +237,28 @@ func makeSearchFunc(mb *presets.ModelBuilder, db *gorm.DB) func(searcher presets
 			tn := stmt.Schema.Table
 
 			var pks []string
-			condition := ""
+			var wheres []string
+			var args []any
+
+			var newSQLConditions []*presets.SQLCondition
+			for _, cond := range params.SQLConditions {
+				if strings.HasPrefix(cond.Query, ListSubqueryConditionQueryPrefix) {
+					wheres = append(wheres, fmt.Sprintf("(%s)", strings.TrimPrefix(cond.Query, ListSubqueryConditionQueryPrefix)))
+					args = append(args, cond.Args...)
+				} else {
+					newSQLConditions = append(newSQLConditions, cond)
+				}
+			}
+			params.SQLConditions = newSQLConditions
+
 			for _, f := range stmt.Schema.Fields {
 				if f.Name == "DeletedAt" {
-					condition = "WHERE deleted_at IS NULL"
+					wheres = append(wheres, fmt.Sprintf("%s IS NULL", f.DBName))
 				}
+			}
+			subqueryWhere := ""
+			if len(wheres) > 0 {
+				subqueryWhere = fmt.Sprintf("WHERE %s", strings.Join(wheres, " AND "))
 			}
 			for _, f := range stmt.Schema.PrimaryFields {
 				if f.Name != "Version" {
@@ -244,7 +276,7 @@ func makeSearchFunc(mb *presets.ModelBuilder, db *gorm.DB) func(searcher presets
 					FROM %s %s
 				) subquery
 				WHERE subquery.rn = 1
-			)`, pkc, pkc, pkc, pkc, StatusOnline, tn, condition)
+			)`, pkc, pkc, pkc, pkc, StatusOnline, tn, subqueryWhere)
 
 			if _, ok := mb.NewModel().(ScheduleInterface); ok {
 				// Also need to get the most recent planned to publish
@@ -266,11 +298,12 @@ func makeSearchFunc(mb *presets.ModelBuilder, db *gorm.DB) func(searcher presets
 						FROM %s %s
 					) subquery
 					WHERE subquery.rn = 1
-				)`, pkc, pkc, pkc, pkc, StatusOnline, tn, condition)
+				)`, pkc, pkc, pkc, pkc, StatusOnline, tn, subqueryWhere)
 			}
 
 			con := presets.SQLCondition{
 				Query: sql,
+				Args:  args,
 			}
 			params.SQLConditions = append(params.SQLConditions, &con)
 
@@ -497,7 +530,7 @@ func (b *Builder) defaultPublish(ctx context.Context, record any) (err error) {
 			}
 		}
 
-		if err = UploadOrDelete(objs, b.storage); err != nil {
+		if err = UploadOrDelete(ctx, objs, b.storage); err != nil {
 			return
 		}
 
@@ -552,7 +585,7 @@ func (b *Builder) defaultUnPublish(ctx context.Context, record any) (err error) 
 			}
 		}
 
-		if err = UploadOrDelete(objs, b.storage); err != nil {
+		if err = UploadOrDelete(ctx, objs, b.storage); err != nil {
 			return
 		}
 
@@ -568,14 +601,14 @@ func (b *Builder) defaultUnPublish(ctx context.Context, record any) (err error) 
 	return
 }
 
-func UploadOrDelete(objs []*PublishAction, storage oss.StorageInterface) (err error) {
+func UploadOrDelete(ctx context.Context, objs []*PublishAction, storage oss.StorageInterface) (err error) {
 	for _, obj := range objs {
 		if obj.IsDelete {
 			fmt.Printf("deleting %s \n", obj.Url)
-			err = storage.Delete(obj.Url)
+			err = storage.Delete(ctx, obj.Url)
 		} else {
 			fmt.Printf("uploading %s \n", obj.Url)
-			_, err = storage.Put(obj.Url, strings.NewReader(obj.Content))
+			_, err = storage.Put(ctx, obj.Url, strings.NewReader(obj.Content))
 		}
 		if err != nil {
 			return
@@ -612,7 +645,10 @@ func setPrimaryKeysConditionWithoutFields(db *gorm.DB, record interface{}, s *sc
 	return db.Where(strings.Join(querys, " AND "), args...)
 }
 
-func (b *Builder) FullUrl(uri string) (s string) {
-	s, _ = b.storage.GetURL(uri)
-	return strings.TrimSuffix(b.storage.GetEndpoint(), "/") + "/" + strings.Trim(s, "/")
+func (b *Builder) FullUrl(ctx context.Context, uri string) (string, error) {
+	s, err := b.storage.GetURL(ctx, uri)
+	if err != nil {
+		return "", errors.Wrap(err, "get url")
+	}
+	return strings.TrimSuffix(b.storage.GetEndpoint(ctx), "/") + "/" + strings.Trim(s, "/"), nil
 }

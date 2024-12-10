@@ -114,7 +114,7 @@ func liveFunc(db *gorm.DB) presets.FieldComponentFunc {
 			compo = h.Div().Class("d-flex").Children(
 				h.Div().Children(
 					VTooltip().Activator("parent").Location(LocationTop).Children(
-						h.Pre(tooltip).Attr("v-pre", true).Class("text-body-2 text-wrap"),
+						h.Div().Class("text-body-2").Style("white-space: pre-wrap").Text(fmt.Sprintf(`{{%q}}`, tooltip)),
 					),
 					compo,
 				),
