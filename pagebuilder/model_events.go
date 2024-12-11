@@ -725,8 +725,13 @@ func (b *ModelBuilder) containerPreview(ctx *web.EventContext) (r web.EventRespo
 			return
 		}
 		iframe := b.renderScrollIframe(h.Components(previewContainer), ctx, obj, locale, false, true, false)
-		body = h.Div(iframe).
-			Style("pointer-events: none;transform-origin: 0 0; transform:scale(0.25);width:400%")
+		iframeBody := h.MustString(iframe, ctx.R.Context())
+		body = h.Div(
+			h.Iframe().Attr(":srcdoc", h.JSONString(iframeBody)).
+				Attr("@load", `const iframe= $event.target;iframe.style.height=iframe.contentWindow.document.documentElement.scrollHeight+"px"`).
+				Attr("frameborder", "0").Style("width:100%"),
+		).
+			Style("pointer-events: none;transform-origin: 0 0; transform:scale(0.25);width:400%;height:400%")
 
 	}
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
