@@ -78,7 +78,7 @@ func (op *DataOperatorBuilder) Search(evCtx *web.EventContext, params *presets.S
 
 		p = relay.New(
 			gormrelay.NewOffsetAdapter[any](wh),
-			relay.EnsureLimits[any](presets.PerPageMax, presets.PerPageDefault),
+			relay.EnsureLimits[any](presets.PerPageDefault, presets.PerPageMax),
 		)
 		req = &relay.PaginateRequest[any]{
 			OrderBys: params.OrderBys,
@@ -86,7 +86,7 @@ func (op *DataOperatorBuilder) Search(evCtx *web.EventContext, params *presets.S
 		if params.PerPage > 0 {
 			req.First = lo.ToPtr(int(params.PerPage))
 			page := params.Page
-			if page == 0 {
+			if page <= 0 {
 				page = 1
 			}
 			offset := int((page - 1) * params.PerPage)
