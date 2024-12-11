@@ -30,7 +30,7 @@ func relayPagination(f func(db *gorm.DB) relay.ApplyCursorsFunc[any], skipTotalC
 			}
 			return cursor.Base64(f(db))(ctx, req)
 		},
-		relay.EnsureLimits[any](presets.PerPageMax, presets.PerPageDefault),
+		relay.EnsureLimits[any](presets.PerPageDefault, presets.PerPageMax),
 		relay.AppendCursorMiddleware(cursorMiddlewares...),
 	)
 	return func(ctx *web.EventContext) (relay.Pagination[any], error) {
