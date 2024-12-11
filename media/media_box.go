@@ -362,7 +362,6 @@ func ChooseFileButtonID(field string) string {
 }
 
 func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox, field string, cfg *media_library.MediaBoxConfig, disabled, readonly bool) h.HTMLComponent {
-
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 	c := VContainer().Class("media-box-wrap").Fluid(true)
 	if cfg.BackgroundColor != "" {
