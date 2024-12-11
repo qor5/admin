@@ -476,19 +476,19 @@ func (b *EditingBuilder) doValidate(ctx *web.EventContext) (r web.EventResponse,
 		}
 	}()
 	obj, vErr = usingB.FetchAndUnmarshal(id, false, ctx)
-	if vErr.HaveErrors() {
+	if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
 		return
 	}
-
+	vErr1 := vErr
 	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
 		vErr.GlobalError(perm.PermissionDenied.Error())
 		return
 	}
 	if usingB.Validator != nil {
-		if vErr = usingB.Validator(obj, ctx); vErr.HaveErrors() {
-			return
-		}
+		vErr = usingB.Validator(obj, ctx)
+		_ = vErr1.Merge(&vErr)
 	}
+	vErr = vErr1
 	return
 }
 
@@ -545,7 +545,7 @@ func (b *EditingBuilder) FetchAndUnmarshal(id string, removeDeletedAndSort bool,
 func (b *EditingBuilder) doUpdate(
 	ctx *web.EventContext,
 	r *web.EventResponse,
-	// will not close drawer/dialog
+// will not close drawer/dialog
 	silent bool,
 ) (created bool, err error) {
 	id := ctx.R.FormValue(ParamID)
@@ -561,11 +561,11 @@ func (b *EditingBuilder) doUpdate(
 	modifiedIndexes := ContextModifiedIndexesBuilder(ctx).FromHidden(ctx.R)
 	modifiedIndexes.deletedValues = make(map[string][]string)
 	modifiedIndexes.sortedValues = make(map[string][]string)
-	if vErr.HaveErrors() {
+	if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
 		usingB.UpdateOverlayContent(ctx, r, obj, "", &vErr)
 		return created, &vErr
 	}
-
+	vErr1 := vErr
 	if len(id) > 0 {
 		if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
 			b.UpdateOverlayContent(ctx, r, obj, "", perm.PermissionDenied)
@@ -579,9 +579,11 @@ func (b *EditingBuilder) doUpdate(
 	}
 
 	if usingB.Validator != nil {
-		if vErr = usingB.Validator(obj, ctx); vErr.HaveErrors() {
-			usingB.UpdateOverlayContent(ctx, r, obj, "", &vErr)
-			return created, &vErr
+		vErr = usingB.Validator(obj, ctx)
+		_ = vErr1.Merge(&vErr)
+		if vErr1.HaveErrors() {
+			usingB.UpdateOverlayContent(ctx, r, obj, "", &vErr1)
+			return created, &vErr1
 		}
 	}
 
