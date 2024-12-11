@@ -612,7 +612,9 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 							form[key] = payload.form[key]
 							}
 					}else{
-						form[key] = payload.form[key]
+						for (const key in payload.form){
+								form[key] = payload.form[key]
+							}
 						}
             vars.__currentValidateKeys = [];
 			vars.__FormUpdatedFunc();`))

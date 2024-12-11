@@ -372,7 +372,9 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 							form[key] = payload.form[key]
 							}
 					}else{
-						form[key] = payload.form[key]
+						for (const key in payload.form){
+								form[key] = payload.form[key]
+							}
 						}
 			    vars.__currentValidateKeys = [];
 				vars.__FormUpdatedFunc();`),
