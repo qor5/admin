@@ -99,7 +99,6 @@ type Builder struct {
 	templateEnabled               bool
 	expendContainers              bool
 	pageEnabled                   bool
-	autoSaveReload                bool
 	disabledNormalContainersGroup bool
 	previewOpenNewTab             bool
 	previewContainer              bool
@@ -117,6 +116,8 @@ const (
 	paramOpenFromSharedContainer = "open_from_shared_container"
 
 	PageBuilderPreviewCard = "PageBuilderPreviewCard"
+
+	WrapHandlerKey = "pageBuilderWrapHandlerKey"
 )
 
 func New(prefix string, db *gorm.DB, b *presets.Builder) *Builder {
@@ -140,7 +141,6 @@ func newBuilder(prefix string, db *gorm.DB, b *presets.Builder) *Builder {
 	r.categoryInstall = r.defaultCategoryInstall
 	r.pageInstall = r.defaultPageInstall
 	r.pageLayoutFunc = defaultPageLayoutFunc
-
 	r.ps = presets.New().
 		BrandTitle("Page Builder").
 		DataOperator(gorm2op.DataOperator(db)).
@@ -148,6 +148,15 @@ func newBuilder(prefix string, db *gorm.DB, b *presets.Builder) *Builder {
 		I18n(b.GetI18n()).
 		DetailLayoutFunc(r.pageEditorLayout)
 	r.ps.Permission(b.GetPermission())
+	b.AddWrapHandler(WrapHandlerKey, func(in http.Handler) (out http.Handler) {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			if strings.HasPrefix(req.RequestURI, r.ps.GetURIPrefix()) && strings.HasSuffix(req.RequestURI, "/preview") {
+				r.ServeHTTP(w, req)
+				return
+			}
+			in.ServeHTTP(w, req)
+		})
+	})
 	return r
 }
 
@@ -952,62 +961,6 @@ func (b *Builder) RegisterModelContainer(name string, mb *presets.ModelBuilder) 
 	return
 }
 
-type TagInterface interface {
-	SetAttr(k string, v interface{})
-}
-
-func (b *ContainerBuilder) setFieldsLazyWrapComponentFunc(fields *presets.FieldsBuilder) {
-	for _, fieldName := range fields.FieldNames() {
-		field := fields.GetField(fieldName.(string))
-		if field.GetNestedFieldsBuilder() != nil {
-			b.setFieldsLazyWrapComponentFunc(field.GetNestedFieldsBuilder())
-			continue
-		}
-		field.LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
-			return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-				comp := in(obj, field, ctx)
-				if ctx.Param(presets.ParamOverlay) != actions.Content {
-					return comp
-				}
-				formKey := field.ModelInfo.URIName() + "_" + field.FormKey
-				if p, ok := comp.(TagInterface); ok {
-					p.SetAttr("ref", formKey)
-					return h.Div(comp).Attr("v-on-mounted", fmt.Sprintf(`({el,window})=>{
-		const refName = "%s";
-		vars.__currentFocusUpdating = false;
-		vars.__currentFocusPos = 0
-		el.__handelSection = (event)=>{
-		const editor = event.target.editor
-		if (editor){
-			vars.__currentFocusPos = editor.state.doc.content.size - editor.state.selection.from
-			}else{
-				vars.__currentFocusPos = event.target.value.length - event.target.selectionStart
-			}
-		vars.__currentFocusPos *=-1	
-		}
-		el.__handleFocusIn=()=>{
-			vars.__currentFocusRefName = refName;
-		};
-		el.__handleFocusOut=(event)=>{
-			el.__handelSection(event);
-			if(vars.__currentFocusUpdating){return}
-			vars.__currentFocusRefName ="";
-		};
-		el.addEventListener("focusin",el.__handleFocusIn);
-		el.addEventListener("focusout",el.__handleFocusOut);
-	   }`, formKey)).Attr("v-on-unmounted", `({el})=>{
-		el.removeEventListener("focusin",el.__handleFocusIn);
-		el.removeEventListener("focusout",el.__handleFocusOut);
-}`).Attr("v-before-unmount", `({el})=>{
-	vars.__currentFocusUpdating = true;
-}`)
-				}
-				return comp
-			}
-		})
-	}
-}
-
 func (b *ContainerBuilder) Install() {
 	editing := b.mb.Editing()
 	editing.WrapIdCurrentActive(func(in presets.IdCurrentActiveProcessor) presets.IdCurrentActiveProcessor {
@@ -1020,9 +973,6 @@ func (b *ContainerBuilder) Install() {
 			return
 		}
 	})
-	if b.builder.autoSaveReload {
-		b.setFieldsLazyWrapComponentFunc(&editing.FieldsBuilder)
-	}
 	editing.AppendHiddenFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		if portalName := ctx.Param(presets.ParamPortalName); portalName != pageBuilderRightContentPortal {
 			return nil
@@ -1056,8 +1006,7 @@ func (b *ContainerBuilder) Install() {
 					EventFunc(UpdateContainerEvent).
 					Query(paramContainerUri, b.mb.Info().ListingHref()).
 					Query(paramContainerID, web.Var("payload.id")).
-					Query(presets.ParamPortalName, pageBuilderRightContentPortal).
-					Query(presets.ParamOverlay, actions.Content).
+					Query(paramStatus, ctx.Param(paramStatus)).
 					Go(),
 			),
 			web.Listen(
@@ -1067,23 +1016,8 @@ func (b *ContainerBuilder) Install() {
 						EventFunc(UpdateContainerEvent).
 						Query(paramContainerUri, b.mb.Info().ListingHref()).
 						Query(paramContainerID, web.Var("payload.id")).
-						Query(presets.ParamPortalName, pageBuilderRightContentPortal).
-						Query(presets.ParamOverlay, actions.Content).
-						ThenScript(web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).
-							Query(paramStatus, ctx.Param(paramStatus)).MergeQuery(true).Go()).
+						Query(paramStatus, ctx.Param(paramStatus)).
 						Go(),
-				),
-			),
-			h.If(b.builder.autoSaveReload,
-
-				web.Listen(
-					b.mb.NotifModelsUpdated(),
-					web.Plaid().
-						EventFunc(EditContainerEvent).
-						Query(paramContainerUri, b.mb.Info().ListingHref()).
-						Query(paramContainerID, web.Var("payload.ids[0]")).
-						Query(presets.ParamPortalName, pageBuilderRightContentPortal).
-						Query(presets.ParamOverlay, actions.Content).Go(),
 				),
 			),
 		)
@@ -1346,6 +1280,10 @@ func republishRelatedOnlinePages(pageURL string) web.EventFunc {
 func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, mb := range b.models {
 		if strings.Index(r.RequestURI, b.prefix+"/"+mb.mb.Info().URIName()+"/preview") >= 0 {
+			if mb.mb.Info().Verifier().Do(presets.PermGet).WithReq(r).IsAllowed() != nil {
+				_, _ = w.Write([]byte(perm.PermissionDenied.Error()))
+				return
+			}
 			mb.preview.ServeHTTP(w, r)
 			return
 		}
@@ -1394,6 +1332,7 @@ func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
 		EventFunc(DeleteContainerConfirmationEvent).
 		Query(paramContainerID, web.Var("container_id")).
 		Query(paramContainerName, web.Var("display_name")).
+		Query(paramStatus, ctx.Param(paramStatus)).
 		Go()
 	moveAction := web.Plaid().
 		EventFunc(MoveUpDownContainerEvent).
@@ -1467,7 +1406,7 @@ func (b *Builder) setDefaultDevices() {
 		// {Name: DeviceComputer, Width: "", Icon: "mdi-desktop-mac"},
 		// {Name: DevicePhone, Width: "414px", Icon: "mdi-tablet-android"},
 		// {Name: DeviceTablet, Width: "768px", Icon: "mdi-tablet"},
-		{Name: DeviceComputer, Width: "", Icon: "mdi-monitor"},
+		{Name: DeviceComputer, Width: "1440px", Icon: "mdi-monitor"},
 		{Name: DevicePhone, Width: "414px", Icon: "mdi-cellphone"},
 		{Name: DeviceTablet, Width: "768px", Icon: "mdi-tablet"},
 	}
@@ -1477,7 +1416,8 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 	var comps []h.HTMLComponent
 	ctx.R.Form.Del(web.EventFuncIDName)
 	device := ctx.Param(paramsDevice)
-	for _, d := range b.getDevices() {
+	devices := b.getDevices()
+	for _, d := range devices {
 		if device == "" && d.Name == b.defaultDevice {
 			device = d.Name
 		}
@@ -1496,9 +1436,10 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 		).Class("pa-2 rounded-lg ").
 			Mandatory(true).
 			Attr("v-model", "toggleLocals.activeDevice").
-			Attr("@update:model-value", web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).
-				PushState(true).MergeQuery(true).Query(paramsDevice, web.Var("toggleLocals.activeDevice")).Go()),
-	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %q}`, device))
+			Attr("@update:model-value", fmt.Sprintf("const device = toggleLocals.devices.find(device => device.Name === toggleLocals.activeDevice);vars.__scrollIframeWidth=device ? device.Width : '';")+
+				web.Plaid().
+					PushState(true).MergeQuery(true).Query(paramsDevice, web.Var("toggleLocals.activeDevice")).RunPushState()),
+	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %q,devices:%v}`, device, h.JSONString(devices)))
 }
 
 func (b *Builder) GetModelBuilder(mb *presets.ModelBuilder) *ModelBuilder {
