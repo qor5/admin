@@ -581,10 +581,12 @@ func (b *EditingBuilder) doUpdate(
 	if usingB.Validator != nil {
 		vErr = usingB.Validator(obj, ctx)
 		_ = vErrSetter.Merge(&vErr)
-		if vErrSetter.HaveErrors() {
-			usingB.UpdateOverlayContent(ctx, r, obj, "", &vErrSetter)
-			return created, &vErrSetter
-		}
+		vErr = vErrSetter
+
+	}
+	if vErr.HaveErrors() {
+		usingB.UpdateOverlayContent(ctx, r, obj, "", &vErr)
+		return created, &vErr
 	}
 
 	err1 := usingB.Saver(obj, id, ctx)
