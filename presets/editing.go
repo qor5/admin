@@ -367,15 +367,13 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		}`),
 			web.Listen(b.mb.NotifModelsValidate(),
 				`vars.__FormUpdatingFunc();
-				 for (const key in payload.form){
 					if (vars.__currentValidateKeys){
-						if(vars.__currentValidateKeys.lastIndexOf(key)>=0){
+						for (const key of vars.__currentValidateKeys){
 							form[key] = payload.form[key]
 							}
 					}else{
 						form[key] = payload.form[key]
 						}
-				}
 			    vars.__currentValidateKeys = [];
 				vars.__FormUpdatedFunc();`),
 			b.ToComponent(b.mb.Info(), obj, ctx),
@@ -479,16 +477,16 @@ func (b *EditingBuilder) doValidate(ctx *web.EventContext) (r web.EventResponse,
 	if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
 		return
 	}
-	vErr1 := vErr
+	vErrSetter := vErr
 	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
 		vErr.GlobalError(perm.PermissionDenied.Error())
 		return
 	}
 	if usingB.Validator != nil {
 		vErr = usingB.Validator(obj, ctx)
-		_ = vErr1.Merge(&vErr)
+		_ = vErrSetter.Merge(&vErr)
 	}
-	vErr = vErr1
+	vErr = vErrSetter
 	return
 }
 
@@ -565,7 +563,7 @@ func (b *EditingBuilder) doUpdate(
 		usingB.UpdateOverlayContent(ctx, r, obj, "", &vErr)
 		return created, &vErr
 	}
-	vErr1 := vErr
+	vErrSetter := vErr
 	if len(id) > 0 {
 		if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
 			b.UpdateOverlayContent(ctx, r, obj, "", perm.PermissionDenied)
@@ -580,10 +578,10 @@ func (b *EditingBuilder) doUpdate(
 
 	if usingB.Validator != nil {
 		vErr = usingB.Validator(obj, ctx)
-		_ = vErr1.Merge(&vErr)
-		if vErr1.HaveErrors() {
-			usingB.UpdateOverlayContent(ctx, r, obj, "", &vErr1)
-			return created, &vErr1
+		_ = vErrSetter.Merge(&vErr)
+		if vErrSetter.HaveErrors() {
+			usingB.UpdateOverlayContent(ctx, r, obj, "", &vErrSetter)
+			return created, &vErrSetter
 		}
 	}
 

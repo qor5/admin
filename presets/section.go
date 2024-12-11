@@ -607,15 +607,13 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 		web.Listen(b.mb.NotifModelsSectionValidate(b.name),
 			`
 			vars.__FormUpdatingFunc();
-			for (const key in payload.form){
-				if (vars.__currentValidateKeys){
-					if(vars.__currentValidateKeys.lastIndexOf(key)>=0){
-						form[key] = payload.form[key]
-						}
+			if (vars.__currentValidateKeys){
+						for (const key of vars.__currentValidateKeys){
+							form[key] = payload.form[key]
+							}
 					}else{
 						form[key] = payload.form[key]
 						}
-				}
             vars.__currentValidateKeys = [];
 			vars.__FormUpdatedFunc();`))
 
@@ -1076,9 +1074,9 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
 		return
 	}
-	Verr := b.editingFB.Unmarshal(obj, b.mb.Info(), true, ctx)
-	if Verr.HaveErrors() && len(Verr.GetGlobalErrors()) > 0 {
-		ShowMessage(&r, Verr.Error(), "warning")
+	vErrSeter := b.editingFB.Unmarshal(obj, b.mb.Info(), true, ctx)
+	if vErrSeter.HaveErrors() && len(vErrSeter.GetGlobalErrors()) > 0 {
+		ShowMessage(&r, vErrSeter.Error(), "warning")
 		return
 	}
 
@@ -1089,7 +1087,7 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 	needSave := true
 	if b.mb.editing.Validator != nil {
 		if vErr := b.mb.editing.Validator(obj, ctx); vErr.HaveErrors() {
-			_ = Verr.Merge(&vErr)
+			_ = vErrSeter.Merge(&vErr)
 			ctx.Flash = &vErr
 			needSave = false
 			if vErr.GetGlobalError() != "" {
@@ -1098,7 +1096,7 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 		}
 	}
 	if vErr := b.validator(obj, ctx); vErr.HaveErrors() {
-		_ = Verr.Merge(&vErr)
+		_ = vErrSeter.Merge(&vErr)
 		ctx.Flash = &vErr
 		needSave = false
 		if vErr.GetGlobalError() != "" {
@@ -1176,24 +1174,24 @@ func (b *SectionBuilder) ValidateDetailField(ctx *web.EventContext) (r web.Event
 	if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
 		return
 	}
-	vErr1 := vErr
+	vErrSetter := vErr
 	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
 		vErr.GlobalError(perm.PermissionDenied.Error())
 		return
 	}
 	if b.mb.editing.Validator != nil {
 		vErr = b.mb.editing.Validator(obj, ctx)
-		_ = vErr1.Merge(&vErr)
-		if vErr1.HaveErrors() {
-			vErr = vErr1
+		_ = vErrSetter.Merge(&vErr)
+		if vErrSetter.HaveErrors() {
+			vErr = vErrSetter
 			return
 		}
 	}
 	if b.validator != nil {
 		vErr = b.validator(obj, ctx)
-		_ = vErr1.Merge(&vErr)
-		if vErr1.HaveErrors() {
-			vErr = vErr1
+		_ = vErrSetter.Merge(&vErr)
+		if vErrSetter.HaveErrors() {
+			vErr = vErrSetter
 			return
 		}
 	}
