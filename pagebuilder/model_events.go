@@ -301,7 +301,6 @@ func (b *ModelBuilder) addContainer(ctx *web.EventContext) (r web.EventResponse,
 		web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).Query(paramContainerDataID, containerDataId).Go(),
 		web.Plaid().EventFunc(EditContainerEvent).Query(paramContainerUri, cb.mb.Info().ListingHref()).Query(paramContainerID, modelID).Go(),
 		"vars.emptyIframe=false;",
-
 	)
 	return
 }
@@ -466,7 +465,7 @@ func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.Event
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr    = presets.MustGetMessages(ctx.R)
 		okAction = web.Plaid().
-			EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
+				EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
 		portalName = dialogPortalName
 	)
 
@@ -805,7 +804,6 @@ func (b *ModelBuilder) replicateContainer(ctx *web.EventContext) (r web.EventRes
 			Query(paramStatus, ctx.Param(paramStatus)).Go(),
 		web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).Query(paramContainerDataID, containerDataId).Go(),
 		web.Plaid().EventFunc(EditContainerEvent).Query(paramContainerUri, cb.mb.Info().ListingHref()).Query(paramContainerID, modelID).Go(),
-
 	)
 	return
 }
