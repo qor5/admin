@@ -196,7 +196,7 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 				ClassIf("text-error", !b.disabled).
 				ClassIf("text-grey", b.disabled).
 				Children(
-					h.Div(h.Text(fmt.Sprintf(`{{form["%s"][0]}}`, errMessageFormKey))).Attr("v-if", fmt.Sprintf(`form["%s"]`, errMessageFormKey)),
+					h.Div(h.Text(fmt.Sprintf(`{{form[%q][0]}}`, errMessageFormKey))).Attr("v-if", fmt.Sprintf(`form[%q]`, errMessageFormKey)),
 				),
 		).
 			Class("bg-transparent").
