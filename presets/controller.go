@@ -6,7 +6,7 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
-func LinkageFields(field *FieldContext, vs ...string) h.HTMLComponent {
+func LinkageFieldsController(field *FieldContext, vs ...string) h.HTMLComponent {
 	vs = append(vs, field.FormKey)
 	return h.Div().Attr("v-on-mounted", fmt.Sprintf(`()=>{
 	    vars.__lingkageFields = vars.__lingkageFields??[];

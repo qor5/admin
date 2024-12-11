@@ -58,7 +58,7 @@ func RegisterHeadingContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	})
 	ed.Field("Heading").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
 		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-			return Components(presets.LinkageFields(field, "AnchorID"), in(obj, field, ctx))
+			return Components(presets.LinkageFieldsController(field, "AnchorID"), in(obj, field, ctx))
 		}
 	})
 	ed.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
