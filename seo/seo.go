@@ -255,25 +255,30 @@ func (seo *SEO) getAvailableVars() map[string]struct{} {
 
 func (seo *SEO) getLocaleFinalQorSEOSetting(locale string, db *gorm.DB) *QorSEOSetting {
 	if seo == nil || seo.name == "" {
-		return &QorSEOSetting{}
+		return nil
 	}
 	seoSetting := &QorSEOSetting{}
+	var lowPSetting *Setting
 	seoSettingOfParent := seo.parent.getLocaleFinalQorSEOSetting(locale, db)
 	err := db.Where("name = ? and locale_code = ?", seo.name, locale).First(seoSetting).Error
 	if err != nil {
 		panic(err)
 	}
 	highPSetting := &seoSetting.Setting
-	lowPSetting := &seoSettingOfParent.Setting
+	if seoSettingOfParent != nil {
+		lowPSetting = &seoSettingOfParent.Setting
+	}
 	mergeSetting(lowPSetting, highPSetting)
 	if seoSetting.Variables == nil {
 		seoSetting.Variables = make(Variables)
 	}
 	variables := seoSetting.Variables
-	variablesOfParent := seoSettingOfParent.Variables
-	for varName, val := range variablesOfParent {
-		if _, isExist := variables[varName]; !isExist {
-			variables[varName] = val
+	if seoSettingOfParent != nil {
+		variablesOfParent := seoSettingOfParent.Variables
+		for varName, val := range variablesOfParent {
+			if _, isExist := variables[varName]; !isExist {
+				variables[varName] = val
+			}
 		}
 	}
 	return seoSetting
@@ -383,6 +388,9 @@ func mergeSetting(lowPSetting, highPSetting *Setting) {
 	}
 	if highPSetting.OpenGraphType == "" {
 		highPSetting.OpenGraphType = lowPSetting.OpenGraphType
+	}
+	if highPSetting.OpenGraphImageURL == "" {
+		highPSetting.OpenGraphImageURL = highPSetting.OpenGraphImageFromMediaLibrary.URL("og")
 	}
 	if highPSetting.OpenGraphImageURL == "" {
 		highPSetting.OpenGraphImageURL = lowPSetting.OpenGraphImageURL

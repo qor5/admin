@@ -140,7 +140,7 @@ func TestPresetsEditingCustomizationDescription(t *testing.T) {
 						err = in(obj, ctx)
 						customer := obj.(*Customer)
 						if customer.Avatar.FileName == "" || customer.Avatar.Url == "" {
-							err.FieldError("Avatar", "avatar must not be empty")
+							err.FieldError("Avatar.Values", "avatar must not be empty")
 						}
 						return
 					}

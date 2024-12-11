@@ -680,7 +680,18 @@ func configPost(
 		}
 	})
 	m.Editing().Field("TitleWithSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)
-
+	m.Editing().ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		if ctx.Param(presets.ParamID) != "" {
+			p := obj.(*models.Post)
+			if p.Title == "" {
+				err.FieldError("Title", "Title Is Required")
+			}
+			if p.TitleWithSlug == "" {
+				err.FieldError("TitleWithSlug", "TitleWithSlug Is Required")
+			}
+		}
+		return
+	})
 	dp := m.Detailing(publish.VersionsPublishBar, "Detail", seo.SeoDetailFieldName).Drawer(true)
 	detailSection := presets.NewSectionBuilder(m, "Detail").
 		Editing("Title", "TitleWithSlug", "HeroImage", "Body", "BodyImage")

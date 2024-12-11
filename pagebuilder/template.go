@@ -353,8 +353,6 @@ func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent
 						VPagination().
 							Length(pagesCount).
 							TotalVisible(5).
-							NextIcon("mdi-page-last").
-							PrevIcon("mdi-page-first").
 							ModelValue(int(page)).
 							Attr("@update:model-value", web.Plaid().
 								URL(mb.Info().ListingHref()).

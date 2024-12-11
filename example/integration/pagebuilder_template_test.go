@@ -288,7 +288,7 @@ func TestPageBuilderTemplate(t *testing.T) {
 
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`plaid().vars(vars).locals(locals).form(form).eventFunc("page_builder_DeleteContainerEvent").query("containerID", "2_International").go()`},
+			ExpectPortalUpdate0ContainsInOrder: []string{`page_builder_DeleteContainerEvent`, `query("containerID", "2_International")`},
 		},
 		{
 			Name:  "Template delete container ",

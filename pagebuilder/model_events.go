@@ -39,7 +39,8 @@ func (b *ModelBuilder) registerFuncs() {
 	b.editor.RegisterEventFunc(ToggleContainerVisibilityEvent, b.eventMiddleware(b.toggleContainerVisibility))
 	b.editor.RegisterEventFunc(RenameContainerDialogEvent, b.eventMiddleware(b.renameContainerDialog))
 	b.editor.RegisterEventFunc(RenameContainerEvent, b.eventMiddleware(b.renameContainer))
-	b.editor.RegisterEventFunc(ReloadRenderPageOrTemplateEvent, b.eventMiddleware(b.reloadRenderPageOrTemplate))
+	b.editor.RegisterEventFunc(ReloadRenderPageOrTemplateEvent, b.reloadRenderPageOrTemplate)
+	b.editor.RegisterEventFunc(ReloadRenderPageOrTemplateBodyEvent, b.reloadRenderPageOrTemplateBody)
 	b.editor.RegisterEventFunc(MarkAsSharedContainerEvent, b.eventMiddleware(b.markAsSharedContainer))
 	b.editor.RegisterEventFunc(ContainerPreviewEvent, b.eventMiddleware(b.containerPreview))
 	b.editor.RegisterEventFunc(ReplicateContainerEvent, b.eventMiddleware(b.replicateContainer))
@@ -107,7 +108,7 @@ func (b *ModelBuilder) showSortedContainerDrawer(ctx *web.EventContext) (r web.E
 func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HTMLComponent, err error) {
 	var (
 		cons                        []*Container
-		status                      = ctx.R.FormValue(paramStatus)
+		status                      = ctx.Param(paramStatus)
 		isReadonly                  = status != publish.StatusDraft && b.tb == nil
 		pageID, pageVersion, locale = b.getPrimaryColumnValuesBySlug(ctx)
 		msgr                        = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
@@ -177,13 +178,14 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 			web.Plaid().
 				EventFunc(ReplicateContainerEvent).
 				Query(paramContainerID, web.Var("element.param_id")).
+				Query(paramStatus, ctx.Param(paramStatus)).
 				Go(),
 		).Attr("v-show", "isHovering"),
 		VMenu(
 			web.Slot(
 				VBtn("").Children(
 					VIcon("mdi-dots-horizontal"),
-				).Attr("v-bind", "props").Variant(VariantText).Size(SizeSmall),
+				).Attr("v-bind", "props").Attr("@click", clickColumnEvent).Variant(VariantText).Size(SizeSmall),
 			).Name("activator").Scope("{ props }"),
 			VList(
 				VListItem(h.Text(msgr.Rename)).PrependIcon("mdi-pencil").Attr("@click",
@@ -202,6 +204,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 						EventFunc(DeleteContainerConfirmationEvent).
 						Query(paramContainerID, web.Var("element.param_id")).
 						Query(paramContainerName, web.Var("element.display_name")).
+						Query(paramStatus, status).
 						Go(),
 				)),
 		),
@@ -264,6 +267,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 			h.Span(msgr.AddContainer).Class("ml-5"),
 		).BaseColor(ColorPrimary).Variant(VariantText).Class(W100, "pl-14", "justify-start").
 			Height(50).
+			Attr(":disabled", "vars.__pageBuilderAddContainerBtnDisabled").
 			Attr("@click", appendVirtualElement()+web.Plaid().PushState(true).ClearMergeQuery([]string{paramContainerID}).RunPushState()+";vars.containerPreview=false;vars.overlay=true;vars.overlayEl.refs.overlay.showByElement($event)"),
 	).Init(h.JSONString(sorterData)).VSlot("{ locals:sortLocals,form }")
 	return
@@ -271,12 +275,11 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 
 func (b *ModelBuilder) addContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var (
-		modelName       = ctx.Param(paramModelName)
-		sharedContainer = ctx.Param(paramSharedContainer)
-		modelID         = ctx.ParamAsInt(paramModelID)
-		containerID     = ctx.Param(paramContainerID)
-		newContainerID  string
-
+		modelName                   = ctx.Param(paramModelName)
+		sharedContainer             = ctx.Param(paramSharedContainer)
+		modelID                     = ctx.ParamAsInt(paramModelID)
+		containerID                 = ctx.Param(paramContainerID)
+		newContainerID              string
 		pageID, pageVersion, locale = b.getPrimaryColumnValuesBySlug(ctx)
 	)
 
@@ -289,11 +292,16 @@ func (b *ModelBuilder) addContainer(ctx *web.EventContext) (r web.EventResponse,
 	}
 	cb := b.builder.ContainerByName(modelName)
 	containerDataId := cb.getContainerDataID(modelID)
-	r.RunScript = web.Plaid().PushState(true).MergeQuery(true).
-		Query(paramContainerDataID, containerDataId).
-		Query(paramContainerID, newContainerID).
-		Form(map[string]string{paramContainerNew: "1"}).
-		Go()
+	web.AppendRunScripts(&r,
+		web.Plaid().PushState(true).MergeQuery(true).
+			Query(paramContainerDataID, containerDataId).
+			Query(paramContainerID, newContainerID).RunPushState(),
+		web.Plaid().EventFunc(ShowSortedContainerDrawerEvent).Query(paramContainerDataID, containerDataId).
+			Query(paramStatus, ctx.Param(paramStatus)).Go(),
+		web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).Query(paramContainerDataID, containerDataId).Go(),
+		web.Plaid().EventFunc(EditContainerEvent).Query(paramContainerUri, cb.mb.Info().ListingHref()).Query(paramContainerID, modelID).Go(),
+		"vars.emptyIframe=false;",
+	)
 	return
 }
 
@@ -315,7 +323,7 @@ func (b *ModelBuilder) moveContainer(ctx *web.EventContext) (r web.EventResponse
 	})
 	web.AppendRunScripts(&r,
 		web.Plaid().PushState(true).
-			EventFunc(ReloadRenderPageOrTemplateEvent).
+			EventFunc(ReloadRenderPageOrTemplateBodyEvent).
 			AfterScript(
 				web.Plaid().
 					Form(nil).
@@ -363,7 +371,7 @@ func (b *ModelBuilder) moveUpDownContainer(ctx *web.EventContext) (r web.EventRe
 		return
 	})
 	web.AppendRunScripts(&r,
-		web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).MergeQuery(true).Go(),
+		web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).MergeQuery(true).Go(),
 		web.Plaid().EventFunc(ShowSortedContainerDrawerEvent).MergeQuery(true).Query(paramStatus, ctx.Param(paramStatus)).Go(),
 	)
 	return
@@ -382,7 +390,7 @@ func (b *ModelBuilder) toggleContainerVisibility(ctx *web.EventContext) (r web.E
 
 	web.AppendRunScripts(&r,
 		web.Plaid().
-			EventFunc(ReloadRenderPageOrTemplateEvent).
+			EventFunc(ReloadRenderPageOrTemplateBodyEvent).
 			MergeQuery(true).
 			Go(),
 		web.Plaid().
@@ -412,6 +420,8 @@ func (b *ModelBuilder) deleteContainerConfirmation(ctx *web.EventContext) (r web
 				Attr("@click:ok", web.Plaid().
 					EventFunc(DeleteContainerEvent).
 					Query(paramContainerID, containerID).
+					Query(paramStatus, ctx.Param(paramStatus)).
+					ThenScript("locals.deleteConfirmation=false").
 					Go()).
 				Attr("v-model", "locals.deleteConfirmation"),
 		).VSlot(`{ locals  }`).Init(`{deleteConfirmation: true}`),
@@ -422,17 +432,29 @@ func (b *ModelBuilder) deleteContainerConfirmation(ctx *web.EventContext) (r web
 
 func (b *ModelBuilder) deleteContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var (
-		container   Container
-		cs          = container.PrimaryColumnValuesBySlug(ctx.Param(paramContainerID))
-		containerID = cs[presets.ParamID]
-		locale      = cs[l10n.SlugLocaleCode]
+		container              Container
+		pageID, pageVersion, _ = b.getPrimaryColumnValuesBySlug(ctx)
+		cs                     = container.PrimaryColumnValuesBySlug(ctx.Param(paramContainerID))
+		containerID            = cs[presets.ParamID]
+		locale                 = cs[l10n.SlugLocaleCode]
+		count                  int64
 	)
-
-	err = b.db.Delete(&Container{}, "id = ? AND locale_code = ?", containerID, locale).Error
-	if err != nil {
+	if err = b.db.Transaction(func(tx *gorm.DB) (dbErr error) {
+		if dbErr = tx.Delete(&Container{}, "id = ? AND locale_code = ?", containerID, locale).Error; err != nil {
+			return
+		}
+		return tx.Model(&Container{}).Where("page_id = ? and page_version = ? and locale_code = ? and page_model_name = ?", pageID, pageVersion, locale, b.name).Count(&count).Error
+	}); err != nil {
 		return
 	}
-	r.RunScript = web.Plaid().PushState(true).ClearMergeQuery([]string{paramContainerID, paramContainerDataID}).Go()
+
+	web.AppendRunScripts(&r,
+		web.Plaid().PushState(true).ClearMergeQuery([]string{paramContainerID, paramContainerDataID}).RunPushState(),
+		web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).Go(),
+		web.Plaid().EventFunc(ShowSortedContainerDrawerEvent).Query(paramStatus, ctx.Param(paramStatus)).Go(),
+		web.Plaid().EventFunc(EditContainerEvent).Go(),
+		fmt.Sprintf("vars.emptyIframe=%v", count == 0),
+	)
 	return
 }
 
@@ -500,6 +522,8 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 			addContainerEvent := web.Plaid().EventFunc(AddContainerEvent).
 				MergeQuery(true).
 				Query(paramModelName, cb.name).
+				Query(paramStatus, ctx.Param(paramStatus)).
+				ThenScript("vars.overlay=false").
 				Go()
 			containers = append(containers,
 				VHover(
@@ -551,6 +575,8 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 				addContainerEvent := web.Plaid().EventFunc(AddContainerEvent).
 					MergeQuery(true).
 					Query(paramModelName, builder.name).
+					Query(paramStatus, ctx.Param(paramStatus)).
+					ThenScript("vars.overlay=false").
 					Go()
 				listItems = append(listItems,
 					VHover(
@@ -660,7 +686,7 @@ func (b *ModelBuilder) renameContainer(ctx *web.EventContext) (r web.EventRespon
 	}
 	web.AppendRunScripts(&r,
 		web.Plaid().EventFunc(ShowSortedContainerDrawerEvent).MergeQuery(true).Query(paramStatus, ctx.Param(paramStatus)).Go(),
-		web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).MergeQuery(true).Go(),
+		web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).MergeQuery(true).Go(),
 	)
 	return
 }
@@ -668,7 +694,7 @@ func (b *ModelBuilder) renameContainer(ctx *web.EventContext) (r web.EventRespon
 func (b *ModelBuilder) reloadRenderPageOrTemplate(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var body h.HTMLComponent
 
-	if body, err = b.renderPageOrTemplate(ctx, true, true); err != nil {
+	if body, err = b.renderPageOrTemplate(ctx, true, true, false); err != nil {
 		return
 	}
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{Name: editorPreviewContentPortal, Body: body})
@@ -697,12 +723,16 @@ func (b *ModelBuilder) containerPreview(ctx *web.EventContext) (r web.EventRespo
 		if err != nil {
 			return
 		}
-		iframe := b.rendering(h.Components(previewContainer), ctx, obj, locale, false, true, true)
-		body = h.Div(iframe).
-			Style("pointer-events: none;transform-origin: 0 0; transform:scale(0.25);width:400%")
+		iframe := b.renderScrollIframe(h.Components(previewContainer), ctx, obj, locale, false, true, false)
+		iframeBody := h.MustString(iframe, ctx.R.Context())
+		body = h.Div(
+			h.Iframe().Attr(":srcdoc", h.JSONString(iframeBody)).
+				Attr("@load", `const iframe= $event.target;iframe.style.height=iframe.contentWindow.document.documentElement.scrollHeight+"px"`).
+				Attr("frameborder", "0").Style("width:100%"),
+		).
+			Style("pointer-events: none;transform-origin: 0 0; transform:scale(0.25);width:400%;height:400%")
 
 	}
-
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: addContainerDialogContentPortal,
 		Body: VCard(body).MaxHeight(200).Elevation(0).Flat(true).Tile(true).Color(ColorGreyLighten3),
@@ -764,7 +794,17 @@ func (b *ModelBuilder) replicateContainer(ctx *web.EventContext) (r web.EventRes
 	}); err != nil {
 		return
 	}
-	r.RunScript = web.Plaid().Query(paramContainerDataID, containerMb.getContainerDataID(modelID)).Query(paramContainerID, newContainerID).PushState(true).Go()
+	cb := b.builder.ContainerByName(container.ModelName)
+	containerDataId := cb.getContainerDataID(modelID)
+	web.AppendRunScripts(&r,
+		web.Plaid().PushState(true).MergeQuery(true).
+			Query(paramContainerDataID, containerDataId).
+			Query(paramContainerID, newContainerID).RunPushState(),
+		web.Plaid().EventFunc(ShowSortedContainerDrawerEvent).Query(paramContainerDataID, containerDataId).
+			Query(paramStatus, ctx.Param(paramStatus)).Go(),
+		web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).Query(paramContainerDataID, containerDataId).Go(),
+		web.Plaid().EventFunc(EditContainerEvent).Query(paramContainerUri, cb.mb.Info().ListingHref()).Query(paramContainerID, modelID).Go(),
+	)
 	return
 }
 
@@ -773,6 +813,13 @@ func (b *ModelBuilder) editContainer(ctx *web.EventContext) (r web.EventResponse
 		containerUri = ctx.Param(paramContainerUri)
 		containerID  = ctx.Param(paramContainerID)
 	)
+	if containerUri == "" && containerID == "" {
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: pageBuilderRightContentPortal,
+			Body: b.builder.emptyEdit(ctx),
+		})
+		return
+	}
 	r.RunScript = web.Plaid().URL(containerUri).
 		EventFunc(actions.Edit).
 		Query(presets.ParamID, containerID).
@@ -791,9 +838,38 @@ func (b *ModelBuilder) updateContainer(ctx *web.EventContext) (r web.EventRespon
 		EventFunc(actions.Update).
 		Query(presets.ParamID, containerID).
 		Query(presets.ParamPortalName, pageBuilderRightContentPortal).
-		ThenScript(web.Plaid().EventFunc(ReloadRenderPageOrTemplateEvent).
+		ThenScript(web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).
 			Query(paramStatus, ctx.Param(paramStatus)).MergeQuery(true).Go()).
 		Query(presets.ParamOverlay, actions.Content).
 		Go()
 	return
+}
+
+func (b *ModelBuilder) reloadRenderPageOrTemplateBody(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var (
+		data []byte
+		body h.HTMLComponent
+	)
+
+	if body, err = b.renderPageOrTemplate(ctx, true, true, true); err != nil {
+		return
+	}
+	if data, err = body.MarshalHTML(ctx.R.Context()); err != nil {
+		return
+	}
+	web.AppendRunScripts(&r,
+		web.Emit(b.notifIframeBodyUpdated(),
+			notifIframeBodyUpdatedPayload{Body: string(data), ContainerDataID: ctx.Param(paramContainerDataID)},
+		),
+	)
+	return
+}
+
+func (b *ModelBuilder) notifIframeBodyUpdated() string {
+	return fmt.Sprintf("pageBuilder_notifIframeBodyUpdated_%v", b.name)
+}
+
+type notifIframeBodyUpdatedPayload struct {
+	Body            string `json:"body"`
+	ContainerDataID string `json:"containerDataID"`
 }

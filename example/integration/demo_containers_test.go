@@ -152,6 +152,39 @@ func TestDemoContainer(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Background Color", "vx-select", "Choose File"},
 		},
 		{
+			Name:  "ImageContainer MediaBox  Validate",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				demoContainerData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/images").
+					EventFunc(actions.Validate).
+					Query(presets.ParamID, "1").
+					AddField("Image.Description", "").
+					AddField("Image.Values", "").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"Description Is Required", "Image Is Required"},
+		},
+		{
+			Name:  "ImageContainer MediaBox  Update Validate",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				demoContainerData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/images").
+					EventFunc(actions.Update).
+					Query(presets.ParamID, "1").
+					AddField("Image.Description", "").
+					AddField("Image.Values", "").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Image Is Required"},
+		},
+
+		{
 			Name:  "WebFooter Edit View",
 			Debug: true,
 			ReqFunc: func() *http.Request {
