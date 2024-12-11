@@ -389,10 +389,10 @@ func (b *SessionBuilder) setup() (r *SessionBuilder) {
 					}
 					oldToken := extraVals[0].(string)
 					newToken := extraVals[1].(string)
-					return cmp.Or(
-						b.ExtendSession(r, presets.MustObjectID(user), oldToken, newToken),
-						logAction(r, user, "extend-session"),
-					)
+					if err := b.ExtendSession(r, presets.MustObjectID(user), oldToken, newToken); err != nil {
+						return err
+					}
+					return logAction(r, user, "extend-session")
 				}
 			}).
 			WrapAfterTOTPCodeReused(func(in login.HookFunc) login.HookFunc {
