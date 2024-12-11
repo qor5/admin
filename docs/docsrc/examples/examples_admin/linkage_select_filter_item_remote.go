@@ -63,7 +63,7 @@ func LinkageSelectFilterItemRemoteExample(b *presets.Builder, mux examples.Muxer
 		if hasErr {
 			return vErr
 		}
-		return nil
+		return
 	})
 
 	lb := mb.Listing()
