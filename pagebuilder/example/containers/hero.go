@@ -1,8 +1,6 @@
 package containers
 
 import (
-	"fmt"
-
 	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
@@ -14,8 +12,8 @@ import (
 type Hero struct {
 	ID uint
 
-	ImgArea ImgArea
-	PArea   PArea
+	Content heroContent
+	Style   heroStyle
 	// H2AreaStyle  H2AreaStyle
 }
 
@@ -34,12 +32,12 @@ func RegisterHeroContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 
 			return HeroBody(v, input)
 		})
-	ed := vb.Model(&Hero{}).Editing("ImgArea", "PArea")
+	ed := vb.Model(&Hero{}).Editing("Content", "Style")
 
 	ed.Creating().WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 			p := obj.(*Hero)
-			p.PArea.Text = `<h1
+			p.Content.Text = `<h1
                 class="text-3xl md:text-2xl text-black opacity-80 font-bold mb-1"
               >
                 Testimonial introduction copy goes here, lorem ipsum dolor sit
@@ -57,7 +55,7 @@ func RegisterHeroContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 			return
 		}
 	})
-	// vb.Model(&Hero{}).Editing("ImgArea")
+	// vb.Model(&Hero{}).Editing("heroStyle")
 
 	// ed.Field("Text").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 	// 	extensions := tiptap.TiptapExtensions()
@@ -97,14 +95,14 @@ func RegisterHeroContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	// ed.Field("LinkDisplayOption").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 	// 	return presets.SelectField(obj, field, ctx).Items(LinkDisplayOptions)
 	// })
-	SetImgAreaComponent(pb, ed)
-	SetPAreaComponent(pb, ed, db)
+	SetHeroContentComponent(pb, ed, db)
+	SetHeroStyleComponent(pb, ed)
 }
 
 func HeroBody(data *Hero, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	// if there is no image, use default image "https://via.placeholder.com/308x252"
-	imgUrl := data.ImgArea.Image.URL()
-	if data.ImgArea.Image.URL() == "" {
+	imgUrl := data.Content.ImageUpload.URL()
+	if data.Content.ImageUpload.URL() == "" {
 		imgUrl = "https://via.placeholder.com/308x252"
 	}
 
@@ -114,26 +112,16 @@ func HeroBody(data *Hero, input *pagebuilder.RenderInput) (body HTMLComponent) {
 				Div(
 					Div(
 						Img(imgUrl).Class("w-full"),
-					).Class("lg:w-auto", "md:w-auto", "flex", "justify-start").Style(fmt.Sprintf(`margin-top:%vpx; margin-bottom:%vpx; margin-left:%vpx;margin-right:%vpx`,
-						data.ImgArea.Style.MarginTop,
-						data.ImgArea.Style.MarginBottom,
-						data.ImgArea.Style.MarginLeft,
-						data.ImgArea.Style.MarginRight,
-					)),
+					).Class("lg:w-auto", "md:w-auto", "flex", "justify-start"),
 					Div(
 						Div(
-							If(data.PArea.Text != "", Div(RawHTML(data.PArea.Text)),
-								If(data.PArea.Text == "<p></p>", Div(
+							If(data.Content.Text != "", Div(RawHTML(data.Content.Text)),
+								If(data.Content.Text == "<p></p>", Div(
 									H1("Testimonial introduction copy goes here, lorem ipsum dolor sit amet.").Class("text-3xl", "md:text-2xl", "text-black", "opacity-80", "font-bold", "mb-1"),
 									P(Text("Lorem ipsum dolor sit amet, consectetur adipiscing elit. suspendisse tincidunt sagitis eros. Quisque quis euismod lorem")).Class("text-black", "opacity-80", "font-medium", "sm:text-sm"),
 								)),
 							),
-						).Style(fmt.Sprintf(`margin-top:%vpx; margin-bottom:%vpx; margin-left:%vpx;margin-right:%vpx`,
-							data.PArea.Style.MarginTop,
-							data.PArea.Style.MarginBottom,
-							data.PArea.Style.MarginLeft,
-							data.PArea.Style.MarginRight,
-						)),
+						),
 						Div(
 							H2("Author Name").Class("text-2xl", "md:text-xl", "text-black", "opacity-80", "font-bold", "mb-2", "lg:mt-0", "md:mt-0", "mt-8"),
 							P(Text("Co-Founder and CEO of Company")).Class("text-pretty", "text-black", "opacity-80", "font-medium", "sm:text-sm"),

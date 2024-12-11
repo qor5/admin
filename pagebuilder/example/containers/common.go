@@ -17,6 +17,8 @@ const (
 
 var BackgroundColors = []string{White, Grey, Blue}
 
+var ButtonPresets = []string{"primary", "secondary", "success", "info", "warning", "error"}
+
 var FontColors = []string{Blue, Orange, White}
 
 const LINK_ARROW_SVG = RawHTML(`<svg height=".7em" viewBox="0 0 10 12" fill="none" xmlns="http://www.w3.org/2000/svg">
