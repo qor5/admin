@@ -1076,11 +1076,12 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
 		return
 	}
-
-	if Verr := b.editingFB.Unmarshal(obj, b.mb.Info(), true, ctx); Verr.HaveErrors() {
+	Verr := b.editingFB.Unmarshal(obj, b.mb.Info(), true, ctx)
+	if Verr.HaveErrors() && len(Verr.GetGlobalErrors()) > 0 {
 		ShowMessage(&r, Verr.Error(), "warning")
 		return
 	}
+
 	if b.setter != nil {
 		b.setter(obj, ctx)
 	}
@@ -1088,6 +1089,7 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 	needSave := true
 	if b.mb.editing.Validator != nil {
 		if vErr := b.mb.editing.Validator(obj, ctx); vErr.HaveErrors() {
+			_ = Verr.Merge(&vErr)
 			ctx.Flash = &vErr
 			needSave = false
 			if vErr.GetGlobalError() != "" {
@@ -1096,6 +1098,7 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 		}
 	}
 	if vErr := b.validator(obj, ctx); vErr.HaveErrors() {
+		_ = Verr.Merge(&vErr)
 		ctx.Flash = &vErr
 		needSave = false
 		if vErr.GetGlobalError() != "" {
@@ -1170,20 +1173,27 @@ func (b *SectionBuilder) ValidateDetailField(ctx *web.EventContext) (r web.Event
 	}
 
 	vErr = b.editingFB.Unmarshal(obj, b.mb.Info(), false, ctx)
-	if vErr.HaveErrors() {
+	if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
 		return
 	}
+	vErr1 := vErr
 	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
 		vErr.GlobalError(perm.PermissionDenied.Error())
 		return
 	}
 	if b.mb.editing.Validator != nil {
-		if vErr = b.mb.editing.Validator(obj, ctx); vErr.HaveErrors() {
+		vErr = b.mb.editing.Validator(obj, ctx)
+		_ = vErr1.Merge(&vErr)
+		if vErr1.HaveErrors() {
+			vErr = vErr1
 			return
 		}
 	}
 	if b.validator != nil {
-		if vErr = b.validator(obj, ctx); vErr.HaveErrors() {
+		vErr = b.validator(obj, ctx)
+		_ = vErr1.Merge(&vErr)
+		if vErr1.HaveErrors() {
+			vErr = vErr1
 			return
 		}
 	}
