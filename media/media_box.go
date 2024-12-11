@@ -82,6 +82,10 @@ func MediaBoxComponentFunc(db *gorm.DB, readonly bool) presets.FieldComponentFun
 		if !ok {
 			cfg = &media_library.MediaBoxConfig{}
 		}
+		vErr, _ := ctx.Flash.(*web.ValidationErrors)
+		if vErr == nil {
+			vErr = &web.ValidationErrors{}
+		}
 		mediaBox := field.Value(obj).(media_library.MediaBox)
 		return QMediaBox(db).
 			FieldName(field.FormKey).
@@ -90,7 +94,7 @@ func MediaBoxComponentFunc(db *gorm.DB, readonly bool) presets.FieldComponentFun
 			Config(cfg).
 			Disabled(field.Disabled).
 			Readonly(readonly).
-			ErrorMessages(field.Errors...)
+			ErrorMessages(vErr.GetFieldErrors(fmt.Sprintf("%s.Values", field.FormKey))...)
 	}
 }
 
@@ -175,9 +179,9 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 	}
 
 	ctx := web.MustGetEventContext(c)
+	errMessageFormKey := b.fieldName + ".Values" + presets.ErrorMessagePostfix
 
 	portalName := mainPortalName(b.fieldName)
-
 	return h.Components(
 		VSheet(
 			h.If(len(b.label) > 0,
@@ -187,15 +191,13 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 				mediaBoxThumbnails(ctx, b.value, b.fieldName, b.config, b.disabled, b.readonly),
 			).Name(mediaBoxThumbnailsPortalName(b.fieldName)),
 			web.Portal().Name(portalName),
-			h.Iff(len(b.errorMessages) > 0, func() h.HTMLComponent {
-				var compos []h.HTMLComponent
-				for _, errMsg := range b.errorMessages {
-					compos = append(compos, h.Div().Attr("v-pre", true).Text(errMsg))
-				}
-				return h.Div().Class("d-flex flex-column ps-4 py-1 ga-1 text-caption").
-					ClassIf("text-error", len(b.errorMessages) > 0 && !b.disabled).
-					ClassIf("text-grey", b.disabled).Children(compos...)
-			}),
+			h.Div().Class("d-flex flex-column py-1 ga-1 text-caption").
+				Attr(web.VAssign("form", map[string]interface{}{errMessageFormKey: b.errorMessages})...).
+				ClassIf("text-error", !b.disabled).
+				ClassIf("text-grey", b.disabled).
+				Children(
+					h.Div(h.Text(fmt.Sprintf(`{{form[%q][0]}}`, errMessageFormKey))).Attr("v-if", fmt.Sprintf(`form[%q]`, errMessageFormKey)),
+				),
 		).
 			Class("bg-transparent").
 			Rounded(true),
@@ -365,6 +367,10 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 	if cfg.BackgroundColor != "" {
 		c.Attr("style", fmt.Sprintf("background-color: %s;", cfg.BackgroundColor))
 	}
+	vErr, _ := ctx.Flash.(*web.ValidationErrors)
+	if vErr == nil {
+		vErr = &web.ValidationErrors{}
+	}
 	// button
 	btnRow := VRow(
 		VBtn(msgr.ChooseFile).
@@ -416,7 +422,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 							h.Span(value),
 						).Else(
 							vx.VXField().
-								Attr(web.VField(fieldName, value)...).
+								Attr(presets.VFieldError(fieldName, value, vErr.GetFieldErrors(fmt.Sprintf("%s.Description", field)))...).
 								Placeholder(msgr.DescriptionForAccessibility).
 								Disabled(disabled),
 						),

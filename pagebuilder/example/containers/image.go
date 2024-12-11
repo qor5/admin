@@ -39,6 +39,19 @@ func RegisterImageContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	eb.Field("TransitionBackgroundColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return presets.SelectField(obj, field, ctx).Items([]string{"white", "blue", "grey"})
 	})
+	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		if ctx.Param(presets.ParamID) != "" {
+			p := obj.(*ImageContainer)
+			if p.Image.Url == "" {
+				err.FieldError("Image.Values", "Image Is Required")
+			}
+			if p.Image.Description == "" {
+				err.FieldError("Image.Description", "Description Is Required")
+			}
+
+		}
+		return
+	})
 }
 
 func ImageContainerBody(data *ImageContainer, input *pagebuilder.RenderInput) (body HTMLComponent) {
