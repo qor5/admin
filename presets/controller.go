@@ -20,7 +20,7 @@ func LinkageFieldsController(field *FieldContext, vs ...string) h.HTMLComponent 
             subArray.forEach(value => {	
 			if (value !== x) {
 				result.add(value);
-				vars.__currentValidateKeys.push(key+endKey)
+				vars.__currentValidateKeys.push(value+endKey)
                 }
             });
         }
