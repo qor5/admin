@@ -429,6 +429,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		if (key.endsWith(endKey)){continue}
 		if (form[key] !== oldForm[key]) {
 			vars.__currentValidateKeys.push(key+endKey)
+			typeof vars.__currentValidateKeys === "function" && vars.__currentValidateKeys(key);	
 		}
 	}	
 %s
@@ -544,7 +545,7 @@ func (b *EditingBuilder) FetchAndUnmarshal(id string, removeDeletedAndSort bool,
 func (b *EditingBuilder) doUpdate(
 	ctx *web.EventContext,
 	r *web.EventResponse,
-	// will not close drawer/dialog
+// will not close drawer/dialog
 	silent bool,
 ) (created bool, err error) {
 	id := ctx.R.FormValue(ParamID)
