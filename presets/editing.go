@@ -471,12 +471,12 @@ func (b *EditingBuilder) doValidate(ctx *web.EventContext) (r web.EventResponse,
 				)),
 		)
 
-		if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
+		if vErr.HaveErrors() && vErr.HaveGlobalErrors() {
 			web.AppendRunScripts(&r, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), ColorWarning))
 		}
 	}()
 	obj, vErr = usingB.FetchAndUnmarshal(id, false, ctx)
-	if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
+	if vErr.HaveErrors() && vErr.HaveGlobalErrors() {
 		return
 	}
 	vErrSetter := vErr
@@ -561,7 +561,7 @@ func (b *EditingBuilder) doUpdate(
 	modifiedIndexes := ContextModifiedIndexesBuilder(ctx).FromHidden(ctx.R)
 	modifiedIndexes.deletedValues = make(map[string][]string)
 	modifiedIndexes.sortedValues = make(map[string][]string)
-	if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
+	if vErr.HaveErrors() && vErr.HaveGlobalErrors() {
 		usingB.UpdateOverlayContent(ctx, r, obj, "", &vErr)
 		return created, &vErr
 	}
