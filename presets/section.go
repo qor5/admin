@@ -586,7 +586,8 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 	  for (let key in form) {
 		if (key.endsWith(endKey)){continue}
 		if (form[key] !== oldForm[key]) {
-			vars.__currentValidateKeys.push(key+endKey)
+			vars.__currentValidateKeys.push(key+endKey);
+			typeof vars.__findLinkageFields === "function" && vars.__findLinkageFields(key);
 		}
 	}
 %s
