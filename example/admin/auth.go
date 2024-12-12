@@ -6,8 +6,6 @@ import (
 	"strings"
 	"time"
 
-	_ "embed"
-
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/providers/github"
 	"github.com/markbates/goth/providers/google"
