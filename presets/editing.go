@@ -361,12 +361,8 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 	formContent := web.Scope(h.Components(
 		VCardText(
 			h.Components(hiddenComps...),
-			h.Div().Style("display:none").Attr("v-on-mounted", `({window})=>{
-		vars.__FormUpdatingFunc = ()=>{ vars.__FormFieldIsUpdating = true}
-		vars.__FormUpdatedFunc = ()=>{ window.setTimeout(()=>{vars.__FormFieldIsUpdating = false},600)}
-		}`),
 			web.Listen(b.mb.NotifModelsValidate(),
-				`vars.__FormUpdatingFunc();
+				`
 					if (vars.__currentValidateKeys){
 						for (const key of vars.__currentValidateKeys){
 							form[key] = payload.form[key]
@@ -377,7 +373,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 							}
 						}
 			    vars.__currentValidateKeys = [];
-				vars.__FormUpdatedFunc();`),
+				`),
 			b.ToComponent(b.mb.Info(), obj, ctx),
 		),
 		h.If(!autosave, VCardActions(actionButtons)),
@@ -414,21 +410,21 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 	).VSlot("{ form }")
 	operateID := fmt.Sprint(time.Now().UnixNano())
 	if autosave {
-		onChangeEvent += fmt.Sprintf(`if (!vars.__FormFieldIsUpdating){%s}`, web.Plaid().URL(ctx.R.URL.Path).
+		onChangeEvent += web.Plaid().URL(ctx.R.URL.Path).
 			BeforeScript(fmt.Sprintf(`vars.__currentValidateKeys=null;vars.__ValidateOperateID=%q`, operateID)).
 			EventFunc(actions.Validate).
 			Query(ParamID, id).
 			Query(ParamOperateID, operateID).
 			Query(ParamOverlay, ctx.Param(ParamOverlay)).
-			Go())
+			Go()
 	} else {
-		onChangeEvent += fmt.Sprintf(`if (!vars.__FormFieldIsUpdating){
+		onChangeEvent += fmt.Sprintf(`
 	  vars.__currentValidateKeys = vars.__currentValidateKeys??[];
 	  const endKey = %q	;
 	  for (let key in form) {
 		if (key.endsWith(endKey)){continue}
 		if (form[key] !== oldForm[key]) {
-			vars.__currentValidateKeys.push(key+endKey);
+			vars.__currentValidateKeys.push(key+endKey)
 			typeof vars.__findLinkageFields === "function" && vars.__findLinkageFields(key);	
 		}	
 	}	
