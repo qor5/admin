@@ -1076,9 +1076,9 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
 		return
 	}
-	vErrSeter := b.editingFB.Unmarshal(obj, b.mb.Info(), true, ctx)
-	if vErrSeter.HaveErrors() && len(vErrSeter.GetGlobalErrors()) > 0 {
-		ShowMessage(&r, vErrSeter.Error(), "warning")
+	vErrSetter := b.editingFB.Unmarshal(obj, b.mb.Info(), true, ctx)
+	if vErrSetter.HaveErrors() && vErrSetter.HaveGlobalErrors() {
+		ShowMessage(&r, vErrSetter.Error(), "warning")
 		return
 	}
 
@@ -1088,17 +1088,23 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 
 	needSave := true
 	if b.mb.editing.Validator != nil {
-		if vErr := b.mb.editing.Validator(obj, ctx); vErr.HaveErrors() {
-			_ = vErrSeter.Merge(&vErr)
+		vErr := b.mb.editing.Validator(obj, ctx)
+		newVErrSetter := vErrSetter
+		_ = newVErrSetter.Merge(&vErr)
+		vErr = newVErrSetter
+		if vErr.HaveErrors() {
 			ctx.Flash = &vErr
 			needSave = false
 			if vErr.GetGlobalError() != "" {
 				ShowMessage(&r, vErr.GetGlobalError(), "warning")
 			}
 		}
+
 	}
-	if vErr := b.validator(obj, ctx); vErr.HaveErrors() {
-		_ = vErrSeter.Merge(&vErr)
+	vErr := b.validator(obj, ctx)
+	_ = vErrSetter.Merge(&vErr)
+	vErr = vErrSetter
+	if vErr.HaveErrors() {
 		ctx.Flash = &vErr
 		needSave = false
 		if vErr.GetGlobalError() != "" {
@@ -1155,7 +1161,7 @@ func (b *SectionBuilder) ValidateDetailField(ctx *web.EventContext) (r web.Event
 				),
 			),
 		)
-		if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
+		if vErr.HaveErrors() && vErr.HaveGlobalErrors() {
 			web.AppendRunScripts(&r, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), ColorWarning))
 		}
 	}()
@@ -1173,7 +1179,7 @@ func (b *SectionBuilder) ValidateDetailField(ctx *web.EventContext) (r web.Event
 	}
 
 	vErr = b.editingFB.Unmarshal(obj, b.mb.Info(), false, ctx)
-	if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
+	if vErr.HaveErrors() && vErr.HaveGlobalErrors() {
 		return
 	}
 	vErrSetter := vErr
