@@ -49,6 +49,9 @@
     </script>
 
     <style>
+      * {
+        box-sizing: border-box;
+      }
       .tailwind-scope {
         h1,
         h2,
@@ -59,51 +62,86 @@
         a,
         p {
           font-family: InterVariable, system-ui, sans-serif;
-          line-height: initial;
         }
       }
     </style>
   </head>
   <body>
     <div class="tailwind-scope">
-      <div class="flex-wrap lg:h-[400px] md:h-[300px] bg-gray-100">
+      <div
+        class="xl:min-h-[530px] md:min-h-[339px] min-h-[190px] bg-white text-[#212121]"
+      >
         <div
-          class="mx-auto max-w-5xl lg:flex md:flex items-center justify-center h-full lg:px-14 lg:py-0 md:py-0 p-7"
+          x-data="{
+            imageAspectRatio: '5 / 4',
+            imageAspectRatioForCalc: '5 / 4',
+            debounceTimer: null,
+            debounceAdjust() {
+              clearTimeout(this.debounceTimer);
+              this.debounceTimer = setTimeout(() => {
+                this.adjustAspectRatio();
+              }, 500);
+            },
+            adjustAspectRatio() {
+              this.$nextTick(() => {
+                const leftHeight = this.$refs.leftContent.offsetHeight;
+                const imageHeightForCalc = this.$refs.rightImageForCalc.offsetHeight;
+                
+                this.imageAspectRatioForCalc = '5 / 4';
+
+                // console.log(leftHeight, imageHeightForCalc);
+
+                if (leftHeight > imageHeightForCalc) {
+                  this.imageAspectRatio = '3 / 4';
+                } else {
+                  this.imageAspectRatio = '5 / 4';
+                }
+              });
+            },
+            init() {
+
+              const resizeObserver = new ResizeObserver(() => {
+                this.debounceAdjust();
+              });
+              resizeObserver.observe(this.$refs.leftContent);
+            }
+          }"
+          class="flex items-stretch justify-between xl:max-w-[1280px] mx-auto xl:p-[120px] md:p-[60px] p-8"
         >
-          <div class="lg:w-auto md:w-auto flex justify-start">
-            <img
-              src="https://via.placeholder.com/308x252"
-              alt="Left-aligned image"
-              class="w-full"
-            />
+          <div class="flex items-center">
+            <div x-ref="leftContent" class="justify-center">
+              <h1
+                class="font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px]"
+              >
+                This is a title
+              </h1>
+              <p
+                class="xl:text-[24px] md:text-[22px] text-[12px] xl:py-10 md:py-6 py-3 font-medium xl:leading-[32px] leading-normal"
+              >
+                From end-to-end solutions to consulting, we draw on decades
+                ofFrom end-to-end solutions to consulting, we draw on decades
+                ofFrom end-to-end solutions to consulting, we draw on decades
+              </p>
+              <button
+                class="bg-[#3E63DD] xl:text-[16px] md:text-[14px] xl:px-6 px-4 xl:py-3 md:py-2 py-[6px] rounded-[4px] text-white"
+              >
+                Get Start
+              </button>
+            </div>
           </div>
           <div
-            class="lg:flex md:flex flex-col lg:h-[252px] md:h-[183px] justify-between lg:flex-1 md:w-full text-left lg:pl-20 md:pl-10 lg:mt-0 md:mt-0 lg:text-left md:text-left text-center mt-8"
+            class="xl:w-[500px] flex items-center md:w-[314px] w-[169px] overflow-hidden flex-shrink-0 xl:ml-10 md:ml-[20px] ml-3"
           >
-            <div>
-              <h1
-                class="text-3xl md:text-2xl text-black opacity-80 font-bold mb-1"
-              >
-                Testimonial introduction copy goes here, lorem ipsum dolor sit
-                amet.
-              </h1>
-              <p class="text-black opacity-80 font-medium sm:text-sm">
-                “Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                suspendisse tincidunt sagitis eros. Quisque quis euismod lorem"
-              </p>
-            </div>
-            <div>
-              <h2
-                class="text-2xl md:text-xl text-black opacity-80 font-bold mb-2 lg:mt-0 md:mt-0 mt-8"
-              >
-                Author Name
-              </h2>
-              <p
-                class="text-pretty text-black opacity-80 font-medium sm:text-sm"
-              >
-                Co-Founder and CEO of Company
-              </p>
-            </div>
+            <div
+              x-ref="rightImageForCalc"
+              :style="`background-image: url(https://via.placeholder.com/1000x1000); aspect-ratio: ${imageAspectRatioForCalc};`"
+              class="absolute -z-10 bg-cover bg-center bg-no-repeat flex-shrink-0 xl:w-[500px] md:w-[314px] w-[169px]"
+            ></div>
+            <div
+              x-ref="rightImage"
+              :style="`background-image: url(https://via.placeholder.com/1000x1000); aspect-ratio: ${imageAspectRatio};`"
+              class="bg-cover transition-all bg-center bg-no-repeat flex-shrink-0 xl:w-[500px] md:w-[314px] w-[169px]"
+            ></div>
           </div>
         </div>
       </div>

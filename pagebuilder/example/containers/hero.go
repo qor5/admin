@@ -1,6 +1,8 @@
 package containers
 
 import (
+	"fmt"
+
 	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
@@ -84,6 +86,7 @@ func RegisterHeroContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	// 		p.LinkText = strings.Replace(p.LinkText, "{{Name}}", field.Name, -1)
 	// 		return
 	// 	}
+	// 	}
 	// })
 
 	// ed.Field("FontColor").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
@@ -111,8 +114,11 @@ func HeroBody(data *Hero, input *pagebuilder.RenderInput) (body HTMLComponent) {
 			Div(
 				Div(
 					Div(
-						Img(imgUrl).Class("w-full"),
-					).Class("lg:w-auto", "md:w-auto", "flex", "justify-start"),
+						Div(
+						// Use a div with background image instead of Img
+						).Style(fmt.Sprintf("background-image: url('%s');", imgUrl)).
+							Class("w-full", "h-full", "bg-cover", "bg-center", "aspect-[3/4]"),
+					).Class("lg:w-auto", "md:w-auto", "flex", "justify-start", "h-full"),
 					Div(
 						Div(
 							If(data.Content.Text != "", Div(RawHTML(data.Content.Text)),
