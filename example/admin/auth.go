@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	_ "embed"
+
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/providers/github"
 	"github.com/markbates/goth/providers/google"
@@ -169,6 +171,9 @@ func initLoginSessionBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Buil
 			return user.GetAccountName() == loginInitialUserEmail
 		}).
 		TablePrefix("cms_").
+		// ParseIPFunc(func(ctx context.Context, lang language.Tag, addr string) (string, error) {
+		// 	return locationDB.GetLocation(ctx, lang, addr)
+		// }).
 		AutoMigrate()
 }
 

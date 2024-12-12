@@ -2,7 +2,9 @@ package login
 
 import (
 	"cmp"
+	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"sync"
 	"sync/atomic"
@@ -48,17 +50,19 @@ func (b *SessionBuilder) installPreset(pb *presets.Builder) error {
 	mb := b.pb.Model(&LoginSessionsDialog{}).URIName(uriNameLoginSessionsDialog).InMenu(false)
 	mb.RegisterEventFunc(eventLoginSessionsDialog, b.handleEventLoginSessionsDialog)
 	mb.RegisterEventFunc(eventExpireOtherSessions, b.handleEventExpireOtherSessions)
+	mb.RegisterEventFunc(eventExpireSession, b.handleEventExpireSession)
 	return nil
 }
 
 type LoginSession struct {
 	gorm.Model
 
-	UserID    string    `gorm:"index;not null"`
-	Device    string    `gorm:"not null"`
-	IP        string    `gorm:"not null"`
-	TokenHash string    `gorm:"index;not null"`
-	ExpiredAt time.Time `gorm:"not null"`
+	UserID        string    `gorm:"index;not null"`
+	Device        string    `gorm:"not null"`
+	IP            string    `gorm:"not null"`
+	TokenHash     string    `gorm:"index;not null"`
+	ExpiredAt     time.Time `gorm:"not null"`
+	LastActivedAt time.Time `gorm:"not null"`
 }
 
 type SessionBuilder struct {
@@ -72,6 +76,7 @@ type SessionBuilder struct {
 	amb          *activity.ModelBuilder
 	pb           *presets.Builder
 	isPublicUser func(user any) bool
+	parseIPFunc  func(ctx context.Context, lang language.Tag, addr string) (string, error)
 }
 
 func NewSessionBuilder(lb *login.Builder, db *gorm.DB) *SessionBuilder {
@@ -146,6 +151,11 @@ func (b *SessionBuilder) IsPublicUser(f func(user any) bool) *SessionBuilder {
 	return b
 }
 
+func (b *SessionBuilder) ParseIPFunc(f func(ctx context.Context, lang language.Tag, addr string) (string, error)) *SessionBuilder {
+	b.parseIPFunc = f
+	return b
+}
+
 func (b *SessionBuilder) Mount(mux *http.ServeMux) {
 	b.lb.Mount(mux)
 }
@@ -158,11 +168,12 @@ func (b *SessionBuilder) CreateSession(r *http.Request, uid string) error {
 	token := login.GetSessionToken(b.lb, r)
 	client := uaparser.NewFromSaved().Parse(r.Header.Get("User-Agent"))
 	if err := b.db.Create(&LoginSession{
-		UserID:    uid,
-		Device:    fmt.Sprintf("%v - %v", client.UserAgent.Family, client.Os.Family),
-		IP:        ip(r),
-		TokenHash: getStringHash(token, LoginTokenHashLen),
-		ExpiredAt: b.db.NowFunc().Add(time.Duration(b.lb.GetSessionMaxAge()) * time.Second),
+		UserID:        uid,
+		Device:        fmt.Sprintf("%v - %v", client.UserAgent.Family, client.Os.Family),
+		IP:            ip(r),
+		TokenHash:     getStringHash(token, LoginTokenHashLen),
+		ExpiredAt:     b.db.NowFunc().Add(time.Duration(b.lb.GetSessionMaxAge()) * time.Second),
+		LastActivedAt: b.db.NowFunc(),
 	}).Error; err != nil {
 		return errors.Wrap(err, "login: failed to create session")
 	}
@@ -220,6 +231,17 @@ func (b *SessionBuilder) ExpireOtherSessions(r *http.Request, uid string) error 
 	return nil
 }
 
+func (b *SessionBuilder) ExpireSession(uid, tokenHash string) error {
+	if err := b.db.Model(&LoginSession{}).
+		Where("user_id = ? and token_hash = ?", uid, tokenHash).
+		Updates(map[string]any{
+			"expired_at": b.db.NowFunc(),
+		}).Error; err != nil {
+		return errors.Wrap(err, "login: failed to expire session")
+	}
+	return nil
+}
+
 func (b *SessionBuilder) IsSessionValid(r *http.Request, uid string) (valid bool, err error) {
 	token := login.GetSessionToken(b.lb, r)
 	if token == "" {
@@ -244,6 +266,19 @@ func (b *SessionBuilder) IsSessionValid(r *http.Request, uid string) (valid bool
 	return true, nil
 }
 
+func (b *SessionBuilder) UpdateSessionLastActivedAt(r *http.Request, uid string) error {
+	token := login.GetSessionToken(b.lb, r)
+	tokenHash := getStringHash(token, LoginTokenHashLen)
+	if err := b.db.Model(&LoginSession{}).
+		Where("user_id = ? and token_hash = ?", uid, tokenHash).
+		Updates(map[string]any{
+			"last_actived_at": b.db.NowFunc(),
+		}).Error; err != nil {
+		return errors.Wrap(err, "login: failed to update session last active")
+	}
+	return nil
+}
+
 func (b *SessionBuilder) Middleware(cfgs ...login.MiddlewareConfig) func(next http.Handler) http.Handler {
 	middleware := b.lb.Middleware(cfgs...)
 	return func(next http.Handler) http.Handler {
@@ -264,7 +299,9 @@ func (b *SessionBuilder) validateSessionToken() func(next http.Handler) http.Han
 				return
 			}
 
-			valid, err := b.IsSessionValid(r, presets.MustObjectID(user))
+			uid := presets.MustObjectID(user)
+
+			valid, err := b.IsSessionValid(r, uid)
 			if err != nil || !valid {
 				if r.URL.Path == b.lb.LogoutURL {
 					next.ServeHTTP(w, r)
@@ -272,6 +309,10 @@ func (b *SessionBuilder) validateSessionToken() func(next http.Handler) http.Han
 				}
 				http.Redirect(w, r, b.lb.LogoutURL, http.StatusFound)
 				return
+			}
+
+			if err = b.UpdateSessionLastActivedAt(r, uid); err != nil {
+				log.Printf("login: failed to update session last active(uid:%s): %v", uid, err)
 			}
 
 			next.ServeHTTP(w, r)
@@ -384,6 +425,7 @@ const (
 	uriNameLoginSessionsDialog = "login-sessions-dialog"
 	eventLoginSessionsDialog   = "loginSession_eventLoginSessionsDialog"
 	eventExpireOtherSessions   = "loginSession_eventExpireOtherSessions"
+	eventExpireSession         = "loginSession_eventExpireSession"
 )
 
 func (b *SessionBuilder) OpenSessionsDialog() string {
@@ -449,20 +491,34 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 
 	type sessionWrapper struct {
 		*LoginSession
-		Time   string
-		Status string
+		Time          string
+		Status        string
+		Location      string
+		LastActivedAt string
 	}
 	now := b.db.NowFunc()
 	wrappers := make([]*sessionWrapper, 0, len(sessions))
 	activeCount := 0
 	for _, v := range sessions {
 		w := &sessionWrapper{
-			LoginSession: v,
-			Time:         pmsgr.HumanizeTime(v.CreatedAt),
-			Status:       msgr.SessionStatusActive,
+			LoginSession:  v,
+			Time:          pmsgr.HumanizeTime(v.CreatedAt),
+			Status:        msgr.SessionStatusActive,
+			LastActivedAt: pmsgr.HumanizeTime(v.LastActivedAt),
 		}
 		if isPublicUser {
 			w.IP = msgr.HideIPAddressTips
+			w.Location = msgr.HideIPAddressTips
+		} else {
+			if b.parseIPFunc != nil {
+				lang := i18n.LanguageTagFromContext(ctx.R.Context(), language.English)
+				location, perr := b.parseIPFunc(ctx.R.Context(), lang, w.IP)
+				if perr != nil {
+					w.Location = msgr.LocationUnknown
+				} else {
+					w.Location = location
+				}
+			}
 		}
 		if v.ExpiredAt.Before(now) {
 			w.Status = msgr.SessionStatusExpired
@@ -475,12 +531,43 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 		wrappers = append(wrappers, w)
 	}
 	tableHeaders := []dataTableHeader{
-		{msgr.SessionTableHeaderTime, "Time", "25%", false},
-		{msgr.SessionTableHeaderDevice, "Device", "25%", false},
-		{msgr.SessionTableHeaderIPAddress, "IP", "25%", false},
-		{msgr.SessionTableHeaderStatus, "Status", "25%", false},
+		{Title: msgr.SessionTableHeaderTime, Key: "Time", Sortable: false},
+		{Title: msgr.SessionTableHeaderDevice, Key: "Device", Sortable: false},
+		{Title: msgr.SessionTableHeaderLocation, Key: "Location", Sortable: false},
+		{Title: msgr.SessionTableHeaderIPAddress, Key: "IP", Sortable: false},
+		{Title: msgr.SessionTableHeaderStatus, Key: "Status", Sortable: false},
+		{Title: msgr.SessionTableHeaderLastActivedAt, Key: "LastActivedAt", Sortable: false},
+	}
+	locationIndex := 2
+	if b.parseIPFunc == nil {
+		tableHeaders = append(tableHeaders[:locationIndex], tableHeaders[locationIndex+1:]...)
+	}
+	if !isPublicUser {
+		tableHeaders = append(tableHeaders, dataTableHeader{Title: msgr.SessionTableHeaderAction, Key: "Action", Sortable: false})
+	}
+	percent := 100 / len(tableHeaders)
+	for i := range tableHeaders {
+		if i == len(tableHeaders)-1 {
+			continue
+		}
+		tableHeaders[i].Width = fmt.Sprintf("%d%%", percent)
 	}
 	table := v.VDataTable().Headers(tableHeaders).Items(wrappers).ItemsPerPage(-1).HideDefaultFooter(true)
+	if !isPublicUser {
+		table = table.Children(web.Slot().Name("item.Action").Scope("{ item }").Children(
+			h.Div(
+				v.VBtn(msgr.Logout).Variant(v.VariantOutlined).Size(v.SizeSmall).Color(v.ColorWarning).
+					Class("text-none font-weight-regular").
+					Attr(":disabled", fmt.Sprintf(`item.Status == %q`, msgr.SessionStatusExpired)).
+					Attr("@click", web.POST().
+						URL("/"+uriNameLoginSessionsDialog).
+						EventFunc(eventExpireSession).
+						Query("token_hash", web.Var("item.TokenHash")).
+						Go(),
+					),
+			),
+		))
+	}
 
 	body := web.Scope().VSlot("{locals: xlocals}").Init("{dialog:true}").Children(
 		v.VDialog().Attr("v-model", "xlocals.dialog").Width("60%").MaxWidth(828).Scrollable(true).Children(
@@ -542,6 +629,32 @@ func (b *SessionBuilder) handleEventExpireOtherSessions(ctx *web.EventContext) (
 	}
 
 	presets.ShowMessage(&r, msgr.SuccessfullyExpiredOtherSessions, "")
-	web.AppendRunScripts(&r, web.Plaid().MergeQuery(true).Go())
+	web.AppendRunScripts(&r, web.Plaid().URL("/"+uriNameLoginSessionsDialog).EventFunc(eventLoginSessionsDialog).MergeQuery(true).Go())
+	return
+}
+
+func (b *SessionBuilder) handleEventExpireSession(ctx *web.EventContext) (r web.EventResponse, err error) {
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nAdminLoginKey, Messages_en_US).(*Messages)
+
+	user := login.GetCurrentUser(ctx.R)
+	if user == nil {
+		return r, errors.New("login: user not found")
+	}
+	isPublicUser := false
+	if b.isPublicUser != nil {
+		isPublicUser = b.isPublicUser(user)
+	}
+	if isPublicUser {
+		return r, perm.PermissionDenied
+	}
+	uid := presets.MustObjectID(user)
+	tokenHash := ctx.R.FormValue("token_hash")
+
+	if err = b.ExpireSession(uid, tokenHash); err != nil {
+		return r, err
+	}
+
+	presets.ShowMessage(&r, msgr.SuccessfullyExpiredSessions, "")
+	web.AppendRunScripts(&r, web.Plaid().URL("/"+uriNameLoginSessionsDialog).EventFunc(eventLoginSessionsDialog).MergeQuery(true).Go())
 	return
 }
