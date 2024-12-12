@@ -5,7 +5,6 @@ go 1.22.5
 require (
 	github.com/ahmetb/go-linq/v3 v3.2.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.68.0
-	github.com/disintegration/imaging v1.6.2
 	github.com/dustin/go-humanize v1.0.1
 	github.com/fatih/color v1.17.0
 	github.com/go-chi/chi/v5 v5.1.0
@@ -24,6 +23,7 @@ require (
 	github.com/ory/ladon v1.3.0
 	github.com/pkg/errors v0.9.1
 	github.com/pquerna/otp v1.4.0
+	github.com/qor5/imaging v1.6.4
 	github.com/qor5/web v1.3.2
 	github.com/qor5/web/v3 v3.0.11
 	github.com/qor5/x/v3 v3.0.14-0.20241211063819-4ce8db0f5d7f
@@ -49,7 +49,7 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
-	golang.org/x/text v0.20.0
+	golang.org/x/text v0.21.0
 	gorm.io/driver/postgres v1.5.9
 	gorm.io/driver/sqlite v1.5.6
 	gorm.io/gorm v1.25.11
@@ -179,10 +179,10 @@ require (
 	go.opentelemetry.io/otel/trace v1.27.0 // indirect
 	go4.org v0.0.0-20230225012048-214862532bf5 // indirect
 	golang.org/x/crypto v0.25.0 // indirect
-	golang.org/x/image v0.22.0 // indirect
+	golang.org/x/image v0.23.0 // indirect
 	golang.org/x/net v0.27.0 // indirect
 	golang.org/x/oauth2 v0.21.0 // indirect
-	golang.org/x/sync v0.9.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240513163218-0867130af1f8 // indirect
