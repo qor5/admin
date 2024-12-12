@@ -542,6 +542,25 @@ func configProfile(db *gorm.DB, ab *activity.Builder, lsb *plogin.SessionBuilder
 			return nil
 		},
 	).SessionBuilder(lsb) // .DisableNotification(true).LogoutURL(lsb.GetLoginBuilder().LogoutURL)
+	// 		CustomizeButtons(func(ctx context.Context, buttons ...h.HTMLComponent) ([]h.HTMLComponent, error) {
+	// 	evCtx := web.MustGetEventContext(ctx)
+	// 	u := getCurrentUser(evCtx.R)
+	// 	if u == nil {
+	// 		return nil, perm.PermissionDenied
+	// 	}
+	// 	if u.GetAccountName() == loginInitialUserEmail {
+	// 		return buttons, nil
+	// 	}
+	// 	msgr := i18n.MustGetModuleMessages(evCtx.R, I18nExampleKey, Messages_en_US).(*Messages)
+	// 	return slices.Concat([]h.HTMLComponent{
+	// 		v.VBtn(msgr.ChangePassword).Variant(v.VariantTonal).Color(v.ColorSecondary).OnClick(plogin.OpenChangePasswordDialogEvent),
+	// 	}, buttons), nil
+	// }).
+	// PrependCompos(func(ctx context.Context, profileCompo *plogin.ProfileCompo) ([]h.HTMLComponent, error) {
+	// 	return []h.HTMLComponent{
+	// 		web.Listen(presets.NotifModelsUpdated(&models.User{}), stateful.ReloadAction(ctx, profileCompo, nil).Go()),
+	// 	}, nil
+	// })
 }
 
 func configBrand(b *presets.Builder) {
