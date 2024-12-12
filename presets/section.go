@@ -579,7 +579,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 		)
 	}
 	operateID := fmt.Sprint(time.Now().UnixNano())
-	onChangeEvent += fmt.Sprintf(`if (!vars.__FormFieldIsUpdating){
+	onChangeEvent += fmt.Sprintf(`
 	  vars.__currentValidateKeys = vars.__currentValidateKeys??[];
 	  const endKey = %q	;
 	  	
@@ -589,7 +589,6 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 			vars.__currentValidateKeys.push(key+endKey);
 			typeof vars.__findLinkageFields === "function" && vars.__findLinkageFields(key);
 		}
-	}
 %s
 }`, ErrorMessagePostfix,
 		web.Plaid().URL(ctx.R.URL.Path).
@@ -600,13 +599,8 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 			Go())
 
 	comps := h.Components(
-		h.Div().Style("display:none").Attr("v-on-mounted", `({window})=>{
-		vars.__FormUpdatingFunc = ()=>{ vars.__FormFieldIsUpdating = true}
-		vars.__FormUpdatedFunc = ()=>{ window.setTimeout(()=>{vars.__FormFieldIsUpdating = false},600)}
-		}`),
 		web.Listen(b.mb.NotifModelsSectionValidate(b.name),
 			`
-			vars.__FormUpdatingFunc();
 			if (vars.__currentValidateKeys){
 						for (const key of vars.__currentValidateKeys){
 							form[key] = payload.form[key]
@@ -617,7 +611,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 							}
 						}
             vars.__currentValidateKeys = [];
-			vars.__FormUpdatedFunc();`))
+			`))
 
 	if b.isEdit {
 		return h.Div(
