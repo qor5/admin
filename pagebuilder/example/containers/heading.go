@@ -60,7 +60,6 @@ func RegisterHeadingContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 			return Components(presets.LinkageFieldsController(field, "AnchorID"), in(obj, field, ctx))
 		}
-
 	})
 	ed.Field("AddTopSpace").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
 		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
