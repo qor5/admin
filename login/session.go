@@ -60,8 +60,8 @@ type LoginSession struct {
 	IP            string    `gorm:"size:128;not null"`
 	TokenHash     string    `gorm:"size:36;index;not null"`
 	ExpiredAt     time.Time `gorm:"not null"`
-	ExtendedAt    time.Time `gorm:"index;not null"`
-	LastTokenHash string    `gorm:"size:36;index;not null"`
+	ExtendedAt    time.Time `gorm:"index"`
+	LastTokenHash string    `gorm:"size:36;default:'';index"`
 }
 
 type SessionBuilder struct {
