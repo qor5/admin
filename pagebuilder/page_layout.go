@@ -2,10 +2,6 @@ package pagebuilder
 
 import (
 	"fmt"
-	"log"
-	"os"
-	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/qor5/web/v3"
@@ -26,14 +22,43 @@ func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *we
 	tailwindJs := "https://cdn.tailwindcss.com"
 	alpineJs := "https://unpkg.com/alpinejs"
 	InferCss := "https://rsms.me/inter/inter.css"
-	// Read local example/assets/css/pb-theme.css into pbThemeCss
-	_, filename, _, _ := runtime.Caller(0)
-	pbThemeCssPath := filepath.Join(filepath.Dir(filename), "example/assets/css/page-builder-theme.css")
-	pbThemeCssBytes, err := os.ReadFile(pbThemeCssPath)
-	if err != nil {
-		log.Printf("Error reading page-builder-theme: %v", err)
-	}
-	pbThemeCss := []string{string(pbThemeCssBytes)}
+
+	pbThemeCss := []string{`
+		:root {
+  --pb-primary: #3e63dd;
+  --pb-secondary: #5b6471;
+  --pb-success: #30a46c;
+  --pb-info: #0091ff;
+  --pb-warning: #f76808;
+  --pb-error: #e5484d;
+}
+
+.btn-primary {
+  color: #fff;
+  background-color: var(--pb-primary);
+}
+.btn-secondary {
+  color: #fff;
+  background-color: var(--pb-secondary);
+}
+.btn-info {
+  color: #fff;
+  background-color: var(--pb-info);
+}
+.btn-success {
+  color: #fff;
+  background-color: var(--pb-success);
+}
+.btn-error {
+  color: #fff;
+  background-color: var(--pb-error);
+}
+.btn-warning {
+  color: #fff;
+  background-color: var(--pb-warning);
+}
+
+	`}
 
 	tailwindPluginJs := []string{
 		`tailwind.config = {
