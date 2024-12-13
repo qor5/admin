@@ -717,7 +717,7 @@ func (mb *Builder) mediaLibraryBottomOperations(field string, ctx *web.EventCont
 		Query(ParamCfg, h.JSONString(cfg)).
 		Go()
 	if inMediaLibrary {
-		changePageEvent += ";" + web.Plaid().
+		changePageEvent += ";" + web.Plaid().MergeQuery(true).
 			Query(currentPageName(inMediaLibrary, field), web.Var("$event")).PushState(true).RunPushState()
 	}
 	return VRow(
