@@ -2,6 +2,10 @@ package pagebuilder
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/qor5/web/v3"
@@ -22,16 +26,25 @@ func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *we
 	tailwindJs := "https://cdn.tailwindcss.com"
 	alpineJs := "https://unpkg.com/alpinejs"
 	InferCss := "https://rsms.me/inter/inter.css"
+	// Read local example/assets/css/pb-theme.css into pbThemeCss
+	_, filename, _, _ := runtime.Caller(0)
+	pbThemeCssPath := filepath.Join(filepath.Dir(filename), "example/assets/css/page-builder-theme.css")
+	pbThemeCssBytes, err := os.ReadFile(pbThemeCssPath)
+	if err != nil {
+		log.Printf("Error reading page-builder-theme: %v", err)
+	}
+	pbThemeCss := []string{string(pbThemeCssBytes)}
+
 	tailwindPluginJs := []string{
 		`tailwind.config = {
-      theme: {
-        extend: {
+		theme: {
+		extend: {
 					fontFamily: {
 						sans: ["InterVariable", "sans-serif"],
 					},
-        }
-      }
-  }`,
+		}
+		}
+	}`,
 	}
 	tailwindOverrides := []string{
 		`.tailwind-scope {
@@ -70,6 +83,7 @@ func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *we
 		input.StructuredData,
 		scriptWithCodes(input.FreeStyleTopJs),
 		scriptWithCodes(tailwindPluginJs),
+		styleWithCodes(pbThemeCss),
 		styleWithCodes(tailwindOverrides),
 	)
 	ctx.Injector.HTMLLang(input.LocaleCode)
