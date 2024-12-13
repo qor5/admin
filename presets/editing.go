@@ -361,23 +361,19 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 	formContent := web.Scope(h.Components(
 		VCardText(
 			h.Components(hiddenComps...),
-			h.Div().Style("display:none").Attr("v-on-mounted", `({window})=>{
-		vars.__FormUpdatingFunc = ()=>{ vars.__FormFieldIsUpdating = true}
-		vars.__FormUpdatedFunc = ()=>{ window.setTimeout(()=>{vars.__FormFieldIsUpdating = false},600)}
-		}`),
 			web.Listen(b.mb.NotifModelsValidate(),
-				`vars.__FormUpdatingFunc();
-				 for (const key in payload.form){
+				`
 					if (vars.__currentValidateKeys){
-						if(vars.__currentValidateKeys.lastIndexOf(key)>=0){
+						for (const key of vars.__currentValidateKeys){
 							form[key] = payload.form[key]
 							}
 					}else{
-						form[key] = payload.form[key]
+						for (const key in payload.form){
+								form[key] = payload.form[key]
+							}
 						}
-				}
 			    vars.__currentValidateKeys = [];
-				vars.__FormUpdatedFunc();`),
+				`),
 			b.ToComponent(b.mb.Info(), obj, ctx),
 		),
 		h.If(!autosave, VCardActions(actionButtons)),
@@ -414,26 +410,25 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 	).VSlot("{ form }")
 	operateID := fmt.Sprint(time.Now().UnixNano())
 	if autosave {
-		onChangeEvent += fmt.Sprintf(`if (!vars.__FormFieldIsUpdating){%s}`, web.Plaid().URL(ctx.R.URL.Path).
+		onChangeEvent += web.Plaid().URL(ctx.R.URL.Path).
 			BeforeScript(fmt.Sprintf(`vars.__currentValidateKeys=null;vars.__ValidateOperateID=%q`, operateID)).
 			EventFunc(actions.Validate).
 			Query(ParamID, id).
 			Query(ParamOperateID, operateID).
 			Query(ParamOverlay, ctx.Param(ParamOverlay)).
-			Go())
+			Go()
 	} else {
-		onChangeEvent += fmt.Sprintf(`if (!vars.__FormFieldIsUpdating){
+		onChangeEvent += fmt.Sprintf(`
 	  vars.__currentValidateKeys = vars.__currentValidateKeys??[];
 	  const endKey = %q	;
 	  for (let key in form) {
 		if (key.endsWith(endKey)){continue}
 		if (form[key] !== oldForm[key]) {
-			vars.__currentValidateKeys.push(key+endKey);
+			vars.__currentValidateKeys.push(key+endKey)
 			typeof vars.__findLinkageFields === "function" && vars.__findLinkageFields(key);	
 		}	
 	}	
-%s
-}`, ErrorMessagePostfix,
+%s`, ErrorMessagePostfix,
 			web.Plaid().URL(ctx.R.URL.Path).
 				BeforeScript(fmt.Sprintf(`vars.__ValidateOperateID=%q`, operateID)).
 				EventFunc(actions.Validate).
@@ -471,24 +466,24 @@ func (b *EditingBuilder) doValidate(ctx *web.EventContext) (r web.EventResponse,
 				)),
 		)
 
-		if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
+		if vErr.HaveErrors() && vErr.HaveGlobalErrors() {
 			web.AppendRunScripts(&r, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), ColorWarning))
 		}
 	}()
 	obj, vErr = usingB.FetchAndUnmarshal(id, false, ctx)
-	if vErr.HaveErrors() {
+	if vErr.HaveErrors() && vErr.HaveGlobalErrors() {
 		return
 	}
-
+	vErrSetter := vErr
 	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
 		vErr.GlobalError(perm.PermissionDenied.Error())
 		return
 	}
 	if usingB.Validator != nil {
-		if vErr = usingB.Validator(obj, ctx); vErr.HaveErrors() {
-			return
-		}
+		vErr = usingB.Validator(obj, ctx)
+		_ = vErrSetter.Merge(&vErr)
 	}
+	vErr = vErrSetter
 	return
 }
 
@@ -545,7 +540,7 @@ func (b *EditingBuilder) FetchAndUnmarshal(id string, removeDeletedAndSort bool,
 func (b *EditingBuilder) doUpdate(
 	ctx *web.EventContext,
 	r *web.EventResponse,
-	// will not close drawer/dialog
+// will not close drawer/dialog
 	silent bool,
 ) (created bool, err error) {
 	id := ctx.R.FormValue(ParamID)
@@ -561,11 +556,11 @@ func (b *EditingBuilder) doUpdate(
 	modifiedIndexes := ContextModifiedIndexesBuilder(ctx).FromHidden(ctx.R)
 	modifiedIndexes.deletedValues = make(map[string][]string)
 	modifiedIndexes.sortedValues = make(map[string][]string)
-	if vErr.HaveErrors() {
+	if vErr.HaveErrors() && vErr.HaveGlobalErrors() {
 		usingB.UpdateOverlayContent(ctx, r, obj, "", &vErr)
 		return created, &vErr
 	}
-
+	vErrSetter := vErr
 	if len(id) > 0 {
 		if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
 			b.UpdateOverlayContent(ctx, r, obj, "", perm.PermissionDenied)
@@ -579,10 +574,14 @@ func (b *EditingBuilder) doUpdate(
 	}
 
 	if usingB.Validator != nil {
-		if vErr = usingB.Validator(obj, ctx); vErr.HaveErrors() {
-			usingB.UpdateOverlayContent(ctx, r, obj, "", &vErr)
-			return created, &vErr
-		}
+		vErr = usingB.Validator(obj, ctx)
+		_ = vErrSetter.Merge(&vErr)
+		vErr = vErrSetter
+
+	}
+	if vErr.HaveErrors() {
+		usingB.UpdateOverlayContent(ctx, r, obj, "", &vErr)
+		return created, &vErr
 	}
 
 	err1 := usingB.Saver(obj, id, ctx)

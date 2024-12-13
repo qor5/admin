@@ -579,7 +579,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 		)
 	}
 	operateID := fmt.Sprint(time.Now().UnixNano())
-	onChangeEvent += fmt.Sprintf(`if (!vars.__FormFieldIsUpdating){
+	onChangeEvent += fmt.Sprintf(`
 	  vars.__currentValidateKeys = vars.__currentValidateKeys??[];
 	  const endKey = %q	;
 	  	
@@ -589,9 +589,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 			vars.__currentValidateKeys.push(key+endKey);
 			typeof vars.__findLinkageFields === "function" && vars.__findLinkageFields(key);
 		}
-	}
-%s
-}`, ErrorMessagePostfix,
+%s`, ErrorMessagePostfix,
 		web.Plaid().URL(ctx.R.URL.Path).
 			BeforeScript(fmt.Sprintf(`vars.__ValidateOperateID=%q`, operateID)).
 			EventFunc(b.EventValidate()).
@@ -600,24 +598,19 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 			Go())
 
 	comps := h.Components(
-		h.Div().Style("display:none").Attr("v-on-mounted", `({window})=>{
-		vars.__FormUpdatingFunc = ()=>{ vars.__FormFieldIsUpdating = true}
-		vars.__FormUpdatedFunc = ()=>{ window.setTimeout(()=>{vars.__FormFieldIsUpdating = false},600)}
-		}`),
 		web.Listen(b.mb.NotifModelsSectionValidate(b.name),
 			`
-			vars.__FormUpdatingFunc();
-			for (const key in payload.form){
-				if (vars.__currentValidateKeys){
-					if(vars.__currentValidateKeys.lastIndexOf(key)>=0){
-						form[key] = payload.form[key]
-						}
+			if (vars.__currentValidateKeys){
+						for (const key of vars.__currentValidateKeys){
+							form[key] = payload.form[key]
+							}
 					}else{
-						form[key] = payload.form[key]
+						for (const key in payload.form){
+								form[key] = payload.form[key]
+							}
 						}
-				}
             vars.__currentValidateKeys = [];
-			vars.__FormUpdatedFunc();`))
+			`))
 
 	if b.isEdit {
 		return h.Div(
@@ -1076,26 +1069,35 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
 		return
 	}
-
-	if Verr := b.editingFB.Unmarshal(obj, b.mb.Info(), true, ctx); Verr.HaveErrors() {
-		ShowMessage(&r, Verr.Error(), "warning")
+	vErrSetter := b.editingFB.Unmarshal(obj, b.mb.Info(), true, ctx)
+	if vErrSetter.HaveErrors() && vErrSetter.HaveGlobalErrors() {
+		ShowMessage(&r, vErrSetter.Error(), "warning")
 		return
 	}
+
 	if b.setter != nil {
 		b.setter(obj, ctx)
 	}
 
 	needSave := true
 	if b.mb.editing.Validator != nil {
-		if vErr := b.mb.editing.Validator(obj, ctx); vErr.HaveErrors() {
+		vErr := b.mb.editing.Validator(obj, ctx)
+		newVErrSetter := vErrSetter
+		_ = newVErrSetter.Merge(&vErr)
+		vErr = newVErrSetter
+		if vErr.HaveErrors() {
 			ctx.Flash = &vErr
 			needSave = false
 			if vErr.GetGlobalError() != "" {
 				ShowMessage(&r, vErr.GetGlobalError(), "warning")
 			}
 		}
+
 	}
-	if vErr := b.validator(obj, ctx); vErr.HaveErrors() {
+	vErr := b.validator(obj, ctx)
+	_ = vErrSetter.Merge(&vErr)
+	vErr = vErrSetter
+	if vErr.HaveErrors() {
 		ctx.Flash = &vErr
 		needSave = false
 		if vErr.GetGlobalError() != "" {
@@ -1152,7 +1154,7 @@ func (b *SectionBuilder) ValidateDetailField(ctx *web.EventContext) (r web.Event
 				),
 			),
 		)
-		if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
+		if vErr.HaveErrors() && vErr.HaveGlobalErrors() {
 			web.AppendRunScripts(&r, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), ColorWarning))
 		}
 	}()
@@ -1170,20 +1172,27 @@ func (b *SectionBuilder) ValidateDetailField(ctx *web.EventContext) (r web.Event
 	}
 
 	vErr = b.editingFB.Unmarshal(obj, b.mb.Info(), false, ctx)
-	if vErr.HaveErrors() {
+	if vErr.HaveErrors() && vErr.HaveGlobalErrors() {
 		return
 	}
+	vErrSetter := vErr
 	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
 		vErr.GlobalError(perm.PermissionDenied.Error())
 		return
 	}
 	if b.mb.editing.Validator != nil {
-		if vErr = b.mb.editing.Validator(obj, ctx); vErr.HaveErrors() {
+		vErr = b.mb.editing.Validator(obj, ctx)
+		_ = vErrSetter.Merge(&vErr)
+		if vErrSetter.HaveErrors() {
+			vErr = vErrSetter
 			return
 		}
 	}
 	if b.validator != nil {
-		if vErr = b.validator(obj, ctx); vErr.HaveErrors() {
+		vErr = b.validator(obj, ctx)
+		_ = vErrSetter.Merge(&vErr)
+		if vErrSetter.HaveErrors() {
+			vErr = vErrSetter
 			return
 		}
 	}
