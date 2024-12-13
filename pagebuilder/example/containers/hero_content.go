@@ -15,7 +15,6 @@ import (
 )
 
 type heroContent struct {
-	Text        string
 	Title       string
 	Body        string
 	Button      string
@@ -40,6 +39,10 @@ func (this *heroContent) Scan(value interface{}) error {
 
 func SetHeroContentComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder, db *gorm.DB) {
 	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&heroContent{}).Only("Title", "Body", "Button", "ButtonStyle", "ImageUpload")
+
+	fb.Field("Body").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		return presets.TextField(obj, field, ctx).Type("textarea")
+	})
 
 	fb.Field("ButtonStyle").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return presets.SelectField(obj, field, ctx).Items(ButtonPresets)
