@@ -327,6 +327,16 @@ func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent
 		MergeQuery(true).
 		Queries(ctx.Queries()).
 		Go()
+	changePageEvent := web.Plaid().
+		URL(mb.Info().ListingHref()).
+		EventFunc(ReloadTemplateContentEvent).
+		Query(presets.ParamOverlay, ctx.Param(presets.ParamOverlay)).
+		Query(ParamPage, web.Var("$event")).
+		Go()
+	if !inDialog {
+		changePageEvent += ";" + web.Plaid().PushState(true).Query(ParamPage, web.Var("$event")).RunPushState()
+	}
+
 	return h.Div(
 
 		VContainer(
@@ -350,16 +360,11 @@ func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent
 			h.If(totalCount > perPage,
 				VRow(
 					VCol(
-						VPagination().
+						vx.VXPagination().
 							Length(pagesCount).
 							TotalVisible(5).
 							ModelValue(int(page)).
-							Attr("@update:model-value", web.Plaid().
-								URL(mb.Info().ListingHref()).
-								EventFunc(ReloadTemplateContentEvent).
-								Query(presets.ParamOverlay, ctx.Param(presets.ParamOverlay)).
-								Query(ParamPage, web.Var("$event")).
-								Go()).Class("float-right"),
+							Attr("@update:model-value", changePageEvent).Class("float-right"),
 					).Cols(12),
 				).Class("position-sticky bottom-0", "bg-"+ColorBackground),
 			)).Fluid(true), web.Listen(
