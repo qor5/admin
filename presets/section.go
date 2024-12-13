@@ -589,8 +589,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 			vars.__currentValidateKeys.push(key+endKey);
 			typeof vars.__findLinkageFields === "function" && vars.__findLinkageFields(key);
 		}
-%s
-}`, ErrorMessagePostfix,
+%s`, ErrorMessagePostfix,
 		web.Plaid().URL(ctx.R.URL.Path).
 			BeforeScript(fmt.Sprintf(`vars.__ValidateOperateID=%q`, operateID)).
 			EventFunc(b.EventValidate()).
