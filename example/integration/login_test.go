@@ -2,13 +2,17 @@ package integration_test
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/multipartestutils"
+	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/example/admin"
+	"github.com/qor5/admin/v3/example/models"
 	plogin "github.com/qor5/admin/v3/login"
+	"github.com/qor5/admin/v3/role"
 )
 
 func TestLogin(t *testing.T) {
@@ -20,7 +24,7 @@ func TestLogin(t *testing.T) {
 	cases := []multipartestutils.TestCase{
 		{
 			Name:  "view by en",
-			Debug: true,
+			Debug: false,
 			ReqFunc: func() *http.Request {
 				req := multipartestutils.NewMultipartBuilder().
 					PageURL("/auth/login").
@@ -32,7 +36,7 @@ func TestLogin(t *testing.T) {
 		},
 		{
 			Name:  "view by zh",
-			Debug: true,
+			Debug: false,
 			ReqFunc: func() *http.Request {
 				req := multipartestutils.NewMultipartBuilder().
 					PageURL("/auth/login").
@@ -44,7 +48,7 @@ func TestLogin(t *testing.T) {
 		},
 		{
 			Name:  "view by ja",
-			Debug: true,
+			Debug: false,
 			ReqFunc: func() *http.Request {
 				req := multipartestutils.NewMultipartBuilder().
 					PageURL("/auth/login").
@@ -56,12 +60,12 @@ func TestLogin(t *testing.T) {
 		},
 		{
 			Name:  "view by en (customized)",
-			Debug: true,
+			Debug: false,
 			HandlerMaker: func() http.Handler {
 				mux := http.NewServeMux()
 				c := admin.NewConfig(TestDB, false)
 				loginSessionBuilder := c.GetLoginSessionBuilder()
-				loginBuilder := c.GetLoginSessionBuilder().GetLoginBuilder()
+				loginBuilder := loginSessionBuilder.GetLoginBuilder()
 				loginBuilder.LoginPageFunc(plogin.NewAdvancedLoginPage(func(ctx *web.EventContext, config *plogin.AdvancedLoginPageConfig) (*plogin.AdvancedLoginPageConfig, error) {
 					config.WelcomeLabel = "Hello"
 					return config, nil
@@ -79,6 +83,39 @@ func TestLogin(t *testing.T) {
 				return req
 			},
 			ExpectPageBodyContainsInOrder: []string{`Hello`, `Qor Admin System`, `Email`, `Password`, `Sign in`, `Forget your password?`},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, h)
+		})
+	}
+}
+
+func TestChangePassword(t *testing.T) {
+	h, c := admin.TestHandlerComplex(TestDB, &models.User{
+		Model: gorm.Model{ID: 888},
+		Name:  "viwer@theplant.jp",
+		Roles: []role.Role{
+			{
+				Name: models.RoleEditor,
+			},
+		},
+	}, false)
+	// dbr, _ := TestDB.DB()
+	sb := c.GetLoginSessionBuilder()
+	sb.Secret("test")
+	sb.Mount(h.(*http.ServeMux))
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "View Change Password Page",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return httptest.NewRequest("GET", "/auth/change-password", nil)
+			},
+			ExpectPageBodyContainsInOrder: []string{"Change your password", "Old password", "New password", "zxcvbn.js", "Re-enter new password"},
 		},
 	}
 
