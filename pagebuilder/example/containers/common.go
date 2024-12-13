@@ -17,6 +17,8 @@ const (
 
 var BackgroundColors = []string{White, Grey, Blue}
 
+var SpaceOptions = []string{"0", "10", "20", "30", "40", "50", "60", "70", "80", "90", "100"}
+
 var ButtonPresets = []string{"primary", "secondary", "success", "info", "warning", "error"}
 
 var FontColors = []string{Blue, Orange, White}
