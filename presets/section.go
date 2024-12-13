@@ -588,6 +588,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 		if (form[key] !== oldForm[key]) {
 			vars.__currentValidateKeys.push(key+endKey);
 			typeof vars.__findLinkageFields === "function" && vars.__findLinkageFields(key);
+			}
 		}
 %s`, ErrorMessagePostfix,
 		web.Plaid().URL(ctx.R.URL.Path).
