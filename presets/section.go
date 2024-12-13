@@ -458,6 +458,7 @@ func (b *SectionBuilder) EventReload() string {
 
 func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	id := b.getObjectID(ctx, obj)
+	initDataChanged := fmt.Sprintf("if (vars.%s ){vars.%s.section_%s=false};", VarsPresetsDataChanged, VarsPresetsDataChanged, b.name)
 
 	disableEditBtn := b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
 	btn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Edit")).Variant(VariantFlat).Size(SizeXSmall).
@@ -508,18 +509,17 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 			content,
 		).VSlot("{ form }"),
 		hiddenComp,
-	)
+	).Attr("v-on-mounted", fmt.Sprintf(`()=>{%s}`, initDataChanged))
 }
 
 func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	id := b.getObjectID(ctx, obj)
 
 	onChangeEvent := fmt.Sprintf("if (vars.%s ){ vars.%s.section_%s=true };", VarsPresetsDataChanged, VarsPresetsDataChanged, b.name)
-	cancelChangeEvent := fmt.Sprintf("if (vars.%s ){vars.%s.section_%s=false};", VarsPresetsDataChanged, VarsPresetsDataChanged, b.name)
 
 	cancelBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Cancel")).Size(SizeSmall).Variant(VariantFlat).Color(ColorGreyLighten3).
 		Attr("style", "text-transform: none;").
-		Attr("@click", cancelChangeEvent+web.Plaid().
+		Attr("@click", web.Plaid().
 			URL(ctx.R.URL.Path).
 			EventFunc(b.EventSave()).
 			// Query(SectionFieldName, b.name).
@@ -530,7 +530,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 	disableEditBtn := b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
 	saveBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Save")).PrependIcon("mdi-check").Size(SizeSmall).Variant(VariantFlat).Color(ColorPrimary).Disabled(disableEditBtn).
 		Attr("style", "text-transform: none;").
-		Attr("@click", cancelChangeEvent+web.Plaid().
+		Attr("@click", web.Plaid().
 			URL(ctx.R.URL.Path).
 			EventFunc(b.EventSave()).
 			// Query(SectionFieldName, b.name).
@@ -580,12 +580,14 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 	}
 	operateID := fmt.Sprint(time.Now().UnixNano())
 	onChangeEvent += fmt.Sprintf(`if (!vars.__FormFieldIsUpdating){
-	  vars.__currentValidateKeys = [];	
+	  vars.__currentValidateKeys = vars.__currentValidateKeys??[];
 	  const endKey = %q	;
+	  	
 	  for (let key in form) {
 		if (key.endsWith(endKey)){continue}
 		if (form[key] !== oldForm[key]) {
-			vars.__currentValidateKeys.push(key+endKey)
+			vars.__currentValidateKeys.push(key+endKey);
+			typeof vars.__findLinkageFields === "function" && vars.__findLinkageFields(key);
 		}
 	}
 %s
@@ -614,6 +616,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 						form[key] = payload.form[key]
 						}
 				}
+            vars.__currentValidateKeys = [];
 			vars.__FormUpdatedFunc();`))
 
 	if b.isEdit {
@@ -1173,6 +1176,11 @@ func (b *SectionBuilder) ValidateDetailField(ctx *web.EventContext) (r web.Event
 	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
 		vErr.GlobalError(perm.PermissionDenied.Error())
 		return
+	}
+	if b.mb.editing.Validator != nil {
+		if vErr = b.mb.editing.Validator(obj, ctx); vErr.HaveErrors() {
+			return
+		}
 	}
 	if b.validator != nil {
 		if vErr = b.validator(obj, ctx); vErr.HaveErrors() {

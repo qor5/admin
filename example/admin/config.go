@@ -11,16 +11,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3control"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
-	"github.com/qor/oss"
-	"github.com/qor/oss/filesystem"
-	"github.com/qor/oss/s3"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/login"
+	"github.com/qor5/x/v3/oss"
+	"github.com/qor5/x/v3/oss/filesystem"
+	"github.com/qor5/x/v3/oss/s3"
 	"github.com/qor5/x/v3/perm"
 	v "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
@@ -86,7 +85,24 @@ var (
 		"Will reset and import initial data if set to true", false)
 )
 
-func NewConfig(db *gorm.DB, enableWork bool) Config {
+type ConfigOption func(opts *configOptions)
+
+type configOptions struct {
+	StorageWrapper func(oss.StorageInterface) oss.StorageInterface
+}
+
+func WithStorageWrapper(fn func(oss.StorageInterface) oss.StorageInterface) ConfigOption {
+	return func(opts *configOptions) {
+		opts.StorageWrapper = fn
+	}
+}
+
+func NewConfig(db *gorm.DB, enableWork bool, opts ...ConfigOption) Config {
+	options := &configOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	if err := db.AutoMigrate(
 		&models.Post{},
 		&models.InputDemo{},
@@ -141,21 +157,21 @@ func NewConfig(db *gorm.DB, enableWork bool) Config {
 	// ab.Model(l).SkipDelete().SkipCreate()
 	// @snippet_end
 
-	sess := session.Must(session.NewSession())
 	media_oss.Storage = s3.New(&s3.Config{
 		Bucket:   s3Bucket,
 		Region:   s3Region,
-		ACL:      s3control.S3CannedAccessControlListBucketOwnerFullControl,
+		ACL:      string(types.ObjectCannedACLBucketOwnerFullControl),
 		Endpoint: s3Endpoint,
-		Session:  sess,
 	})
 	PublishStorage = microsite_utils.NewClient(s3.New(&s3.Config{
 		Bucket:   s3PublishBucket,
 		Region:   s3PublishRegion,
-		ACL:      s3control.S3CannedAccessControlListBucketOwnerFullControl,
-		Session:  sess,
+		ACL:      string(types.ObjectCannedACLBucketOwnerFullControl),
 		Endpoint: publishURL,
 	}))
+	if options.StorageWrapper != nil {
+		PublishStorage = options.StorageWrapper(PublishStorage)
+	}
 	b := presets.New().DataOperator(gorm2op.DataOperator(db)).RightDrawerWidth("700")
 	defer b.Build()
 
@@ -398,7 +414,7 @@ func configListModel(b *presets.Builder, ab *activity.Builder, publisher *publis
 
 					content = append(content,
 						h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, mb.Info().Label(), field.Label)))
-					domain := PublishStorage.GetEndpoint()
+					domain := PublishStorage.GetEndpoint(ctx.R.Context())
 					if this.OnlineUrl != "" {
 						p := this.OnlineUrl
 						content = append(content, h.A(h.Text(p)).Href(domain+p))
@@ -423,7 +439,7 @@ func configListModel(b *presets.Builder, ab *activity.Builder, publisher *publis
 
 				content = append(content,
 					h.Label(i18n.PT(ctx.R, presets.ModelsI18nModuleKey, mb.Info().Label(), field.Label)))
-				domain := PublishStorage.GetEndpoint()
+				domain := PublishStorage.GetEndpoint(ctx.R.Context())
 				if this.OnlineUrl != "" {
 					p := this.GetListUrl(strconv.Itoa(this.PageNumber))
 					content = append(content, h.A(h.Text(p)).Href(domain+p))
@@ -526,6 +542,25 @@ func configProfile(db *gorm.DB, ab *activity.Builder, lsb *plogin.SessionBuilder
 			return nil
 		},
 	).SessionBuilder(lsb) // .DisableNotification(true).LogoutURL(lsb.GetLoginBuilder().LogoutURL)
+	// 		CustomizeButtons(func(ctx context.Context, buttons ...h.HTMLComponent) ([]h.HTMLComponent, error) {
+	// 	evCtx := web.MustGetEventContext(ctx)
+	// 	u := getCurrentUser(evCtx.R)
+	// 	if u == nil {
+	// 		return nil, perm.PermissionDenied
+	// 	}
+	// 	if u.GetAccountName() == loginInitialUserEmail {
+	// 		return buttons, nil
+	// 	}
+	// 	msgr := i18n.MustGetModuleMessages(evCtx.R, I18nExampleKey, Messages_en_US).(*Messages)
+	// 	return slices.Concat([]h.HTMLComponent{
+	// 		v.VBtn(msgr.ChangePassword).Variant(v.VariantTonal).Color(v.ColorSecondary).OnClick(plogin.OpenChangePasswordDialogEvent),
+	// 	}, buttons), nil
+	// }).
+	// PrependCompos(func(ctx context.Context, profileCompo *plogin.ProfileCompo) ([]h.HTMLComponent, error) {
+	// 	return []h.HTMLComponent{
+	// 		web.Listen(presets.NotifModelsUpdated(&models.User{}), stateful.ReloadAction(ctx, profileCompo, nil).Go()),
+	// 	}, nil
+	// })
 }
 
 func configBrand(b *presets.Builder) {
@@ -664,7 +699,18 @@ func configPost(
 		}
 	})
 	m.Editing().Field("TitleWithSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)
-
+	m.Editing().ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		if ctx.Param(presets.ParamID) != "" {
+			p := obj.(*models.Post)
+			if p.Title == "" {
+				err.FieldError("Title", "Title Is Required")
+			}
+			if p.TitleWithSlug == "" {
+				err.FieldError("TitleWithSlug", "TitleWithSlug Is Required")
+			}
+		}
+		return
+	})
 	dp := m.Detailing(publish.VersionsPublishBar, "Detail", seo.SeoDetailFieldName).Drawer(true)
 	detailSection := presets.NewSectionBuilder(m, "Detail").
 		Editing("Title", "TitleWithSlug", "HeroImage", "Body", "BodyImage")

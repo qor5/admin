@@ -376,6 +376,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 						form[key] = payload.form[key]
 						}
 				}
+			    vars.__currentValidateKeys = [];
 				vars.__FormUpdatedFunc();`),
 			b.ToComponent(b.mb.Info(), obj, ctx),
 		),
@@ -422,13 +423,14 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 			Go())
 	} else {
 		onChangeEvent += fmt.Sprintf(`if (!vars.__FormFieldIsUpdating){
-	  vars.__currentValidateKeys = [];	
+	  vars.__currentValidateKeys = vars.__currentValidateKeys??[];
 	  const endKey = %q	;
 	  for (let key in form) {
 		if (key.endsWith(endKey)){continue}
 		if (form[key] !== oldForm[key]) {
-			vars.__currentValidateKeys.push(key+endKey)
-		}
+			vars.__currentValidateKeys.push(key+endKey);
+			typeof vars.__findLinkageFields === "function" && vars.__findLinkageFields(key);	
+		}	
 	}	
 %s
 }`, ErrorMessagePostfix,

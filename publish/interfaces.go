@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/qor/oss"
+	"github.com/qor5/x/v3/oss"
 	"gorm.io/gorm"
 )
 

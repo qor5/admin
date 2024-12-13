@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/qor/oss/filesystem"
+	"github.com/qor5/x/v3/oss/filesystem"
 
 	media_oss "github.com/qor5/admin/v3/media/oss"
 

@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/qor/oss/filesystem"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/multipartestutils"
+	"github.com/qor5/x/v3/oss/filesystem"
 	"github.com/theplant/gofixtures"
 
 	"github.com/qor5/admin/v3/media"
@@ -46,7 +46,7 @@ func TestMediaExample(t *testing.T) {
 				return req
 			},
 			// have img information and description
-			ExpectPortalUpdate0ContainsInOrder: []string{"/system/media_libraries/5/file.png", "<span>default</span>", "3230 X 1908", "<vx-field v-model='form[\"MediaLibrary1.Description\"]' v-assign='[form, {\"MediaLibrary1.Description\":\"5_desc\"}]'"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"/system/media_libraries/5/file.png", "<span>default</span>", "3230 X 1908", "<vx-field v-model='form[\"MediaLibrary1.Description\"]' :error-messages='form[\"MediaLibrary1.Description_FieldErrorMessages\"]' v-assign='[form, {\"MediaLibrary1.Description\":\"5_desc\",\"MediaLibrary1.Description_FieldErrorMessages\":null}]'"},
 			ExpectPortalUpdate0NotContains:     []string{"/system/media_libraries/6/file.png"},
 		},
 		{
