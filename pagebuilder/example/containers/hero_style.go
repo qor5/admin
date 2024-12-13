@@ -43,11 +43,11 @@ func SetHeroStyleComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder) 
 	})
 
 	fb.Field("TopSpace").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return presets.TextField(obj, field, ctx)
+		return presets.SelectField(obj, field, ctx).Items(SpaceOptions)
 	})
 
 	fb.Field("BottomSpace").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return presets.TextField(obj, field, ctx)
+		return presets.SelectField(obj, field, ctx).Items(SpaceOptions)
 	})
 	// SetCommonStyleComponent(pb, fb.Field("Style"))
 
