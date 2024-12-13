@@ -16,6 +16,7 @@ type heroStyle struct {
 	Layout          string
 	TopSpace        int
 	BottomSpace     int
+	ImgInitial      bool
 	ImageBackground media_library.MediaBox `sql:"type:text;"`
 }
 
@@ -42,11 +43,11 @@ func SetHeroStyleComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder) 
 	})
 
 	fb.Field("TopSpace").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return presets.TextField(obj, field, ctx).Type("number")
+		return presets.TextField(obj, field, ctx)
 	})
 
 	fb.Field("BottomSpace").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return presets.TextField(obj, field, ctx).Type("number")
+		return presets.TextField(obj, field, ctx)
 	})
 	// SetCommonStyleComponent(pb, fb.Field("Style"))
 

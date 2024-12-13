@@ -83,7 +83,7 @@
               clearTimeout(this.debounceTimer);
               this.debounceTimer = setTimeout(() => {
                 this.adjustAspectRatio();
-              }, 500);
+              }, 0);
             },
             adjustAspectRatio() {
               this.$nextTick(() => {
@@ -111,7 +111,7 @@
           }"
           class="flex items-stretch justify-between xl:max-w-[1280px] mx-auto xl:p-[120px] md:p-[60px] p-8"
         >
-          <div>
+          <div class="order-1">
             <div x-ref="leftContent" class="flex flex-col h-full">
               <h1
                 class="font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px]"
@@ -135,7 +135,7 @@
             </div>
           </div>
           <div
-            class="xl:w-[500px] xl:min-h-[400px] md:min-h-[251px] min-h-[135px] relative md:w-[314px] w-[169px] overflow-hidden flex-shrink-0 xl:ml-10 md:ml-[20px] ml-3"
+            class="order-1 xl:ml-10 md:ml-[20px] ml-3 xl:w-[500px] xl:min-h-[400px] md:min-h-[251px] min-h-[135px] relative md:w-[314px] w-[169px] overflow-hidden flex-shrink-0"
           >
             <div
               x-ref="rightImageForCalc"

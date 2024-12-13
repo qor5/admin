@@ -19,6 +19,7 @@ type heroContent struct {
 	Body        string
 	Button      string
 	ButtonStyle string
+	ImgInitial  bool
 	ImageUpload media_library.MediaBox `sql:"type:text;"`
 }
 
