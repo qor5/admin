@@ -17,6 +17,10 @@ const (
 
 var BackgroundColors = []string{White, Grey, Blue}
 
+var SpaceOptions = []string{"0", "10", "20", "30", "40", "50", "60", "70", "80", "90", "100"}
+
+var ButtonPresets = []string{"primary", "secondary", "success", "info", "warning", "error"}
+
 var FontColors = []string{Blue, Orange, White}
 
 const LINK_ARROW_SVG = RawHTML(`<svg height=".7em" viewBox="0 0 10 12" fill="none" xmlns="http://www.w3.org/2000/svg">

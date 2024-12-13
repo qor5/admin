@@ -11,7 +11,7 @@ import (
 	"io"
 	"math"
 
-	"github.com/disintegration/imaging"
+	"github.com/qor5/imaging"
 )
 
 var (

@@ -534,8 +534,8 @@ func imageDialog() h.HTMLComponent {
 	return VDialog(
 		VCard(
 			VImg().Attr(":src", "vars.imageSrc").Width(658),
-		).Class("position-relative").Color(ColorBlack).Attr("@click", "vars.imagePreview=false"),
-	).MaxWidth(658).Attr("v-model", "vars.imagePreview")
+		).Class("position-relative").Color(ColorBlack),
+	).MaxWidth(658).Attr("v-model", "vars.imagePreview").Attr("@click", "vars.imagePreview=false")
 }
 
 func (mb *Builder) mediaLibraryFilter(tab, selectedType, keyword, orderByVal string, parentID int, ctx *web.EventContext,
@@ -761,9 +761,7 @@ func (mb *Builder) mediaLibraryBottomOperations(field string, ctx *web.EventCont
 				VPagination().
 					Length(pagesCount).
 					TotalVisible(5).
-					NextIcon("mdi-page-last").
-					PrevIcon("mdi-page-first").
-					ModelValue(int(currentPageInt)).
+					ModelValue(currentPageInt).
 					Attr("@update:model-value", web.Plaid().
 						FieldValue(currentPageName(field), web.Var("$event")).
 						EventFunc(ImageJumpPageEvent).

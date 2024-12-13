@@ -304,7 +304,7 @@ func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *Field
 			modifiedIndexes := ContextModifiedIndexesBuilder(ctx)
 			body := b.nestedFieldsBuilder.toComponentWithFormValueKey(field.ModelInfo, val, field.FormKey, modifiedIndexes, ctx)
 			return h.Div(
-				h.Label(field.Label).Class("v-label theme--light text-caption"),
+				h.Label(field.Label).Class("v-label theme--light text-caption wrapper-field-label"),
 				v.VCard(body).Variant("outlined").Class("mx-0 mt-1 mb-4 px-4 pb-0 pt-4"),
 			)
 		})

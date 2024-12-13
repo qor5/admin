@@ -353,13 +353,18 @@ func setupDetailing(b *presets.Builder, dp *presets.DetailingBuilder, op *gorm2o
 								)),
 								h.Tr(h.Td(h.Text(msgr.ModelLabel)), h.Td().Attr("v-pre", true).Text(cmp.Or(log.ModelLabel, NopModelLabel))),
 								h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td().Attr("v-pre", true).Text(log.ModelKeys)),
-								h.Iff(log.ModelLink != "", func() h.HTMLComponent {
-									return h.Tr(h.Td(h.Text(msgr.ModelLink)), h.Td(
-										VBtn(msgr.MoreInfo).Class("text-none text-overline d-flex align-center").
-											Variant(VariantTonal).Color(ColorPrimary).Size(SizeXSmall).PrependIcon("mdi-open-in-new").
-											Attr("@click", web.Plaid().PushStateURL(log.ModelLink).Go()),
-									))
-								}),
+								// h.Iff(log.ModelLink != "", func() h.HTMLComponent {
+								// 	return h.Tr(h.Td(h.Text(msgr.ModelLink)), h.Td(
+								// 		VBtn(msgr.MoreInfo).Class("text-none text-overline d-flex align-center").
+								// 			Variant(VariantTonal).Color(ColorPrimary).Size(SizeXSmall).PrependIcon("mdi-open-in-new").
+								// 			Attr("@click", web.POST().
+								// 				EventFunc(actions.DetailingDrawer).
+								// 				Query(presets.ParamOverlay, actions.Dialog).
+								// 				URL(log.ModelLink).
+								// 				Go(),
+								// 			),
+								// 	))
+								// }),
 								h.Tr(h.Td(h.Text(msgr.ModelCreatedAt)), h.Td(h.Text(log.CreatedAt.Format(timeFormat)))),
 							),
 						),

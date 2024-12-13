@@ -658,7 +658,7 @@ func TestActivityAdmin(t *testing.T) {
 				"</tr>", "</tr>", "</tr>", "</tr>", "</tr>", "</tr>", "</tr>", "</tr>", "</tr>", "</tr>",
 				"<div", "<v-btn", "mdi-chevron-left", ":disabled='true'", "<v-btn", "mdi-chevron-right", ":disabled='false'", "</div>",
 			},
-			ExpectPageBodyNotContains: []string{"v-pagination"},
+			ExpectPageBodyNotContains: []string{"v-pagination", "没有可显示的记录"},
 		},
 		{
 			Name:  "Update note",
@@ -737,6 +737,31 @@ func TestActivityAdmin(t *testing.T) {
 				return req
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Activity Log", "121", "<td style='white-space: nowrap;'>AppovedAt</td>", "<td v-pre>2024-11-06 00:00:00 +0800 CST</td>"},
+		},
+
+		{
+			Name:  "Activity logs without PermList",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				pb := presets.New()
+				pb.Permission(
+					perm.New().Policies(
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermList).On("*:presets:with_activity_products:*"),
+					),
+				)
+				activityExample(pb, TestDB, func(mb *presets.ModelBuilder, ab *activity.Builder) {
+					pb.Use(ab)
+				})
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				// activityData.TruncatePut(dbr)
+				return httptest.NewRequest("GET", "/activity-logs?lang=zh", nil)
+			},
+			ExpectPageBodyContainsInOrder: []string{
+				"没有可显示的记录",
+			},
 		},
 	}
 
