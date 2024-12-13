@@ -332,9 +332,10 @@ func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent
 		EventFunc(ReloadTemplateContentEvent).
 		Query(presets.ParamOverlay, ctx.Param(presets.ParamOverlay)).
 		Query(ParamPage, web.Var("$event")).
+		Query(ParamSearchKeyword, ctx.Param(ParamSearchKeyword)).
 		Go()
 	if !inDialog {
-		changePageEvent += ";" + web.Plaid().PushState(true).Query(ParamPage, web.Var("$event")).RunPushState()
+		changePageEvent += ";" + web.Plaid().PushState(true).MergeQuery(true).Query(ParamPage, web.Var("$event")).RunPushState()
 	}
 
 	return h.Div(
@@ -376,8 +377,9 @@ func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent
 
 func (b *TemplateBuilder) searchComponent(ctx *web.EventContext) h.HTMLComponent {
 	msgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
-	clickEvent := web.Plaid().PushState(true).MergeQuery(true).Query(ParamSearchKeyword, web.Var("vars.searchMsg")).RunPushState() + ";" + web.Plaid().
+	clickEvent := web.Plaid().PushState(true).MergeQuery(true).ClearMergeQuery([]string{ParamPage}).Query(ParamSearchKeyword, web.Var("vars.searchMsg")).RunPushState() + ";" + web.Plaid().
 		EventFunc(ReloadTemplateContentEvent).
+		Query(ParamPage, "1").
 		Query(presets.ParamOverlay, ctx.Param(presets.ParamOverlay)).
 		Query(ParamSearchKeyword, web.Var("vars.searchMsg")).Go()
 
