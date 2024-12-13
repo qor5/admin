@@ -542,6 +542,25 @@ func configProfile(db *gorm.DB, ab *activity.Builder, lsb *plogin.SessionBuilder
 			return nil
 		},
 	).SessionBuilder(lsb) // .DisableNotification(true).LogoutURL(lsb.GetLoginBuilder().LogoutURL)
+	// 		CustomizeButtons(func(ctx context.Context, buttons ...h.HTMLComponent) ([]h.HTMLComponent, error) {
+	// 	evCtx := web.MustGetEventContext(ctx)
+	// 	u := getCurrentUser(evCtx.R)
+	// 	if u == nil {
+	// 		return nil, perm.PermissionDenied
+	// 	}
+	// 	if u.GetAccountName() == loginInitialUserEmail {
+	// 		return buttons, nil
+	// 	}
+	// 	msgr := i18n.MustGetModuleMessages(evCtx.R, I18nExampleKey, Messages_en_US).(*Messages)
+	// 	return slices.Concat([]h.HTMLComponent{
+	// 		v.VBtn(msgr.ChangePassword).Variant(v.VariantTonal).Color(v.ColorSecondary).OnClick(plogin.OpenChangePasswordDialogEvent),
+	// 	}, buttons), nil
+	// }).
+	// PrependCompos(func(ctx context.Context, profileCompo *plogin.ProfileCompo) ([]h.HTMLComponent, error) {
+	// 	return []h.HTMLComponent{
+	// 		web.Listen(presets.NotifModelsUpdated(&models.User{}), stateful.ReloadAction(ctx, profileCompo, nil).Go()),
+	// 	}, nil
+	// })
 }
 
 func configBrand(b *presets.Builder) {
@@ -680,7 +699,18 @@ func configPost(
 		}
 	})
 	m.Editing().Field("TitleWithSlug").LazyWrapComponentFunc(lazyWrapperEditCompoSync)
-
+	m.Editing().ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		if ctx.Param(presets.ParamID) != "" {
+			p := obj.(*models.Post)
+			if p.Title == "" {
+				err.FieldError("Title", "Title Is Required")
+			}
+			if p.TitleWithSlug == "" {
+				err.FieldError("TitleWithSlug", "TitleWithSlug Is Required")
+			}
+		}
+		return
+	})
 	dp := m.Detailing(publish.VersionsPublishBar, "Detail", seo.SeoDetailFieldName).Drawer(true)
 	detailSection := presets.NewSectionBuilder(m, "Detail").
 		Editing("Title", "TitleWithSlug", "HeroImage", "Body", "BodyImage")

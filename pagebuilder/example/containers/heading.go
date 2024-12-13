@@ -56,11 +56,27 @@ func RegisterHeadingContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 			Label(field.Label).
 			Disabled(field.Disabled)
 	})
+	ed.Field("Heading").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
+		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+			return Components(presets.LinkageFieldsController(field, "AnchorID"), in(obj, field, ctx))
+		}
+	})
+	ed.Field("AddTopSpace").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
+		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+			return Components(presets.LinkageFieldsController(field, "AddBottomSpace"), in(obj, field, ctx))
+		}
+	})
 	ed.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		p := obj.(*Heading)
 		if p.ID != 0 {
 			if p.LinkText == "" {
 				err.FieldError("LinkText", "LinkText 不能为空")
+			}
+			if p.Heading == "" && p.AnchorID == "" {
+				err.FieldError("Heading", "Heading or AnchorID 不能同时为空")
+			}
+			if !p.AddTopSpace && !p.AddBottomSpace {
+				err.FieldError("AddTopSpace", "AddTopSpace or AddBottomSpace 不能同时为空")
 			}
 		}
 		return

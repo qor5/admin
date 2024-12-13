@@ -53,7 +53,7 @@ func TestChangePassword(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectRunScriptContainsInOrder: []string{"Old password is incorrect"},
+			ExpectRunScriptContainsInOrder: []string{"Unable to change password. Please check your inputs and try again."},
 		},
 		{
 			Name:  "password not match",
@@ -67,7 +67,7 @@ func TestChangePassword(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectRunScriptContainsInOrder: []string{"Password do not match"},
+			ExpectRunScriptContainsInOrder: []string{"The new passwords do not match. Please try again."},
 		},
 		{
 			Name:  "success",
