@@ -829,12 +829,13 @@ func moveToFolder(mb *Builder) web.EventFunc {
 			field          = ctx.Param(ParamField)
 			selectIDs      = strings.Split(ctx.Param(ParamSelectIDS), ",")
 			msgr           = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
+			inMediaLibrary = strings.Contains(ctx.R.RequestURI, "/"+mb.mb.Info().URIName())
 		)
 		if err = mb.moveToIsAllowed(ctx.R); err != nil {
 			return
 		}
 		queries := ctx.Queries()
-		delete(queries, searchKeywordName(field))
+		delete(queries, searchKeywordName(inMediaLibrary, field))
 		var ids []uint64
 
 		for _, idStr := range selectIDs {
