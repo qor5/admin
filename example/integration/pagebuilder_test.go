@@ -1040,7 +1040,8 @@ func TestPageBuilder(t *testing.T) {
 					PageURL("/page_builder/headings").
 					EventFunc(actions.Update).
 					Query(presets.ParamID, "1").
-					AddField("LinkText", "Replace{{Name}}").
+					AddField("LinkText", "ReplaceLinkText").
+					AddField("Heading", "true").
 					AddField("AddTopSpace", "true").
 					BuildEventFuncRequest()
 
