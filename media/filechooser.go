@@ -599,6 +599,25 @@ func (mb *Builder) mediaLibraryTopOperations(clickTabEvent, field, tab, typeVal,
 			fileAccept = "image/*"
 		}
 	}
+	changeAllowTypeEvent := web.Plaid().EventFunc(ImageJumpPageEvent).
+		Query(paramTab, tab).
+		Query(ParamField, field).
+		Query(ParamCfg, h.JSONString(cfg)).
+		Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
+		Query(searchKeywordName(inMediaLibrary, field), ctx.Param(searchKeywordName(inMediaLibrary, field))).
+		Query(paramTypeKey, web.Var("$event")).
+		Go()
+	changeOrderEvent := web.Plaid().EventFunc(ImageJumpPageEvent).
+		Query(paramTab, tab).
+		Query(ParamField, field).
+		Query(ParamCfg, h.JSONString(cfg)).
+		Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
+		Query(searchKeywordName(inMediaLibrary, field), ctx.Param(searchKeywordName(inMediaLibrary, field))).
+		Query(paramOrderByKey, web.Var("$event")).Go()
+	if inMediaLibrary {
+		changeAllowTypeEvent += ";" + web.Plaid().MergeQuery(true).Query(paramTypeKey, web.Var("$event")).PushState(true).RunPushState()
+		changeOrderEvent += ";" + web.Plaid().MergeQuery(true).Query(paramOrderByKey, web.Var("$event")).PushState(true).RunPushState()
+	}
 	return VRow(
 		h.If(!inMediaLibrary,
 			VCol(
@@ -629,31 +648,14 @@ func (mb *Builder) mediaLibraryTopOperations(clickTabEvent, field, tab, typeVal,
 			h.Div(
 				VSelect().Items(mb.allowTypeSelectOptions(msgr)).ItemTitle("Text").ItemValue("Value").
 					Attr(web.VField(paramTypeKey, typeVal)...).
-					Attr("@update:model-value",
-						web.Plaid().EventFunc(ImageJumpPageEvent).
-							Query(paramTab, tab).
-							Query(ParamField, field).
-							Query(ParamCfg, h.JSONString(cfg)).
-							Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
-							Query(searchKeywordName(inMediaLibrary, field), ctx.Param(searchKeywordName(inMediaLibrary, field))).
-							Query(paramTypeKey, web.Var("$event")).
-							Go(),
-					).
+					Attr("@update:model-value", changeAllowTypeEvent).
 					Density(DensityCompact).Variant(VariantTonal).Flat(true),
 				VSelect().Items([]selectItem{
 					{Text: msgr.UploadedAtDESC, Value: orderByCreatedAtDESC},
 					{Text: msgr.UploadedAt, Value: orderByCreatedAt},
 				}).ItemTitle("Text").ItemValue("Value").
 					Attr(web.VField(paramOrderByKey, orderByVal)...).
-					Attr("@update:model-value",
-						web.Plaid().EventFunc(ImageJumpPageEvent).
-							Query(paramTab, tab).
-							Query(ParamField, field).
-							Query(ParamCfg, h.JSONString(cfg)).
-							Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
-							Query(searchKeywordName(inMediaLibrary, field), ctx.Param(searchKeywordName(inMediaLibrary, field))).
-							Query(paramOrderByKey, web.Var("$event")).Go(),
-					).
+					Attr("@update:model-value", changeOrderEvent).
 					Density(DensityCompact).Variant(VariantTonal).Flat(true),
 				h.If(
 					tab == tabFolders && mb.newFolderIsAllowed(ctx.R) == nil,
