@@ -18,6 +18,75 @@ func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *we
 	css := "https://the-plant.com/assets/app/container.4f902c4.css"
 	domain := "https://example.qor5.theplant-dev.com"
 
+	// tailwind ecosystem resources
+	tailwindJs := "https://cdn.tailwindcss.com"
+	alpineJs := "https://unpkg.com/alpinejs"
+	InferCss := "https://rsms.me/inter/inter.css"
+
+	pbThemeCss := []string{`
+		:root {
+  --pb-primary: #3e63dd;
+  --pb-secondary: #5b6471;
+  --pb-success: #30a46c;
+  --pb-info: #0091ff;
+  --pb-warning: #f76808;
+  --pb-error: #e5484d;
+}
+
+.btn-primary {
+  color: #fff;
+  background-color: var(--pb-primary);
+}
+.btn-secondary {
+  color: #fff;
+  background-color: var(--pb-secondary);
+}
+.btn-info {
+  color: #fff;
+  background-color: var(--pb-info);
+}
+.btn-success {
+  color: #fff;
+  background-color: var(--pb-success);
+}
+.btn-error {
+  color: #fff;
+  background-color: var(--pb-error);
+}
+.btn-warning {
+  color: #fff;
+  background-color: var(--pb-warning);
+}
+
+	`}
+
+	tailwindPluginJs := []string{
+		`tailwind.config = {
+		theme: {
+		extend: {
+					fontFamily: {
+						sans: ["InterVariable", "sans-serif"],
+					},
+		}
+		}
+	}`,
+	}
+	tailwindOverrides := []string{
+		`.tailwind-scope {
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        a,
+        p {
+          font-family: InterVariable, system-ui, sans-serif;
+        }
+      }
+		`,
+	}
+
 	head := h.Components(
 		input.SeoTags,
 		input.CanonicalLink,
@@ -26,13 +95,21 @@ func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *we
 		h.Meta().Content("yes").Name("apple-mobile-web-app-capable"),
 		h.Meta().Content("black").Name("apple-mobile-web-app-status-bar-style"),
 		h.Meta().Name("format-detection").Content("telephone=no"),
-
 		h.Link("").Rel("stylesheet").Type("text/css").Href(css),
+
+		// tailwind ecosystem resources
+		h.Link("").Rel("stylesheet").Type("text/css").Href(InferCss),
+		h.Script("").Src(tailwindJs),
+		h.Script("").Src(alpineJs).Attr("defer", "true"),
+
 		h.If(len(input.EditorCss) > 0, input.EditorCss...),
 		freeStyleCss,
 		// RawHTML(dataLayer),
 		input.StructuredData,
 		scriptWithCodes(input.FreeStyleTopJs),
+		scriptWithCodes(tailwindPluginJs),
+		styleWithCodes(pbThemeCss),
+		styleWithCodes(tailwindOverrides),
 	)
 	ctx.Injector.HTMLLang(input.LocaleCode)
 	if input.WrapHead != nil {
@@ -68,4 +145,12 @@ try {
 `, strings.Join(jscodes, "\n")))
 	}
 	return js
+}
+
+func styleWithCodes(csscodes []string) h.HTMLComponent {
+	var css h.HTMLComponent
+	if len(csscodes) > 0 {
+		css = h.Style(strings.Join(csscodes, "\n"))
+	}
+	return css
 }

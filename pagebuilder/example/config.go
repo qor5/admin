@@ -40,6 +40,7 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, b *presets.Builder) *p
 		&containers.WebFooter{},
 		&containers.VideoBanner{},
 		&containers.Heading{},
+		&containers.Hero{},
 		&containers.BrandGrid{},
 		&containers.ListContent{},
 		&containers.ImageContainer{},
@@ -64,6 +65,7 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, b *presets.Builder) *p
 	containers.RegisterHeader(pb)
 	containers.RegisterFooter(pb)
 	containers.RegisterVideoBannerContainer(pb)
+	containers.RegisterHeroContainer(pb, db)
 	containers.RegisterHeadingContainer(pb, db)
 	containers.RegisterBrandGridContainer(pb, db)
 	containers.RegisterListContentContainer(pb, db)
