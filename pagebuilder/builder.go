@@ -1440,10 +1440,9 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 		).Class("pa-2 rounded-lg ").
 			Mandatory(true).
 			Attr("v-model", "toggleLocals.activeDevice").
-			Attr("@update:model-value", fmt.Sprintf("const device = toggleLocals.devices.find(device => device.Name === toggleLocals.activeDevice);vars.__scrollIframeWidth=device ? device.Width : '';")+
-				web.Plaid().
-					PushState(true).MergeQuery(true).Query(paramsDevice, web.Var("toggleLocals.activeDevice")).RunPushState()),
-	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %q,devices:%v}`, device, h.JSONString(devices)))
+			Attr("@update:model-value",
+				web.Plaid().PushState(true).MergeQuery(true).Query(paramsDevice, web.Var("toggleLocals.activeDevice")).Go()),
+	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %q}`, device))
 }
 
 func (b *Builder) GetModelBuilder(mb *presets.ModelBuilder) *ModelBuilder {
