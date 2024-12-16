@@ -270,10 +270,12 @@ func (b *Builder) DefaultDevice(v string) (r *Builder) {
 	b.defaultDevice = v
 	return b
 }
+
 func (b *Builder) EditorBackgroundColor(v string) (r *Builder) {
 	b.editorBackgroundColor = v
 	return b
 }
+
 func (b *Builder) GetPresetsBuilder() (r *presets.Builder) {
 	return b.ps
 }
