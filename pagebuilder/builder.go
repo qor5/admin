@@ -1446,7 +1446,7 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 				web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).
 					BeforeScript(web.Plaid().
 						PushState(true).MergeQuery(true).Query(paramsDevice, web.Var("toggleLocals.activeDevice")).RunPushState()).
-					Query(paramContainerDataID, ctx.Param(paramContainerDataID)).
+					Query(paramContainerDataID, web.Var(fmt.Sprintf("vars.%s", paramContainerDataID))).
 					Query(paramIsUpdate, false).
 					Go(),
 			),
