@@ -225,10 +225,13 @@ func chooseFile(mb *Builder) web.EventFunc {
 
 func searchFile(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		field := ctx.Param(ParamField)
-		cfg := stringToCfg(ctx.Param(ParamCfg))
+		var (
+			field          = ctx.Param(ParamField)
+			cfg            = stringToCfg(ctx.Param(ParamCfg))
+			inMediaLibrary = strings.Contains(ctx.R.RequestURI, "/"+mb.mb.Info().URIName())
+		)
 
-		ctx.R.Form[currentPageName(field)] = []string{"1"}
+		ctx.R.Form[currentPageName(inMediaLibrary, field)] = []string{"1"}
 
 		renderFileChooserDialogContent(ctx, &r, field, mb, cfg)
 		return
@@ -277,7 +280,7 @@ func fileComponent(mb *Builder, field string, tab string, ctx *web.EventContext,
 				Query(ParamParentID, ctx.Param(ParamParentID)).
 				Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
 				Query(ParamMediaIDS, fmt.Sprint(f.ID)).
-				Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
+				Query(searchKeywordName(inMediaLibrary, field), ctx.Param(searchKeywordName(inMediaLibrary, field))).
 				Go()),
 		),
 		h.If(mb.updateDescIsAllowed(ctx.R, f) == nil,
@@ -291,7 +294,7 @@ func fileComponent(mb *Builder, field string, tab string, ctx *web.EventContext,
 					Query(ParamParentID, ctx.Param(ParamParentID)).
 					Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
 					Query(ParamMediaIDS, fmt.Sprint(f.ID)).
-					Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
+					Query(searchKeywordName(inMediaLibrary, field), ctx.Param(searchKeywordName(inMediaLibrary, field))).
 					Go()),
 		),
 		h.If(mb.copyURLIsAllowed(ctx.R) == nil,
@@ -370,7 +373,7 @@ func fileOrFolderComponent(
 			Query(ParamCfg, h.JSONString(cfg)).
 			Query(ParamParentID, ctx.Param(ParamParentID)).
 			Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
-			Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
+			Query(searchKeywordName(inMediaLibrary, field), ctx.Param(searchKeywordName(inMediaLibrary, field))).
 			Query(ParamMediaIDS, fmt.Sprint(f.ID)).
 			Go()))
 	}
@@ -388,7 +391,7 @@ func fileOrFolderComponent(
 				Query(ParamParentID, ctx.Param(ParamParentID)).
 				Query(ParamMediaIDS, fmt.Sprint(f.ID)).
 				Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
-				Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
+				Query(searchKeywordName(inMediaLibrary, field), ctx.Param(searchKeywordName(inMediaLibrary, field))).
 				Go()))
 	}
 
@@ -399,7 +402,7 @@ func fileOrFolderComponent(
 			Query(ParamField, field).
 			Query(paramTab, tab).
 			Query(ParamCfg, h.JSONString(cfg)).
-			Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
+			Query(searchKeywordName(inMediaLibrary, field), ctx.Param(searchKeywordName(inMediaLibrary, field))).
 			Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
 			Query(ParamParentID, f.ID).Go() + fmt.Sprintf(";vars.media_parent_id=%v", f.ID)
 		if inMediaLibrary {
@@ -522,7 +525,7 @@ func breadcrumbsItemClickEvent(field string, ctx *web.EventContext,
 		Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
 		Query(ParamParentID, currentID).
 		AfterScript(fmt.Sprintf("vars.media_parent_id=%v", currentID)).
-		Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
+		Query(searchKeywordName(inMediaLibrary, field), ctx.Param(searchKeywordName(inMediaLibrary, field))).
 		Go()
 
 	item.Attr("@click.prevent", clickEvent)
@@ -610,6 +613,25 @@ func (mb *Builder) mediaLibraryTopOperations(clickTabEvent, field, tab, typeVal,
 			fileAccept = "image/*"
 		}
 	}
+	changeAllowTypeEvent := web.Plaid().EventFunc(ImageJumpPageEvent).
+		Query(paramTab, tab).
+		Query(ParamField, field).
+		Query(ParamCfg, h.JSONString(cfg)).
+		Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
+		Query(searchKeywordName(inMediaLibrary, field), ctx.Param(searchKeywordName(inMediaLibrary, field))).
+		Query(paramTypeKey, web.Var("$event")).
+		Go()
+	changeOrderEvent := web.Plaid().EventFunc(ImageJumpPageEvent).
+		Query(paramTab, tab).
+		Query(ParamField, field).
+		Query(ParamCfg, h.JSONString(cfg)).
+		Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
+		Query(searchKeywordName(inMediaLibrary, field), ctx.Param(searchKeywordName(inMediaLibrary, field))).
+		Query(paramOrderByKey, web.Var("$event")).Go()
+	if inMediaLibrary {
+		changeAllowTypeEvent += ";" + web.Plaid().MergeQuery(true).Query(paramTypeKey, web.Var("$event")).PushState(true).RunPushState()
+		changeOrderEvent += ";" + web.Plaid().MergeQuery(true).Query(paramOrderByKey, web.Var("$event")).PushState(true).RunPushState()
+	}
 	return VRow(
 		h.If(!inMediaLibrary,
 			VCol(
@@ -640,31 +662,14 @@ func (mb *Builder) mediaLibraryTopOperations(clickTabEvent, field, tab, typeVal,
 			h.Div(
 				VSelect().Items(mb.allowTypeSelectOptions(msgr)).ItemTitle("Text").ItemValue("Value").
 					Attr(web.VField(paramTypeKey, typeVal)...).
-					Attr("@update:model-value",
-						web.Plaid().EventFunc(ImageJumpPageEvent).
-							Query(paramTab, tab).
-							Query(ParamField, field).
-							Query(ParamCfg, h.JSONString(cfg)).
-							Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
-							Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
-							Query(paramTypeKey, web.Var("$event")).
-							Go(),
-					).
+					Attr("@update:model-value", changeAllowTypeEvent).
 					Density(DensityCompact).Variant(VariantTonal).Flat(true),
 				VSelect().Items([]selectItem{
 					{Text: msgr.UploadedAtDESC, Value: orderByCreatedAtDESC},
 					{Text: msgr.UploadedAt, Value: orderByCreatedAt},
 				}).ItemTitle("Text").ItemValue("Value").
 					Attr(web.VField(paramOrderByKey, orderByVal)...).
-					Attr("@update:model-value",
-						web.Plaid().EventFunc(ImageJumpPageEvent).
-							Query(paramTab, tab).
-							Query(ParamField, field).
-							Query(ParamCfg, h.JSONString(cfg)).
-							Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
-							Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
-							Query(paramOrderByKey, web.Var("$event")).Go(),
-					).
+					Attr("@update:model-value", changeOrderEvent).
 					Density(DensityCompact).Variant(VariantTonal).Flat(true),
 				h.If(
 					tab == tabFolders && mb.newFolderIsAllowed(ctx.R) == nil,
@@ -713,9 +718,24 @@ func (mb *Builder) mediaLibraryBottomOperations(field string, ctx *web.EventCont
 	var (
 		msgr = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 
-		tab      = cmp.Or(ctx.Param(paramTab), tabFiles)
-		parentID = ctx.ParamAsInt(ParamParentID)
+		tab            = cmp.Or(ctx.Param(paramTab), tabFiles)
+		parentID       = ctx.ParamAsInt(ParamParentID)
+		inMediaLibrary = strings.Contains(ctx.R.RequestURI, "/"+mb.mb.Info().URIName())
 	)
+	changePageEvent := web.Plaid().
+		FieldValue(currentPageName(inMediaLibrary, field), web.Var("$event")).
+		EventFunc(ImageJumpPageEvent).
+		Query(paramTab, tab).
+		Query(ParamParentID, parentID).
+		Query(ParamField, field).
+		Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
+		Query(searchKeywordName(inMediaLibrary, field), ctx.Param(searchKeywordName(inMediaLibrary, field))).
+		Query(ParamCfg, h.JSONString(cfg)).
+		Go()
+	if inMediaLibrary {
+		changePageEvent += ";" + web.Plaid().MergeQuery(true).
+			Query(currentPageName(inMediaLibrary, field), web.Var("$event")).PushState(true).RunPushState()
+	}
 	return VRow(
 		VCol(
 			h.Div(
@@ -739,7 +759,7 @@ func (mb *Builder) mediaLibraryBottomOperations(field string, ctx *web.EventCont
 						Attr("@click", web.Plaid().EventFunc(MoveToFolderDialogEvent).
 							Query(ParamField, field).
 							Query(paramTab, tab).
-							Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
+							Query(searchKeywordName(inMediaLibrary, field), ctx.Param(searchKeywordName(inMediaLibrary, field))).
 							Query(ParamCfg, h.JSONString(cfg)).
 							Query(ParamSelectIDS, web.Var(`locals.select_ids.join(",")`)).Go()),
 				),
@@ -752,26 +772,17 @@ func (mb *Builder) mediaLibraryBottomOperations(field string, ctx *web.EventCont
 							Query(ParamParentID, parentID).
 							Query(paramTab, tab).
 							Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
-							Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
+							Query(searchKeywordName(inMediaLibrary, field), ctx.Param(searchKeywordName(inMediaLibrary, field))).
 							Query(ParamCfg, h.JSONString(cfg)).
 							Query(ParamMediaIDS, web.Var(`locals.select_ids.join(",")`)).Go()),
 				),
 			).Class("d-flex align-center float-left").Attr("v-if", "locals.select_ids && locals.select_ids.length>0"),
 			h.If(hasFiles,
-				VPagination().
+				vx.VXPagination().
 					Length(pagesCount).
 					TotalVisible(5).
 					ModelValue(currentPageInt).
-					Attr("@update:model-value", web.Plaid().
-						FieldValue(currentPageName(field), web.Var("$event")).
-						EventFunc(ImageJumpPageEvent).
-						Query(paramTab, tab).
-						Query(ParamParentID, parentID).
-						Query(ParamField, field).
-						Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
-						Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
-						Query(ParamCfg, h.JSONString(cfg)).
-						Go()).Class("float-right"),
+					Attr("@update:model-value", changePageEvent).Class("float-right"),
 			),
 		).Cols(12),
 	).Class("position-sticky bottom-0", "bg-"+ColorBackground)
@@ -791,7 +802,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 		hasFiles       = false
 		err            error
 		orderByVal     = cmp.Or(ctx.Param(paramOrderByKey), orderByCreatedAtDESC)
-		keyword        = ctx.Param(searchKeywordName(field))
+		keyword        = ctx.Param(searchKeywordName(inMediaLibrary, field))
 		typeVal        = ctx.Param(paramTypeKey)
 		selectedType   string
 	)
@@ -824,7 +835,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 	if count%int64(perPage) == 0 {
 		pagesCount--
 	}
-	currentPageInt, _ := strconv.Atoi(ctx.R.FormValue(currentPageName(field)))
+	currentPageInt, _ := strconv.Atoi(ctx.R.FormValue(currentPageName(inMediaLibrary, field)))
 	if currentPageInt == 0 {
 		currentPageInt = 1
 	}
@@ -858,7 +869,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 		Query(ParamField, field).
 		Query(ParamCfg, h.JSONString(cfg)).
 		Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
-		Query(searchKeywordName(field), ctx.Param(searchKeywordName(field))).
+		Query(searchKeywordName(inMediaLibrary, field), ctx.Param(searchKeywordName(inMediaLibrary, field))).
 		Go()
 	clickTabEvent += ";vars.media_tab=$event;vars.media_parent_id=0;"
 	if inMediaLibrary {
@@ -903,9 +914,10 @@ func searchComponent(ctx *web.EventContext, field string, cfg *media_library.Med
 		Query(ParamField, field).
 		Query(ParamCfg, h.JSONString(cfg)).
 		Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
-		Query(searchKeywordName(field), web.Var("vars.searchMsg"))
+		Query(searchKeywordName(inMediaLibrary, field), web.Var("vars.searchMsg"))
 	if inMediaLibrary {
-		clickEvent = clickEvent.MergeQuery(true)
+		clickEvent = clickEvent.MergeQuery(true).
+			AfterScript(web.Plaid().Query(searchKeywordName(inMediaLibrary, field), web.Var("vars.searchMsg")).PushState(true).RunPushState())
 	} else {
 		clickEvent = clickEvent.
 			Query(paramTab, web.Var("vars.media_tab")).
@@ -918,7 +930,7 @@ func searchComponent(ctx *web.EventContext, field string, cfg *media_library.Med
 		HideDetails(true).
 		Attr(":clearable", "true").
 		Attr("v-model", "vars.searchMsg").
-		Attr(web.VAssign("vars", fmt.Sprintf(`{searchMsg:%q}`, ctx.Param(searchKeywordName(field))))...).
+		Attr(web.VAssign("vars", fmt.Sprintf(`{searchMsg:%q}`, ctx.Param(searchKeywordName(inMediaLibrary, field))))...).
 		Attr("@click:clear", `vars.searchMsg="";`+event).
 		Attr("@keyup.enter", event).
 		Children(
