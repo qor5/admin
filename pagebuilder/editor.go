@@ -44,6 +44,7 @@ const (
 	paramContainerID     = "containerID"
 	paramContainerUri    = "containerUri"
 	paramContainerDataID = "containerDataID"
+	paramIsUpdate        = "isUpdate"
 	paramMoveResult      = "moveResult"
 	paramContainerName   = "containerName"
 	paramSharedContainer = "sharedContainer"

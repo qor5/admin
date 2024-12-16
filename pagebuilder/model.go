@@ -456,9 +456,9 @@ func (b *ModelBuilder) renderScrollIframe(comps []h.HTMLComponent, ctx *web.Even
 			Attr("v-on-mounted", fmt.Sprintf(`({el,window}) => {
 							vars.__pageBuilderAddContainerBtnDisabled = true;
 						}`)).
-			Width(width).Attr("ref", "scrollIframe").VirtualElementText(msgr.NewContainer)
+			Attr(":width", "vars.__scrollIframeWidth").Attr("ref", "scrollIframe").VirtualElementText(msgr.NewContainer)
 		if isEditor {
-			scrollIframe.Attr(web.VAssign("vars", `{el:$}`)...)
+			scrollIframe.Attr(web.VAssign("vars", fmt.Sprintf(`{el:$,__scrollIframeWidth:%q}`, width))...)
 			r = h.Components(
 				scrollIframe,
 				web.Listen(b.notifIframeBodyUpdated(),

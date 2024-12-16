@@ -270,10 +270,12 @@ func (b *Builder) DefaultDevice(v string) (r *Builder) {
 	b.defaultDevice = v
 	return b
 }
+
 func (b *Builder) EditorBackgroundColor(v string) (r *Builder) {
 	b.editorBackgroundColor = v
 	return b
 }
+
 func (b *Builder) GetPresetsBuilder() (r *presets.Builder) {
 	return b.ps
 }
@@ -1440,9 +1442,15 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 		).Class("pa-2 rounded-lg ").
 			Mandatory(true).
 			Attr("v-model", "toggleLocals.activeDevice").
-			Attr("@update:model-value",
-				web.Plaid().PushState(true).MergeQuery(true).Query(paramsDevice, web.Var("toggleLocals.activeDevice")).Go()),
-	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %q}`, device))
+			Attr("@update:model-value", fmt.Sprintf("const device = toggleLocals.devices.find(device => device.Name === toggleLocals.activeDevice);vars.__scrollIframeWidth=device ? device.Width : '';")+
+				web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).
+					BeforeScript(web.Plaid().
+						PushState(true).MergeQuery(true).Query(paramsDevice, web.Var("toggleLocals.activeDevice")).RunPushState()).
+					Query(paramContainerDataID, ctx.Param(paramContainerDataID)).
+					Query(paramIsUpdate, false).
+					Go(),
+			),
+	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %q,devices:%v}`, device, h.JSONString(devices)))
 }
 
 func (b *Builder) GetModelBuilder(mb *presets.ModelBuilder) *ModelBuilder {
