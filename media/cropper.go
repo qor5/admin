@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 
 	"gorm.io/gorm"
 
@@ -165,6 +166,7 @@ func cropImage(b *Builder) web.EventFunc {
 			b.onEdit(ctx, old, m)
 
 			mb.Url = m.File.Url
+			m.UpdatedAt = time.Now()
 			mb.FileSizes = m.File.FileSizes
 			if thumb == base.DefaultSizeKey {
 				mb.Width = int(cropValue.Width)
