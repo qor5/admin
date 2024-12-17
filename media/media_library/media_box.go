@@ -19,6 +19,7 @@ const (
 
 type MediaBox struct {
 	ID          json.Number
+	UpdatedAt   time.Time
 	Url         string
 	VideoLink   string
 	FileName    string
@@ -75,7 +76,12 @@ func (mediaBox *MediaBox) IsSVG() bool {
 	return base.IsSVGFormat(mediaBox.Url)
 }
 
-func (mediaBox *MediaBox) URL(styles ...string) string {
+func (mediaBox *MediaBox) URL(styles ...string) (s string) {
+	defer func() {
+		if !mediaBox.UpdatedAt.IsZero() {
+			s += "?" + fmt.Sprint(mediaBox.UpdatedAt.Nanosecond())
+		}
+	}()
 	if mediaBox.Url != "" && len(styles) > 0 {
 		ext := path.Ext(mediaBox.Url)
 		return fmt.Sprintf("%v.%v%v", strings.TrimSuffix(mediaBox.Url, ext), styles[0], ext)
