@@ -1,7 +1,6 @@
 package containers
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/qor5/admin/v3/media/media_library"
@@ -59,5 +58,5 @@ func LazyImageHtml(m media_library.MediaBox, class ...string) HTMLComponent {
 }
 
 func ImageHtml(m media_library.MediaBox, class ...string) HTMLComponent {
-	return Img("").Attr("src", m.URLNoCached()).Alt(m.Description).Class(class...).Attr("style", fmt.Sprintf("height:%vpx;width:auto", m.Height))
+	return Img("").Attr("src", m.URL()).Alt(m.Description).Class(class...)
 }

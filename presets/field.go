@@ -918,22 +918,10 @@ func defaultRowFunc(obj interface{}, formKey string, content h.HTMLComponent, ct
 
 func (b *FieldsBuilder) ToErrorMessagesForm(ctx *web.EventContext, vErr *web.ValidationErrors) interface{} {
 	form := make(map[string]interface{})
-
-	for k := range ctx.R.PostForm {
-		if k == web.EventFuncIDName {
-			continue
-		}
-		if strings.HasSuffix(k, "]") {
-			k = k[:strings.LastIndexAny(k, "[")]
-		}
+	for k := range vErr.FieldErrors() {
 		key := k + ErrorMessagePostfix
-		if _, ok := form[key]; ok {
-			continue
-		}
 		form[key] = vErr.GetFieldErrors(k)
-
 	}
-
 	return form
 }
 
