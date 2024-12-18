@@ -10,7 +10,6 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
-	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/stateful"
 	"github.com/qor5/x/v3/i18n"
@@ -22,6 +21,8 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/text/language"
 	"golang.org/x/text/language/display"
+
+	"github.com/qor5/admin/v3/presets/actions"
 )
 
 type Builder struct {
@@ -1003,7 +1004,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 			),
 		).Attr("id", "vt-app").Elevation(0).
 			Attr(web.VAssign("vars", fmt.Sprintf(`{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false, 
-navDrawer: true,%s:{}
+navDrawer: true,%s:{},presetsMessage: {show: false, color: "", message: ""}
 }`, VarsPresetsDataChanged))...).Class(b.containerClassName)
 
 		return

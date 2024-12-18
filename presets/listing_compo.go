@@ -612,13 +612,24 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 	searchParams.OrderBys = c.getOrderBys(colOrderBys, orderableFieldMap)
 
 	if !c.lb.disablePagination {
-		perPage := cmp.Or(c.PerPage, c.lb.perPage, PerPageDefault)
+		perPage := c.PerPage
+		if perPage <= 0 {
+			perPage = c.lb.perPage
+		}
+		if perPage <= 0 {
+			perPage = PerPageDefault
+		}
 		if perPage > PerPageMax {
 			perPage = PerPageMax
 		}
 		searchParams.PerPage = perPage
+	} else {
+		searchParams.PerPage = PerPageMax
 	}
-	searchParams.Page = cmp.Or(c.Page, 1)
+	searchParams.Page = c.Page
+	if searchParams.Page < 1 {
+		searchParams.Page = 1
+	}
 
 	filterScript, filterConds := c.processFilter(evCtx)
 	searchParams.SQLConditions = append(searchParams.SQLConditions, filterConds...)
