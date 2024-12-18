@@ -506,8 +506,10 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 
 	return h.Div(
 		web.Scope(
-			content,
-		).VSlot("{ form }"),
+			web.Scope(
+				content,
+			).VSlot("{ form }"),
+		).VSlot("{ dash }").DashInit("{errorMessages:{}}"),
 		hiddenComp,
 	).Attr("v-on-mounted", fmt.Sprintf(`()=>{%s}`, initDataChanged))
 }
@@ -579,46 +581,17 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 		)
 	}
 	operateID := fmt.Sprint(time.Now().UnixNano())
-	onChangeEvent += fmt.Sprintf(`if (!vars.__FormFieldIsUpdating){
-	  vars.__currentValidateKeys = vars.__currentValidateKeys??[];
-	  const endKey = %q	;
-	  	
-	  for (let key in form) {
-		if (key.endsWith(endKey)){continue}
-		if (form[key] !== oldForm[key]) {
-			vars.__currentValidateKeys.push(key+endKey);
-			typeof vars.__findLinkageFields === "function" && vars.__findLinkageFields(key);
-		}
-	}
-%s
-}`, ErrorMessagePostfix,
+	onChangeEvent += checkFormChangeScript + setValidateKeysScript +
 		web.Plaid().URL(ctx.R.URL.Path).
-			BeforeScript(fmt.Sprintf(`vars.__ValidateOperateID=%q`, operateID)).
+			BeforeScript(fmt.Sprintf(`dash.__ValidateOperateID=%q`, operateID)).
 			EventFunc(b.EventValidate()).
 			Query(ParamID, id).
 			Query(ParamOperateID, operateID).
-			Go())
+			Go()
 
 	comps := h.Components(
-		h.Div().Style("display:none").Attr("v-on-mounted", `({window})=>{
-		vars.__FormUpdatingFunc = ()=>{ vars.__FormFieldIsUpdating = true}
-		vars.__FormUpdatedFunc = ()=>{ window.setTimeout(()=>{vars.__FormFieldIsUpdating = false},600)}
-		}`),
 		web.Listen(b.mb.NotifModelsSectionValidate(b.name),
-			`
-			vars.__FormUpdatingFunc();
-			for (const key in payload.form){
-				if (vars.__currentValidateKeys){
-					if(vars.__currentValidateKeys.lastIndexOf(key)>=0){
-						form[key] = payload.form[key]
-						}
-					}else{
-						form[key] = payload.form[key]
-						}
-				}
-            vars.__currentValidateKeys = [];
-			vars.__FormUpdatedFunc();`))
-
+			setFieldErrorsScript))
 	if b.isEdit {
 		return h.Div(
 			web.Scope(
@@ -630,10 +603,12 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 	}
 	return h.Div(
 		web.Scope(
-			comps,
-			content,
-			hiddenComp,
-		).VSlot("{ form }").OnChange(onChangeEvent).UseDebounce(500),
+			web.Scope(
+				comps,
+				content,
+				hiddenComp,
+			).VSlot("{ form}").OnChange(onChangeEvent).UseDebounce(500),
+		).VSlot("{ dash }").DashInit("{errorMessages:{}}"),
 	)
 }
 
@@ -1076,18 +1051,23 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
 		return
 	}
-
-	if Verr := b.editingFB.Unmarshal(obj, b.mb.Info(), true, ctx); Verr.HaveErrors() {
-		ShowMessage(&r, Verr.Error(), "warning")
+	vErrSetter := b.editingFB.Unmarshal(obj, b.mb.Info(), true, ctx)
+	if vErrSetter.HaveErrors() && vErrSetter.HaveGlobalErrors() {
+		ShowMessage(&r, vErrSetter.Error(), "warning")
 		return
 	}
+
 	if b.setter != nil {
 		b.setter(obj, ctx)
 	}
 
 	needSave := true
 	if b.mb.editing.Validator != nil {
-		if vErr := b.mb.editing.Validator(obj, ctx); vErr.HaveErrors() {
+		vErr := b.mb.editing.Validator(obj, ctx)
+		newVErrSetter := vErrSetter
+		_ = newVErrSetter.Merge(&vErr)
+		vErr = newVErrSetter
+		if vErr.HaveErrors() {
 			ctx.Flash = &vErr
 			needSave = false
 			if vErr.GetGlobalError() != "" {
@@ -1099,8 +1079,12 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 				}
 			}
 		}
+
 	}
-	if vErr := b.validator(obj, ctx); vErr.HaveErrors() {
+	vErr := b.validator(obj, ctx)
+	_ = vErrSetter.Merge(&vErr)
+	vErr = vErrSetter
+	if vErr.HaveErrors() {
 		ctx.Flash = &vErr
 		needSave = false
 		if vErr.GetGlobalError() != "" {
@@ -1151,18 +1135,18 @@ func (b *SectionBuilder) ValidateDetailField(ctx *web.EventContext) (r web.Event
 
 	defer func() {
 		web.AppendRunScripts(&r,
-			fmt.Sprintf(`if (vars.__ValidateOperateID==%q){%s}`, operateID,
+			fmt.Sprintf(`if (dash.__ValidateOperateID==%q){%s}`, operateID,
 				web.Emit(
 					b.mb.NotifModelsSectionValidate(b.name),
 					PayloadModelsSetter{
-						Form:   b.editingFB.ToErrorMessagesForm(ctx, &vErr),
-						Id:     id,
-						Passed: !vErr.HaveErrors(),
+						FieldErrors: vErr.FieldErrors(),
+						Id:          id,
+						Passed:      !vErr.HaveErrors(),
 					},
 				),
 			),
 		)
-		if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
+		if vErr.HaveErrors() && vErr.HaveGlobalErrors() {
 			web.AppendRunScripts(&r, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), ColorWarning))
 		}
 	}()
@@ -1180,20 +1164,27 @@ func (b *SectionBuilder) ValidateDetailField(ctx *web.EventContext) (r web.Event
 	}
 
 	vErr = b.editingFB.Unmarshal(obj, b.mb.Info(), false, ctx)
-	if vErr.HaveErrors() {
+	if vErr.HaveErrors() && vErr.HaveGlobalErrors() {
 		return
 	}
+	vErrSetter := vErr
 	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
 		vErr.GlobalError(perm.PermissionDenied.Error())
 		return
 	}
 	if b.mb.editing.Validator != nil {
-		if vErr = b.mb.editing.Validator(obj, ctx); vErr.HaveErrors() {
+		vErr = b.mb.editing.Validator(obj, ctx)
+		_ = vErrSetter.Merge(&vErr)
+		if vErrSetter.HaveErrors() {
+			vErr = vErrSetter
 			return
 		}
 	}
 	if b.validator != nil {
-		if vErr = b.validator(obj, ctx); vErr.HaveErrors() {
+		vErr = b.validator(obj, ctx)
+		_ = vErrSetter.Merge(&vErr)
+		if vErrSetter.HaveErrors() {
+			vErr = vErrSetter
 			return
 		}
 	}

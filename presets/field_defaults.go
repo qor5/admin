@@ -246,17 +246,20 @@ func cfTextField(obj interface{}, field *FieldContext, ctx *web.EventContext) h.
 
 func VFieldError(name string, value interface{}, errorMessages interface{}) []interface{} {
 	var (
-		errorKey = name + ErrorMessagePostfix
 		objValue = map[string]interface{}{
-			name:     value,
-			errorKey: errorMessages,
+			name: value,
+		}
+		errorValue = map[string]interface{}{
+			name: errorMessages,
 		}
 	)
 	return append([]interface{}{
 		"v-model",
 		fmt.Sprintf("form[%s]", h.JSONString(name)),
 		":error-messages",
-		fmt.Sprintf("form[%q]", errorKey),
+		fmt.Sprintf("dash.errorMessages[%q]", name),
+		"v-assign:append",
+		fmt.Sprintf("[%s, %s]", "dash.errorMessages", h.JSONString(errorValue)),
 	}, web.VAssign("form", objValue)...)
 }
 

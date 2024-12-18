@@ -428,7 +428,7 @@ func (c *ListingCompo) processFilter(evCtx *web.EventContext) (h.HTMLComponent, 
 		fd := c.lb.filterDataFunc(evCtx)
 		if len(fd) > 0 {
 			cond, args, vErr := fd.SetByQueryString(evCtx, c.FilterQuery)
-			if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
+			if vErr.HaveErrors() && vErr.HaveGlobalErrors() {
 				filterScript = web.RunScript(fmt.Sprintf(`(el)=>{%s}`, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), "error")))
 			}
 			return filterScript, []*SQLCondition{{Query: cond, Args: args}}

@@ -304,7 +304,7 @@ func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *Field
 			modifiedIndexes := ContextModifiedIndexesBuilder(ctx)
 			body := b.nestedFieldsBuilder.toComponentWithFormValueKey(field.ModelInfo, val, field.FormKey, modifiedIndexes, ctx)
 			return h.Div(
-				h.Label(field.Label).Class("v-label theme--light text-caption wrapper-field-label"),
+				h.Label(field.Label).Class("v-label theme--light text-caption"),
 				v.VCard(body).Variant("outlined").Class("mx-0 mt-1 mb-4 px-4 pb-0 pt-4"),
 			)
 		})
@@ -918,15 +918,6 @@ type RowFunc func(obj interface{}, formKey string, content h.HTMLComponent, ctx 
 
 func defaultRowFunc(obj interface{}, formKey string, content h.HTMLComponent, ctx *web.EventContext) h.HTMLComponent {
 	return content
-}
-
-func (b *FieldsBuilder) ToErrorMessagesForm(ctx *web.EventContext, vErr *web.ValidationErrors) interface{} {
-	form := make(map[string]interface{})
-	for k := range vErr.FieldErrors() {
-		key := k + ErrorMessagePostfix
-		form[key] = vErr.GetFieldErrors(k)
-	}
-	return form
 }
 
 func (b *FieldsBuilder) ToComponentForEach(field *FieldContext, slice interface{}, ctx *web.EventContext, rowFunc RowFunc) h.HTMLComponent {

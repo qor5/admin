@@ -44,5 +44,31 @@ const (
 var PhraseHasPresetsDataChanged = fmt.Sprintf("Object.values(vars.%s).some(value => value === true)", VarsPresetsDataChanged)
 
 const (
-	ErrorMessagePostfix = "_FieldErrorMessages"
+	setFieldErrorsScript = `	
+let keys = Object.keys(dash.errorMessages);
+if (dash.__currentValidateKeys) {
+    for (const key of dash.__currentValidateKeys) {
+        dash.errorMessages[key] = payload.field_errors ? payload.field_errors[key] : null;
+    }
+} else {
+    for (const key in payload.field_errors) {
+        dash.errorMessages[key] = payload.field_errors ? payload.field_errors[key] : null;
+    }
+    keys.forEach(key => {
+        dash.errorMessages[key] = payload.field_errors ? payload.field_errors[key] : null;
+    })
+}
+dash.__currentValidateKeys = [];
+`
+	setValidateKeysScript = `
+dash.__currentValidateKeys = dash.__currentValidateKeys ?? [];
+for (let key in form) {
+    if (form[key] !== oldForm[key]) {
+        dash.__currentValidateKeys.push(key)
+        typeof dash.__findLinkageFields === "function" && dash.__findLinkageFields(key);
+    }
+}
+console.log("set __currentValidateKeys:", dash.__currentValidateKeys)
+`
+	checkFormChangeScript = `if(JSON.stringify(form)==JSON.stringify(oldForm)){return}`
 )
