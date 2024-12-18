@@ -6,12 +6,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_admin"
-	"github.com/qor5/admin/v3/utils/testflow"
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/theplant/gofixtures"
+
+	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_admin"
+	"github.com/qor5/admin/v3/utils/testflow"
 )
 
 var dataSeedForFlowPublish = gofixtures.Data(gofixtures.Sql(`
@@ -152,7 +153,7 @@ func flowPublish_Step01_Event_publish_EventPublish(t *testing.T, f *FlowPublish)
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, testflow.RemoveTime(`plaid().vars(vars).locals(locals).form(form).mergeQuery(true).go().then(function(r){ vars.presetsMessage = { show: true, message: "Successfully Publish", color: "success"} })`), testflow.RemoveTime(resp.RunScript))
+	assert.Equal(t, testflow.RemoveTime(`plaid().vars(vars).locals(locals).form(form).dash(dash).mergeQuery(true).go().then(function(r){ vars.presetsMessage = { show: true, message: "Successfully Publish", color: "success"} })`), testflow.RemoveTime(resp.RunScript))
 
 	return testflow.NewThen(t, w, r)
 }
@@ -205,7 +206,7 @@ func flowPublish_Step03_Event_publish_EventRepublish(t *testing.T, f *FlowPublis
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, testflow.RemoveTime(`plaid().vars(vars).locals(locals).form(form).mergeQuery(true).go().then(function(r){ vars.presetsMessage = { show: true, message: "Successfully Publish", color: "success"} })`), testflow.RemoveTime(resp.RunScript))
+	assert.Equal(t, testflow.RemoveTime(`plaid().vars(vars).locals(locals).form(form).dash(dash).mergeQuery(true).go().then(function(r){ vars.presetsMessage = { show: true, message: "Successfully Publish", color: "success"} })`), testflow.RemoveTime(resp.RunScript))
 
 	return testflow.NewThen(t, w, r)
 }
@@ -258,7 +259,7 @@ func flowPublish_Step05_Event_publish_EventUnpublish(t *testing.T, f *FlowPublis
 	assert.Empty(t, resp.ReloadPortals)
 	assert.Empty(t, resp.UpdatePortals)
 	assert.Nil(t, resp.Data)
-	assert.Equal(t, testflow.RemoveTime(`plaid().vars(vars).locals(locals).form(form).mergeQuery(true).go().then(function(r){ vars.presetsMessage = { show: true, message: "Successfully Unpublish", color: "success"} })`), testflow.RemoveTime(resp.RunScript))
+	assert.Equal(t, testflow.RemoveTime(`plaid().vars(vars).locals(locals).form(form).dash(dash).mergeQuery(true).go().then(function(r){ vars.presetsMessage = { show: true, message: "Successfully Unpublish", color: "success"} })`), testflow.RemoveTime(resp.RunScript))
 
 	return testflow.NewThen(t, w, r)
 }

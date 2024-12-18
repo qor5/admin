@@ -1029,7 +1029,7 @@ func TestPageBuilder(t *testing.T) {
 
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`"AddTopSpace":true,`, "blue", "LinkText 不能为空"},
+			ExpectPortalUpdate0ContainsInOrder: []string{`"AddTopSpace":true`, "blue", "LinkText 不能为空"},
 		},
 		{
 			Name:  "Container Heading Update Reload Editing",
@@ -1149,7 +1149,7 @@ func TestPageBuilder(t *testing.T) {
 
 				return req
 			},
-			ExpectRunScriptContainsInOrder: []string{`plaid().vars(vars).locals(locals).form(form).url("/page_builder/headers").eventFunc("presets_Edit").query("id", "10").query("portal_name", "pageBuilderRightContentPortal").query("overlay", "content").go()`},
+			ExpectRunScriptContainsInOrder: []string{`plaid().vars(vars).locals(locals).form(form).dash(dash).url("/page_builder/headers").eventFunc("presets_Edit").query("id", "10").query("portal_name", "pageBuilderRightContentPortal").query("overlay", "content").go()`},
 		},
 		{
 			Name:  "PageBuilder Wrap UpdateContainerEvent",
@@ -1165,7 +1165,7 @@ func TestPageBuilder(t *testing.T) {
 
 				return req
 			},
-			ExpectRunScriptContainsInOrder: []string{`plaid().vars(vars).locals(locals).form(form).url("/page_builder/headers").eventFunc("presets_Update").query("id", "10").query("portal_name", "pageBuilderRightContentPortal").query("overlay", "content").go()`},
+			ExpectRunScriptContainsInOrder: []string{`plaid().vars(vars).locals(locals).form(form).dash(dash).url("/page_builder/headers").eventFunc("presets_Update").query("id", "10").query("portal_name", "pageBuilderRightContentPortal").query("overlay", "content").go()`},
 		},
 		{
 			Name:  "Container Heading  Validate",
