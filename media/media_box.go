@@ -205,7 +205,7 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 }
 
 func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
-	f *media_library.MediaBox, field string, thumb string, disabled bool,
+	f *media_library.MediaBox, field string, thumb string, disabled bool, option ...interface{},
 ) h.HTMLComponent {
 	size := cfg.Sizes[thumb]
 	fileSize := f.FileSizes[thumb]
@@ -213,9 +213,26 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 	if thumb == base.DefaultSizeKey {
 		url = f.URLNoCached()
 	}
+
+	var ts interface{}
+	if len(option) > 0 {
+		ts = option[0]
+	} else {
+		ts = struct {
+			Height interface{}
+			Width  interface{}
+		}{
+			Height: 80,
+			Width:  190,
+		}
+	}
+
 	card := VCard(
 		h.If(base.IsImageFormat(f.FileName),
-			VImg().Src(url).Cover(true).Height(150),
+			VImg().Src(url).Cover(true).Height(ts.(struct {
+				Height interface{}
+				Width  interface{}
+			}).Height),
 		).Else(
 			h.Div(
 				fileThumb(f.FileName),
@@ -227,7 +244,11 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 				thumbName(thumb, size, fileSize, f),
 			),
 		),
-	)
+	).Width(ts.(struct {
+		Height interface{}
+		Width  interface{}
+	}).Width)
+
 	if base.IsImageFormat(f.FileName) && (size != nil || thumb == base.DefaultSizeKey) && !disabled && !cfg.DisableCrop {
 		card.Attr("@click", web.Plaid().
 			EventFunc(loadImageCropperEvent).
@@ -453,7 +474,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 }
 
 func appendMediaBoxThumb(cfg *media_library.MediaBoxConfig, msgr *Messages, mediaBox *media_library.MediaBox, field string, disabled bool) h.HTMLComponent {
-	row := VRow().Class("mt-n1")
+	row := VRow()
 	if len(cfg.Sizes) == 0 {
 		row.AppendChildren(
 			VCol(
@@ -480,7 +501,7 @@ func appendMediaBoxThumb(cfg *media_library.MediaBoxConfig, msgr *Messages, medi
 			row.AppendChildren(
 				VCol(
 					mediaBoxThumb(msgr, cfg, mediaBox, field, k, disabled),
-				).Cols(cols).Sm(sm).Class("pl-0"),
+				).Cols(cols).Sm(sm).Class("pl-0 media-box-thumb"),
 			)
 		}
 	}
