@@ -361,19 +361,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 	formContent := web.Scope(h.Components(
 		VCardText(
 			h.Components(hiddenComps...),
-			web.Listen(b.mb.NotifModelsValidate(),
-				`
-					if (vars.__currentValidateKeys){
-						for (const key of vars.__currentValidateKeys){
-							form[key] = payload.form[key]
-							}
-					}else{
-						for (const key in payload.form){
-								form[key] = payload.form[key]
-							}
-						}
-			    vars.__currentValidateKeys = [];
-				`),
+			web.Listen(b.mb.NotifModelsValidate(), setFieldErrorsScript),
 			b.ToComponent(b.mb.Info(), obj, ctx),
 		),
 		h.If(!autosave, VCardActions(actionButtons)),
@@ -407,37 +395,28 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 				).Class("pa-2 detailing-page-wrap"),
 			),
 		),
-	).VSlot("{ form }")
+	).VSlot("{ form}")
 	operateID := fmt.Sprint(time.Now().UnixNano())
+	onChangeEvent += checkFormChangeScript
 	if autosave {
 		onChangeEvent += web.Plaid().URL(ctx.R.URL.Path).
-			BeforeScript(fmt.Sprintf(`vars.__currentValidateKeys=null;vars.__ValidateOperateID=%q`, operateID)).
+			BeforeScript(fmt.Sprintf(`dash.__currentValidateKeys=null;dash.__ValidateOperateID=%q`, operateID)).
 			EventFunc(actions.Validate).
 			Query(ParamID, id).
 			Query(ParamOperateID, operateID).
 			Query(ParamOverlay, ctx.Param(ParamOverlay)).
 			Go()
 	} else {
-		onChangeEvent += fmt.Sprintf(`
-	  vars.__currentValidateKeys = vars.__currentValidateKeys??[];
-	  const endKey = %q	;
-	  for (let key in form) {
-		if (key.endsWith(endKey)){continue}
-		if (form[key] !== oldForm[key]) {
-			vars.__currentValidateKeys.push(key+endKey)
-			typeof vars.__findLinkageFields === "function" && vars.__findLinkageFields(key);	
-		}	
-	}	
-%s`, ErrorMessagePostfix,
+		onChangeEvent += setValidateKeysScript +
 			web.Plaid().URL(ctx.R.URL.Path).
-				BeforeScript(fmt.Sprintf(`vars.__ValidateOperateID=%q`, operateID)).
+				BeforeScript(fmt.Sprintf(`dash.__ValidateOperateID=%q;`, operateID)).
 				EventFunc(actions.Validate).
 				Query(ParamID, id).
 				Query(ParamOperateID, operateID).
 				Query(ParamOverlay, ctx.Param(ParamOverlay)).
-				Go())
+				Go()
 	}
-	return scope.OnChange(onChangeEvent).UseDebounce(500)
+	return web.Scope(scope.OnChange(onChangeEvent).UseDebounce(500)).VSlot("{dash}").DashInit("{errorMessages:{}}")
 }
 
 func (b *EditingBuilder) doValidate(ctx *web.EventContext) (r web.EventResponse, err error) {
@@ -452,16 +431,15 @@ func (b *EditingBuilder) doValidate(ctx *web.EventContext) (r web.EventResponse,
 	if b.mb.creating != nil && id == "" {
 		usingB = b.mb.creating
 	}
-
 	defer func() {
 		web.AppendRunScripts(&r,
-			fmt.Sprintf(`if (vars.__ValidateOperateID==%q){%s}`, operateID,
+			fmt.Sprintf(`if (dash.__ValidateOperateID==%q){%s}`, operateID,
 				web.Emit(
 					b.mb.NotifModelsValidate(),
 					PayloadModelsSetter{
-						Form:   b.ToErrorMessagesForm(ctx, &vErr),
-						Id:     id,
-						Passed: !vErr.HaveErrors(),
+						FieldErrors: vErr.FieldErrors(),
+						Id:          id,
+						Passed:      !vErr.HaveErrors(),
 					},
 				)),
 		)

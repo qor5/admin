@@ -46,7 +46,7 @@ func TestMediaExample(t *testing.T) {
 				return req
 			},
 			// have img information and description
-			ExpectPortalUpdate0ContainsInOrder: []string{"/system/media_libraries/5/file.png", "<span>default</span>", "3230 X 1908", "<vx-field v-model='form[\"MediaLibrary1.Description\"]' :error-messages='form[\"MediaLibrary1.Description_FieldErrorMessages\"]' v-assign='[form, {\"MediaLibrary1.Description\":\"5_desc\",\"MediaLibrary1.Description_FieldErrorMessages\":null}]'"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"/system/media_libraries/5/file.png", "<span>default</span>", "3230 X 1908", `<vx-field v-model='form["MediaLibrary1.Description"]' :error-messages='dash.errorMessages["MediaLibrary1.Description"]' v-assign:append='[dash.errorMessages, {"MediaLibrary1.Description":null}]' v-assign='[form, {"MediaLibrary1.Description":"5_desc"}]' placeholder='description for accessibility' :disabled='false'></vx-field>`},
 			ExpectPortalUpdate0NotContains:     []string{"/system/media_libraries/6/file.png"},
 		},
 		{
@@ -66,7 +66,7 @@ func TestMediaExample(t *testing.T) {
 			},
 			// not have img information and description
 			ExpectPortalUpdate0ContainsInOrder: []string{"/system/media_libraries/5/file.png"},
-			ExpectPortalUpdate0NotContains:     []string{"/system/media_libraries/6/file.png", "<span>default</span>", "3230 X 1908", "<v-text-field v-model='form[\"MediaLibrary1.Description\"]' v-assign='[form, {\"MediaLibrary1.Description\":\"5_desc\"}]'"},
+			ExpectPortalUpdate0NotContains:     []string{"/system/media_libraries/6/file.png", "<span>default</span>", "3230 X 1908"},
 		},
 		{
 			Name:  "default update",

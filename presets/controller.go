@@ -9,23 +9,23 @@ import (
 func LinkageFieldsController(field *FieldContext, vs ...string) h.HTMLComponent {
 	vs = append(vs, field.FormKey)
 	return h.Div().Attr("v-on-mounted", fmt.Sprintf(`()=>{
-	    vars.__lingkageFields = vars.__lingkageFields??[];
-		const endKey = %q;
-		vars.__lingkageFields.push(%v)
+	    dash.__lingkageFields = dash.__lingkageFields??[];
+	    dash.__currentValidateKeys = dash.__currentValidateKeys??[];
+		dash.__lingkageFields.push(%v)
 		if (!vars.__findLinkageFields){
-			vars.__findLinkageFields = function findLinkageFields( x) {
+			dash.__findLinkageFields = function findLinkageFields( x) {
     		const result = new Set();
-    		vars.__lingkageFields.forEach(subArray => {
+    		dash.__lingkageFields.forEach(subArray => {
         	if (subArray.includes(x)) {
             subArray.forEach(value => {	
 			if (value !== x) {
 				result.add(value);
-				vars.__currentValidateKeys.push(value+endKey)
+				dash.__currentValidateKeys.push(value)
                 }
             });
         }
     });
 }
 }
-	}`, ErrorMessagePostfix, h.JSONString(vs)))
+	}`, h.JSONString(vs)))
 }

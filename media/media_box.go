@@ -179,7 +179,7 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 	}
 
 	ctx := web.MustGetEventContext(c)
-	errMessageFormKey := b.fieldName + ".Values" + presets.ErrorMessagePostfix
+	errMessageFormKey := b.fieldName + ".Values"
 
 	portalName := mainPortalName(b.fieldName)
 	return h.Components(
@@ -192,11 +192,11 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 			).Name(mediaBoxThumbnailsPortalName(b.fieldName)),
 			web.Portal().Name(portalName),
 			h.Div().Class("d-flex flex-column py-1 ga-1 text-caption").
-				Attr(web.VAssign("form", map[string]interface{}{errMessageFormKey: b.errorMessages})...).
+				Attr(web.VAssign("dash.errorMessages", map[string]interface{}{errMessageFormKey: b.errorMessages})...).
 				ClassIf("text-error", !b.disabled).
 				ClassIf("text-grey", b.disabled).
 				Children(
-					h.Div(h.Text(fmt.Sprintf(`{{form[%q][0]}}`, errMessageFormKey))).Attr("v-if", fmt.Sprintf(`form[%q]`, errMessageFormKey)),
+					h.Div(h.Text(fmt.Sprintf(`{{dash.errorMessages[%q][0]}}`, errMessageFormKey))).Attr("v-if", fmt.Sprintf(`dash.errorMessages[%q]`, errMessageFormKey)),
 				),
 		).
 			Class("bg-transparent").

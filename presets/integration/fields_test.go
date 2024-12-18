@@ -108,17 +108,17 @@ func TestFields(t *testing.T) {
 						ctx)
 			},
 			expect: `
-<vx-field type='number' v-model='form["Int1"]' :error-messages='form["Int1_FieldErrorMessages"]' v-assign='[form, {"Int1":"2","Int1_FieldErrorMessages":null}]' label='整数1' :disabled='false'></vx-field>
+<vx-field type='number' v-model='form["Int1"]' :error-messages='dash.errorMessages["Int1"]' v-assign:append='[dash.errorMessages, {"Int1":null}]' v-assign='[form, {"Int1":"2"}]' label='整数1' :disabled='false'></vx-field>
 
-<vx-field type='number' v-model='form["Float1"]' :error-messages='form["Float1_FieldErrorMessages"]' v-assign='[form, {"Float1":"23.1","Float1_FieldErrorMessages":null}]' label='Float1' :disabled='false'></vx-field>
+<vx-field type='number' v-model='form["Float1"]' :error-messages='dash.errorMessages["Float1"]' v-assign:append='[dash.errorMessages, {"Float1":null}]' v-assign='[form, {"Float1":"23.1"}]' label='Float1' :disabled='false'></vx-field>
 
-<vx-field label='String1' v-model='form["String1"]' :error-messages='form["String1_FieldErrorMessages"]' v-assign='[form, {"String1":"hello","String1_FieldErrorMessages":["too small"]}]' :disabled='false'></vx-field>
+<vx-field label='String1' v-model='form["String1"]' :error-messages='dash.errorMessages["String1"]' v-assign:append='[dash.errorMessages, {"String1":["too small"]}]' v-assign='[form, {"String1":"hello"}]' :disabled='false'></vx-field>
 
-<vx-checkbox v-model='form["Bool1"]' :error-messages='form["Bool1_FieldErrorMessages"]' v-assign='[form, {"Bool1":true,"Bool1_FieldErrorMessages":null}]' label='Bool1' :disabled='false'></vx-checkbox>
+<vx-checkbox v-model='form["Bool1"]' :error-messages='dash.errorMessages["Bool1"]' v-assign:append='[dash.errorMessages, {"Bool1":null}]' v-assign='[form, {"Bool1":true}]' label='Bool1' :disabled='false'></vx-checkbox>
 
 <div v-model='form["Time1"]' v-assign='[form, {"Time1":"2019-08-29"}]' class='time-control'></div>
 
-<vx-field label='公司名' v-model='form["Company.Name"]' :error-messages='form["Company.Name_FieldErrorMessages"]' v-assign='[form, {"Company.Name":"Company1","Company.Name_FieldErrorMessages":null}]' :disabled='false'></vx-field>
+<vx-field label='公司名' v-model='form["Company.Name"]' :error-messages='dash.errorMessages["Company.Name"]' v-assign:append='[dash.errorMessages, {"Company.Name":null}]' v-assign='[form, {"Company.Name":"Company1"}]' :disabled='false'></vx-field>
 
 <div v-model='form["Company.FoundedAt"]' v-assign='[form, {"Company.FoundedAt":"2019-08-29"}]' class='time-control'></div>
 `,
@@ -132,11 +132,11 @@ func TestFields(t *testing.T) {
 					ToComponent(mb.Info(), user, ctx)
 			},
 			expect: `
-<vx-field type='number' v-model='form["Int1"]' :error-messages='form["Int1_FieldErrorMessages"]' v-assign='[form, {"Int1":"2","Int1_FieldErrorMessages":null}]' label='Int1' :disabled='false'></vx-field>
+<vx-field type='number' v-model='form["Int1"]' :error-messages='dash.errorMessages["Int1"]' v-assign:append='[dash.errorMessages, {"Int1":null}]' v-assign='[form, {"Int1":"2"}]' label='Int1' :disabled='false'></vx-field>
 
-<vx-field type='number' v-model='form["Float1"]' :error-messages='form["Float1_FieldErrorMessages"]' v-assign='[form, {"Float1":"23.1","Float1_FieldErrorMessages":null}]' label='Float1' :disabled='false'></vx-field>
+<vx-field type='number' v-model='form["Float1"]' :error-messages='dash.errorMessages["Float1"]' v-assign:append='[dash.errorMessages, {"Float1":null}]' v-assign='[form, {"Float1":"23.1"}]' label='Float1' :disabled='false'></vx-field>
 
-<vx-field label='String1' v-model='form["String1"]' :error-messages='form["String1_FieldErrorMessages"]' v-assign='[form, {"String1":"hello","String1_FieldErrorMessages":["too small"]}]' :disabled='false'></vx-field>
+<vx-field label='String1' v-model='form["String1"]' :error-messages='dash.errorMessages["String1"]' v-assign:append='[dash.errorMessages, {"String1":["too small"]}]' v-assign='[form, {"String1":"hello"}]' :disabled='false'></vx-field>
 
 <div v-model='form["Time1"]' v-assign='[form, {"Time1":"2019-08-29"}]' class='time-control'></div>
 `,
@@ -201,9 +201,9 @@ func TestFields(t *testing.T) {
 						&web.EventContext{R: r, Flash: vd})
 			},
 			expect: fmt.Sprintf(`
-<vx-datetimepicker :label='"Time1"' v-model='form["Time1"]' :error-messages='form["Time1_FieldErrorMessages"]' v-assign='[form, {"Time1":%q,"Time1_FieldErrorMessages":["err time1"]}]' :value='%q' :timePickerProps='{"format":"24hr","scrollable":true,"use-seconds":false,"no-title":false}' :clearText='"Clear"' :okText='"OK"' :disabled='false'></vx-datetimepicker>
+<vx-datetimepicker :label='"Time1"' v-model='form["Time1"]' :error-messages='dash.errorMessages["Time1"]' v-assign:append='[dash.errorMessages, {"Time1":["err time1"]}]' v-assign='[form, {"Time1":%q}]' :value='%q' :timePickerProps='{"format":"24hr","scrollable":true,"use-seconds":false,"no-title":false}' :clearText='"Clear"' :okText='"OK"' :disabled='false'></vx-datetimepicker>
 
-<vx-datetimepicker :label='"公司创立于"' v-model='form["Company.FoundedAt"]' :error-messages='form["Company.FoundedAt_FieldErrorMessages"]' v-assign='[form, {"Company.FoundedAt":%q,"Company.FoundedAt_FieldErrorMessages":null}]' :value='%q' :timePickerProps='{"format":"24hr","scrollable":true,"use-seconds":false,"no-title":false}' :clearText='"Clear"' :okText='"OK"' :disabled='false'></vx-datetimepicker>
+<vx-datetimepicker :label='"公司创立于"' v-model='form["Company.FoundedAt"]' :error-messages='dash.errorMessages["Company.FoundedAt"]' v-assign:append='[dash.errorMessages, {"Company.FoundedAt":null}]' v-assign='[form, {"Company.FoundedAt":%q}]' :value='%q' :timePickerProps='{"format":"24hr","scrollable":true,"use-seconds":false,"no-title":false}' :clearText='"Clear"' :okText='"OK"' :disabled='false'></vx-datetimepicker>
 `, time1LocalFormatMinute, time1LocalFormatMinute, time1LocalFormatMinute, time1LocalFormatMinute),
 		},
 		{
@@ -225,9 +225,9 @@ func TestFields(t *testing.T) {
 					&web.EventContext{R: r, Flash: vd})
 			},
 			expect: fmt.Sprintf(`
-<vx-datetimepicker :label='"Time1"' v-model='form["Time1"]' :error-messages='form["Time1_FieldErrorMessages"]' v-assign='[form, {"Time1":%q,"Time1_FieldErrorMessages":["err time1"]}]' :value='%q' :timePickerProps='{"format":"24hr","scrollable":true,"use-seconds":false,"no-title":false}' :clearText='"Clear"' :okText='"OK"' :disabled='false'></vx-datetimepicker>
+<vx-datetimepicker :label='"Time1"' v-model='form["Time1"]' :error-messages='dash.errorMessages["Time1"]' v-assign:append='[dash.errorMessages, {"Time1":["err time1"]}]' v-assign='[form, {"Time1":%q}]' :value='%q' :timePickerProps='{"format":"24hr","scrollable":true,"use-seconds":false,"no-title":false}' :clearText='"Clear"' :okText='"OK"' :disabled='false'></vx-datetimepicker>
 
-<vx-datetimepicker :label='"Time2"' v-model='form["Time2"]' :error-messages='form["Time2_FieldErrorMessages"]' v-assign='[form, {"Time2":%q,"Time2_FieldErrorMessages":null}]' :value='%q' :timePickerProps='{"format":"24hr","scrollable":true,"use-seconds":false,"no-title":false}' :clearText='"Clear"' :okText='"OK"' :disabled='false'></vx-datetimepicker>
+<vx-datetimepicker :label='"Time2"' v-model='form["Time2"]' :error-messages='dash.errorMessages["Time2"]' v-assign:append='[dash.errorMessages, {"Time2":null}]' v-assign='[form, {"Time2":%q}]' :value='%q' :timePickerProps='{"format":"24hr","scrollable":true,"use-seconds":false,"no-title":false}' :clearText='"Clear"' :okText='"OK"' :disabled='false'></vx-datetimepicker>
 `, "", "", "", ""),
 		},
 		{
@@ -249,9 +249,9 @@ func TestFields(t *testing.T) {
 					&web.EventContext{R: r, Flash: vd})
 			},
 			expect: fmt.Sprintf(`
-<vx-datetimepicker :label='"Time1"' v-model='form["Time1"]' :error-messages='form["Time1_FieldErrorMessages"]' v-assign='[form, {"Time1":%q,"Time1_FieldErrorMessages":["err time1"]}]' :value='%q' :timePickerProps='{"format":"24hr","scrollable":true,"use-seconds":false,"no-title":false}' :clearText='"Clear"' :okText='"OK"' :disabled='false'></vx-datetimepicker>
+<vx-datetimepicker :label='"Time1"' v-model='form["Time1"]' :error-messages='dash.errorMessages["Time1"]' v-assign:append='[dash.errorMessages, {"Time1":["err time1"]}]' v-assign='[form, {"Time1":%q}]' :value='%q' :timePickerProps='{"format":"24hr","scrollable":true,"use-seconds":false,"no-title":false}' :clearText='"Clear"' :okText='"OK"' :disabled='false'></vx-datetimepicker>
 
-<vx-datetimepicker :label='"Time2"' v-model='form["Time2"]' :error-messages='form["Time2_FieldErrorMessages"]' v-assign='[form, {"Time2":%q,"Time2_FieldErrorMessages":null}]' :value='%q' :timePickerProps='{"format":"24hr","scrollable":true,"use-seconds":false,"no-title":false}' :clearText='"Clear"' :okText='"OK"' :disabled='false'></vx-datetimepicker>
+<vx-datetimepicker :label='"Time2"' v-model='form["Time2"]' :error-messages='dash.errorMessages["Time2"]' v-assign:append='[dash.errorMessages, {"Time2":null}]' v-assign='[form, {"Time2":%q}]' :value='%q' :timePickerProps='{"format":"24hr","scrollable":true,"use-seconds":false,"no-title":false}' :clearText='"Clear"' :okText='"OK"' :disabled='false'></vx-datetimepicker>
 `, "", "", "", ""),
 		},
 		{
@@ -369,22 +369,22 @@ func addressHTML(v Address, formKeyPrefix string) string {
 <label class='v-label theme--light text-caption'>Address</label>
 
 <v-card :variant='"outlined"' class='mx-0 mt-1 mb-4 px-4 pb-0 pt-4'>
-<vx-field label='City' v-model='form["%sAddress.City"]' :error-messages='form["%sAddress.City_FieldErrorMessages"]' v-assign='[form, {"%sAddress.City":"%s","%sAddress.City_FieldErrorMessages":null}]' :disabled='false'></vx-field>
+<vx-field label='City' v-model='form["%sAddress.City"]' :error-messages='dash.errorMessages["%sAddress.City"]' v-assign:append='[dash.errorMessages, {"%sAddress.City":null}]' v-assign='[form, {"%sAddress.City":"%s"}]' :disabled='false'></vx-field>
 
 <div>
 <label class='v-label theme--light text-caption'>Detail</label>
 
 <v-card :variant='"outlined"' class='mx-0 mt-1 mb-4 px-4 pb-0 pt-4'>
-<vx-field label='Address1' v-model='form["%sAddress.Detail.Address1"]' :error-messages='form["%sAddress.Detail.Address1_FieldErrorMessages"]' v-assign='[form, {"%sAddress.Detail.Address1":"%s","%sAddress.Detail.Address1_FieldErrorMessages":null}]' :disabled='false'></vx-field>
+<vx-field label='Address1' v-model='form["%sAddress.Detail.Address1"]' :error-messages='dash.errorMessages["%sAddress.Detail.Address1"]' v-assign:append='[dash.errorMessages, {"%sAddress.Detail.Address1":null}]' v-assign='[form, {"%sAddress.Detail.Address1":"%s"}]' :disabled='false'></vx-field>
 
-<vx-field label='Address2' v-model='form["%sAddress.Detail.Address2"]' :error-messages='form["%sAddress.Detail.Address2_FieldErrorMessages"]' v-assign='[form, {"%sAddress.Detail.Address2":"%s","%sAddress.Detail.Address2_FieldErrorMessages":null}]' :disabled='false'></vx-field>
+<vx-field label='Address2' v-model='form["%sAddress.Detail.Address2"]' :error-messages='dash.errorMessages["%sAddress.Detail.Address2"]' v-assign:append='[dash.errorMessages, {"%sAddress.Detail.Address2":null}]' v-assign='[form, {"%sAddress.Detail.Address2":"%s"}]' :disabled='false'></vx-field>
 </v-card>
 </div>
 </v-card>
 </div>`,
-		formKeyPrefix, formKeyPrefix, formKeyPrefix, v.City, formKeyPrefix,
-		formKeyPrefix, formKeyPrefix, formKeyPrefix, v.Detail.Address1, formKeyPrefix,
-		formKeyPrefix, formKeyPrefix, formKeyPrefix, v.Detail.Address2, formKeyPrefix,
+		formKeyPrefix, formKeyPrefix, formKeyPrefix, formKeyPrefix, v.City,
+		formKeyPrefix, formKeyPrefix, formKeyPrefix, formKeyPrefix, v.Detail.Address1,
+		formKeyPrefix, formKeyPrefix, formKeyPrefix, formKeyPrefix, v.Detail.Address2,
 	)
 }
 
@@ -543,7 +543,7 @@ func TestFieldsBuilder(t *testing.T) {
 
 %s
 
-<vx-field type='number' v-model='form["PeopleCount"]' :error-messages='form["PeopleCount_FieldErrorMessages"]' v-assign='[form, {"PeopleCount":"0","PeopleCount_FieldErrorMessages":null}]' label='People Count' :disabled='false'></vx-field>
+<vx-field type='number' v-model='form["PeopleCount"]' :error-messages='dash.errorMessages["PeopleCount"]' v-assign:append='[dash.errorMessages, {"PeopleCount":null}]' v-assign='[form, {"PeopleCount":"0"}]' label='People Count' :disabled='false'></vx-field>
 `,
 				addressHTML(Address{}, "Departments[0].Employees[0]."),
 				addressHTML(Address{}, "Departments[0].Employees[2]."),
@@ -649,7 +649,7 @@ func TestFieldsBuilder(t *testing.T) {
 
 %s
 
-<vx-field type='number' v-model='form["PeopleCount"]' :error-messages='form["PeopleCount_FieldErrorMessages"]' v-assign='[form, {"PeopleCount":"0","PeopleCount_FieldErrorMessages":null}]' label='People Count' :disabled='false'></vx-field>
+<vx-field type='number' v-model='form["PeopleCount"]' :error-messages='dash.errorMessages["PeopleCount"]' v-assign:append='[dash.errorMessages, {"PeopleCount":null}]' v-assign='[form, {"PeopleCount":"0"}]' label='People Count' :disabled='false'></vx-field>
 `,
 				addressHTML(Address{}, "Departments[0].Employees[2]."),
 				addressHTML(Address{}, "Departments[0].Employees[0]."),
