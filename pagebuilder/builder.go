@@ -94,6 +94,7 @@ type Builder struct {
 	images                        http.Handler
 	imagesPrefix                  string
 	defaultDevice                 string
+	editorBackgroundColor         string
 	publishBtnColor               string
 	duplicateBtnColor             string
 	templateEnabled               bool
@@ -267,6 +268,11 @@ func (b *Builder) Images(v http.Handler, imagesPrefix string) (r *Builder) {
 
 func (b *Builder) DefaultDevice(v string) (r *Builder) {
 	b.defaultDevice = v
+	return b
+}
+
+func (b *Builder) EditorBackgroundColor(v string) (r *Builder) {
+	b.editorBackgroundColor = v
 	return b
 }
 
@@ -1437,8 +1443,13 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 			Mandatory(true).
 			Attr("v-model", "toggleLocals.activeDevice").
 			Attr("@update:model-value", fmt.Sprintf("const device = toggleLocals.devices.find(device => device.Name === toggleLocals.activeDevice);vars.__scrollIframeWidth=device ? device.Width : '';")+
-				web.Plaid().
-					PushState(true).MergeQuery(true).Query(paramsDevice, web.Var("toggleLocals.activeDevice")).RunPushState()),
+				web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).
+					BeforeScript(web.Plaid().
+						PushState(true).MergeQuery(true).Query(paramsDevice, web.Var("toggleLocals.activeDevice")).RunPushState()).
+					Query(paramContainerDataID, web.Var(fmt.Sprintf("vars.%s", paramContainerDataID))).
+					Query(paramIsUpdate, false).
+					Go(),
+			),
 	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %q,devices:%v}`, device, h.JSONString(devices)))
 }
 

@@ -506,8 +506,10 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 
 	return h.Div(
 		web.Scope(
-			content,
-		).VSlot("{ form }"),
+			web.Scope(
+				content,
+			).VSlot("{ form }"),
+		).VSlot("{ dash }").DashInit("{errorMessages:{}}"),
 		hiddenComp,
 	).Attr("v-on-mounted", fmt.Sprintf(`()=>{%s}`, initDataChanged))
 }
@@ -579,40 +581,17 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 		)
 	}
 	operateID := fmt.Sprint(time.Now().UnixNano())
-	onChangeEvent += fmt.Sprintf(`
-	  vars.__currentValidateKeys = vars.__currentValidateKeys??[];
-	  const endKey = %q	;
-	  	
-	  for (let key in form) {
-		if (key.endsWith(endKey)){continue}
-		if (form[key] !== oldForm[key]) {
-			vars.__currentValidateKeys.push(key+endKey);
-			typeof vars.__findLinkageFields === "function" && vars.__findLinkageFields(key);
-			}
-		}
-%s`, ErrorMessagePostfix,
+	onChangeEvent += checkFormChangeScript + setValidateKeysScript +
 		web.Plaid().URL(ctx.R.URL.Path).
-			BeforeScript(fmt.Sprintf(`vars.__ValidateOperateID=%q`, operateID)).
+			BeforeScript(fmt.Sprintf(`dash.__ValidateOperateID=%q`, operateID)).
 			EventFunc(b.EventValidate()).
 			Query(ParamID, id).
 			Query(ParamOperateID, operateID).
-			Go())
+			Go()
 
 	comps := h.Components(
 		web.Listen(b.mb.NotifModelsSectionValidate(b.name),
-			`
-			if (vars.__currentValidateKeys){
-						for (const key of vars.__currentValidateKeys){
-							form[key] = payload.form[key]
-							}
-					}else{
-						for (const key in payload.form){
-								form[key] = payload.form[key]
-							}
-						}
-            vars.__currentValidateKeys = [];
-			`))
-
+			setFieldErrorsScript))
 	if b.isEdit {
 		return h.Div(
 			web.Scope(
@@ -624,10 +603,12 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 	}
 	return h.Div(
 		web.Scope(
-			comps,
-			content,
-			hiddenComp,
-		).VSlot("{ form }").OnChange(onChangeEvent).UseDebounce(500),
+			web.Scope(
+				comps,
+				content,
+				hiddenComp,
+			).VSlot("{ form}").OnChange(onChangeEvent).UseDebounce(500),
+		).VSlot("{ dash }").DashInit("{errorMessages:{}}"),
 	)
 }
 
@@ -1144,13 +1125,13 @@ func (b *SectionBuilder) ValidateDetailField(ctx *web.EventContext) (r web.Event
 
 	defer func() {
 		web.AppendRunScripts(&r,
-			fmt.Sprintf(`if (vars.__ValidateOperateID==%q){%s}`, operateID,
+			fmt.Sprintf(`if (dash.__ValidateOperateID==%q){%s}`, operateID,
 				web.Emit(
 					b.mb.NotifModelsSectionValidate(b.name),
 					PayloadModelsSetter{
-						Form:   b.editingFB.ToErrorMessagesForm(ctx, &vErr),
-						Id:     id,
-						Passed: !vErr.HaveErrors(),
+						FieldErrors: vErr.FieldErrors(),
+						Id:          id,
+						Passed:      !vErr.HaveErrors(),
 					},
 				),
 			),

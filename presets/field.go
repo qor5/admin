@@ -920,27 +920,6 @@ func defaultRowFunc(obj interface{}, formKey string, content h.HTMLComponent, ct
 	return content
 }
 
-func (b *FieldsBuilder) ToErrorMessagesForm(ctx *web.EventContext, vErr *web.ValidationErrors) interface{} {
-	form := make(map[string]interface{})
-
-	for k := range ctx.R.PostForm {
-		if k == web.EventFuncIDName {
-			continue
-		}
-		if strings.HasSuffix(k, "]") {
-			k = k[:strings.LastIndexAny(k, "[")]
-		}
-		key := k + ErrorMessagePostfix
-		if _, ok := form[key]; ok {
-			continue
-		}
-		form[key] = vErr.GetFieldErrors(k)
-
-	}
-
-	return form
-}
-
 func (b *FieldsBuilder) ToComponentForEach(field *FieldContext, slice interface{}, ctx *web.EventContext, rowFunc RowFunc) h.HTMLComponent {
 	var info *ModelInfo
 	parentKeyPath := ""
