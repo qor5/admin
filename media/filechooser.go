@@ -260,6 +260,16 @@ func fileComponent(mb *Builder, field string, tab string, ctx *web.EventContext,
 	initCroppingVars = append(initCroppingVars, fmt.Sprintf("%s: false", croppingVar))
 
 	src := f.File.URL()
+	fullSrc := src
+	if !strings.HasPrefix(fullSrc, "http") {
+		if strings.HasPrefix(src, "//") {
+			fullSrc = fmt.Sprintf("%q", "http:"+src)
+		} else {
+			fullSrc = fmt.Sprintf("'http://'+$event.view.window.location.host+%q", src)
+		}
+	} else {
+		fullSrc = fmt.Sprintf("%q", src)
+	}
 	*menus = append(*menus,
 		h.If(mb.copyIsAllowed(ctx.R) == nil,
 			VListItem(h.Text(msgr.Copy)).Attr("@click", web.Plaid().
@@ -287,7 +297,11 @@ func fileComponent(mb *Builder, field string, tab string, ctx *web.EventContext,
 					Query(searchKeywordName(inMediaLibrary, field), ctx.Param(searchKeywordName(inMediaLibrary, field))).
 					Go()),
 		),
-	)
+		h.If(mb.copyURLIsAllowed(ctx.R) == nil,
+			VListItem(
+				h.Text(msgr.CopyImageURL)).
+				Attr("@click", fmt.Sprintf(`$event.view.window.navigator.clipboard.writeText(%s);vars.presetsMessage = { show: true, message: "success", color: %q}`, fullSrc, ColorSuccess)),
+		))
 	clickEvent := fmt.Sprintf(`vars.imageSrc=%q;vars.imagePreview=true;`, src)
 	if base.IsImageFormat(f.File.FileName) && inMediaLibrary {
 		*event = clickEvent

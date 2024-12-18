@@ -2,6 +2,7 @@ package presets
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -460,7 +461,10 @@ func (b *FieldsBuilder) SetObjectFields(fromObj interface{}, toObj interface{}, 
 			Label:     b.getLabel(f.NameLabel),
 		}, ctx)
 		if err1 != nil {
-			if web.IsValidationGlobalError(err1) {
+			var vErr1 *web.ValidationErrors
+			if errors.As(err1, &vErr1) {
+				_ = vErr.Merge(vErr1)
+			} else if web.IsValidationGlobalError(err1) {
 				vErr.GlobalError(err1.Error())
 			} else {
 				vErr.FieldError(f.name, err1.Error())
@@ -914,15 +918,6 @@ type RowFunc func(obj interface{}, formKey string, content h.HTMLComponent, ctx 
 
 func defaultRowFunc(obj interface{}, formKey string, content h.HTMLComponent, ctx *web.EventContext) h.HTMLComponent {
 	return content
-}
-
-func (b *FieldsBuilder) ToErrorMessagesForm(ctx *web.EventContext, vErr *web.ValidationErrors) interface{} {
-	form := make(map[string]interface{})
-	for k := range vErr.FieldErrors() {
-		key := k + ErrorMessagePostfix
-		form[key] = vErr.GetFieldErrors(k)
-	}
-	return form
 }
 
 func (b *FieldsBuilder) ToComponentForEach(field *FieldContext, slice interface{}, ctx *web.EventContext, rowFunc RowFunc) h.HTMLComponent {
