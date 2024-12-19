@@ -392,6 +392,11 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 	if vErr == nil {
 		vErr = &web.ValidationErrors{}
 	}
+	var mediaboxID string
+
+	if mediaBox != nil {
+		mediaboxID = mediaBox.ID.String()
+	}
 	// button
 	btnRow := VRow(
 		VBtn(msgr.ChooseFile).
@@ -402,7 +407,7 @@ func mediaBoxThumbnails(ctx *web.EventContext, mediaBox *media_library.MediaBox,
 			Attr("@click", web.Plaid().EventFunc(OpenFileChooserEvent).
 				Query(ParamField, field).
 				Query(ParamCfg, h.JSONString(cfg)).
-				Query(ParamSelectIDS, mediaBox.ID).
+				Query(ParamSelectIDS, mediaboxID).
 				Go(),
 			).Disabled(disabled),
 	)
