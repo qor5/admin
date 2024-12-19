@@ -26,7 +26,7 @@ require (
 	github.com/qor5/imaging v1.6.4
 	github.com/qor5/web v1.3.2
 	github.com/qor5/web/v3 v3.0.12-0.20241218104310-f11d78471a09
-	github.com/qor5/x/v3 v3.0.14-0.20241218085319-0565e0810ca2
+	github.com/qor5/x/v3 v3.0.14-0.20241219035111-eaf1b3627033
 	github.com/samber/lo v1.47.0
 	github.com/shurcooL/sanitized_anchor_name v1.0.0
 	github.com/spf13/cast v1.6.0
