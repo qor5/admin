@@ -297,6 +297,7 @@ func deleteConfirmation(mb *Builder) web.EventFunc {
 				OkText(pMsgr.Delete).
 				Attr("@click:ok", web.Plaid().
 					EventFunc(DoDeleteEvent).
+					BeforeScript("vars.mediaLibrary_deleteConfirmation =false").
 					Queries(ctx.Queries()).
 					Go()),
 		})
@@ -310,9 +311,7 @@ func doDelete(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var (
 			db              = mb.db
-			field           = ctx.Param(ParamField)
 			ids             = strings.Split(ctx.Param(ParamMediaIDS), ",")
-			cfg             = ctx.Param(ParamCfg)
 			objs            []media_library.MediaLibrary
 			deleteIDs       []uint64
 			deleteFolderIDS []uint
@@ -324,18 +323,13 @@ func doDelete(mb *Builder) web.EventFunc {
 			}
 			deleteIDs = append(deleteIDs, id)
 		}
-
+		defer web.AppendRunScripts(&r,
+			"vars.mediaLibrary_deleteConfirmation = false",
+			web.Plaid().EventFunc(ImageJumpPageEvent).MergeQuery(true).Queries(ctx.Queries()).Go(),
+		)
 		err = db.Where("id in ?", deleteIDs).Find(&objs).Error
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				renderFileChooserDialogContent(
-					ctx,
-					&r,
-					field,
-					mb,
-					stringToCfg(cfg),
-				)
-				r.RunScript = "vars.mediaLibrary_deleteConfirmation = false"
 				return r, nil
 			}
 			panic(err)
@@ -366,14 +360,6 @@ func doDelete(mb *Builder) web.EventFunc {
 			panic(err)
 		}
 		mb.onDelete(ctx, objs)
-		renderFileChooserDialogContent(
-			ctx,
-			&r,
-			field,
-			mb,
-			stringToCfg(cfg),
-		)
-		r.RunScript = "vars.mediaLibrary_deleteConfirmation = false"
 		return
 	}
 }
@@ -605,6 +591,7 @@ func updateDescription(mb *Builder) web.EventFunc {
 		presets.ShowMessage(&r, msgr.DescriptionUpdated, ColorSuccess)
 		web.AppendRunScripts(&r,
 			web.Plaid().EventFunc(ImageJumpPageEvent).
+				MergeQuery(true).
 				Queries(ctx.Queries()).
 				Go())
 		return
@@ -636,6 +623,7 @@ func rename(mb *Builder) web.EventFunc {
 		presets.ShowMessage(&r, msgr.RenameUpdated, ColorSuccess)
 		web.AppendRunScripts(&r,
 			web.Plaid().EventFunc(ImageJumpPageEvent).
+				MergeQuery(true).
 				Queries(ctx.Queries()).
 				Go())
 		return
@@ -669,6 +657,7 @@ func createFolder(mb *Builder) web.EventFunc {
 		mb.onCreate(ctx, m)
 		r.RunScript = web.Plaid().
 			EventFunc(ImageJumpPageEvent).
+			MergeQuery(true).
 			Queries(ctx.Queries()).
 			Go()
 		return
@@ -728,7 +717,7 @@ func renameDialog(mb *Builder) web.EventFunc {
 					Width(300).
 					OkText(pMsgr.OK).
 					Attr(":disable-ok", fmt.Sprintf("!form.%s", ParamName)).
-					Attr("@click:ok", web.Plaid().EventFunc(RenameEvent).Queries(ctx.Queries()).Go()),
+					Attr("@click:ok", web.Plaid().BeforeScript("dialogLocals.show = false").EventFunc(RenameEvent).Queries(ctx.Queries()).Go()),
 			).VSlot("{locals:dialogLocals}").Init("{show:true}"),
 		})
 		return
@@ -736,7 +725,6 @@ func renameDialog(mb *Builder) web.EventFunc {
 }
 
 func newFolderDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
-	r.RunScript = `vars.searchMsg=""`
 	var (
 		pMsgr = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 		msgr  = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
@@ -753,7 +741,7 @@ func newFolderDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 				Width(300).
 				CancelText(pMsgr.Cancel).
 				OkText(pMsgr.OK).
-				Attr("@click:ok", web.Plaid().EventFunc(CreateFolderEvent).Queries(ctx.Queries()).Go()),
+				Attr("@click:ok", web.Plaid().BeforeScript("dialogLocals.show=false").EventFunc(CreateFolderEvent).Queries(ctx.Queries()).Go()),
 		).VSlot("{locals:dialogLocals}").Init("{show:true}"),
 	})
 	return
@@ -777,7 +765,7 @@ func updateDescriptionDialog(mb *Builder) web.EventFunc {
 					Width(300).
 					CancelText(pMsgr.Cancel).
 					OkText(pMsgr.OK).
-					Attr("@click:ok", web.Plaid().EventFunc(UpdateDescriptionEvent).Queries(ctx.Queries()).Go()),
+					Attr("@click:ok", web.Plaid().BeforeScript("dialogLocals.show=false").EventFunc(UpdateDescriptionEvent).Queries(ctx.Queries()).Go()),
 			).VSlot("{locals:dialogLocals}").Init("{show:true}"),
 		})
 		return
@@ -812,6 +800,7 @@ func moveToFolderDialog(mb *Builder) web.EventFunc {
 					OkText(pMsgr.OK).
 					Attr("@click:ok", web.Plaid().
 						EventFunc(MoveToFolderEvent).
+						BeforeScript("dialogLocals.show = false").
 						Queries(ctx.Queries()).
 						Query(ParamParentID, web.Var(fmt.Sprintf("form.%s", ParamSelectFolderID))).
 						Go()),
@@ -862,13 +851,18 @@ func moveToFolder(mb *Builder) web.EventFunc {
 			}
 			presets.ShowMessage(&r, msgr.MovedSuccess, ColorSuccess)
 		}
-		r.RunScript = web.Plaid().
-			EventFunc(ImageJumpPageEvent).
-			AfterScript(fmt.Sprintf(`vars.searchMsg="";"vars.media_parent_id=%v"`, selectFolderID)).
-			Queries(queries).
-			Query(ParamSelectIDS, "").
-			Query(ParamParentID, selectFolderID).
-			Go()
+		web.AppendRunScripts(
+			&r,
+			web.Plaid().PushState(true).Query(paramTab, tabFolders).Query(ParamParentID, selectFolderID).RunPushState(),
+			web.Plaid().
+				EventFunc(ImageJumpPageEvent).
+				AfterScript(fmt.Sprintf(`vars.searchMsg="";"vars.media_parent_id=%v"`, selectFolderID)).
+				Queries(queries).
+				Query(paramTab, tabFolders).
+				Query(ParamSelectIDS, "").
+				Query(ParamParentID, selectFolderID).
+				Go(),
+		)
 		return
 	}
 }
@@ -998,6 +992,7 @@ func copyFile(mb *Builder) web.EventFunc {
 
 		web.AppendRunScripts(&r,
 			web.Plaid().EventFunc(ImageJumpPageEvent).
+				MergeQuery(true).
 				Queries(ctx.Queries()).
 				Go(),
 		)
