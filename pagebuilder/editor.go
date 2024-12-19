@@ -186,10 +186,13 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 				vars.$pbRightThrottleTimer = null
 			}`)).
 				Attr("v-on-mounted", fmt.Sprintf(`({ref, window, computed})=>{
+				const rightDrawerExpendMinWidth = 350 + 56 // 56 is the width of the gap, 390 is the actual size
+				const leftDrawerExpendMinWidth = 350
+
 				vars.$pbLeftDrawerFolded = window.localStorage.getItem("$pbLeftDrawerFolded") === '1'
 				vars.$pbRightDrawerFolded = window.localStorage.getItem("$pbRightDrawerFolded") === '1'
-				vars.$pbLeftDrawerWidth = computed(()=>vars.$pbLeftDrawerFolded ? 32 : 350)
-				vars.$pbRightAdjustableWidth = +window.localStorage.getItem("$pbRightAdjustableWidth") || 350
+				vars.$pbLeftDrawerWidth = computed(()=>vars.$pbLeftDrawerFolded ? 32 : leftDrawerExpendMinWidth)
+				vars.$pbRightAdjustableWidth = +window.localStorage.getItem("$pbRightAdjustableWidth") || rightDrawerExpendMinWidth
 				vars.$pbRightDrawerWidth = computed(()=>vars.$pbRightDrawerFolded ? 32 : vars.$pbRightAdjustableWidth)
 				vars.$pbLeftIconName = computed(()=> vars.$pbLeftDrawerFolded ? "mdi-chevron-right": "mdi-chevron-left")
 				vars.$pbRightIconName = computed(()=> vars.$pbRightDrawerFolded ? "mdi-chevron-left": "mdi-chevron-right")
@@ -206,7 +209,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 					vars.$pbRightThrottleTimer = window.setTimeout(() => {
 						const halfWindowWidth = window.innerWidth / 2
 						vars.$pbRightThrottleTimer = null
-						if((vars.$pbRightDrawerWidth > halfWindowWidth) && (vars.$pbRightDrawerWidth > 350)) {
+						if((vars.$pbRightDrawerWidth > halfWindowWidth) && (vars.$pbRightDrawerWidth > rightDrawerExpendMinWidth)) {
 						vars.$pbRightAdjustableWidth =  halfWindowWidth
 					} 
 						window.localStorage.setItem("$pbRightAdjustableWidth", vars.$pbRightAdjustableWidth)
@@ -248,7 +251,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 						animationFrameId = window.requestAnimationFrame(() => {
 							const rect = draggableEl.value.getBoundingClientRect();
 							const dx = rect.right - event.clientX;
-							const minWidth = 350; 
+							const minWidth = rightDrawerExpendMinWidth; 
 							const maxWidth = window.innerWidth / 2;
 
 							const newWidth = Math.min(Math.max(dx, minWidth), maxWidth);
