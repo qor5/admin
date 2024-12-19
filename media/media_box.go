@@ -185,7 +185,7 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 	return h.Components(
 		VSheet(
 			h.If(len(b.label) > 0,
-				h.Label(b.label).Class("v-label theme--light"),
+				h.Label(b.label).Class("v-label theme--light mb-2"),
 			),
 			web.Portal(
 				mediaBoxThumbnails(ctx, b.value, b.fieldName, b.config, b.disabled, b.readonly),
