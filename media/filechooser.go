@@ -663,14 +663,14 @@ func (mb *Builder) mediaLibraryTopOperations(clickTabEvent, field, tab, typeVal,
 				VSelect().Items(mb.allowTypeSelectOptions(msgr)).ItemTitle("Text").ItemValue("Value").
 					Attr(web.VField(paramTypeKey, typeVal)...).
 					Attr("@update:model-value", changeAllowTypeEvent).
-					Density(DensityCompact).Variant(VariantTonal).Flat(true),
+					Density(DensityCompact).Variant(FieldVariantSolo).Flat(true),
 				VSelect().Items([]selectItem{
 					{Text: msgr.UploadedAtDESC, Value: orderByCreatedAtDESC},
 					{Text: msgr.UploadedAt, Value: orderByCreatedAt},
 				}).ItemTitle("Text").ItemValue("Value").
 					Attr(web.VField(paramOrderByKey, orderByVal)...).
 					Attr("@update:model-value", changeOrderEvent).
-					Density(DensityCompact).Variant(VariantTonal).Flat(true),
+					Density(DensityCompact).Variant(FieldVariantSolo).Flat(true),
 				h.If(
 					tab == tabFolders && mb.newFolderIsAllowed(ctx.R) == nil,
 					VBtn(msgr.NewFolder).PrependIcon("mdi-plus").
