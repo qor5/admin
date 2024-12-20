@@ -201,10 +201,10 @@ func TestFields(t *testing.T) {
 						&web.EventContext{R: r, Flash: vd})
 			},
 			expect: fmt.Sprintf(`
-<vx-datetimepicker :label='"Time1"' v-model='form["Time1"]' :error-messages='dash.errorMessages["Time1"]' v-assign:append='[dash.errorMessages, {"Time1":["err time1"]}]' v-assign='[form, {"Time1":%q}]' :value='%q' :timePickerProps='{"format":"24hr","scrollable":true,"use-seconds":false,"no-title":false}' :clearText='"Clear"' :okText='"OK"' :disabled='false'></vx-datetimepicker>
+<vx-date-picker type='datetimepicker' format='YYYY-MM-DD HH:mm' label='Time1' v-model='form["Time1"]' :error-messages='dash.errorMessages["Time1"]' v-assign:append='[dash.errorMessages, {"Time1":["err time1"]}]' v-assign='[form, {"Time1":%q}]' :clearable='true' :disabled='false'></vx-date-picker>
 
-<vx-datetimepicker :label='"公司创立于"' v-model='form["Company.FoundedAt"]' :error-messages='dash.errorMessages["Company.FoundedAt"]' v-assign:append='[dash.errorMessages, {"Company.FoundedAt":null}]' v-assign='[form, {"Company.FoundedAt":%q}]' :value='%q' :timePickerProps='{"format":"24hr","scrollable":true,"use-seconds":false,"no-title":false}' :clearText='"Clear"' :okText='"OK"' :disabled='false'></vx-datetimepicker>
-`, time1LocalFormatMinute, time1LocalFormatMinute, time1LocalFormatMinute, time1LocalFormatMinute),
+<vx-date-picker type='datetimepicker' format='YYYY-MM-DD HH:mm' label='公司创立于' v-model='form["Company.FoundedAt"]' :error-messages='dash.errorMessages["Company.FoundedAt"]' v-assign:append='[dash.errorMessages, {"Company.FoundedAt":null}]' v-assign='[form, {"Company.FoundedAt":%q}]' :clearable='true' :disabled='false'></vx-date-picker>
+`, time1LocalFormatMinute, time1LocalFormatMinute),
 		},
 		{
 			name: "Display zero time with default time component",
@@ -225,10 +225,10 @@ func TestFields(t *testing.T) {
 					&web.EventContext{R: r, Flash: vd})
 			},
 			expect: fmt.Sprintf(`
-<vx-datetimepicker :label='"Time1"' v-model='form["Time1"]' :error-messages='dash.errorMessages["Time1"]' v-assign:append='[dash.errorMessages, {"Time1":["err time1"]}]' v-assign='[form, {"Time1":%q}]' :value='%q' :timePickerProps='{"format":"24hr","scrollable":true,"use-seconds":false,"no-title":false}' :clearText='"Clear"' :okText='"OK"' :disabled='false'></vx-datetimepicker>
+<vx-date-picker type='datetimepicker' format='YYYY-MM-DD HH:mm' label='Time1' v-model='form["Time1"]' :error-messages='dash.errorMessages["Time1"]' v-assign:append='[dash.errorMessages, {"Time1":["err time1"]}]' v-assign='[form, {"Time1":%q}]' :clearable='true' :disabled='false'></vx-date-picker>
 
-<vx-datetimepicker :label='"Time2"' v-model='form["Time2"]' :error-messages='dash.errorMessages["Time2"]' v-assign:append='[dash.errorMessages, {"Time2":null}]' v-assign='[form, {"Time2":%q}]' :value='%q' :timePickerProps='{"format":"24hr","scrollable":true,"use-seconds":false,"no-title":false}' :clearText='"Clear"' :okText='"OK"' :disabled='false'></vx-datetimepicker>
-`, "", "", "", ""),
+<vx-date-picker type='datetimepicker' format='YYYY-MM-DD HH:mm' label='Time2' v-model='form["Time2"]' :error-messages='dash.errorMessages["Time2"]' v-assign:append='[dash.errorMessages, {"Time2":null}]' v-assign='[form, {"Time2":%q}]' :clearable='true' :disabled='false'></vx-date-picker>
+`, "", ""),
 		},
 		{
 			name: "Display nil time with default time component",
@@ -249,10 +249,10 @@ func TestFields(t *testing.T) {
 					&web.EventContext{R: r, Flash: vd})
 			},
 			expect: fmt.Sprintf(`
-<vx-datetimepicker :label='"Time1"' v-model='form["Time1"]' :error-messages='dash.errorMessages["Time1"]' v-assign:append='[dash.errorMessages, {"Time1":["err time1"]}]' v-assign='[form, {"Time1":%q}]' :value='%q' :timePickerProps='{"format":"24hr","scrollable":true,"use-seconds":false,"no-title":false}' :clearText='"Clear"' :okText='"OK"' :disabled='false'></vx-datetimepicker>
+<vx-date-picker type='datetimepicker' format='YYYY-MM-DD HH:mm' label='Time1' v-model='form["Time1"]' :error-messages='dash.errorMessages["Time1"]' v-assign:append='[dash.errorMessages, {"Time1":["err time1"]}]' v-assign='[form, {"Time1":%q}]' :clearable='true' :disabled='false'></vx-date-picker>
 
-<vx-datetimepicker :label='"Time2"' v-model='form["Time2"]' :error-messages='dash.errorMessages["Time2"]' v-assign:append='[dash.errorMessages, {"Time2":null}]' v-assign='[form, {"Time2":%q}]' :value='%q' :timePickerProps='{"format":"24hr","scrollable":true,"use-seconds":false,"no-title":false}' :clearText='"Clear"' :okText='"OK"' :disabled='false'></vx-datetimepicker>
-`, "", "", "", ""),
+<vx-date-picker type='datetimepicker' format='YYYY-MM-DD HH:mm' label='Time2' v-model='form["Time2"]' :error-messages='dash.errorMessages["Time2"]' v-assign:append='[dash.errorMessages, {"Time2":null}]' v-assign='[form, {"Time2":%q}]' :clearable='true' :disabled='false'></vx-date-picker>
+`, "", ""),
 		},
 		{
 			name: "Display zero time with default time component(READ)",
