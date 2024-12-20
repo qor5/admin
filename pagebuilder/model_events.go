@@ -465,7 +465,7 @@ func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.Event
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr    = presets.MustGetMessages(ctx.R)
 		okAction = web.Plaid().
-			EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
+				EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
 		portalName = dialogPortalName
 	)
 
@@ -864,7 +864,6 @@ func (b *ModelBuilder) reloadRenderPageOrTemplateBody(ctx *web.EventContext) (r 
 				ContainerDataID: ctx.Param(paramContainerDataID),
 				IsUpdate:        ctx.Param(paramIsUpdate) != "false",
 			},
-
 		),
 	)
 	return
