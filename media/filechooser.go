@@ -254,10 +254,10 @@ func renderFileChooserDialogContent(ctx *web.EventContext, r *web.EventResponse,
 	})
 }
 
-func fileComponent(mb *Builder, field string, tab string, ctx *web.EventContext, f *media_library.MediaLibrary, msgr *Messages, cfg *media_library.MediaBoxConfig, initCroppingVars []string, event *string, menus *[]h.HTMLComponent, inMediaLibrary bool) (title, content h.HTMLComponent) {
+func fileComponent(mb *Builder, field string, tab string, ctx *web.EventContext, f *media_library.MediaLibrary, msgr *Messages, cfg *media_library.MediaBoxConfig, initCroppingVars *[]string, event *string, menus *[]h.HTMLComponent, inMediaLibrary bool) (title, content h.HTMLComponent) {
 	_, needCrop := mergeNewSizes(f, cfg)
 	croppingVar := fileCroppingVarName(f.ID)
-	initCroppingVars = append(initCroppingVars, fmt.Sprintf("%s: false", croppingVar))
+	*initCroppingVars = append(*initCroppingVars, fmt.Sprintf("%s: false", croppingVar))
 
 	src := f.File.URL()
 	fullSrc := src
@@ -355,7 +355,7 @@ func fileOrFolderComponent(
 	f *media_library.MediaLibrary,
 	msgr *Messages,
 	cfg *media_library.MediaBoxConfig,
-	initCroppingVars []string,
+	initCroppingVars *[]string,
 	inMediaLibrary bool,
 ) h.HTMLComponent {
 	var (
@@ -876,7 +876,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 		clickTabEvent += ";" + web.Plaid().PushState(true).MergeQuery(true).ClearMergeQuery([]string{ParamParentID}).Query(paramTab, web.Var("$event")).RunPushState()
 	}
 	for _, f := range files {
-		fileComp := fileOrFolderComponent(mb, field, tab, ctx, f, msgr, cfg, initCroppingVars, inMediaLibrary)
+		fileComp := fileOrFolderComponent(mb, field, tab, ctx, f, msgr, cfg, &initCroppingVars, inMediaLibrary)
 		col := VCol(fileComp).Attr("style", "flex: 0 0 calc(100% / 5); max-width: calc(100% / 5);")
 		if !f.Folder {
 			hasFiles = true
