@@ -1,6 +1,8 @@
 package media
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func mainPortalName(field string) string {
 	return fmt.Sprintf("%s_portal", field)
@@ -22,11 +24,17 @@ func dialogContentPortalName(field string) string {
 	return fmt.Sprintf("%s_dialog_content", field)
 }
 
-func searchKeywordName(field string) string {
+func searchKeywordName(inMediaLibrary bool, field string) string {
+	if inMediaLibrary {
+		return "keyword"
+	}
 	return fmt.Sprintf("%s_file_chooser_search_keyword", field)
 }
 
-func currentPageName(field string) string {
+func currentPageName(inMediaLibrary bool, field string) string {
+	if inMediaLibrary {
+		return "page"
+	}
 	return fmt.Sprintf("%s_file_chooser_current_page", field)
 }
 

@@ -405,29 +405,31 @@ func (b *Builder) vSeoReadonly(obj interface{}, fieldPrefix, locale string, seo 
 		h.Div(
 			h.Span(msgr.OpenGraphImage).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
 		).Class("mt-7"),
-		VRow(
-			VCol(media.QMediaBox(db).
-				Readonly(true).
-				FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageFromMediaLibrary")).
-				Value(image).
-				Config(&media_library.MediaBoxConfig{
-					AllowType:   "image",
-					DisableCrop: true,
-					Sizes: map[string]*base.Size{
-						"og": {
-							Width:  1200,
-							Height: 630,
+		VContainer(
+			VRow(
+				VCol(media.QMediaBox(db).
+					Readonly(true).
+					FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageFromMediaLibrary")).
+					Value(image).
+					Config(&media_library.MediaBoxConfig{
+						AllowType:   "image",
+						DisableCrop: true,
+						Sizes: map[string]*base.Size{
+							"og": {
+								Width:  1200,
+								Height: 630,
+							},
+							"twitter-large": {
+								Width:  1200,
+								Height: 600,
+							},
+							"twitter-small": {
+								Width:  630,
+								Height: 630,
+							},
 						},
-						"twitter-large": {
-							Width:  1200,
-							Height: 600,
-						},
-						"twitter-small": {
-							Width:  630,
-							Height: 630,
-						},
-					},
-				})).Cols(12)),
+					})).Cols(12)),
+		).Class("pl-0 pt-2"),
 		h.Div(
 			h.Span(msgr.OpenGraphMetadata).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
 		).Class("mt-7"),
