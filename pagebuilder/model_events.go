@@ -859,7 +859,11 @@ func (b *ModelBuilder) reloadRenderPageOrTemplateBody(ctx *web.EventContext) (r 
 	}
 	web.AppendRunScripts(&r,
 		web.Emit(b.notifIframeBodyUpdated(),
-			notifIframeBodyUpdatedPayload{Body: string(data), ContainerDataID: ctx.Param(paramContainerDataID)},
+			notifIframeBodyUpdatedPayload{
+				Body:            string(data),
+				ContainerDataID: ctx.Param(paramContainerDataID),
+				IsUpdate:        ctx.Param(paramIsUpdate) != "false",
+			},
 		),
 	)
 	return
@@ -872,4 +876,5 @@ func (b *ModelBuilder) notifIframeBodyUpdated() string {
 type notifIframeBodyUpdatedPayload struct {
 	Body            string `json:"body"`
 	ContainerDataID string `json:"containerDataID"`
+	IsUpdate        bool   `json:"isUpdate"`
 }

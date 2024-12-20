@@ -4,11 +4,11 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3/multipartestutils"
 
 	"github.com/qor5/admin/v3/example/admin"
 	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
 )
 
 func TestPost(t *testing.T) {
@@ -75,7 +75,7 @@ func TestPost(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectRunScriptContainsInOrder: []string{`TitleWithSlug Is Required`, `Title Is Required`},
+			ExpectRunScriptContainsInOrder: []string{`Title Is Required`, `TitleWithSlug Is Required`},
 		},
 		{
 			Name:  "Post Update Validate",

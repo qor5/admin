@@ -12,7 +12,6 @@ import (
 
 	"github.com/qor5/web/v3"
 
-	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/ui/vuetifyx"
 )
 
@@ -194,8 +193,7 @@ func cfTime(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLC
 	return DateTimePicker(obj, field, ctx)
 }
 
-func DateTimePicker(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXDateTimePickerBuilder {
-	msgr := i18n.MustGetModuleMessages(ctx.R, CoreI18nModuleKey, Messages_en_US).(*Messages)
+func DateTimePicker(obj interface{}, field *FieldContext, _ *web.EventContext) *vuetifyx.VXDatePickerBuilder {
 	val := ""
 	if v := field.Value(obj); v != nil {
 		switch vt := v.(type) {
@@ -211,16 +209,12 @@ func DateTimePicker(obj interface{}, field *FieldContext, ctx *web.EventContext)
 			panic(fmt.Sprintf("unknown time type: %T\n", v))
 		}
 	}
-	return vuetifyx.VXDateTimePicker().
+	return vuetifyx.VXDatepicker().
+		Type("datetimepicker").
+		Format("YYYY-MM-DD HH:mm").
 		Label(field.Label).
 		Attr(VFieldError(field.FormKey, val, field.Errors)...).
-		Value(val).
-		TimePickerProps(vuetifyx.TimePickerProps{
-			Format:     "24hr",
-			Scrollable: true,
-		}).
-		ClearText(msgr.Clear).
-		OkText(msgr.OK).
+		Clearable(true).
 		Disabled(field.Disabled)
 }
 
@@ -246,17 +240,20 @@ func cfTextField(obj interface{}, field *FieldContext, ctx *web.EventContext) h.
 
 func VFieldError(name string, value interface{}, errorMessages interface{}) []interface{} {
 	var (
-		errorKey = name + ErrorMessagePostfix
 		objValue = map[string]interface{}{
-			name:     value,
-			errorKey: errorMessages,
+			name: value,
+		}
+		errorValue = map[string]interface{}{
+			name: errorMessages,
 		}
 	)
 	return append([]interface{}{
 		"v-model",
 		fmt.Sprintf("form[%s]", h.JSONString(name)),
 		":error-messages",
-		fmt.Sprintf("form[%q]", errorKey),
+		fmt.Sprintf("dash.errorMessages[%q]", name),
+		"v-assign:append",
+		fmt.Sprintf("[%s, %s]", "dash.errorMessages", h.JSONString(errorValue)),
 	}, web.VAssign("form", objValue)...)
 }
 
