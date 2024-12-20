@@ -68,7 +68,6 @@ for (let key in form) {
         typeof dash.__findLinkageFields === "function" && dash.__findLinkageFields(key);
     }
 }
-console.log("set __currentValidateKeys:", dash.__currentValidateKeys)
 `
 	checkFormChangeScript = `if(JSON.stringify(form)==JSON.stringify(oldForm)){return}`
 )
