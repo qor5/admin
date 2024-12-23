@@ -296,7 +296,10 @@ func (b *SessionBuilder) UpdateSessionLastActivedAt(r *http.Request, uid string)
 	token := login.GetSessionToken(b.lb, r)
 	tokenHash := getStringHash(token, LoginTokenHashLen)
 	if err := b.db.Model(&LoginSession{}).
-		Where("user_id = ? and token_hash = ?", uid, tokenHash).
+		Where(
+			"user_id = ? AND (token_hash = ? OR (last_token_hash = ? AND extended_at > ?))",
+			uid, tokenHash, tokenHash, b.db.NowFunc().Add(-GracePeriodAfterExtend),
+		).
 		Updates(map[string]any{
 			"last_actived_at": b.db.NowFunc(),
 		}).Error; err != nil {
@@ -536,15 +539,13 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 		if isPublicUser {
 			w.IP = msgr.HideIPAddressTips
 			w.Location = msgr.HideIPAddressTips
-		} else {
-			if b.parseIPFunc != nil {
-				lang := i18n.LanguageTagFromContext(ctx.R.Context(), language.English)
-				location, perr := b.parseIPFunc(ctx.R.Context(), lang, w.IP)
-				if perr != nil {
-					w.Location = msgr.LocationUnknown
-				} else {
-					w.Location = location
-				}
+		} else if b.parseIPFunc != nil {
+			lang := i18n.LanguageTagFromContext(ctx.R.Context(), language.English)
+			location, perr := b.parseIPFunc(ctx.R.Context(), lang, w.IP)
+			if perr != nil {
+				w.Location = msgr.LocationUnknown
+			} else {
+				w.Location = location
 			}
 		}
 		if v.ExpiredAt.Before(now) {

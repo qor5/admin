@@ -1,5 +1,3 @@
-//go:build submodule
-
 package location
 
 import (
