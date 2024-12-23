@@ -322,10 +322,18 @@ func setupDetailing(dp *presets.DetailingBuilder, op *gorm2op.DataOperatorBuilde
 								h.Tr(h.Td(h.Text(msgr.ModelLabel)), h.Td().Attr("v-pre", true).Text(cmp.Or(log.ModelLabel, NopModelLabel))),
 								h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td().Attr("v-pre", true).Text(log.ModelKeys)),
 								h.Iff(log.ModelLink != "", func() h.HTMLComponent {
+									onClick := web.Plaid().PushStateURL(log.ModelLink).Go()
+									href := log.ModelLink
 									return h.Tr(h.Td(h.Text(msgr.ModelLink)), h.Td(
-										VBtn(msgr.MoreInfo).Class("text-none text-overline d-flex align-center").
-											Variant(VariantTonal).Color(ColorPrimary).Size(SizeXSmall).PrependIcon("mdi-open-in-new").
-											Attr("@click", web.Plaid().PushStateURL(log.ModelLink).Go()),
+										h.A(
+											VBtn(msgr.MoreInfo).Class("text-none text-overline d-flex align-center").
+												Variant(VariantTonal).Color(ColorPrimary).Size(SizeXSmall).PrependIcon("mdi-open-in-new"),
+										).Href(href).Attr("@click", fmt.Sprintf(`(e) => {
+											if (e.metaKey || e.ctrlKey) { return; }
+											e.stopPropagation();
+											e.preventDefault();
+											%s;
+										}`, onClick)),
 									))
 								}),
 								h.Tr(h.Td(h.Text(msgr.ModelCreatedAt)), h.Td(h.Text(log.CreatedAt.Format(timeFormat)))),
