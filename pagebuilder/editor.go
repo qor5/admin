@@ -7,6 +7,7 @@ import (
 
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
@@ -19,21 +20,22 @@ import (
 )
 
 const (
-	AddContainerEvent                = "page_builder_AddContainerEvent"
-	DeleteContainerConfirmationEvent = "page_builder_DeleteContainerConfirmationEvent"
-	DeleteContainerEvent             = "page_builder_DeleteContainerEvent"
-	MoveContainerEvent               = "page_builder_MoveContainerEvent"
-	MoveUpDownContainerEvent         = "page_builder_MoveUpDownContainerEvent"
-	ToggleContainerVisibilityEvent   = "page_builder_ToggleContainerVisibilityEvent"
-	MarkAsSharedContainerEvent       = "page_builder_MarkAsSharedContainerEvent"
-	RenameContainerDialogEvent       = "page_builder_RenameContainerDialogEvent"
-	RenameContainerEvent             = "page_builder_RenameContainerEvent"
-	ShowSortedContainerDrawerEvent   = "page_builder_ShowSortedContainerDrawerEvent"
-	ReloadRenderPageOrTemplateEvent  = "page_builder_ReloadRenderPageOrTemplateEvent"
-	ContainerPreviewEvent            = "page_builder_ContainerPreviewEvent"
-	ReplicateContainerEvent          = "page_builder_ReplicateContainerEvent"
-	EditContainerEvent               = "page_builder_EditContainerEvent"
-	UpdateContainerEvent             = "page_builder_UpdateContainerEvent"
+	AddContainerEvent                   = "page_builder_AddContainerEvent"
+	DeleteContainerConfirmationEvent    = "page_builder_DeleteContainerConfirmationEvent"
+	DeleteContainerEvent                = "page_builder_DeleteContainerEvent"
+	MoveContainerEvent                  = "page_builder_MoveContainerEvent"
+	MoveUpDownContainerEvent            = "page_builder_MoveUpDownContainerEvent"
+	ToggleContainerVisibilityEvent      = "page_builder_ToggleContainerVisibilityEvent"
+	MarkAsSharedContainerEvent          = "page_builder_MarkAsSharedContainerEvent"
+	RenameContainerDialogEvent          = "page_builder_RenameContainerDialogEvent"
+	RenameContainerEvent                = "page_builder_RenameContainerEvent"
+	ShowSortedContainerDrawerEvent      = "page_builder_ShowSortedContainerDrawerEvent"
+	ReloadRenderPageOrTemplateEvent     = "page_builder_ReloadRenderPageOrTemplateEvent"
+	ReloadRenderPageOrTemplateBodyEvent = "page_builder_ReloadRenderPageOrTemplateBodyEvent"
+	ContainerPreviewEvent               = "page_builder_ContainerPreviewEvent"
+	ReplicateContainerEvent             = "page_builder_ReplicateContainerEvent"
+	EditContainerEvent                  = "page_builder_EditContainerEvent"
+	UpdateContainerEvent                = "page_builder_UpdateContainerEvent"
 
 	paramPageID          = "pageID"
 	paramPageVersion     = "pageVersion"
@@ -42,7 +44,7 @@ const (
 	paramContainerID     = "containerID"
 	paramContainerUri    = "containerUri"
 	paramContainerDataID = "containerDataID"
-	paramContainerNew    = "new"
+	paramIsUpdate        = "isUpdate"
 	paramMoveResult      = "moveResult"
 	paramContainerName   = "containerName"
 	paramSharedContainer = "sharedContainer"
@@ -56,13 +58,11 @@ const (
 	DeviceTablet   = "tablet"
 	DeviceComputer = "computer"
 
-	EventUp                 = "up"
-	EventDown               = "down"
-	EventDelete             = "delete"
-	EventAdd                = "add"
-	EventEdit               = "edit"
-	iframeHeightName        = "_iframeHeight"
-	iframePreviewHeightName = "_iframePreviewHeight"
+	EventUp     = "up"
+	EventDown   = "down"
+	EventDelete = "delete"
+	EventAdd    = "add"
+	EventEdit   = "edit"
 )
 
 const (
@@ -105,7 +105,10 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			msgr            = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 			title           string
 		)
-
+		if m.mb.Info().Verifier().Do(presets.PermGet).WithReq(ctx.R).IsAllowed() != nil {
+			r.Body = h.Text(perm.PermissionDenied.Error())
+			return
+		}
 		if obj, err = m.pageBuilderModel(ctx); err != nil {
 			return
 		}
@@ -143,7 +146,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 		if !isStag && m.mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil {
 			isStag = true
 		}
-		afterLeaveEvent := removeVirtualElement() + "vars.emptyIframe = true;" + scrollToContainer(fmt.Sprintf("vars.%s", paramContainerDataID))
+		afterLeaveEvent := removeVirtualElement() + scrollToContainer(fmt.Sprintf("vars.%s", paramContainerDataID))
 		addOverlay := vx.VXOverlay(m.newContainerContent(ctx)).
 			MaxWidth(665).
 			Attr("ref", "overlay").
@@ -183,10 +186,13 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 				vars.$pbRightThrottleTimer = null
 			}`)).
 				Attr("v-on-mounted", fmt.Sprintf(`({ref, window, computed})=>{
+				const rightDrawerExpendMinWidth = 350 + 56 // 56 is the width of the gap, 390 is the actual size
+				const leftDrawerExpendMinWidth = 350
+
 				vars.$pbLeftDrawerFolded = window.localStorage.getItem("$pbLeftDrawerFolded") === '1'
 				vars.$pbRightDrawerFolded = window.localStorage.getItem("$pbRightDrawerFolded") === '1'
-				vars.$pbLeftDrawerWidth = computed(()=>vars.$pbLeftDrawerFolded ? 32 : 350)
-				vars.$pbRightAdjustableWidth = +window.localStorage.getItem("$pbRightAdjustableWidth") || 350
+				vars.$pbLeftDrawerWidth = computed(()=>vars.$pbLeftDrawerFolded ? 32 : leftDrawerExpendMinWidth)
+				vars.$pbRightAdjustableWidth = +window.localStorage.getItem("$pbRightAdjustableWidth") || rightDrawerExpendMinWidth
 				vars.$pbRightDrawerWidth = computed(()=>vars.$pbRightDrawerFolded ? 32 : vars.$pbRightAdjustableWidth)
 				vars.$pbLeftIconName = computed(()=> vars.$pbLeftDrawerFolded ? "mdi-chevron-right": "mdi-chevron-left")
 				vars.$pbRightIconName = computed(()=> vars.$pbRightDrawerFolded ? "mdi-chevron-left": "mdi-chevron-right")
@@ -203,7 +209,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 					vars.$pbRightThrottleTimer = window.setTimeout(() => {
 						const halfWindowWidth = window.innerWidth / 2
 						vars.$pbRightThrottleTimer = null
-						if((vars.$pbRightDrawerWidth > halfWindowWidth) && (vars.$pbRightDrawerWidth > 350)) {
+						if((vars.$pbRightDrawerWidth > halfWindowWidth) && (vars.$pbRightDrawerWidth > rightDrawerExpendMinWidth)) {
 						vars.$pbRightAdjustableWidth =  halfWindowWidth
 					} 
 						window.localStorage.setItem("$pbRightAdjustableWidth", vars.$pbRightAdjustableWidth)
@@ -245,7 +251,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 						animationFrameId = window.requestAnimationFrame(() => {
 							const rect = draggableEl.value.getBoundingClientRect();
 							const dx = rect.right - event.clientX;
-							const minWidth = 350; 
+							const minWidth = rightDrawerExpendMinWidth; 
 							const maxWidth = window.innerWidth / 2;
 
 							const newWidth = Math.min(Math.max(dx, minWidth), maxWidth);
@@ -506,7 +512,7 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 			).Attr("v-if", "vars.presetsMessage"),
 			innerPr.Body.(h.HTMLComponent),
 		).Attr("id", "vt-app").
-			Attr(web.VAssign("vars", fmt.Sprintf(`{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false,overlay:false,containerPreview:false,%s:{}}`, presets.VarsPresetsDataChanged))...)
+			Attr(web.VAssign("vars", fmt.Sprintf(`{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false,overlay:false,containerPreview:false,%s:{},presetsMessage: {show: false, color: "", message: ""},pageBuilderContentScroll:{}}`, presets.VarsPresetsDataChanged))...)
 		return
 	}
 }
@@ -530,7 +536,7 @@ func (b *Builder) containerWrapper(r *h.HTMLTagBuilder, ctx *web.EventContext, i
 		} else {
 			r = h.Div(
 				h.Div().Class("inner-shadow"),
-				r.Attr("onclick", "event.stopPropagation();document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('highlight')});this.parentElement.classList.add('highlight');"+pmb.postMessage(EventEdit)),
+				h.Div(h.Div(r).Attr("style", "pointer-events:none")).Attr("onclick", "event.stopPropagation();document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('highlight')});this.parentElement.classList.add('highlight');"+pmb.postMessage(EventEdit)),
 				h.Div(
 					h.Div(h.Text(input.DisplayName)).Class("title"),
 					h.Div(

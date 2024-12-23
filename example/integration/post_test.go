@@ -8,6 +8,7 @@ import (
 
 	"github.com/qor5/admin/v3/example/admin"
 	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
 )
 
 func TestPost(t *testing.T) {
@@ -59,6 +60,38 @@ func TestPost(t *testing.T) {
 				return req
 			},
 			ExpectPageBodyContainsInOrder: []string{`Demo`, `vx-filter`, "Create Time"},
+		},
+		{
+			Name:  "Post Validate Event",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				admin.PostsExampleData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/posts").
+					Query(presets.ParamID, "1_2023-01-05-v01").
+					EventFunc(actions.Validate).
+					AddField("Title", "").
+					AddField("TitleWithSlug", "").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{`Title Is Required`, `TitleWithSlug Is Required`},
+		},
+		{
+			Name:  "Post Update Validate",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				admin.PostsExampleData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/posts").
+					Query(presets.ParamID, "1_2023-01-05-v01").
+					EventFunc(actions.Update).
+					AddField("Title", "").
+					AddField("TitleWithSlug", "").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`Title Is Required`, `TitleWithSlug Is Required`},
 		},
 	}
 

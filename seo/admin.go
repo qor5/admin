@@ -133,17 +133,20 @@ func (b *Builder) configEditing(seoModel *presets.ModelBuilder) {
 
 	// Customize the Saver to trigger the invocation of the `afterSave` hook function (if available)
 	// when updating the global seo.
-	editing.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		seoSetting := obj.(*QorSEOSetting)
-		if err = b.db.Updates(obj).Error; err != nil {
-			return err
-		}
-		if b.afterSave != nil {
-			if err = b.afterSave(ctx.R.Context(), seoSetting.Name, seoSetting.LocaleCode); err != nil {
-				return err
+	editing.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			if err = in(obj, id, ctx); err != nil {
+				return
 			}
+			seoSetting := obj.(*QorSEOSetting)
+
+			if b.afterSave != nil {
+				if err = b.afterSave(ctx.R.Context(), seoSetting.Name, seoSetting.LocaleCode); err != nil {
+					return err
+				}
+			}
+			return
 		}
-		return nil
 	})
 
 	// configure variables field
@@ -366,6 +369,20 @@ func (b *Builder) vSeoReadonly(obj interface{}, fieldPrefix, locale string, seo 
 		}
 		keywordsComps = append(keywordsComps, h.Span(keyword))
 	}
+	var openGraphInformationComp h.HTMLComponent
+	if setting.OpenGraphURL == "" && setting.OpenGraphTitle == "" && setting.OpenGraphType == "" && setting.OpenGraphDescription == "" && setting.OpenGraphImageURL == "" {
+		openGraphInformationComp = h.Text(msgr.BlankOpenGraphInformationTips)
+	} else {
+		openGraphInformationComp = h.Components(
+			h.If(
+				strings.HasPrefix(setting.OpenGraphImageURL, "http://") ||
+					strings.HasPrefix(setting.OpenGraphImageURL, "https://"),
+				VImg().Src(setting.OpenGraphImageURL).Width(300)),
+			h.Div(h.Span(setting.OpenGraphTitle)).Class("text-subtitle-1 mt-2"),
+			h.Div(h.Span(setting.OpenGraphDescription)).Class("text-body-2 mt-2"),
+			h.Div(h.A().Text(setting.OpenGraphURL).Href(setting.OpenGraphURL)).Class("text-body-2 mt-2"))
+	}
+
 	return h.Components(
 		h.Div(
 			h.Span(msgr.SEOPreview).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
@@ -382,41 +399,37 @@ func (b *Builder) vSeoReadonly(obj interface{}, fieldPrefix, locale string, seo 
 		).Class("mt-7"),
 		VCard(
 			VCardText(
-				h.If(
-					strings.HasPrefix(setting.OpenGraphImageURL, "http://") ||
-						strings.HasPrefix(setting.OpenGraphImageURL, "https://"),
-					VImg().Src(setting.OpenGraphImageURL).Width(300)),
-				h.Div(h.Span(setting.OpenGraphTitle)).Class("text-subtitle-1 mt-2"),
-				h.Div(h.Span(setting.OpenGraphDescription)).Class("text-body-2 mt-2"),
-				h.Div(h.A().Text(setting.OpenGraphURL).Href(setting.OpenGraphURL)).Class("text-body-2 mt-2"),
+				openGraphInformationComp,
 			).Class("pa-0"),
 		).Class("pa-6 mt-2").Color(ColorPrimaryLighten2),
 		h.Div(
 			h.Span(msgr.OpenGraphImage).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
 		).Class("mt-7"),
-		VRow(
-			VCol(media.QMediaBox(db).
-				Readonly(true).
-				FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageFromMediaLibrary")).
-				Value(image).
-				Config(&media_library.MediaBoxConfig{
-					AllowType:   "image",
-					DisableCrop: true,
-					Sizes: map[string]*base.Size{
-						"og": {
-							Width:  1200,
-							Height: 630,
+		VContainer(
+			VRow(
+				VCol(media.QMediaBox(db).
+					Readonly(true).
+					FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageFromMediaLibrary")).
+					Value(image).
+					Config(&media_library.MediaBoxConfig{
+						AllowType:   "image",
+						DisableCrop: true,
+						Sizes: map[string]*base.Size{
+							"og": {
+								Width:  1200,
+								Height: 630,
+							},
+							"twitter-large": {
+								Width:  1200,
+								Height: 600,
+							},
+							"twitter-small": {
+								Width:  630,
+								Height: 630,
+							},
 						},
-						"twitter-large": {
-							Width:  1200,
-							Height: 600,
-						},
-						"twitter-small": {
-							Width:  630,
-							Height: 630,
-						},
-					},
-				})).Cols(12)),
+					})).Cols(12)),
+		).Class("pl-0 pt-2"),
 		h.Div(
 			h.Span(msgr.OpenGraphMetadata).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
 		).Class("mt-7"),

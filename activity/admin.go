@@ -12,6 +12,7 @@ import (
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/samber/lo"
@@ -80,9 +81,9 @@ func (ab *Builder) defaultLogModelInstall(b *presets.Builder, mb *presets.ModelB
 
 	// should use own DataOperator
 	op := gorm2op.DataOperator(ab.db)
-	setupDetailing(dp, op, ab)
+	setupDetailing(b, dp, op, ab)
 	setupEditing(eb)
-	setupListing(lb, op, ab)
+	setupListing(b, lb, op, ab)
 
 	return nil
 }
@@ -96,9 +97,33 @@ func setupEditing(eb *presets.EditingBuilder) {
 	})
 }
 
-func setupListing(lb *presets.ListingBuilder, op *gorm2op.DataOperatorBuilder, ab *Builder) {
+func setupListing(b *presets.Builder, lb *presets.ListingBuilder, op *gorm2op.DataOperatorBuilder, ab *Builder) {
 	lb.RelayPagination(gorm2op.KeysetBasedPagination(true))
 	lb.SearchFunc(func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
+		var modelLabels []string
+		// err = ab.db.Model(&ActivityLog{}).Select("DISTINCT model_label AS model_label").Pluck("model_label", &modelLabels).Error
+		// if err != nil {
+		// 	return nil, err
+		// }
+		for _, m := range ab.models {
+			if m.label != nil {
+				modelLabels = append(modelLabels, m.label())
+			}
+		}
+		modelLabels = lo.Uniq(modelLabels)
+		for _, resourceSign := range modelLabels {
+			if resourceSign == "" || resourceSign == NopModelLabel {
+				continue
+			}
+			if b.GetVerifier().Spawn().SnakeOn(resourceSign).Do(presets.PermList).WithReq(ctx.R).IsAllowed() == nil {
+				continue
+			}
+			params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
+				Query: "model_label <> ?",
+				Args:  []any{resourceSign},
+			})
+		}
+
 		params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
 			Query: "hidden = ?",
 			Args:  []any{false},
@@ -282,13 +307,20 @@ func setupListing(lb *presets.ListingBuilder, op *gorm2op.DataOperatorBuilder, a
 	})
 }
 
-func setupDetailing(dp *presets.DetailingBuilder, op *gorm2op.DataOperatorBuilder, ab *Builder) {
+func setupDetailing(b *presets.Builder, dp *presets.DetailingBuilder, op *gorm2op.DataOperatorBuilder, ab *Builder) {
 	dp.FetchFunc(func(obj any, id string, ctx *web.EventContext) (r any, err error) {
 		r, err = op.Fetch(obj, id, ctx)
 		if err != nil {
 			return r, err
 		}
 		log := r.(*ActivityLog)
+
+		if log.ModelLabel != "" && log.ModelLabel != NopModelLabel {
+			if b.GetVerifier().Spawn().SnakeOn(log.ModelLabel).Do(presets.PermGet).WithReq(ctx.R).IsAllowed() != nil {
+				return nil, perm.PermissionDenied
+			}
+		}
+
 		if err := ab.supplyUsers(ctx.R.Context(), []*ActivityLog{log}); err != nil {
 			return nil, err
 		}

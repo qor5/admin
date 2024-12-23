@@ -428,7 +428,7 @@ func (c *ListingCompo) processFilter(evCtx *web.EventContext) (h.HTMLComponent, 
 		fd := c.lb.filterDataFunc(evCtx)
 		if len(fd) > 0 {
 			cond, args, vErr := fd.SetByQueryString(evCtx, c.FilterQuery)
-			if vErr.HaveErrors() && len(vErr.GetGlobalErrors()) > 0 {
+			if vErr.HaveErrors() && vErr.HaveGlobalErrors() {
 				filterScript = web.RunScript(fmt.Sprintf(`(el)=>{%s}`, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), "error")))
 			}
 			return filterScript, []*SQLCondition{{Query: cond, Args: args}}
@@ -612,13 +612,24 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 	searchParams.OrderBys = c.getOrderBys(colOrderBys, orderableFieldMap)
 
 	if !c.lb.disablePagination {
-		perPage := cmp.Or(c.PerPage, c.lb.perPage, PerPageDefault)
+		perPage := c.PerPage
+		if perPage <= 0 {
+			perPage = c.lb.perPage
+		}
+		if perPage <= 0 {
+			perPage = PerPageDefault
+		}
 		if perPage > PerPageMax {
 			perPage = PerPageMax
 		}
 		searchParams.PerPage = perPage
+	} else {
+		searchParams.PerPage = PerPageMax
 	}
-	searchParams.Page = cmp.Or(c.Page, 1)
+	searchParams.Page = c.Page
+	if searchParams.Page < 1 {
+		searchParams.Page = 1
+	}
 
 	filterScript, filterConds := c.processFilter(evCtx)
 	searchParams.SQLConditions = append(searchParams.SQLConditions, filterConds...)

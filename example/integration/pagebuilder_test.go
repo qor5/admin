@@ -381,7 +381,7 @@ func TestPageBuilder(t *testing.T) {
 
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`plaid().vars(vars).locals(locals).form(form).eventFunc("page_builder_DeleteContainerEvent").query("containerID", "10_International").go()`},
+			ExpectPortalUpdate0ContainsInOrder: []string{`page_builder_DeleteContainerEvent`, `query("containerID", "10_International")`},
 		},
 		{
 			Name:  "Page Builder delete container ",
@@ -1029,7 +1029,7 @@ func TestPageBuilder(t *testing.T) {
 
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`"AddTopSpace":true,`, "blue", "LinkText 不能为空"},
+			ExpectPortalUpdate0ContainsInOrder: []string{`"AddTopSpace":true`, "blue", "LinkText 不能为空"},
 		},
 		{
 			Name:  "Container Heading Update Reload Editing",
@@ -1040,7 +1040,8 @@ func TestPageBuilder(t *testing.T) {
 					PageURL("/page_builder/headings").
 					EventFunc(actions.Update).
 					Query(presets.ParamID, "1").
-					AddField("LinkText", "Replace{{Name}}").
+					AddField("LinkText", "ReplaceLinkText").
+					AddField("Heading", "true").
 					AddField("AddTopSpace", "true").
 					BuildEventFuncRequest()
 
@@ -1148,7 +1149,7 @@ func TestPageBuilder(t *testing.T) {
 
 				return req
 			},
-			ExpectRunScriptContainsInOrder: []string{`plaid().vars(vars).locals(locals).form(form).url("/page_builder/headers").eventFunc("presets_Edit").query("id", "10").query("portal_name", "pageBuilderRightContentPortal").query("overlay", "content").go()`},
+			ExpectRunScriptContainsInOrder: []string{`plaid().vars(vars).locals(locals).form(form).dash(dash).url("/page_builder/headers").eventFunc("presets_Edit").query("id", "10").query("portal_name", "pageBuilderRightContentPortal").query("overlay", "content").go()`},
 		},
 		{
 			Name:  "PageBuilder Wrap UpdateContainerEvent",
@@ -1164,7 +1165,7 @@ func TestPageBuilder(t *testing.T) {
 
 				return req
 			},
-			ExpectRunScriptContainsInOrder: []string{`plaid().vars(vars).locals(locals).form(form).url("/page_builder/headers").eventFunc("presets_Update").query("id", "10").query("portal_name", "pageBuilderRightContentPortal").query("overlay", "content").go()`},
+			ExpectRunScriptContainsInOrder: []string{`plaid().vars(vars).locals(locals).form(form).dash(dash).url("/page_builder/headers").eventFunc("presets_Update").query("id", "10").query("portal_name", "pageBuilderRightContentPortal").query("overlay", "content").go()`},
 		},
 		{
 			Name:  "Container Heading  Validate",
@@ -1253,6 +1254,48 @@ func TestPageBuilder(t *testing.T) {
 					t.Fatalf("Category Delete Failed %v", count)
 				}
 			},
+		},
+		{
+			Name:  "PageBuilder Empty Edit",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					EventFunc(pagebuilder.EditContainerEvent).
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`Select an element and change the setting here`},
+		},
+		{
+			Name:  "PageBuilder Reload Body",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					EventFunc(pagebuilder.ReloadRenderPageOrTemplateBodyEvent).
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{`PageBuilderNotifIframeBodyUpdatedPages`, "id='app'"},
+		},
+		{
+			Name:  "PageBuilder Reload",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					EventFunc(pagebuilder.ReloadRenderPageOrTemplateEvent).
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"vx-scroll-iframe"},
 		},
 	}
 

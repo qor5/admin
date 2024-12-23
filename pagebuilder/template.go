@@ -327,6 +327,17 @@ func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent
 		MergeQuery(true).
 		Queries(ctx.Queries()).
 		Go()
+	changePageEvent := web.Plaid().
+		URL(mb.Info().ListingHref()).
+		EventFunc(ReloadTemplateContentEvent).
+		Query(presets.ParamOverlay, ctx.Param(presets.ParamOverlay)).
+		Query(ParamPage, web.Var("$event")).
+		Query(ParamSearchKeyword, ctx.Param(ParamSearchKeyword)).
+		Go()
+	if !inDialog {
+		changePageEvent += ";" + web.Plaid().PushState(true).MergeQuery(true).Query(ParamPage, web.Var("$event")).RunPushState()
+	}
+
 	return h.Div(
 
 		VContainer(
@@ -350,18 +361,11 @@ func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent
 			h.If(totalCount > perPage,
 				VRow(
 					VCol(
-						VPagination().
+						vx.VXPagination().
 							Length(pagesCount).
 							TotalVisible(5).
-							NextIcon("mdi-page-last").
-							PrevIcon("mdi-page-first").
 							ModelValue(int(page)).
-							Attr("@update:model-value", web.Plaid().
-								URL(mb.Info().ListingHref()).
-								EventFunc(ReloadTemplateContentEvent).
-								Query(presets.ParamOverlay, ctx.Param(presets.ParamOverlay)).
-								Query(ParamPage, web.Var("$event")).
-								Go()).Class("float-right"),
+							Attr("@update:model-value", changePageEvent).Class("float-right"),
 					).Cols(12),
 				).Class("position-sticky bottom-0", "bg-"+ColorBackground),
 			)).Fluid(true), web.Listen(
@@ -373,8 +377,9 @@ func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent
 
 func (b *TemplateBuilder) searchComponent(ctx *web.EventContext) h.HTMLComponent {
 	msgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
-	clickEvent := web.Plaid().PushState(true).MergeQuery(true).Query(ParamSearchKeyword, web.Var("vars.searchMsg")).RunPushState() + ";" + web.Plaid().
+	clickEvent := web.Plaid().PushState(true).MergeQuery(true).ClearMergeQuery([]string{ParamPage}).Query(ParamSearchKeyword, web.Var("vars.searchMsg")).RunPushState() + ";" + web.Plaid().
 		EventFunc(ReloadTemplateContentEvent).
+		Query(ParamPage, "1").
 		Query(presets.ParamOverlay, ctx.Param(presets.ParamOverlay)).
 		Query(ParamSearchKeyword, web.Var("vars.searchMsg")).Go()
 

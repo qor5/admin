@@ -214,7 +214,7 @@ func (b *ModelBuilder) addContainerToPage(ctx *web.EventContext, pageID int, con
 
 func (b *ModelBuilder) pageContent(ctx *web.EventContext) (r web.PageResponse, err error) {
 	var body h.HTMLComponent
-	if body, err = b.renderPageOrTemplate(ctx, true, true); err != nil {
+	if body, err = b.renderPageOrTemplate(ctx, true, true, false); err != nil {
 		return
 	}
 	r.Body = web.Portal(
@@ -243,7 +243,7 @@ func (b *ModelBuilder) primaryColumnValuesBySlug(slug string) (pageID int, pageV
 	return
 }
 
-func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, isEditor, isIframe bool) (r h.HTMLComponent, err error) {
+func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, isEditor, isIframe, isReloadBody bool) (r h.HTMLComponent, err error) {
 	var (
 		status                      = publish.StatusDraft
 		obj                         interface{}
@@ -265,7 +265,7 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, isEditor, isI
 	if status != publish.StatusDraft && isEditor {
 		isReadonly = true
 	}
-	if !isReadonly && b.mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil {
+	if !isReadonly && isEditor && b.mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil {
 		isReadonly = true
 	}
 	var comps []h.HTMLComponent
@@ -273,41 +273,30 @@ func (b *ModelBuilder) renderPageOrTemplate(ctx *web.EventContext, isEditor, isI
 	if err != nil {
 		return
 	}
-	r = b.rendering(comps, ctx, obj, locale, isEditor, isIframe, isReadonly)
+	r = b.rendering(comps, ctx, obj, locale, isEditor, isReadonly, isIframe, isReloadBody)
 	return
 }
 
-func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext, obj interface{}, locale string, isEditor, isIframe, isReadonly bool) (r h.HTMLComponent) {
+func (b *ModelBuilder) renderScrollIframe(comps []h.HTMLComponent, ctx *web.EventContext, obj interface{}, locale string, isEditor, isIframe, isReloadBody bool) (r h.HTMLComponent) {
 	r = h.Components(comps...)
-	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-	var (
-		title string
-		svg   string
-	)
-	if b.tb == nil {
-		title = msgr.StartBuildingMsg
-		svg = previewEmptySvg
-	} else {
-		title = msgr.StartBuildingTemplateMsg
-		svg = previewTemplateEmptySvg
+	if b.builder.pageLayoutFunc == nil {
+		return
 	}
-	if b.builder.pageLayoutFunc != nil {
-		var seoTags h.HTMLComponent
-		if b.builder.seoBuilder != nil {
-			seoTags = b.builder.seoBuilder.Render(obj, ctx.R)
-		}
-		input := &PageLayoutInput{
-			LocaleCode: locale,
-			IsEditor:   isEditor,
-			IsPreview:  !isEditor,
-			SeoTags:    seoTags,
-		}
-		cookieHeightName := iframePreviewHeightName
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+	var seoTags h.HTMLComponent
+	if b.builder.seoBuilder != nil {
+		seoTags = b.builder.seoBuilder.Render(obj, ctx.R)
+	}
+	input := &PageLayoutInput{
+		LocaleCode: locale,
+		IsEditor:   isEditor,
+		IsPreview:  !isEditor,
+		SeoTags:    seoTags,
+	}
 
-		if isEditor {
-			cookieHeightName = iframeHeightName
-			input.EditorCss = append(input.EditorCss, h.RawHTML(`<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">`))
-			input.EditorCss = append(input.EditorCss, h.Style(`
+	if isEditor {
+		input.EditorCss = append(input.EditorCss, h.RawHTML(`<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">`))
+		input.EditorCss = append(input.EditorCss, h.Style(`
 			.wrapper-shadow{
 				display: table; /* for IE or lower versions of browers */
 				display: flow-root;/* for morden browsers*/
@@ -323,7 +312,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			  opacity: 0;
 			  top: 0;
 			  left: 0;
-			  box-shadow: 3px 3px 0 0px #3E63DD inset, -3px 3px 0 0px #3E63DD inset,3px -3px 0 0px #3E63DD inset;
+			  box-shadow: 2px 2px 0 0px #3E63DD inset, -2px 2px 0 0px #3E63DD inset,2px -2px 0 0px #3E63DD inset;
 				z-index:201;
 			}
 			
@@ -339,7 +328,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			.editor-add div {
 			  width: 100%;
 			  background-color: #3E63DD;
-			  height: 3px;
+			  height: 2px;
 			}
 			
 			.editor-add button {
@@ -363,10 +352,10 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 			}
 			
 			.wrapper-shadow:hover .editor-add div {
-			  height: 6px;
+			  height: 4px;
 			}
 			.highlight .editor-add div{
-              height: 3px !important;	
+              height: 2px !important;	
 			}		
 			.editor-bar {
 			  position: absolute;
@@ -412,90 +401,113 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
               pointer-events: auto;
 			}
 		
-
 			.highlight .inner-shadow {
 			  opacity: 1;
 			}
 `))
-		}
-		if f := ctx.R.Context().Value(CtxKeyContainerToPageLayout{}); f != nil {
-			pl, ok := f.(*PageLayoutInput)
-			if ok {
-				input.FreeStyleCss = append(input.FreeStyleCss, pl.FreeStyleCss...)
-				input.FreeStyleTopJs = append(input.FreeStyleTopJs, pl.FreeStyleTopJs...)
-				input.FreeStyleBottomJs = append(input.FreeStyleBottomJs, pl.FreeStyleBottomJs...)
-				input.Hreflang = pl.Hreflang
-			}
-		}
-
-		if isIframe {
-			iframeHeightCookie, _ := ctx.R.Cookie(cookieHeightName)
-			iframeValue := "1000px"
-			if iframeHeightCookie != nil {
-				iframeValue = iframeHeightCookie.Value
-			}
-			// use newCtx to avoid inserting page head to head outside of iframe
-			newCtx := &web.EventContext{
-				R:        ctx.R,
-				Injector: &web.PageInjector{},
-			}
-			r = b.builder.pageLayoutFunc(h.Components(comps...), input, newCtx)
-			newCtx.Injector.HeadHTMLComponent("style", b.builder.pageStyle, true)
-			r = h.HTMLComponents{
-				h.RawHTML("<!DOCTYPE html>\n"),
-				h.Tag("html").Children(
-					h.Head(
-						newCtx.Injector.GetHeadHTMLComponent(),
-					),
-					h.Body(
-						h.Div(
-							r,
-						).Id("app").Attr("v-cloak", true),
-						newCtx.Injector.GetTailHTMLComponent(),
-					).Class("front"),
-				).Attr(newCtx.Injector.HTMLLangAttrs()...),
-			}
-			_, width := b.builder.getDevice(ctx)
-
-			scrollIframe := vx.VXScrollIframe().
-				Srcdoc(h.MustString(r, ctx.R.Context())).
-				IframeHeightName(cookieHeightName).
-				IframeHeight(iframeValue).
-				Width(width).Attr("ref", "scrollIframe").VirtualElementText(msgr.NewContainer)
-			if isEditor {
-				scrollIframe.Attr(web.VAssign("vars", `{el:$}`)...)
-				if ctx.Param(paramContainerNew) != "" {
-					scrollIframe.Attr("container-data-id", ctx.Param(paramContainerDataID))
-				}
-
-				if !isReadonly && len(comps) == 0 {
-					r = h.Components(
-						h.Div(
-							VCard(
-								VCardText(h.RawHTML(svg)).Class("d-flex justify-center"),
-								VCardTitle(h.Text(title)).Class("d-flex justify-center"),
-								VCardSubtitle(h.Text(msgr.StartBuildingSubMsg)).Class("d-flex justify-center"),
-								VCardActions(
-									VBtn(msgr.AddContainer).Color(ColorPrimary).Variant(VariantElevated).
-										Attr("@click", appendVirtualElement()+"vars.overlay=true;vars.el.refs.overlay.showCenter()"),
-								).Class("d-flex justify-center"),
-							).Flat(true),
-						).Attr("v-show", "vars.emptyIframe").
-							Attr(web.VAssign("vars", `{emptyIframe:true}`)...).
-							Style("display:flex;justify-content:center;align-items:center;flex-direction:column;height:80vh"),
-						scrollIframe,
-					)
-					return
-				}
-			}
-			r = scrollIframe
-
-		} else {
-			r = b.builder.pageLayoutFunc(h.Components(comps...), input, ctx)
-			ctx.Injector.HeadHTMLComponent("style", b.builder.pageStyle, true)
+	}
+	if f := ctx.R.Context().Value(CtxKeyContainerToPageLayout{}); f != nil {
+		pl, ok := f.(*PageLayoutInput)
+		if ok {
+			input.FreeStyleCss = append(input.FreeStyleCss, pl.FreeStyleCss...)
+			input.FreeStyleTopJs = append(input.FreeStyleTopJs, pl.FreeStyleTopJs...)
+			input.FreeStyleBottomJs = append(input.FreeStyleBottomJs, pl.FreeStyleBottomJs...)
+			input.Hreflang = pl.Hreflang
 		}
 	}
+
+	if isIframe {
+		// use newCtx to avoid inserting page head to head outside of iframe
+		newCtx := &web.EventContext{
+			R:        ctx.R,
+			Injector: &web.PageInjector{},
+		}
+		r = b.builder.pageLayoutFunc(h.Components(comps...), input, newCtx)
+		newCtx.Injector.HeadHTMLComponent("style", b.builder.pageStyle, true)
+		body := h.Components(h.Div(
+			r,
+		).Id("app").Attr("v-cloak", true),
+			newCtx.Injector.GetTailHTMLComponent(),
+		)
+		if isReloadBody {
+			return body
+		}
+		r = h.HTMLComponents{
+			h.RawHTML("<!DOCTYPE html>\n"),
+			h.Tag("html").Children(
+				h.Head(
+					newCtx.Injector.GetHeadHTMLComponent(),
+				),
+				h.Body(
+					h.Div(
+						r,
+					).Id("app").Attr("v-cloak", true),
+					newCtx.Injector.GetTailHTMLComponent(),
+				).Class("front"),
+			).Attr(newCtx.Injector.HTMLLangAttrs()...),
+		}
+
+		_, width := b.builder.getDevice(ctx)
+
+		scrollIframe := vx.VXScrollIframe().
+			BackgroundColor(b.builder.editorBackgroundColor).
+			Srcdoc(h.MustString(r, ctx.R.Context())).
+			Attr("@load", "vars.__pageBuilderAddContainerBtnDisabled=false").
+			Attr("v-on-mounted", fmt.Sprintf(`({el,window}) => {
+							vars.__pageBuilderAddContainerBtnDisabled = true;
+						}`)).
+			Attr(":width", "vars.__scrollIframeWidth").Attr("ref", "scrollIframe").VirtualElementText(msgr.NewContainer)
+		if isEditor {
+			scrollIframe.Attr(web.VAssign("vars", fmt.Sprintf(`{el:$,__scrollIframeWidth:%q}`, width))...)
+			r = h.Components(
+				scrollIframe,
+				web.Listen(b.notifIframeBodyUpdated(),
+					`vars.el.refs.scrollIframe.updateIframeBody(payload)`,
+				),
+			)
+		}
+
+	} else {
+		r = b.builder.pageLayoutFunc(h.Components(comps...), input, ctx)
+		ctx.Injector.HeadHTMLComponent("style", b.builder.pageStyle, true)
+	}
 	return
+}
+
+func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext, obj interface{}, locale string, isEditor, isReadonly, isIframe, isReloadBody bool) (r h.HTMLComponent) {
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+
+	r = b.renderScrollIframe(comps, ctx, obj, locale, isEditor, isIframe, isReloadBody)
+	if isReadonly || !isEditor || isReloadBody {
+		return r
+	}
+	var (
+		title string
+		svg   string
+	)
+	if b.tb == nil {
+		title = msgr.StartBuildingMsg
+		svg = previewEmptySvg
+	} else {
+		title = msgr.StartBuildingTemplateMsg
+		svg = previewTemplateEmptySvg
+	}
+	return h.Components(
+		h.Div(
+			VCard(
+				VCardText(h.RawHTML(svg)).Class("d-flex justify-center"),
+				VCardTitle(h.Text(title)).Class("d-flex justify-center"),
+				VCardSubtitle(h.Text(msgr.StartBuildingSubMsg)).Class("d-flex justify-center"),
+				VCardActions(
+					VBtn(msgr.AddContainer).Color(ColorPrimary).Variant(VariantElevated).
+						Attr("@click", appendVirtualElement()+"vars.overlay=true;vars.el.refs.overlay.showCenter()"),
+				).Class("d-flex justify-center"),
+			).Flat(true),
+		).Attr("v-show", "vars.emptyIframe").
+			Attr(web.VAssign("vars", fmt.Sprintf(`{emptyIframe: %v}`, len(comps) == 0))...).
+			Style("display:flex;justify-content:center;align-items:center;flex-direction:column;height:80vh"),
+		h.Div(r).Attr("v-show", "!vars.emptyIframe"),
+	)
 }
 
 func (b *ModelBuilder) renderContainers(ctx *web.EventContext, obj interface{}, pageID int, pageVersion string, locale string, isEditor bool, isReadonly bool) (r []h.HTMLComponent, err error) {
@@ -595,7 +607,8 @@ func (b *ModelBuilder) renderPreviewContainer(ctx *web.EventContext, obj interfa
 
 func (b *ModelBuilder) previewContent(ctx *web.EventContext) (r web.PageResponse, err error) {
 	var obj interface{}
-	r.Body, err = b.renderPageOrTemplate(ctx, false, false)
+
+	r.Body, err = b.renderPageOrTemplate(ctx, false, false, false)
 	if err != nil {
 		return
 	}
