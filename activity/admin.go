@@ -100,28 +100,34 @@ func setupEditing(eb *presets.EditingBuilder) {
 func setupListing(b *presets.Builder, lb *presets.ListingBuilder, op *gorm2op.DataOperatorBuilder, ab *Builder) {
 	lb.RelayPagination(gorm2op.KeysetBasedPagination(true))
 	lb.SearchFunc(func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
-		var modelLabels []string
-		// err = ab.db.Model(&ActivityLog{}).Select("DISTINCT model_label AS model_label").Pluck("model_label", &modelLabels).Error
-		// if err != nil {
-		// 	return nil, err
-		// }
-		for _, m := range ab.models {
-			if m.label != nil {
-				modelLabels = append(modelLabels, m.label())
+		if !ab.skipResPermCheck {
+			var modelLabels []string
+			// err = ab.db.Model(&ActivityLog{}).Select("DISTINCT model_label AS model_label").Pluck("model_label", &modelLabels).Error
+			// if err != nil {
+			// 	return nil, err
+			// }
+			for _, m := range ab.models {
+				if m.label != nil {
+					modelLabels = append(modelLabels, m.label())
+				}
 			}
-		}
-		modelLabels = lo.Uniq(modelLabels)
-		for _, resourceSign := range modelLabels {
-			if resourceSign == "" || resourceSign == NopModelLabel {
-				continue
+			signsNoPerm := []string{}
+			modelLabels = lo.Uniq(modelLabels)
+			for _, resourceSign := range modelLabels {
+				if resourceSign == "" || resourceSign == NopModelLabel {
+					continue
+				}
+				if b.GetVerifier().Spawn().SnakeOn(resourceSign).Do(presets.PermList).WithReq(ctx.R).IsAllowed() == nil {
+					continue
+				}
+				signsNoPerm = append(signsNoPerm, resourceSign)
 			}
-			if b.GetVerifier().Spawn().SnakeOn(resourceSign).Do(presets.PermList).WithReq(ctx.R).IsAllowed() == nil {
-				continue
+			if len(signsNoPerm) > 0 {
+				params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
+					Query: "model_label NOT IN ?",
+					Args:  []any{signsNoPerm},
+				})
 			}
-			params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
-				Query: "model_label <> ?",
-				Args:  []any{resourceSign},
-			})
 		}
 
 		params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
@@ -315,9 +321,11 @@ func setupDetailing(b *presets.Builder, dp *presets.DetailingBuilder, op *gorm2o
 		}
 		log := r.(*ActivityLog)
 
-		if log.ModelLabel != "" && log.ModelLabel != NopModelLabel {
-			if b.GetVerifier().Spawn().SnakeOn(log.ModelLabel).Do(presets.PermGet).WithReq(ctx.R).IsAllowed() != nil {
-				return nil, perm.PermissionDenied
+		if !ab.skipResPermCheck {
+			if log.ModelLabel != "" && log.ModelLabel != NopModelLabel {
+				if b.GetVerifier().Spawn().SnakeOn(log.ModelLabel).Do(presets.PermGet).WithReq(ctx.R).IsAllowed() != nil {
+					return nil, perm.PermissionDenied
+				}
 			}
 		}
 
@@ -335,7 +343,13 @@ func setupDetailing(b *presets.Builder, dp *presets.DetailingBuilder, op *gorm2o
 				pmsgr         = presets.MustGetMessages(ctx.R)
 				hideDetailTop = cast.ToBool(ctx.R.Form.Get(paramHideDetailTop))
 				actionLabel   = getActionLabel(ctx, log.Action)
+				hasPermGET    = true
 			)
+			if log.ModelLabel != "" && log.ModelLabel != NopModelLabel {
+				if b.GetVerifier().Spawn().SnakeOn(log.ModelLabel).Do(presets.PermGet).WithReq(ctx.R).IsAllowed() != nil {
+					hasPermGET = false
+				}
+			}
 			var children []h.HTMLComponent
 			if !hideDetailTop {
 				children = append(children, VCard().Elevation(0).Children(
@@ -353,7 +367,7 @@ func setupDetailing(b *presets.Builder, dp *presets.DetailingBuilder, op *gorm2o
 								)),
 								h.Tr(h.Td(h.Text(msgr.ModelLabel)), h.Td().Attr("v-pre", true).Text(cmp.Or(log.ModelLabel, NopModelLabel))),
 								h.Tr(h.Td(h.Text(msgr.ModelKeys)), h.Td().Attr("v-pre", true).Text(log.ModelKeys)),
-								h.Iff(log.ModelLink != "", func() h.HTMLComponent {
+								h.Iff(hasPermGET && log.ModelLink != "", func() h.HTMLComponent {
 									onClick := web.Plaid().PushStateURL(log.ModelLink).Go()
 									href := log.ModelLink
 									return h.Tr(h.Td(h.Text(msgr.ModelLink)), h.Td(
