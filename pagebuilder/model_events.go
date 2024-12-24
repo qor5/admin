@@ -163,6 +163,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 		clickColumnEvent = fmt.Sprintf(`vars.%s=element.container_data_id;`, paramContainerDataID) +
 			web.Plaid().
 				EventFunc(EditContainerEvent).
+				MergeQuery(true).
 				Query(paramContainerDataID, web.Var("element.container_data_id")).
 				Query(presets.ParamOverlay, actions.Content).
 				Query(presets.ParamPortalName, pageBuilderRightContentPortal).
@@ -300,7 +301,7 @@ func (b *ModelBuilder) addContainer(ctx *web.EventContext) (r web.EventResponse,
 		web.Plaid().EventFunc(ShowSortedContainerDrawerEvent).Query(paramContainerDataID, containerDataId).
 			Query(paramStatus, ctx.Param(paramStatus)).Go(),
 		web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).Query(paramContainerDataID, containerDataId).Go(),
-		web.Plaid().EventFunc(EditContainerEvent).Query(paramContainerDataID, containerDataId).Go(),
+		web.Plaid().EventFunc(EditContainerEvent).MergeQuery(true).Query(paramContainerDataID, containerDataId).Go(),
 		"vars.emptyIframe=false;",
 	)
 	return
@@ -804,7 +805,7 @@ func (b *ModelBuilder) replicateContainer(ctx *web.EventContext) (r web.EventRes
 		web.Plaid().EventFunc(ShowSortedContainerDrawerEvent).Query(paramContainerDataID, containerDataId).
 			Query(paramStatus, ctx.Param(paramStatus)).Go(),
 		web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).Query(paramContainerDataID, containerDataId).Go(),
-		web.Plaid().EventFunc(EditContainerEvent).Query(containerDataId, containerDataId).Go(),
+		web.Plaid().EventFunc(EditContainerEvent).MergeQuery(true).Query(containerDataId, containerDataId).Go(),
 	)
 	return
 }
