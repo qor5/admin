@@ -674,7 +674,7 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 		}
 	})
 	if b.ab != nil {
-		pm.Use(b.ab)
+		b.ab.RegisterModel(pm)
 	}
 	if b.l10n != nil {
 		pm.Use(b.l10n)
@@ -744,7 +744,7 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
 	})
 
 	if b.ab != nil {
-		pm.Use(b.ab)
+		b.ab.RegisterModel(pm)
 	}
 	if b.l10n != nil {
 		pm.Use(b.l10n)
