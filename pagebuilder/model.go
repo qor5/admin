@@ -451,6 +451,7 @@ func (b *ModelBuilder) renderScrollIframe(comps []h.HTMLComponent, ctx *web.Even
 
 		scrollIframe := vx.VXScrollIframe().
 			BackgroundColor(b.builder.editorBackgroundColor).
+			UpdateDifferent(b.builder.editorUpdateDifferent).
 			Srcdoc(h.MustString(r, ctx.R.Context())).
 			Attr("@load", "vars.__pageBuilderAddContainerBtnDisabled=false").
 			Attr("v-on-mounted", fmt.Sprintf(`({el,window}) => {
