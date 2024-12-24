@@ -124,6 +124,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 		if containerDataID != "" {
 			editEvent := web.Plaid().
 				EventFunc(EditContainerEvent).
+				MergeQuery(true).
 				Query(paramContainerDataID, containerDataID).
 				Query(presets.ParamPortalName, pageBuilderRightContentPortal).
 				Query(presets.ParamOverlay, actions.Content).Go()
