@@ -95,6 +95,7 @@ type Builder struct {
 	imagesPrefix                  string
 	defaultDevice                 string
 	editorBackgroundColor         string
+	editorUpdateDifferent         bool
 	publishBtnColor               string
 	duplicateBtnColor             string
 	templateEnabled               bool
@@ -273,6 +274,10 @@ func (b *Builder) DefaultDevice(v string) (r *Builder) {
 
 func (b *Builder) EditorBackgroundColor(v string) (r *Builder) {
 	b.editorBackgroundColor = v
+	return b
+}
+func (b *Builder) EditorUpdateDifferent(v bool) (r *Builder) {
+	b.editorUpdateDifferent = v
 	return b
 }
 
