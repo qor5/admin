@@ -1449,6 +1449,7 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 		AfterScript("vars.__pageBuilderEditingUnPassed=false;toggleLocals.oldDevice = toggleLocals.activeDevice;").
 		ThenScript(fmt.Sprintf(`if(%s!==""){%s}`, containerDataID,
 			web.Plaid().EventFunc(EditContainerEvent).
+				MergeQuery(true).
 				Query(paramContainerDataID, containerDataID).
 				Query(presets.ParamPortalName, pageBuilderRightContentPortal).
 				Query(presets.ParamOverlay, actions.Content).Go()),
