@@ -3,7 +3,6 @@ package pagebuilder
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
@@ -51,8 +50,9 @@ const (
 	paramModelID         = "modelID"
 	paramModelName       = "modelName"
 	paramMoveDirection   = "moveDirection"
-	paramsDevice         = "device"
-	paramsDisplayName    = "DisplayName"
+	paramDevice          = "device"
+	paramDisplayName     = "DisplayName"
+	paramDemoContainer   = "demoContainer"
 
 	DevicePhone    = "phone"
 	DeviceTablet   = "tablet"
@@ -122,16 +122,12 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 
 		}
 		if containerDataID != "" {
-			arr := strings.Split(containerDataID, "_")
-			if len(arr) >= 2 {
-				editEvent := web.Plaid().
-					EventFunc(EditContainerEvent).
-					Query(paramContainerUri, fmt.Sprintf(`%s/%s`, b.prefix, arr[0])).
-					Query(paramContainerID, arr[1]).
-					Query(presets.ParamPortalName, pageBuilderRightContentPortal).
-					Query(presets.ParamOverlay, actions.Content).Go()
-				editContainerDrawer = web.RunScript(fmt.Sprintf(`function(){%s}`, editEvent))
-			}
+			editEvent := web.Plaid().
+				EventFunc(EditContainerEvent).
+				Query(paramContainerDataID, containerDataID).
+				Query(presets.ParamPortalName, pageBuilderRightContentPortal).
+				Query(presets.ParamOverlay, actions.Content).Go()
+			editContainerDrawer = web.RunScript(fmt.Sprintf(`function(){%s}`, editEvent))
 		} else {
 			editContainerDrawer = b.emptyEdit(ctx)
 		}
@@ -146,7 +142,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 		if !isStag && m.mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil {
 			isStag = true
 		}
-		afterLeaveEvent := removeVirtualElement() + scrollToContainer(fmt.Sprintf("vars.%s", paramContainerDataID))
+		afterLeaveEvent := removeVirtualElement()
 		addOverlay := vx.VXOverlay(m.newContainerContent(ctx)).
 			MaxWidth(665).
 			Attr("ref", "overlay").
@@ -382,7 +378,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 }
 
 func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string) {
-	device = ctx.R.FormValue(paramsDevice)
+	device = ctx.R.FormValue(paramDevice)
 	if len(device) == 0 {
 		device = b.defaultDevice
 	}
