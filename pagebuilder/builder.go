@@ -843,6 +843,7 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 					EventFunc(actions.Edit).
 					URL(b.ContainerByName(c.ModelName).GetModelBuilder().Info().ListingHref()).
 					Query(presets.ParamID, c.ModelID).
+					Query(paramDemoContainer, true).
 					Query(presets.ParamVarCurrentActive, presets.ListingCompo_GetVarCurrentActive(evCtx)).
 					Go())
 			return in(evCtx, cell, id, obj)
@@ -1017,7 +1018,7 @@ func (b *ContainerBuilder) Install() {
 			),
 			web.Listen(
 				b.mb.NotifModelsValidate(),
-				fmt.Sprintf(`if(payload.passed){%s}`,
+				fmt.Sprintf(`vars.__pageBuilderEditingUnPassed=!payload.passed;if(payload.passed){%s}`,
 					web.Plaid().
 						EventFunc(UpdateContainerEvent).
 						Query(paramContainerUri, b.mb.Info().ListingHref()).
@@ -1326,8 +1327,7 @@ func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
 		).
 		EventFunc(EditContainerEvent).
 		MergeQuery(true).
-		Query(paramContainerUri, web.Var(fmt.Sprintf(`"%s/"+arr[0]`, b.prefix))).
-		Query(paramContainerID, web.Var("arr[1]")).
+		Query(paramContainerDataID, web.Var("container_data_id")).
 		Query(presets.ParamOverlay, actions.Content).
 		Query(presets.ParamPortalName, pageBuilderRightContentPortal).
 		Go()
@@ -1419,10 +1419,13 @@ func (b *Builder) setDefaultDevices() {
 }
 
 func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
-	var comps []h.HTMLComponent
-	ctx.R.Form.Del(web.EventFuncIDName)
-	device := ctx.Param(paramsDevice)
-	devices := b.getDevices()
+	var (
+		comps   []h.HTMLComponent
+		device  = ctx.Param(paramDevice)
+		devices = b.getDevices()
+		pMsgr   = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+	)
+
 	for _, d := range devices {
 		if device == "" && d.Name == b.defaultDevice {
 			device = d.Name
@@ -1436,21 +1439,40 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 	if device == "" {
 		device = b.getDevices()[0].Name
 	}
+	containerDataID := web.Var(fmt.Sprintf("vars.%s", paramContainerDataID))
+	reloadBodyEditingEvent := fmt.Sprintf("const device = toggleLocals.devices.find(device => device.Name === toggleLocals.activeDevice);vars.__scrollIframeWidth=device ? device.Width : '';") + web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).
+		BeforeScript(
+			web.Plaid().
+				PushState(true).MergeQuery(true).Query(paramDevice, web.Var("toggleLocals.activeDevice")).RunPushState(),
+		).
+		Query(paramContainerDataID, containerDataID).
+		AfterScript("vars.__pageBuilderEditingUnPassed=false;toggleLocals.oldDevice = toggleLocals.activeDevice;").
+		ThenScript(fmt.Sprintf(`if(%s!==""){%s}`, containerDataID,
+			web.Plaid().EventFunc(EditContainerEvent).
+				Query(paramContainerDataID, containerDataID).
+				Query(presets.ParamPortalName, pageBuilderRightContentPortal).
+				Query(presets.ParamOverlay, actions.Content).Go()),
+		).
+		Go()
+	changeDeviceEvent := fmt.Sprintf(`if (vars.__pageBuilderEditingUnPassed){toggleLocals.dialog=true}else{%s}`, reloadBodyEditingEvent)
+
 	return web.Scope(
+		vx.VXDialog().
+			Title(pMsgr.DialogTitleDefault).
+			Text(pMsgr.LeaveBeforeUnsubmit).
+			OkText(pMsgr.OK).
+			CancelText(pMsgr.Cancel).
+			Attr("@click:ok", "toggleLocals.dialog=false;"+reloadBodyEditingEvent).
+			Attr("@update:model-value", "if(!$event){toggleLocals.activeDevice=toggleLocals.oldDevice;}").
+			Attr("v-model", "toggleLocals.dialog"),
 		VBtnToggle(
 			comps...,
 		).Class("pa-2 rounded-lg ").
 			Mandatory(true).
 			Attr("v-model", "toggleLocals.activeDevice").
-			Attr("@update:model-value", fmt.Sprintf("const device = toggleLocals.devices.find(device => device.Name === toggleLocals.activeDevice);vars.__scrollIframeWidth=device ? device.Width : '';")+
-				web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).
-					BeforeScript(web.Plaid().
-						PushState(true).MergeQuery(true).Query(paramsDevice, web.Var("toggleLocals.activeDevice")).RunPushState()).
-					Query(paramContainerDataID, web.Var(fmt.Sprintf("vars.%s", paramContainerDataID))).
-					Query(paramIsUpdate, false).
-					Go(),
+			Attr("@update:model-value", changeDeviceEvent,
 			),
-	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %q,devices:%v}`, device, h.JSONString(devices)))
+	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %q,oldDevice:%q,devices:%v,dialog:false}`, device, device, h.JSONString(devices)))
 }
 
 func (b *Builder) GetModelBuilder(mb *presets.ModelBuilder) *ModelBuilder {
