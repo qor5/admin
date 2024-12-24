@@ -14,26 +14,26 @@ import (
 
 var ErrInvalidIP = errors.New("invalid IP address")
 
-type GEO2IP struct {
+type GEOIP2 struct {
 	*geoip2.Reader
 }
 
-func New(file string) (*GEO2IP, error) {
+func New(file string) (*GEOIP2, error) {
 	db, err := geoip2.Open(file)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create GEO2IP")
+		return nil, errors.Wrap(err, "failed to create GEOIP2")
 	}
-	return &GEO2IP{
+	return &GEOIP2{
 		Reader: db,
 	}, nil
 }
 
-func NewFromBytes(data []byte) (*GEO2IP, error) {
+func NewFromBytes(data []byte) (*GEOIP2, error) {
 	db, err := geoip2.FromBytes(data)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create GEO2IP from bytes")
+		return nil, errors.Wrap(err, "failed to create GEOIP2 from bytes")
 	}
-	return &GEO2IP{
+	return &GEOIP2{
 		Reader: db,
 	}, nil
 }
@@ -50,7 +50,7 @@ func LocaleFromLanguage(t language.Tag) string {
 	}
 }
 
-func (g *GEO2IP) GetLocation(_ context.Context, lang language.Tag, addr string) (string, error) {
+func (g *GEOIP2) GetLocation(_ context.Context, lang language.Tag, addr string) (string, error) {
 	addr = strings.Trim(addr, "[]")
 	ip := net.ParseIP(addr)
 	if ip == nil {
