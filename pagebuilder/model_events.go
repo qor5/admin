@@ -261,7 +261,6 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 					).Attr("#item", " { element } "),
 				),
 			),
-
 		).Class("px-4 overflow-y-auto").Attr("id", "test001").MaxHeight("86vh").Attr("v-on-mounted", fmt.Sprintf(`({ el, window }) => {
       locals.__pageBuilderLeftContentKeepScroll = (container_data_id) => {
 			if (container_data_id){
@@ -494,7 +493,7 @@ func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.Event
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr    = presets.MustGetMessages(ctx.R)
 		okAction = web.Plaid().
-			EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
+				EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
 		portalName = dialogPortalName
 	)
 
