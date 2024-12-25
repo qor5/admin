@@ -4,6 +4,8 @@ import (
 	_ "embed"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/qor5/x/v3/login"
@@ -82,6 +84,38 @@ func Router(db *gorm.DB) http.Handler {
 	}))
 
 	mux.Handle("/page_builder/", c.pageBuilder)
+
+	// 获取当前工作目录
+	currentDir, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
+	// email_builder register
+	distPath := filepath.Join(currentDir, "../emailbuilder/dist")
+
+	// 获取绝对路径
+	absDistPath, err := filepath.Abs(distPath)
+	if err != nil {
+		panic(err)
+	}
+
+	if _, err := os.Stat(absDistPath); os.IsNotExist(err) {
+		panic("Dist directory not found: " + absDistPath)
+	}
+
+	fs := http.FileServer(http.Dir(absDistPath))
+
+	mux.HandleFunc("/email_builder", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/email_builder" {
+			http.ServeFile(w, r, filepath.Join(absDistPath, "index.html"))
+			return
+		}
+		http.StripPrefix("/email_builder", fs).ServeHTTP(w, r)
+	})
+	mux.Handle("/email_builder/", http.StripPrefix("/email_builder/", fs))
+	// email_builder register end
+
 	mux.Handle("/", c.pb)
 	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		w.Write(favicon)
