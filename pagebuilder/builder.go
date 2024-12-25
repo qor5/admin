@@ -276,6 +276,7 @@ func (b *Builder) EditorBackgroundColor(v string) (r *Builder) {
 	b.editorBackgroundColor = v
 	return b
 }
+
 func (b *Builder) EditorUpdateDifferent(v bool) (r *Builder) {
 	b.editorUpdateDifferent = v
 	return b
@@ -1476,8 +1477,7 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 		).Class("pa-2 rounded-lg ").
 			Mandatory(true).
 			Attr("v-model", "toggleLocals.activeDevice").
-			Attr("@update:model-value", changeDeviceEvent,
-			),
+			Attr("@update:model-value", changeDeviceEvent),
 	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %q,oldDevice:%q,devices:%v,dialog:false}`, device, device, h.JSONString(devices)))
 }
 
