@@ -144,11 +144,15 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 			isStag = true
 		}
 		afterLeaveEvent := removeVirtualElement()
-		addOverlay := vx.VXOverlay(m.newContainerContent(ctx)).
-			MaxWidth(665).
-			Attr("ref", "overlay").
-			Attr("@after-leave", afterLeaveEvent).
-			Attr("v-model", "vars.overlay")
+		addOverlay := web.Scope(
+			vx.VXOverlay(
+				m.newContainerContent(ctx),
+			).
+				MaxWidth(665).
+				Attr("ref", "overlay").
+				Attr("@after-leave", fmt.Sprintf("if (!xLocals.add){%s}", afterLeaveEvent)).
+				Attr("v-model", "vars.overlay"),
+		).VSlot("{locals:xLocals}").Init("{add:false}")
 		versionComponent = publish.DefaultVersionComponentFunc(m.editor, publish.VersionComponentConfig{Top: true, DisableListeners: true, DisableDataChangeTracking: true})(obj, &presets.FieldContext{ModelInfo: m.editor.Info()}, ctx)
 		pageAppbarContent = h.Components(
 			h.Div(
@@ -533,7 +537,7 @@ func (b *Builder) containerWrapper(r *h.HTMLTagBuilder, ctx *web.EventContext, i
 		} else {
 			r = h.Div(
 				h.Div().Class("inner-shadow"),
-				h.Div(h.Div(r).Attr("style", "pointer-events:none")).Attr("onclick", "event.stopPropagation();document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('highlight')});this.parentElement.classList.add('highlight');"+pmb.postMessage(EventEdit)),
+				h.Div(h.Div(r).Class("inner-container")).Attr("onclick", "event.stopPropagation();document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('highlight')});this.parentElement.classList.add('highlight');"+pmb.postMessage(EventEdit)),
 				h.Div(
 					h.Div(h.Text(input.DisplayName)).Class("title"),
 					h.Div(
