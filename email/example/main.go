@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/qor5/admin/v3/email"
 	"github.com/theplant/osenv"
@@ -35,32 +34,4 @@ func ConnectDB() (db *gorm.DB) {
 
 	db.Logger = db.Logger.LogMode(logger.Info)
 	return
-}
-
-func LoadSenderConfig() (config email.SESDriverConfig) {
-	from := os.Getenv("FROM_ADDRESS")
-	if from == "" {
-		panic("please set FROM_ADDRESS env")
-	}
-	return email.SESDriverConfig{
-		FromEmailAddress:               from,
-		FromName:                       "ciam",
-		SubjectCharset:                 "UTF-8",
-		HTMLBodyCharset:                "UTF-8",
-		TextBodyCharset:                "UTF-8",
-		ConfigurationSetName:           "",
-		FeedbackForwardingEmailAddress: "",
-		FeedbackForwardingEmailAddressIdentityArn: "",
-		FromEmailAddressIdentityArn:               "",
-		ContactListName:                           "",
-		TopicName:                                 "",
-	}
-}
-
-func LoadReceiverConfig() string {
-	to := os.Getenv("TO_ADDRESS")
-	if to == "" {
-		panic("please set TO_ADDRESS env")
-	}
-	return to
 }
