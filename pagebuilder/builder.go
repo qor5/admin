@@ -276,6 +276,7 @@ func (b *Builder) EditorBackgroundColor(v string) (r *Builder) {
 	b.editorBackgroundColor = v
 	return b
 }
+
 func (b *Builder) EditorUpdateDifferent(v bool) (r *Builder) {
 	b.editorUpdateDifferent = v
 	return b
@@ -1322,7 +1323,7 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
 	editAction := web.POST().
 		BeforeScript(
-			fmt.Sprintf(`vars.%s=container_data_id;`, paramContainerDataID)+
+			fmt.Sprintf(`vars.%s=container_data_id;locals.__pageBuilderLeftContentKeepScroll(container_data_id);`, paramContainerDataID)+
 				web.Plaid().
 					PushState(true).
 					MergeQuery(true).
@@ -1476,8 +1477,7 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 		).Class("pa-2 rounded-lg ").
 			Mandatory(true).
 			Attr("v-model", "toggleLocals.activeDevice").
-			Attr("@update:model-value", changeDeviceEvent,
-			),
+			Attr("@update:model-value", changeDeviceEvent),
 	).VSlot("{ locals : toggleLocals}").Init(fmt.Sprintf(`{activeDevice: %q,oldDevice:%q,devices:%v,dialog:false}`, device, device, h.JSONString(devices)))
 }
 
