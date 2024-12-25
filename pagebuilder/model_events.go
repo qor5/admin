@@ -262,15 +262,20 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 				),
 			),
 
-		).Class("px-4 overflow-y-auto").Attr("id", "test001").MaxHeight("86vh").Attr("v-on-mounted",
-			fmt.Sprintf(`
-({ el, window }) => {
-    locals.__pageBuilderLeftContentKeepScroll = () => {
-        const scrollTop = locals.__pageBuilderLeftContentScrollTop;
-        window.setTimeout(() => {
-            el.scrollTop = scrollTop;
-        }, 0)
-    }
+		).Class("px-4 overflow-y-auto").Attr("id", "test001").MaxHeight("86vh").Attr("v-on-mounted", fmt.Sprintf(`({ el, window }) => {
+      locals.__pageBuilderLeftContentKeepScroll = (container_data_id) => {
+			if (container_data_id){
+				const container = el.querySelector("div[data-container-id='" + container_data_id + "']")
+				if (container){
+               		 el.scrollTop = container.offsetTop;
+					return
+				}
+			}
+            const scrollTop = locals.__pageBuilderLeftContentScrollTop;
+            window.setTimeout(() => {
+                el.scrollTop = scrollTop;
+            }, 0)
+        }
     el.__handleScroll = (event) => {
         locals.__pageBuilderLeftContentScrollTop = event.target.scrollTop;
     }
@@ -286,10 +291,11 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 			h.Span(msgr.AddContainer).Class("ml-5"),
 		).BaseColor(ColorPrimary).Variant(VariantText).Class(W100, "pl-14", "justify-start").
 			Height(50).Attr("v-on-mounted", fmt.Sprintf(`()=>{
-			if (!!locals.__pageBuilderLeftContentKeepScroll) {
-       		 	locals.__pageBuilderLeftContentKeepScroll();
+			if (!!locals.__pageBuilderLeftContentKeepScroll &&locals.__pageBuilderLeftContentKeepScrollFlag) {
+       		 	locals.__pageBuilderLeftContentKeepScroll(%q);
              }
-			}`)).
+			locals.__pageBuilderLeftContentKeepScrollFlag=true;
+			}`, ctx.Param(paramContainerDataID))).
 			Attr(":disabled", "vars.__pageBuilderAddContainerBtnDisabled").
 			Attr("@click", appendVirtualElement()+web.Plaid().PushState(true).ClearMergeQuery([]string{paramContainerID}).RunPushState()+";vars.containerPreview=false;vars.overlay=true;vars.overlayEl.refs.overlay.showByElement($event)"),
 	).Init(h.JSONString(sorterData)).VSlot("{ locals:sortLocals,form }")
@@ -832,9 +838,7 @@ func (b *ModelBuilder) replicateContainer(ctx *web.EventContext) (r web.EventRes
 }
 
 func (b *ModelBuilder) editContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
-	var (
-		data = strings.Split(ctx.Param(paramContainerDataID), "_")
-	)
+	data := strings.Split(ctx.Param(paramContainerDataID), "_")
 	if len(data) != 2 {
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: pageBuilderRightContentPortal,
