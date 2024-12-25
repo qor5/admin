@@ -257,18 +257,39 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 								).Name("default").Scope("{ isHovering, props }"),
 							),
 							VDivider(),
-						),
+						).Attr(":data-container-id", "element.container_data_id"),
 					).Attr("#item", " { element } "),
 				),
 			),
-		).Class("px-4 overflow-y-auto").MaxHeight("86vh"),
+
+		).Class("px-4 overflow-y-auto").Attr("id", "test001").MaxHeight("86vh").Attr("v-on-mounted",
+			fmt.Sprintf(`
+({ el, window }) => {
+    locals.__pageBuilderLeftContentKeepScroll = () => {
+        const scrollTop = locals.__pageBuilderLeftContentScrollTop;
+        window.setTimeout(() => {
+            el.scrollTop = scrollTop;
+        }, 0)
+    }
+    el.__handleScroll = (event) => {
+        locals.__pageBuilderLeftContentScrollTop = event.target.scrollTop;
+    }
+    el.addEventListener('scroll', el.__handleScroll)
+}`)).
+			Attr("v-on-unmounted", `({el}) => {
+				el.removeEventListener('scroll', el.__handleScroll);
+						}`),
 		VBtn("").Children(
 			web.Slot(
 				VIcon("mdi-plus-circle-outline"),
 			).Name(VSlotPrepend),
 			h.Span(msgr.AddContainer).Class("ml-5"),
 		).BaseColor(ColorPrimary).Variant(VariantText).Class(W100, "pl-14", "justify-start").
-			Height(50).
+			Height(50).Attr("v-on-mounted", fmt.Sprintf(`()=>{
+			if (!!locals.__pageBuilderLeftContentKeepScroll) {
+       		 	locals.__pageBuilderLeftContentKeepScroll();
+             }
+			}`)).
 			Attr(":disabled", "vars.__pageBuilderAddContainerBtnDisabled").
 			Attr("@click", appendVirtualElement()+web.Plaid().PushState(true).ClearMergeQuery([]string{paramContainerID}).RunPushState()+";vars.containerPreview=false;vars.overlay=true;vars.overlayEl.refs.overlay.showByElement($event)"),
 	).Init(h.JSONString(sorterData)).VSlot("{ locals:sortLocals,form }")
@@ -525,7 +546,7 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 				MergeQuery(true).
 				Query(paramModelName, cb.name).
 				Query(paramStatus, ctx.Param(paramStatus)).
-				ThenScript("vars.overlay=false").
+				ThenScript("vars.overlay=false;xLocals.add=true").
 				Go()
 			containers = append(containers,
 				VHover(
@@ -578,7 +599,7 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 					MergeQuery(true).
 					Query(paramModelName, builder.name).
 					Query(paramStatus, ctx.Param(paramStatus)).
-					ThenScript("vars.overlay=false").
+					ThenScript("vars.overlay=false;xLocals.add=true").
 					Go()
 				listItems = append(listItems,
 					VHover(
