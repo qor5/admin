@@ -222,8 +222,8 @@ func (b *Builder) Sender(config SESDriverConfig) *Builder {
 }
 
 type SendRequest struct {
-	TemplateID int
-	UserIds    []int
+	TemplateID int   `json:"template_id"`
+	UserIds    []int `json:"user_ids"`
 }
 
 type UnifyResponse struct {
