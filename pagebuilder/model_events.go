@@ -261,7 +261,6 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 					).Attr("#item", " { element } "),
 				),
 			),
-
 		).Class("px-4 overflow-y-auto").Attr("id", "test001").MaxHeight("86vh").Attr("v-on-mounted",
 			fmt.Sprintf(`
 ({ el, window }) => {
@@ -488,7 +487,7 @@ func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.Event
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr    = presets.MustGetMessages(ctx.R)
 		okAction = web.Plaid().
-			EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
+				EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
 		portalName = dialogPortalName
 	)
 
@@ -832,9 +831,7 @@ func (b *ModelBuilder) replicateContainer(ctx *web.EventContext) (r web.EventRes
 }
 
 func (b *ModelBuilder) editContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
-	var (
-		data = strings.Split(ctx.Param(paramContainerDataID), "_")
-	)
+	data := strings.Split(ctx.Param(paramContainerDataID), "_")
 	if len(data) != 2 {
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: pageBuilderRightContentPortal,
