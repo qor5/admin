@@ -128,9 +128,8 @@ func (b *Builder) send(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	var messageIds []string
+	var results []SendResult
 	for _, uid := range sendRequest.UserIds {
-		_ = uid
 		//  fake username here(actually, should get it by uid)
 		mailData := MailData{
 			Name: faker.Name(),
@@ -197,14 +196,24 @@ func (b *Builder) send(w http.ResponseWriter, r *http.Request) {
 		}
 		output, err := b.sender.SendEmail(r.Context(), input)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			results = append(results, SendResult{
+				UserId:     uid,
+				TemplateID: sendRequest.TemplateID,
+				MessageID:  "",
+				ErrMsg:     err.Error(),
+			})
+		} else {
+			results = append(results, SendResult{
+				UserId:     uid,
+				TemplateID: sendRequest.TemplateID,
+				MessageID:  lo.FromPtr(output.MessageId),
+				ErrMsg:     "",
+			})
 		}
-		messageIds = append(messageIds, lo.FromPtr(output.MessageId))
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	by, _ := json.Marshal(&UnifyResponse{Data: messageIds})
+	by, _ := json.Marshal(&UnifyResponse{Data: results})
 	_, _ = w.Write(by)
 }
 
@@ -224,6 +233,13 @@ func (b *Builder) Sender(config SESDriverConfig) *Builder {
 type SendRequest struct {
 	TemplateID int   `json:"template_id"`
 	UserIds    []int `json:"user_ids"`
+}
+
+type SendResult struct {
+	UserId     int    `json:"user_id"`
+	TemplateID int    `json:"template_id"`
+	MessageID  string `json:"message_id"`
+	ErrMsg     string `json:"err_msg"`
 }
 
 type UnifyResponse struct {
