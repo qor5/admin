@@ -297,113 +297,124 @@ func (b *ModelBuilder) renderScrollIframe(comps []h.HTMLComponent, ctx *web.Even
 	if isEditor {
 		input.EditorCss = append(input.EditorCss, h.RawHTML(`<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">`))
 		input.EditorCss = append(input.EditorCss, h.Style(`
-			.wrapper-shadow{
-				display: table; /* for IE or lower versions of browers */
-				display: flow-root;/* for morden browsers*/
-			  position: relative;
-			  width: 100%;	
-			}
+.wrapper-shadow {
+    display: table;
+    /* for IE or lower versions of browers */
+    display: flow-root;
+    /* for morden browsers*/
+    position: relative;
+    width: 100%;
+}
 
-			.inner-shadow {
-				pointer-events: none;
-			  position: absolute;
-			  width: 100%;
-			  height: 100%;
-			  opacity: 0;
-			  top: 0;
-			  left: 0;
-			  box-shadow: 2px 2px 0 0px #3E63DD inset, -2px 2px 0 0px #3E63DD inset,2px -2px 0 0px #3E63DD inset;
-				z-index:201;
-			}
-			
-			
-			.editor-add {
-			  width: 100%;
-			  position: absolute;
-			  z-index: 9998;
-			  opacity: 0;
-			  text-align: center;
-			}
-			
-			.editor-add div {
-			  width: 100%;
-			  background-color: #3E63DD;
-			  height: 2px;
-			}
-			
-			.editor-add button {
-			  width: 32px;
-			  cursor: pointer;
-              height: 32px;	
-			  color: #FFFFFF;
-			  background-color: #3E63DD;
-			  pointer-event: none;
-              position: absolute;
-              bottom: -14px;
-              border: 0;
-              padding: 4px 0 4px 0;
-			}
-			.wrapper-shadow:hover {
-			  cursor: pointer;
-			}
+.inner-shadow {
+    pointer-events: none;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    top: 0;
+    left: 0;
+    box-shadow: 2px 2px 0 0px #3E63DD inset, -2px 2px 0 0px #3E63DD inset, 2px -2px 0 0px #3E63DD inset;
+    z-index: 201;
+}
 
-			.wrapper-shadow:hover .editor-add {
-			  opacity: 1;
-			}
-			
-			.wrapper-shadow:hover .editor-add div {
-			  height: 4px;
-			}
-			.highlight .editor-add div{
-              height: 2px !important;	
-			}		
-			.editor-bar {
-			  position: absolute;
-			  z-index: 9999;
-			  height: 32px;	
-              width: 207px;
-			  opacity: 0;
-              display: flex;
-			  align-items: center;	
-			  background-color: #3E63DD;
-			  justify-content: space-between;
-              pointer-events: none;
-              padding : 0 8px;
+.inner-container {
+    pointer-events: none
+}
 
-			}
-   			.editor-bar-buttons{
-              height: 24px;
-			
-			}
-			.editor-bar button {
-			  color: #FFFFFF;
-              border: 0;
-              padding: 0;
-			  cursor: pointer;
-			  background-color: #3E63DD; 
-              height: 24px;	
-			}
-			
-			.editor-bar .title {
-			  color: #FFFFFF;
-			  overflow: hidden;	
-			  font-size: 12px;
-			  font-style: normal;
-			  max-width: calc(100% - 88px);
-			  font-weight: 400;
-			  line-height: 16px; 
-              text-overflow: ellipsis;
-              white-space: nowrap;
-			  letter-spacing: 0.04px;	
-			}
-			.highlight .editor-bar {
-			  opacity: 1;
-              pointer-events: auto;
-			}
-		
-			.highlight .inner-shadow {
-			  opacity: 1;
-			}
+.editor-add {
+    width: 100%;
+    position: absolute;
+    z-index: 9998;
+    opacity: 0;
+    text-align: center;
+}
+
+.editor-add div {
+    width: 100%;
+    background-color: #3E63DD;
+    height: 2px;
+}
+
+.editor-add button {
+    width: 32px;
+    cursor: pointer;
+    height: 32px;
+    color: #FFFFFF;
+    background-color: #3E63DD;
+    pointer-event: none;
+    position: absolute;
+    bottom: -14px;
+    border: 0;
+    padding: 4px 0 4px 0;
+}
+
+.wrapper-shadow:hover {
+    cursor: pointer;
+}
+
+.wrapper-shadow:hover .editor-add {
+    opacity: 1;
+}
+
+.wrapper-shadow:hover .editor-add div {
+    height: 4px;
+}
+
+.highlight .editor-add div {
+    height: 2px !important;
+}
+
+.editor-bar {
+    position: absolute;
+    z-index: 9999;
+    height: 32px;
+    width: 207px;
+    opacity: 0;
+    display: flex;
+    align-items: center;
+    background-color: #3E63DD;
+    justify-content: space-between;
+    pointer-events: none;
+    padding: 0 8px;
+
+}
+
+.editor-bar-buttons {
+    height: 24px;
+
+}
+
+.editor-bar button {
+    color: #FFFFFF;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    background-color: #3E63DD;
+    height: 24px;
+}
+
+.editor-bar .title {
+    color: #FFFFFF;
+    overflow: hidden;
+    font-size: 12px;
+    font-style: normal;
+    max-width: calc(100% - 88px);
+    font-weight: 400;
+    line-height: 16px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    letter-spacing: 0.04px;
+}
+
+.highlight .editor-bar {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.highlight .inner-shadow {
+    opacity: 1;
+}
 `))
 	}
 	if f := ctx.R.Context().Value(CtxKeyContainerToPageLayout{}); f != nil {
