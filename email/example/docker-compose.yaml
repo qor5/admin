@@ -1,0 +1,9 @@
+services:
+  db:
+    image: postgres
+    environment:
+      - "POSTGRES_USER=email"
+      - "POSTGRES_PASSWORD=email"
+      - "POSTGRES_DB=email"
+    ports:
+      - "7632:5432"
