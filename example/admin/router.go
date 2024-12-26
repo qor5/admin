@@ -4,6 +4,8 @@ import (
 	_ "embed"
 	"fmt"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,6 +17,7 @@ import (
 
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/role"
+	"github.com/qor5/admin/v3/utils"
 )
 
 //go:embed assets/favicon.ico
@@ -62,6 +65,15 @@ func TestL18nHandler(db *gorm.DB) (http.Handler, Config) {
 	return mux, c
 }
 
+// a reverse proxy for development
+func NewReverseProxy(target string) (*httputil.ReverseProxy, error) {
+	url, err := url.Parse(target)
+	if err != nil {
+		return nil, err
+	}
+	return httputil.NewSingleHostReverseProxy(url), nil
+}
+
 func Router(db *gorm.DB) http.Handler {
 	c := NewConfig(db, true)
 
@@ -86,40 +98,51 @@ func Router(db *gorm.DB) http.Handler {
 
 	mux.Handle("/page_builder/", c.pageBuilder)
 
-	// 获取当前工作目录
-	currentDir, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
+	// email_builder  start
+	if utils.IsDevelopment() {
 
-	// email_builder register
-	distPath := filepath.Join(currentDir, "../emailbuilder/dist")
-	absDistPath, err := filepath.Abs(distPath)
-	if err != nil {
-		panic(err)
-	}
-	if _, err := os.Stat(absDistPath); os.IsNotExist(err) {
-		panic("Dist directory not found: " + absDistPath)
-	}
-
-	// for /email_builder/* fallback is index.html
-	mux.HandleFunc("/email_builder/", func(w http.ResponseWriter, r *http.Request) {
-		path := strings.TrimPrefix(r.URL.Path, "/email_builder/")
-		if path == "" {
-			path = "index.html"
+		// development mode：reverse proxy to Vite http server
+		proxy, err := NewReverseProxy("http://localhost:3000/email_builder/")
+		if err != nil {
+			fmt.Printf("%s", fmt.Sprintf("Failed to create reverse proxy: %v", err))
 		}
-		filePath := filepath.Join(absDistPath, path)
-		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+
+		mux.Handle("/email_builder/", http.StripPrefix("/email_builder", proxy))
+		mux.Handle("/email_builder", http.RedirectHandler("/email_builder/", http.StatusMovedPermanently))
+	} else {
+		currentDir, err := os.Getwd()
+		if err != nil {
+			panic(err)
+		}
+
+		distPath := filepath.Join(currentDir, "../emailbuilder/dist")
+		absDistPath, err := filepath.Abs(distPath)
+		if err != nil {
+			panic(err)
+		}
+		if _, err := os.Stat(absDistPath); os.IsNotExist(err) {
+			panic("Dist directory not found: " + absDistPath)
+		}
+
+		// for /email_builder/* fallback is index.html
+		mux.HandleFunc("/email_builder/", func(w http.ResponseWriter, r *http.Request) {
+			path := strings.TrimPrefix(r.URL.Path, "/email_builder/")
+			if path == "" {
+				path = "index.html"
+			}
+			filePath := filepath.Join(absDistPath, path)
+			if _, err := os.Stat(filePath); os.IsNotExist(err) {
+				http.ServeFile(w, r, filepath.Join(absDistPath, "index.html"))
+				return
+			}
+			http.ServeFile(w, r, filePath)
+		})
+
+		// for exactly /email_builder
+		mux.Handle("/email_builder", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			http.ServeFile(w, r, filepath.Join(absDistPath, "index.html"))
-			return
-		}
-		http.ServeFile(w, r, filePath)
-	})
-
-	// for exactly /email_builder
-	mux.Handle("/email_builder", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, filepath.Join(absDistPath, "index.html"))
-	}))
+		}))
+	}
 	// email_builder register end
 
 	mux.Handle("/", c.pb)
