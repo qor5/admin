@@ -1,4 +1,4 @@
-package email
+package emailbuilder
 
 import (
 	"bytes"
@@ -132,7 +132,6 @@ func (b *Builder) send(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			http.Error(w, "template not found", http.StatusNotFound)
-
 		} else {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}

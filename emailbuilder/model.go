@@ -1,4 +1,4 @@
-package email
+package emailbuilder
 
 import "gorm.io/gorm"
 
