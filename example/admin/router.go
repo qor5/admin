@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/qor5/x/v3/login"
@@ -93,27 +94,32 @@ func Router(db *gorm.DB) http.Handler {
 
 	// email_builder register
 	distPath := filepath.Join(currentDir, "../emailbuilder/dist")
-
-	// 获取绝对路径
 	absDistPath, err := filepath.Abs(distPath)
 	if err != nil {
 		panic(err)
 	}
-
 	if _, err := os.Stat(absDistPath); os.IsNotExist(err) {
 		panic("Dist directory not found: " + absDistPath)
 	}
 
-	fs := http.FileServer(http.Dir(absDistPath))
-
-	mux.HandleFunc("/email_builder", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/email_builder" {
+	// for /email_builder/* fallback is index.html
+	mux.HandleFunc("/email_builder/", func(w http.ResponseWriter, r *http.Request) {
+		path := strings.TrimPrefix(r.URL.Path, "/email_builder/")
+		if path == "" {
+			path = "index.html"
+		}
+		filePath := filepath.Join(absDistPath, path)
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
 			http.ServeFile(w, r, filepath.Join(absDistPath, "index.html"))
 			return
 		}
-		http.StripPrefix("/email_builder", fs).ServeHTTP(w, r)
+		http.ServeFile(w, r, filePath)
 	})
-	mux.Handle("/email_builder/", http.StripPrefix("/email_builder/", fs))
+
+	// for exactly /email_builder
+	mux.Handle("/email_builder", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, filepath.Join(absDistPath, "index.html"))
+	}))
 	// email_builder register end
 
 	mux.Handle("/", c.pb)
