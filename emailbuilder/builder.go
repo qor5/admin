@@ -147,11 +147,13 @@ func (b *Builder) send(w http.ResponseWriter, r *http.Request) {
 		mailData := MailData{
 			Name: faker.Name(),
 		}
+
 		subjectTmpl, err := GetTemplate(et.Subject)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
 		subject, err := GetContent(subjectTmpl, mailData)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -168,8 +170,10 @@ func (b *Builder) send(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
 		// get ToEmailAddress by config, actually should get it by uid
 		toEmailAddress := LoadToEmailAddress()
+
 		input := &sesv2.SendEmailInput{
 			Content: &types.EmailContent{
 				Raw: nil,

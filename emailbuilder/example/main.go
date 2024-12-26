@@ -13,12 +13,25 @@ import (
 
 func main() {
 	mux := http.NewServeMux()
+
+	withCORS := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			if r.Method == http.MethodOptions {
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+
 	db := ConnectDB()
 	eb := emailbuilder.ConfigEmailBuilder(db)
 	mux.Handle("/email_template/", http.StripPrefix("/email_template", eb))
+
 	fmt.Println("Listen on http://localhost:9800")
-	err := http.ListenAndServe(":9800", mux)
-	if err != nil {
+	if err := http.ListenAndServe(":9800", withCORS(mux)); err != nil {
 		panic(err)
 	}
 }
