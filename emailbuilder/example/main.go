@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/qor5/admin/v3/email"
+	"github.com/qor5/admin/v3/emailbuilder"
 	"github.com/theplant/osenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -14,7 +14,7 @@ import (
 func main() {
 	mux := http.NewServeMux()
 	db := ConnectDB()
-	eb := email.ConfigEmailBuilder(db)
+	eb := emailbuilder.ConfigEmailBuilder(db)
 	mux.Handle("/email_template/", http.StripPrefix("/email_template", eb))
 	fmt.Println("Listen on http://localhost:9800")
 	err := http.ListenAndServe(":9800", mux)
