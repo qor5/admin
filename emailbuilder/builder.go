@@ -72,14 +72,14 @@ func (b *Builder) createTemplate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid subject", http.StatusBadRequest)
 		return
 	}
-	if _, err := GetTemplate(et.JSONBody); err != nil {
-		http.Error(w, "invalid json body", http.StatusBadRequest)
-		return
-	}
-	if _, err := GetTemplate(et.HTMLBody); err != nil {
-		http.Error(w, "invalid html body", http.StatusBadRequest)
-		return
-	}
+	// if _, err := GetTemplate(et.JSONBody); err != nil {
+	// 	http.Error(w, "invalid json body", http.StatusBadRequest)
+	// 	return
+	// }
+	// if _, err := GetTemplate(et.HTMLBody); err != nil {
+	// 	http.Error(w, "invalid html body", http.StatusBadRequest)
+	// 	return
+	// }
 	// save in db
 	if err := b.db.Create(&et).Error; err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
