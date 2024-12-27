@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"os"
 	"reflect"
 	"strings"
 
@@ -29,4 +30,8 @@ func GetObjectName(obj interface{}) string {
 	modelstr := modelType.String()
 	modelName := modelstr[strings.LastIndex(modelstr, ".")+1:]
 	return inflection.Plural(strcase.ToKebab(modelName))
+}
+
+func IsDevelopment() bool {
+	return strings.ToLower(os.Getenv("IS_DEV")) == "true"
 }
