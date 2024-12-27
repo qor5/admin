@@ -130,7 +130,7 @@ func Router(db *gorm.DB) http.Handler {
 			if path == "" {
 				path = "index.html"
 			}
-			if strings.Contains(path, "..") || strings.Contains(path, "/") || strings.Contains(path, "\\") {
+			if strings.Contains(path, "..") || strings.Contains(path, "\\") {
 				http.Error(w, "Invalid file name", http.StatusBadRequest)
 				return
 			}
