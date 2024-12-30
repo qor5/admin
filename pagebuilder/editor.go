@@ -145,6 +145,11 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 		}
 		afterLeaveEvent := removeVirtualElement()
 		addOverlay := web.Scope(
+			h.Div().Style("display:none").Attr("v-on-mounted", `({watch})=>{
+					watch(() => vars.overlay, (value) => {
+						if(value){xLocals.add=false;}
+						})
+				}`),
 			vx.VXOverlay(
 				m.newContainerContent(ctx),
 			).
