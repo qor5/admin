@@ -296,7 +296,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 			locals.__pageBuilderLeftContentKeepScrollFlag=true;
 			}`, ctx.Param(paramContainerDataID))).
 			Attr(":disabled", "vars.__pageBuilderAddContainerBtnDisabled").
-			Attr("@click", appendVirtualElement()+web.Plaid().PushState(true).ClearMergeQuery([]string{paramContainerID}).RunPushState()+";vars.containerPreview=false;vars.overlay=true;vars.overlayEl.refs.overlay.showByElement($event)"),
+			Attr("@click", appendVirtualElement()+web.Plaid().PushState(true).ClearMergeQuery([]string{paramContainerID}).RunPushState()+";vars.containerPreview=false;vars.overlay=true;"),
 	).Init(h.JSONString(sorterData)).VSlot("{ locals:sortLocals,form }")
 	return
 }
@@ -493,7 +493,7 @@ func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.Event
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr    = presets.MustGetMessages(ctx.R)
 		okAction = web.Plaid().
-				EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
+			EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
 		portalName = dialogPortalName
 	)
 
