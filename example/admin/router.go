@@ -6,15 +6,13 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/qor5/x/v3/login"
 	"github.com/qor5/x/v3/sitemap"
 	"gorm.io/gorm"
 
+	emailbuilder "github.com/qor5/admin/v3/emailbuilder"
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/role"
 	"github.com/qor5/admin/v3/utils"
@@ -98,54 +96,20 @@ func Router(db *gorm.DB) http.Handler {
 
 	mux.Handle("/page_builder/", c.pageBuilder)
 
-	// email_builder  start
 	if utils.IsDevelopment() {
-
 		// development mode：reverse proxy to Vite http server
 		proxy, err := NewReverseProxy("http://localhost:3000/email_builder/")
 		if err != nil {
-			fmt.Printf("%s", fmt.Sprintf("Failed to create reverse proxy: %v", err))
+			fmt.Printf("Failed to create reverse proxy: %v", err)
 		}
-
 		mux.Handle("/email_builder/", http.StripPrefix("/email_builder", proxy))
 		mux.Handle("/email_builder", http.RedirectHandler("/email_builder/", http.StatusMovedPermanently))
 	} else {
-		currentDir, err := os.Getwd()
-		if err != nil {
-			panic(err)
-		}
+		distFS := http.FS(emailbuilder.EmailBuilderDist)
+		fsHandler := http.StripPrefix("/email_builder/", http.FileServer(distFS))
 
-		distPath := filepath.Join(currentDir, "../emailbuilder/dist")
-		absDistPath, err := filepath.Abs(distPath)
-		if err != nil {
-			panic(err)
-		}
-		if _, err := os.Stat(absDistPath); os.IsNotExist(err) {
-			panic("Dist directory not found: " + absDistPath)
-		}
-
-		// for /email_builder/* fallback is index.html
-		mux.HandleFunc("/email_builder/", func(w http.ResponseWriter, r *http.Request) {
-			path := strings.TrimPrefix(r.URL.Path, "/email_builder/")
-			if path == "" {
-				path = "index.html"
-			}
-			if strings.Contains(path, "..") || strings.Contains(path, "\\") {
-				http.Error(w, "Invalid file name", http.StatusBadRequest)
-				return
-			}
-			filePath := filepath.Join(absDistPath, path)
-			if _, err := os.Stat(filePath); os.IsNotExist(err) {
-				http.ServeFile(w, r, filepath.Join(absDistPath, "index.html"))
-				return
-			}
-			http.ServeFile(w, r, filePath)
-		})
-
-		// for exactly /email_builder
-		mux.Handle("/email_builder", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			http.ServeFile(w, r, filepath.Join(absDistPath, "index.html"))
-		}))
+		mux.Handle("/email_builder/", fsHandler)
+		mux.Handle("/email_builder", http.RedirectHandler("/email_builder/", http.StatusMovedPermanently))
 	}
 	// email_builder register end
 
