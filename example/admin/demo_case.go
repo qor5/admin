@@ -883,9 +883,9 @@ func configVxBtn(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder) 
 						v.VCol(
 							h.Div(h.Text("x-small")).Class("mb-2"),
 							vx.VXBtn("").Presets("x-small").Color("black").Children(
-								h.Slot(v.VIcon("mdi-refresh")).Name("prepend"),
+								web.Slot(v.VIcon("mdi-refresh")).Name("prepend"),
 								h.Text("Button"),
-								h.Slot(v.VIcon("mdi-refresh")).Name("append"),
+								web.Slot(v.VIcon("mdi-refresh")).Name("append"),
 							),
 							h.Div(h.Text("(stacked)")).Class("my-2"),
 							vx.VXBtn("Button").Presets("x-small").Color("black").Stacked(true).
@@ -1313,10 +1313,8 @@ func configVXChip(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder)
 						Variant("tonal").
 						Color("success").
 						Children(
-							h.Slot(
-								v.VIcon("mdi-radiobox-marked").Class("mr-1"),
-								h.Text("Online"),
-							).Name("prepend"),
+							web.Slot().Children(v.VIcon("mdi-radiobox-marked").Class("mr-1")).Name("prepend"),
+							h.Text("Online"),
 						),
 				).Cols("3").Class("text-center"),
 
@@ -1326,7 +1324,7 @@ func configVXChip(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder)
 						Variant("tonal").
 						Color("success").
 						Children(
-							h.Slot(
+							web.Slot(
 								h.Text("Online"),
 								v.VIcon("mdi-radiobox-marked").Class("ml-1"),
 							).Name("append"),
@@ -1339,7 +1337,7 @@ func configVXChip(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder)
 						Round(true).
 						Color("black").
 						Children(
-							h.Slot(
+							web.Slot(
 								v.VIcon("mdi-radiobox-marked").Class("mr-1"),
 								h.Text("Button"),
 							).Name("prepend"),
@@ -1352,7 +1350,7 @@ func configVXChip(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder)
 						Round(true).
 						Color("black").
 						Children(
-							h.Slot(
+							web.Slot(
 								h.Text("Button"),
 								v.VIcon("mdi-radiobox-marked").Class("ml-1"),
 							).Name("append"),
