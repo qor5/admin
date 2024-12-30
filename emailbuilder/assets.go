@@ -8,5 +8,5 @@ import (
 //go:embed dist
 var embeddedDist embed.FS
 
-// EmailBuilderDist 返回 dist 目录的文件系统
+// EmailBuilderDist return dist
 var EmailBuilderDist, _ = fs.Sub(embeddedDist, "dist")
