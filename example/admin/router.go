@@ -1,11 +1,15 @@
 package admin
 
 import (
+	"bytes"
 	_ "embed"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/qor5/x/v3/login"
@@ -105,11 +109,49 @@ func Router(db *gorm.DB) http.Handler {
 		mux.Handle("/email_builder/", http.StripPrefix("/email_builder", proxy))
 		mux.Handle("/email_builder", http.RedirectHandler("/email_builder/", http.StatusMovedPermanently))
 	} else {
-		distFS := http.FS(emailbuilder.EmailBuilderDist)
-		fsHandler := http.StripPrefix("/email_builder/", http.FileServer(distFS))
 
-		mux.Handle("/email_builder/", fsHandler)
-		mux.Handle("/email_builder", http.RedirectHandler("/email_builder/", http.StatusMovedPermanently))
+		// for /email_builder/* fallback is index.html
+		mux.Handle("/email_builder/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			path := strings.TrimPrefix(r.URL.Path, "/email_builder/")
+			if path == "" {
+				path = "index.html"
+			}
+			if strings.Contains(path, "..") || strings.Contains(path, "\\") {
+				http.Error(w, "Invalid file name", http.StatusBadRequest)
+				return
+			}
+			file, err := emailbuilder.EmailBuilderDist.Open(path)
+			if os.IsNotExist(err) {
+				file, _ = emailbuilder.EmailBuilderDist.Open("index.html")
+			}
+			fileInfo, err := file.Stat()
+			if err != nil {
+				http.Error(w, "Error reading file info", http.StatusInternalServerError)
+				return
+			}
+			content, err := io.ReadAll(file)
+			if err != nil {
+				http.Error(w, "Error reading file", http.StatusInternalServerError)
+				return
+			}
+			http.ServeContent(w, r, path, fileInfo.ModTime(), bytes.NewReader(content))
+		}))
+
+		// for exactly /email_builder
+		mux.Handle("/email_builder", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			file, _ := emailbuilder.EmailBuilderDist.Open("index.html")
+			fileInfo, err := file.Stat()
+			if err != nil {
+				http.Error(w, "Error reading file info", http.StatusInternalServerError)
+				return
+			}
+			content, err := io.ReadAll(file)
+			if err != nil {
+				http.Error(w, "Error reading file", http.StatusInternalServerError)
+				return
+			}
+			http.ServeContent(w, r, "index.html", fileInfo.ModTime(), bytes.NewReader(content))
+		}))
 	}
 	// email_builder register end
 
