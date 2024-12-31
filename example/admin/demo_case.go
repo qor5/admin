@@ -879,78 +879,80 @@ func configVxBtn(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder) 
 						).Cols(3).Class("text-center"),
 					),
 					v.VRow(v.VCol(h.Text("Through slots"))),
+					v.VContainer(
+						v.VRow(
+							v.VCol(
+								h.Div(h.Text("x-small")).Class("mb-2"),
+								vx.VXBtn("").Presets("x-small").Color("black").Children(
+									web.Slot(v.VIcon("mdi-refresh")).Name("prepend"),
+									h.Text("Button"),
+									web.Slot(v.VIcon("mdi-refresh")).Name("append"),
+								),
+								h.Div(h.Text("(stacked)")).Class("my-2"),
+								vx.VXBtn("Button").Presets("x-small").Color("black").Stacked(true).
+									PrependIcon("mdi-refresh").
+									AppendIcon("mdi-refresh"),
+							).Cols(3).Class("text-center"),
+							v.VCol(
+								h.Div(h.Text("small")).Class("mb-2"),
+								vx.VXBtn("Button").Presets("small").Color("black").
+									PrependIcon("mdi-refresh").
+									AppendIcon("mdi-refresh"),
+								h.Div(h.Text("(stacked)")).Class("my-2"),
+								vx.VXBtn("Button").Presets("small").Color("black").Stacked(true).
+									PrependIcon("mdi-refresh").
+									AppendIcon("mdi-refresh"),
+							).Cols(3).Class("text-center"),
+							v.VCol(
+								h.Div(h.Text("default")).Class("mb-2"),
+								vx.VXBtn("Button").Color("black").
+									PrependIcon("mdi-refresh").
+									AppendIcon("mdi-refresh"),
+								h.Div(h.Text("(stacked)")).Class("my-2"),
+								vx.VXBtn("Button").Color("black").Stacked(true).
+									PrependIcon("mdi-refresh").
+									AppendIcon("mdi-refresh"),
+							).Cols(3).Class("text-center"),
+							v.VCol(
+								h.Div(h.Text("large")).Class("mb-2"),
+								vx.VXBtn("Button").Presets("large").Color("black").
+									PrependIcon("mdi-refresh").
+									AppendIcon("mdi-refresh"),
+								h.Div(h.Text("(stacked)")).Class("my-2"),
+								vx.VXBtn("Button").Presets("large").Color("black").Stacked(true).
+									PrependIcon("mdi-refresh").
+									AppendIcon("mdi-refresh"),
+							).Cols(3).Class("text-center"),
+						)),
+				),
+				h.H3("Usage with only Icon"),
+				v.VContainer(
 					v.VRow(
 						v.VCol(
 							h.Div(h.Text("x-small")).Class("mb-2"),
-							vx.VXBtn("").Presets("x-small").Color("black").Children(
-								h.Slot(v.VIcon("mdi-refresh")).Name("prepend"),
-								h.Text("Button"),
-								h.Slot(v.VIcon("mdi-refresh")).Name("append"),
-							),
-							h.Div(h.Text("(stacked)")).Class("my-2"),
-							vx.VXBtn("Button").Presets("x-small").Color("black").Stacked(true).
-								PrependIcon("mdi-refresh").
-								AppendIcon("mdi-refresh"),
+							vx.VXBtn("").Presets("x-small").Icon("mdi-plus-circle-outline"),
+							h.Div(h.Text("(rounded)")).Class("my-2"),
+							vx.VXBtn("").Presets("x-small").Icon("mdi-plus-circle-outline").Rounded(true),
 						).Cols(3).Class("text-center"),
 						v.VCol(
 							h.Div(h.Text("small")).Class("mb-2"),
-							vx.VXBtn("Button").Presets("small").Color("black").
-								PrependIcon("mdi-refresh").
-								AppendIcon("mdi-refresh"),
-							h.Div(h.Text("(stacked)")).Class("my-2"),
-							vx.VXBtn("Button").Presets("small").Color("black").Stacked(true).
-								PrependIcon("mdi-refresh").
-								AppendIcon("mdi-refresh"),
+							vx.VXBtn("").Presets("small").Icon("mdi-plus-circle-outline"),
+							h.Div(h.Text("(rounded)")).Class("my-2"),
+							vx.VXBtn("").Presets("small").Icon("mdi-plus-circle-outline").Rounded(true),
 						).Cols(3).Class("text-center"),
 						v.VCol(
 							h.Div(h.Text("default")).Class("mb-2"),
-							vx.VXBtn("Button").Color("black").
-								PrependIcon("mdi-refresh").
-								AppendIcon("mdi-refresh"),
-							h.Div(h.Text("(stacked)")).Class("my-2"),
-							vx.VXBtn("Button").Color("black").Stacked(true).
-								PrependIcon("mdi-refresh").
-								AppendIcon("mdi-refresh"),
+							vx.VXBtn("").Icon("mdi-plus-circle-outline"),
+							h.Div(h.Text("(rounded)")).Class("my-2"),
+							vx.VXBtn("").Icon("mdi-plus-circle-outline").Rounded(true),
 						).Cols(3).Class("text-center"),
 						v.VCol(
 							h.Div(h.Text("large")).Class("mb-2"),
-							vx.VXBtn("Button").Presets("large").Color("black").
-								PrependIcon("mdi-refresh").
-								AppendIcon("mdi-refresh"),
-							h.Div(h.Text("(stacked)")).Class("my-2"),
-							vx.VXBtn("Button").Presets("large").Color("black").Stacked(true).
-								PrependIcon("mdi-refresh").
-								AppendIcon("mdi-refresh"),
+							vx.VXBtn("").Presets("large").Icon("mdi-plus-circle-outline"),
+							h.Div(h.Text("(rounded)")).Class("my-2"),
+							vx.VXBtn("").Presets("large").Icon("mdi-plus-circle-outline").Rounded(true),
 						).Cols(3).Class("text-center"),
-					),
-				),
-				h.H3("Usage with only Icon"),
-				v.VRow(
-					v.VCol(
-						h.Div(h.Text("x-small")).Class("mb-2"),
-						vx.VXBtn("").Presets("x-small").Icon("mdi-plus-circle-outline"),
-						h.Div(h.Text("(rounded)")).Class("my-2"),
-						vx.VXBtn("").Presets("x-small").Icon("mdi-plus-circle-outline").Rounded(true),
-					).Cols(3).Class("text-center"),
-					v.VCol(
-						h.Div(h.Text("small")).Class("mb-2"),
-						vx.VXBtn("").Presets("small").Icon("mdi-plus-circle-outline"),
-						h.Div(h.Text("(rounded)")).Class("my-2"),
-						vx.VXBtn("").Presets("small").Icon("mdi-plus-circle-outline").Rounded(true),
-					).Cols(3).Class("text-center"),
-					v.VCol(
-						h.Div(h.Text("default")).Class("mb-2"),
-						vx.VXBtn("").Icon("mdi-plus-circle-outline"),
-						h.Div(h.Text("(rounded)")).Class("my-2"),
-						vx.VXBtn("").Icon("mdi-plus-circle-outline").Rounded(true),
-					).Cols(3).Class("text-center"),
-					v.VCol(
-						h.Div(h.Text("large")).Class("mb-2"),
-						vx.VXBtn("").Presets("large").Icon("mdi-plus-circle-outline"),
-						h.Div(h.Text("(rounded)")).Class("my-2"),
-						vx.VXBtn("").Presets("large").Icon("mdi-plus-circle-outline").Rounded(true),
-					).Cols(3).Class("text-center"),
-				),
+					)),
 			).Class("section-wrap with-border-b"),
 		)
 	})
@@ -1210,155 +1212,222 @@ func configVXChip(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder)
 			).Class("section-title-wrap"),
 
 			h.H3("Color and Shapes"),
-			v.VRow(
-				v.VCol(
-					h.Div(h.Text("primary")).Class("mb-2"),
-					vx.VXChip("badge"),
-					h.Div(h.Text("(round)")).Class("my-2"),
-					vx.VXChip("badge").Round(true),
-					h.Div(h.Text("(disabled)")).Class("my-2"),
-					vx.VXChip("badge").Disabled(true),
-				).Cols("2").Class("text-center"),
+			v.VContainer(
+				v.VRow(
+					v.VCol(
+						h.Div(h.Text("primary")).Class("mb-2"),
+						vx.VXChip("badge"),
+						h.Div(h.Text("(round)")).Class("my-2"),
+						vx.VXChip("badge").Round(true),
+						h.Div(h.Text("(disabled)")).Class("my-2"),
+						vx.VXChip("badge").Disabled(true),
+					).Cols("2").Class("text-center"),
 
-				v.VCol(
-					h.Div(h.Text("secondary")).Class("mb-2"),
-					vx.VXChip("badge").Color("secondary"),
-					h.Div(h.Text("(round)")).Class("my-2"),
-					vx.VXChip("badge").Round(true).Color("secondary"),
-					h.Div(h.Text("(disabled)")).Class("my-2"),
-					vx.VXChip("badge").Disabled(true).Color("secondary"),
-				).Cols("2").Class("text-center"),
+					v.VCol(
+						h.Div(h.Text("secondary")).Class("mb-2"),
+						vx.VXChip("badge").Color("secondary"),
+						h.Div(h.Text("(round)")).Class("my-2"),
+						vx.VXChip("badge").Round(true).Color("secondary"),
+						h.Div(h.Text("(disabled)")).Class("my-2"),
+						vx.VXChip("badge").Disabled(true).Color("secondary"),
+					).Cols("2").Class("text-center"),
 
-				v.VCol(
-					h.Div(h.Text("info")).Class("mb-2"),
-					vx.VXChip("badge").Color("info"),
-					h.Div(h.Text("(round)")).Class("my-2"),
-					vx.VXChip("badge").Round(true).Color("info"),
-					h.Div(h.Text("(disabled)")).Class("my-2"),
-					vx.VXChip("badge").Disabled(true).Color("info"),
-				).Cols("2").Class("text-center"),
+					v.VCol(
+						h.Div(h.Text("info")).Class("mb-2"),
+						vx.VXChip("badge").Color("info"),
+						h.Div(h.Text("(round)")).Class("my-2"),
+						vx.VXChip("badge").Round(true).Color("info"),
+						h.Div(h.Text("(disabled)")).Class("my-2"),
+						vx.VXChip("badge").Disabled(true).Color("info"),
+					).Cols("2").Class("text-center"),
 
-				v.VCol(
-					h.Div(h.Text("success")).Class("mb-2"),
-					vx.VXChip("badge").Color("success"),
-					h.Div(h.Text("(round)")).Class("my-2"),
-					vx.VXChip("badge").Round(true).Color("success"),
-					h.Div(h.Text("(disabled)")).Class("my-2"),
-					vx.VXChip("badge").Disabled(true).Color("success"),
-				).Cols("2").Class("text-center"),
+					v.VCol(
+						h.Div(h.Text("success")).Class("mb-2"),
+						vx.VXChip("badge").Color("success"),
+						h.Div(h.Text("(round)")).Class("my-2"),
+						vx.VXChip("badge").Round(true).Color("success"),
+						h.Div(h.Text("(disabled)")).Class("my-2"),
+						vx.VXChip("badge").Disabled(true).Color("success"),
+					).Cols("2").Class("text-center"),
 
-				v.VCol(
-					h.Div(h.Text("warning")).Class("mb-2"),
-					vx.VXChip("badge").Color("warning"),
-					h.Div(h.Text("(round)")).Class("my-2"),
-					vx.VXChip("badge").Round(true).Color("warning"),
-					h.Div(h.Text("(disabled)")).Class("my-2"),
-					vx.VXChip("badge").Disabled(true).Color("warning"),
-				).Cols("2").Class("text-center"),
+					v.VCol(
+						h.Div(h.Text("warning")).Class("mb-2"),
+						vx.VXChip("badge").Color("warning"),
+						h.Div(h.Text("(round)")).Class("my-2"),
+						vx.VXChip("badge").Round(true).Color("warning"),
+						h.Div(h.Text("(disabled)")).Class("my-2"),
+						vx.VXChip("badge").Disabled(true).Color("warning"),
+					).Cols("2").Class("text-center"),
 
-				v.VCol(
-					h.Div(h.Text("error")).Class("mb-2"),
-					vx.VXChip("badge").Color("error"),
-					h.Div(h.Text("(round)")).Class("my-2"),
-					vx.VXChip("badge").Round(true).Color("error"),
-					h.Div(h.Text("(disabled)")).Class("my-2"),
-					vx.VXChip("badge").Disabled(true).Color("error"),
-				).Cols("2").Class("text-center"),
-			),
+					v.VCol(
+						h.Div(h.Text("error")).Class("mb-2"),
+						vx.VXChip("badge").Color("error"),
+						h.Div(h.Text("(round)")).Class("my-2"),
+						vx.VXChip("badge").Round(true).Color("error"),
+						h.Div(h.Text("(disabled)")).Class("my-2"),
+						vx.VXChip("badge").Disabled(true).Color("error"),
+					).Cols("2").Class("text-center"),
+				)),
 
 			h.H3("Variant"),
-			v.VRow(
-				v.VCol(h.Text("Through props")),
-			),
-			v.VRow(
-				v.VCol(
-					h.Div(h.Text("prepend-icon")).Class("mb-2"),
-					vx.VXChip("Online").
-						PrependIcon("mdi-radiobox-marked").
-						Variant("tonal").
-						Color("success"),
-				).Cols("3").Class("text-center"),
+			v.VContainer(
+				v.VRow(
+					v.VCol(
+						h.Div(h.Text("elevated")).Class("my-2"),
+						vx.VXChip("Badge").Variant("elevated").Color("primary"),
+						vx.VXChip("Badge").Variant("elevated").Color("secondary"),
+						vx.VXChip("Badge").Variant("elevated").Color("info"),
+						vx.VXChip("Badge").Variant("elevated").Color("success"),
+						vx.VXChip("Badge").Variant("elevated").Color("warning"),
+						vx.VXChip("Badge").Variant("elevated").Color("error"),
+					).Cols("2").Class("text-center"),
 
-				v.VCol(
-					h.Div(h.Text("append-icon")).Class("mb-2"),
-					vx.VXChip("Offline").
-						AppendIcon("mdi-close").
-						Variant("tonal"),
-				).Cols("3").Class("text-center"),
+					v.VCol(
+						h.Div(h.Text("tonal")).Class("my-2"),
+						vx.VXChip("Badge").Variant("tonal").Color("primary"),
+						vx.VXChip("Badge").Variant("tonal").Color("secondary"),
+						vx.VXChip("Badge").Variant("tonal").Color("info"),
+						vx.VXChip("Badge").Variant("tonal").Color("success"),
+						vx.VXChip("Badge").Variant("tonal").Color("warning"),
+						vx.VXChip("Badge").Variant("tonal").Color("error"),
+					).Cols("2").Class("text-center"),
 
-				v.VCol(
-					h.Div(h.Text("prepend-icon(round)")).Class("mb-2"),
-					vx.VXChip("Button").
-						Round(true).
-						PrependIcon("mdi-radiobox-marked").
-						Color("black"),
-				).Cols("3").Class("text-center"),
+					v.VCol(
+						h.Div(h.Text("outlined")).Class("my-2"),
+						vx.VXChip("Badge").Variant("outlined").Color("primary"),
+						vx.VXChip("Badge").Variant("outlined").Color("secondary"),
+						vx.VXChip("Badge").Variant("outlined").Color("info"),
+						vx.VXChip("Badge").Variant("outlined").Color("success"),
+						vx.VXChip("Badge").Variant("outlined").Color("warning"),
+						vx.VXChip("Badge").Variant("outlined").Color("error"),
+					).Cols("2").Class("text-center"),
 
-				v.VCol(
-					h.Div(h.Text("prepend-icon(round)")).Class("mb-2"),
-					vx.VXChip("Button").
-						Round(true).
-						AppendIcon("mdi-radiobox-marked").
-						Color("black"),
-				).Cols("3").Class("text-center"),
-			),
+					v.VCol(
+						h.Div(h.Text("flat")).Class("my-2"),
+						vx.VXChip("Badge").Variant("flat").Color("primary"),
+						vx.VXChip("Badge").Variant("flat").Color("secondary"),
+						vx.VXChip("Badge").Variant("flat").Color("info"),
+						vx.VXChip("Badge").Variant("flat").Color("success"),
+						vx.VXChip("Badge").Variant("flat").Color("warning"),
+						vx.VXChip("Badge").Variant("flat").Color("error"),
+					).Cols("2").Class("text-center"),
 
-			v.VRow(
-				v.VCol(h.Text("Through slot")),
-			),
-			v.VRow(
-				v.VCol(
-					h.Div(h.Text("prepend-icon")).Class("mb-2"),
-					vx.VXChip("Online").
-						Variant("tonal").
-						Color("success").
-						Children(
-							h.Slot(
-								v.VIcon("mdi-radiobox-marked").Class("mr-1"),
+					v.VCol(
+						h.Div(h.Text("plain")).Class("my-2"),
+						vx.VXChip("Badge").Variant("plain").Color("primary"),
+						vx.VXChip("Badge").Variant("plain").Color("secondary"),
+						vx.VXChip("Badge").Variant("plain").Color("info"),
+						vx.VXChip("Badge").Variant("plain").Color("success"),
+						vx.VXChip("Badge").Variant("plain").Color("warning"),
+						vx.VXChip("Badge").Variant("plain").Color("error"),
+					).Cols("2").Class("text-center"),
+
+					v.VCol(
+						h.Div(h.Text("text")).Class("my-2"),
+						vx.VXChip("text").Variant("plain").Color("primary"),
+						vx.VXChip("text").Variant("plain").Color("secondary"),
+						vx.VXChip("text").Variant("plain").Color("info"),
+						vx.VXChip("text").Variant("plain").Color("success"),
+						vx.VXChip("text").Variant("plain").Color("warning"),
+						vx.VXChip("text").Variant("plain").Color("error"),
+					).Cols("2").Class("text-center"),
+				)),
+
+			h.H3("Usage with Icon"),
+			v.VContainer(
+				v.VRow(
+					v.VCol(h.Text("Through props")),
+				),
+				v.VRow(
+					v.VCol(
+						h.Div(h.Text("prepend-icon")).Class("mb-2"),
+						vx.VXChip("Online").
+							PrependIcon("mdi-radiobox-marked").
+							Variant("tonal").
+							Color("success"),
+					).Cols("3").Class("text-center"),
+
+					v.VCol(
+						h.Div(h.Text("append-icon")).Class("mb-2"),
+						vx.VXChip("Offline").
+							Color("").
+							AppendIcon("mdi-close").
+							Variant("tonal"),
+					).Cols("3").Class("text-center"),
+
+					v.VCol(
+						h.Div(h.Text("prepend-icon(round)")).Class("mb-2"),
+						vx.VXChip("Button").
+							Round(true).
+							PrependIcon("mdi-radiobox-marked").
+							Color("black"),
+					).Cols("3").Class("text-center"),
+
+					v.VCol(
+						h.Div(h.Text("prepend-icon(round)")).Class("mb-2"),
+						vx.VXChip("Button").
+							Round(true).
+							AppendIcon("mdi-radiobox-marked").
+							Color("black"),
+					).Cols("3").Class("text-center"),
+				),
+
+				v.VRow(
+					v.VCol(h.Text("Through slot")),
+				),
+				v.VRow(
+					v.VCol(
+						h.Div(h.Text("prepend-icon")).Class("mb-2"),
+						vx.VXChip("Online").
+							Variant("tonal").
+							Color("success").
+							Children(
+								web.Slot().Children(
+									v.VIcon("mdi-radiobox-marked").Class("mr-1"),
+								).Name("prepend"),
 								h.Text("Online"),
-							).Name("prepend"),
-						),
-				).Cols("3").Class("text-center"),
+							),
+					).Cols("3").Class("text-center"),
 
-				v.VCol(
-					h.Div(h.Text("append-icon")).Class("mb-2"),
-					vx.VXChip("Online").
-						Variant("tonal").
-						Color("success").
-						Children(
-							h.Slot(
+					v.VCol(
+						h.Div(h.Text("append-icon")).Class("mb-2"),
+						vx.VXChip("Online").
+							Variant("tonal").
+							Color("success").
+							Children(
 								h.Text("Online"),
-								v.VIcon("mdi-radiobox-marked").Class("ml-1"),
-							).Name("append"),
-						),
-				).Cols("3").Class("text-center"),
+								web.Slot(
+									v.VIcon("mdi-radiobox-marked").Class("ml-1"),
+								).Name("append"),
+							),
+					).Cols("3").Class("text-center"),
 
-				v.VCol(
-					h.Div(h.Text("prepend-icon(round)")).Class("mb-2"),
-					vx.VXChip("Button").
-						Round(true).
-						Color("black").
-						Children(
-							h.Slot(
-								v.VIcon("mdi-radiobox-marked").Class("mr-1"),
+					v.VCol(
+						h.Div(h.Text("prepend-icon(round)")).Class("mb-2"),
+						vx.VXChip("Button").
+							Round(true).
+							Color("black").
+							Children(
 								h.Text("Button"),
-							).Name("prepend"),
-						),
-				).Cols("3").Class("text-center"),
+								web.Slot(
+									v.VIcon("mdi-radiobox-marked").Class("mr-1"),
+								).Name("prepend"),
+							),
+					).Cols("3").Class("text-center"),
 
-				v.VCol(
-					h.Div(h.Text("prepend-icon(round)")).Class("mb-2"),
-					vx.VXChip("Button").
-						Round(true).
-						Color("black").
-						Children(
-							h.Slot(
+					v.VCol(
+						h.Div(h.Text("prepend-icon(round)")).Class("mb-2"),
+						vx.VXChip("Button").
+							Round(true).
+							Color("black").
+							Children(
 								h.Text("Button"),
-								v.VIcon("mdi-radiobox-marked").Class("ml-1"),
-							).Name("append"),
-						),
-				).Cols("3").Class("text-center"),
-			),
+								web.Slot(
+									v.VIcon("mdi-radiobox-marked").Class("ml-1"),
+								).Name("append"),
+							),
+					).Cols("3").Class("text-center"),
+				)),
 		).Class("section-wrap with-border-b"))
 	})
 	detailing.Section(section)
