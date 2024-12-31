@@ -1282,6 +1282,7 @@ func configVXChip(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder)
 				v.VCol(
 					h.Div(h.Text("append-icon")).Class("mb-2"),
 					vx.VXChip("Offline").
+						Color("").
 						AppendIcon("mdi-close").
 						Variant("tonal"),
 				).Cols("3").Class("text-center"),
