@@ -1,10 +1,10 @@
 package emailbuilder
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
@@ -54,21 +54,20 @@ func ConfigMailTemplate(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder 
 	lb := mb.Listing("ID", "Subject").NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
 		return h.Div(vx.VXBtn().Href("https://baidu.com"))
 	})
-	lb.WrapCell(func(in presets.CellProcessor) presets.CellProcessor {
-		return func(evCtx *web.EventContext, cell h.MutableAttrHTMLComponent, id string, obj any) (h.MutableAttrHTMLComponent, error) {
-			event := actions.Edit
-			onClick := web.Plaid().EventFunc(event).Query(presets.ParamID, id)
-			cell.SetAttr("@click", onClick.Go())
-			return cell, nil
-		}
-	})
-	dp := mb.Detailing()
+	_ = lb
+	dp := mb.Detailing("Demo")
 	_ = dp
-	eb := mb.Editing()
-	eb.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
-		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-			return in(obj, id, ctx)
-		}
+	dp.Field("Demo").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		et := obj.(*MailTemplate)
+		fmt.Println(et.ID)
+		fmt.Println(et.Subject)
+		return h.Iframe().Src("https://baidu.com")
 	})
+	// eb := mb.Editing()
+	// eb.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+	// 	return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+	// 		return in(obj, id, ctx)
+	// 	}
+	// })
 	return mb
 }
