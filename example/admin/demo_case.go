@@ -1324,8 +1324,8 @@ func configVXChip(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder)
 						Variant("tonal").
 						Color("success").
 						Children(
+							h.Text("Online"),
 							web.Slot(
-								h.Text("Online"),
 								v.VIcon("mdi-radiobox-marked").Class("ml-1"),
 							).Name("append"),
 						),
@@ -1337,9 +1337,9 @@ func configVXChip(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder)
 						Round(true).
 						Color("black").
 						Children(
+							h.Text("Button"),
 							web.Slot(
 								v.VIcon("mdi-radiobox-marked").Class("mr-1"),
-								h.Text("Button"),
 							).Name("prepend"),
 						),
 				).Cols("3").Class("text-center"),
@@ -1350,8 +1350,8 @@ func configVXChip(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder)
 						Round(true).
 						Color("black").
 						Children(
+							h.Text("Button"),
 							web.Slot(
-								h.Text("Button"),
 								v.VIcon("mdi-radiobox-marked").Class("ml-1"),
 							).Name("append"),
 						),
