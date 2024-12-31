@@ -7,7 +7,6 @@ import (
 	"html/template"
 	"net/http"
 	"net/mail"
-	"os"
 	"strconv"
 	"strings"
 
@@ -261,34 +260,6 @@ type SendResult struct {
 
 type UnifyResponse struct {
 	Data interface{} `json:"data"`
-}
-
-func LoadToEmailAddress() string {
-	to := os.Getenv("TO_ADDRESS")
-	if to == "" {
-		panic("please set TO_ADDRESS env")
-	}
-	return to
-}
-
-func LoadSenderConfig() (config SESDriverConfig) {
-	from := os.Getenv("FROM_ADDRESS")
-	if from == "" {
-		panic("please set FROM_ADDRESS env")
-	}
-	return SESDriverConfig{
-		FromEmailAddress:               from,
-		FromName:                       "ciam",
-		SubjectCharset:                 "UTF-8",
-		HTMLBodyCharset:                "UTF-8",
-		TextBodyCharset:                "UTF-8",
-		ConfigurationSetName:           "",
-		FeedbackForwardingEmailAddress: "",
-		FeedbackForwardingEmailAddressIdentityArn: "",
-		FromEmailAddressIdentityArn:               "",
-		ContactListName:                           "",
-		TopicName:                                 "",
-	}
 }
 
 type MailData struct {
