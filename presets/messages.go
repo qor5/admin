@@ -415,7 +415,7 @@ var Messages_ja_JP = &Messages{
 	HumanizeTime1Year:     "1 年間%s",
 	HumanizeTime2Years:    "2 年間%s",
 	HumanizeTimeYears:     "%d 年間%s",
-	HumanizeTimeLongWhile: "a long while %s",
+	HumanizeTimeLongWhile: "長い間%s",
 
 	LeaveBeforeUnsubmit: "フォームを送信する前に離れると、すべての未保存の入力が失われます。",
 
