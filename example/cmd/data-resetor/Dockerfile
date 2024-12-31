@@ -5,7 +5,7 @@ COPY . .
 RUN set -x && go get -d -v ./...
 RUN GOOS=linux GOARCH=amd64 go build -o /app/entry ./example/cmd/data-resetor/
 
-FROM alpine:3.20.3
+FROM alpine:3.21.0
 RUN apk --update upgrade && \
     apk add ca-certificates && \
     apk add tzdata && \
