@@ -37,9 +37,9 @@ type Builder struct {
 	findUsersFunc           func(ctx context.Context, ids []string) (map[string]*User, error)
 	maxCountShowInTimeline  int
 	findLogsForTimelineFunc func(ctx context.Context, db *gorm.DB, modelName, modelKeys string) (logs []*ActivityLog, hasMore bool, err error)
-
-	mu               sync.RWMutex
-	logModelBuilders map[*presets.Builder]*presets.ModelBuilder
+	skipResPermCheck        bool
+	mu                      sync.RWMutex
+	logModelBuilders        map[*presets.Builder]*presets.ModelBuilder
 }
 
 // @snippet_end
@@ -56,6 +56,11 @@ func (ab *Builder) WrapLogModelInstall(w func(presets.ModelInstallFunc) presets.
 
 func (ab *Builder) PermPolicy(v *perm.PolicyBuilder) *Builder {
 	ab.permPolicy = v
+	return ab
+}
+
+func (ab *Builder) SkipResPermCheck(v bool) *Builder {
+	ab.skipResPermCheck = v
 	return ab
 }
 

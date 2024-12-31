@@ -763,6 +763,59 @@ func TestActivityAdmin(t *testing.T) {
 				"没有可显示的记录",
 			},
 		},
+
+		{
+			Name:  "Activity logs with skipResPermCheck without PermList",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				pb := presets.New()
+				pb.Permission(
+					perm.New().Policies(
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermList).On("*:presets:with_activity_products:*"),
+					),
+				)
+				activityExample(pb, TestDB, func(mb *presets.ModelBuilder, ab *activity.Builder) {
+					ab.SkipResPermCheck(true)
+					pb.Use(ab)
+				})
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				// activityData.TruncatePut(dbr)
+				return httptest.NewRequest("GET", "/activity-logs?lang=zh", nil)
+			},
+			ExpectPageBodyNotContains: []string{
+				"没有可显示的记录",
+			},
+		},
+
+		{
+			Name:  "Activity log detail for edit action with skipResPermCheck without PermGet",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				pb := presets.New()
+				pb.Permission(
+					perm.New().Policies(
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Allowed).ToDo(perm.Anything).On(perm.Anything),
+						perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermGet).On("*:presets:with_activity_products:*"),
+					),
+				)
+				activityExample(pb, TestDB, func(mb *presets.ModelBuilder, ab *activity.Builder) {
+					ab.SkipResPermCheck(true)
+					pb.Use(ab)
+				})
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				// activityData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/activity-logs?__execute_event__=presets_DetailingDrawer&id=87").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Activity Log", "87"},
+		},
 	}
 
 	for _, c := range cases {
