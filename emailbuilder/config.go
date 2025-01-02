@@ -52,16 +52,22 @@ func LoadSenderConfig() (config SESDriverConfig) {
 func ConfigMailTemplate(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder {
 	mb := pb.Model(&MailTemplate{})
 	lb := mb.Listing("ID", "Subject").NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
-		return h.Div(vx.VXBtn().Href("https://baidu.com"))
+		return h.Div(vx.VXBtn("New").Href("//localhost:9500/email_builder/editor"))
 	})
 	_ = lb
 	dp := mb.Detailing("Demo")
 	_ = dp
 	dp.Field("Demo").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		et := obj.(*MailTemplate)
-		fmt.Println(et.ID)
-		fmt.Println(et.Subject)
-		return h.Iframe().Src("https://baidu.com")
+		// fmt.Println(et.ID)
+		// fmt.Println(et.Subject)
+		return h.Div(
+			h.Iframe().
+				Class("flex-1").
+				Attr("frameborder", "0").
+				Attr("width", "100%").
+				Src(fmt.Sprintf("//localhost:9500/email_builder/editor?id=%d&userId=undefined", et.ID)),
+		).Class("d-flex").Style("height: calc(100vh - 100px - 16px);")
 	})
 	// eb := mb.Editing()
 	// eb.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {

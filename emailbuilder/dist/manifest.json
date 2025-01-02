@@ -1,6 +1,6 @@
 {
   "index.html": {
-    "file": "assets/index.a24b45a2.js",
+    "file": "assets/index.46259fcd.js",
     "src": "index.html",
     "isEntry": true,
     "imports": [
@@ -21,7 +21,7 @@
       "src/templates/Stay Updated On Our Shopping.json",
       "src/templates/We Serve Healthy & Delicious Foods.json",
       "src/templates/St. Patrick Day - Newsletter.json",
-      "_index-58fd6bb3.js"
+      "_index-7d10f4db.js"
     ],
     "css": [
       "assets/index.57e1656f.css"
@@ -42,8 +42,8 @@
       "_lodash-39fc179f.js"
     ]
   },
-  "_index-58fd6bb3.js": {
-    "file": "index-58fd6bb3.js",
+  "_index-7d10f4db.js": {
+    "file": "index-7d10f4db.js",
     "isDynamicEntry": true,
     "imports": [
       "index.html",
@@ -54,7 +54,7 @@
       "../packages/easy-email-extensions/lib/index3.js"
     ],
     "css": [
-      "assets/index.44127ee1.css"
+      "assets/index.7906dcac.css"
     ]
   },
   "src/templates/Arturia - Newsletter.json": {
@@ -118,12 +118,12 @@
     "isDynamicEntry": true
   },
   "../packages/easy-email-extensions/lib/index3.js": {
-    "file": "index3-61a216a3.js",
+    "file": "index3-11e9e4bd.js",
     "src": "../packages/easy-email-extensions/lib/index3.js",
     "isDynamicEntry": true,
     "imports": [
       "index.html",
-      "_index-58fd6bb3.js",
+      "_index-7d10f4db.js",
       "_mjml-browser.js",
       "_lodash-39fc179f.js"
     ]

@@ -31,7 +31,6 @@ func main() {
 		panic(err)
 	}
 	b := presets.New()
-	b.ContainerClass("k-theme")
 	b.URIPrefix("/").
 		BrandTitle("Admin").
 		DataOperator(gorm2op.DataOperator(db)).
