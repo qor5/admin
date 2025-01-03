@@ -39,7 +39,7 @@ func cropField(field *schema.Field, db *gorm.DB) (cropped bool, err error) {
 	if fileHeader := media.GetFileHeader(); fileHeader != nil {
 		mediaFile, err = media.GetFileHeader().Open()
 	} else {
-		mediaFile, err = media.Retrieve(media.URL("original"))
+		mediaFile, err = media.Retrieve(media.URL(OriginalSizeKey))
 	}
 	defer mediaFile.Close()
 

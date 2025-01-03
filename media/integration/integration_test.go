@@ -72,6 +72,30 @@ func TestUpload(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+func checkFileExisted(t *testing.T, filename string) {
+	var (
+		file os.FileInfo
+		err  error
+	)
+	if file, err = os.Stat("/tmp/media_test" + filename); err != nil {
+		t.Fatalf("open file %s error %v", filename, err)
+		return
+	}
+	if file.Size() == 0 {
+		t.Fatalf("crop file %s, error %v", filename, file.Size())
+		return
+	}
+}
+func checkCropOption(t *testing.T, name string, cropOption *base.CropOption) {
+	if cropOption == nil {
+		t.Fatalf("%s cropOption is nil", name)
+		return
+	}
+	if cropOption.Width == 0 || cropOption.Height == 0 {
+		t.Fatalf("%s cropOption set failed width:%v;height:%v", name, cropOption.Width, cropOption.Height)
+		return
+	}
+}
 
 func TestCrop(t *testing.T) {
 	db := setup()
@@ -98,18 +122,35 @@ func TestCrop(t *testing.T) {
 	if moption.CropOptions == nil {
 		moption.CropOptions = make(map[string]*base.CropOption)
 	}
-	moption.CropOptions["default"] = &base.CropOption{
+	moption.Sizes["small"] = &base.Size{
+		Width:  100,
+		Height: 100,
+	}
+	moption.Sizes["og"] = &base.Size{
+		Width: 200,
+	}
+	moption.Sizes["large"] = &base.Size{
+		Width: 400,
+	}
+	baseCropOption := base.CropOption{
 		X:      6,
 		Y:      20,
 		Width:  40,
 		Height: 40,
 	}
+	moption.CropOptions["default"] = &baseCropOption
 	moption.Crop = true
 	err = m1.ScanMediaOptions(moption)
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	for key, size := range moption.Sizes {
+		if key == base.DefaultSizeKey {
+			continue
+		}
+		cropOption := media.AdjustCropOption(m.File.Width, m.File.Height, size, &baseCropOption)
+		m.File.CropOptions[key] = &cropOption
+	}
 	err = base.SaveUploadAndCropImage(db, &m1, "", &web.EventContext{})
 	if err != nil {
 		t.Fatal(err)
@@ -124,13 +165,14 @@ func TestCrop(t *testing.T) {
 		t.Fatalf("crop file error %v", file.Size())
 		return
 	}
-	if file, err = os.Stat("/tmp/media_test" + m1.File.URL()); err != nil {
-		t.Fatalf("open file error %v", err)
-		return
-	}
-	if file.Size() == 0 {
-		t.Fatalf("crop file error %v", file.Size())
-		return
+	for _, name := range []string{"", "small", "og", "large"} {
+		filename := m1.File.URL(name)
+		if name == "" {
+			filename = m1.File.URL()
+		} else {
+			checkCropOption(t, name, m.File.CropOptions[name])
+		}
+		checkFileExisted(t, filename)
 	}
 }
 

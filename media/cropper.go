@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"time"
 
 	"gorm.io/gorm"
 
@@ -55,14 +54,16 @@ func loadImageCropper(mb *Builder) web.EventFunc {
 		)
 		if size == nil && thumb != base.DefaultSizeKey {
 			return
+		} else if thumb != base.DefaultSizeKey {
+			base.SaleUpDown(m.File.Width, m.File.Height, size)
 		}
-
 		c := cropper.Cropper().
 			Src(m.File.URL("original")).
 			ViewMode(cropper.VIEW_MODE_FILL_FIT_CONTAINER).
 			AutoCropArea(1).
 			Attr("@update:model-value", "cropLocals.CropOption=JSON.stringify($event)")
 		if size != nil {
+			//scale up and down keep width/height ratio
 			c.AspectRatio(float64(size.Width), float64(size.Height))
 		}
 		// Attr("style", "max-width: 800px; max-height: 600px;")
@@ -153,6 +154,22 @@ func cropImage(b *Builder) web.EventFunc {
 				Width:  int(cropValue.Width),
 				Height: int(cropValue.Height),
 			}
+			if thumb == base.DefaultSizeKey {
+				m.ID = 0
+				if m.File.ParentUrl == "" {
+					m.File.ParentUrl = m.File.Url
+				}
+				m.File.CropOptions = make(map[string]*base.CropOption)
+				m.File.Sizes = make(map[string]*base.Size)
+				m.File.FileSizes = make(map[string]int)
+				moption.CropOptions = map[string]*base.CropOption{
+					thumb: moption.CropOptions[thumb],
+				}
+				moption.Sizes = media_library.GetQorPreviewSize(int(cropValue.Width), int(cropValue.Height))
+				m.CreatedAt = db.NowFunc()
+				m.UpdatedAt = db.NowFunc()
+			}
+
 			moption.Crop = true
 			err = m.ScanMediaOptions(moption)
 			if err != nil {
@@ -166,12 +183,14 @@ func cropImage(b *Builder) web.EventFunc {
 			b.onEdit(ctx, old, m)
 
 			mb.Url = m.File.Url
-			mb.UpdatedAt = time.Now()
+			mb.ParentUrl = m.File.ParentUrl
 			mb.FileSizes = m.File.FileSizes
 			if thumb == base.DefaultSizeKey {
 				mb.Width = int(cropValue.Width)
 				mb.Height = int(cropValue.Height)
 			}
+			mb.ID = json.Number(fmt.Sprint(m.ID))
+
 		}
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{

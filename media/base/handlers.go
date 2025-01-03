@@ -15,8 +15,9 @@ import (
 )
 
 var (
-	mediaHandlers  = make(map[string]MediaHandler)
-	DefaultSizeKey = "default"
+	mediaHandlers   = make(map[string]MediaHandler)
+	DefaultSizeKey  = "default"
+	OriginalSizeKey = "original"
 )
 
 // MediaHandler media library handler interface, defined which files could be handled, and the handler
@@ -39,7 +40,7 @@ func (imageHandler) CouldHandle(media Media) bool {
 
 func resizeImageTo(img image.Image, size *Size, format imaging.Format) image.Image {
 	imgSize := img.Bounds().Size()
-
+	SaleUpDown(imgSize.X, imgSize.Y, size)
 	switch {
 	case size.Padding:
 		var (
@@ -100,21 +101,26 @@ func resizeImageTo(img image.Image, size *Size, format imaging.Format) image.Ima
 }
 
 func (imageHandler) Handle(media Media, file FileInterface, option *Option) (err error) {
-	fileBytes, err := io.ReadAll(file)
+	var fileBytes []byte
+	fileBytes, err = io.ReadAll(file)
 	if err != nil {
 		return
 	}
 	fileSizes := media.GetFileSizes()
 	originalFileSize := len(fileBytes)
-	fileSizes["original"] = originalFileSize
-	file.Seek(0, 0)
-	err = media.Store(media.URL("original"), option, file)
+	fileSizes[OriginalSizeKey] = originalFileSize
+	if _, err = file.Seek(0, 0); err != nil {
+		return
+	}
+	err = media.Store(media.URL(OriginalSizeKey), option, file)
 	if err != nil {
 		return
 	}
-	file.Seek(0, 0)
-
-	format, err := GetImageFormat(media.URL())
+	if _, err = file.Seek(0, 0); err != nil {
+		return
+	}
+	var format *imaging.Format
+	format, err = GetImageFormat(media.URL())
 	if err != nil {
 		return
 	}
@@ -127,8 +133,8 @@ func (imageHandler) Handle(media Media, file FileInterface, option *Option) (err
 		SetFileSizes(media, fileSizes)
 		return
 	}
-
-	img, _, err := image.Decode(file)
+	var img image.Image
+	img, _, err = image.Decode(file)
 	if err != nil {
 		return
 	}
@@ -137,14 +143,22 @@ func (imageHandler) Handle(media Media, file FileInterface, option *Option) (err
 	// Save cropped default image
 	if cropOption := media.GetCropOption(DefaultSizeKey); cropOption != nil {
 		var buffer bytes.Buffer
-		imaging.Encode(&buffer, imaging.Crop(img, *cropOption), *format)
+		if err = imaging.Encode(&buffer, imaging.Crop(img, *cropOption), *format); err != nil {
+			return
+		}
 		fileSizes[DefaultSizeKey] = buffer.Len()
-		media.Store(media.URL(), option, &buffer)
+		if err = media.Store(media.URL(), option, &buffer); err != nil {
+			return
+		}
 	} else {
-		file.Seek(0, 0)
+		if _, err = file.Seek(0, 0); err != nil {
+			return
+		}
 		// Save default image
 		fileSizes[DefaultSizeKey] = originalFileSize
-		media.Store(media.URL(), option, file)
+		if err = media.Store(media.URL(), option, file); err != nil {
+			return
+		}
 	}
 
 	// save sizes image
@@ -156,11 +170,19 @@ func (imageHandler) Handle(media Media, file FileInterface, option *Option) (err
 		newImage := img
 		if cropOption := media.GetCropOption(key); cropOption != nil {
 			newImage = imaging.Crop(newImage, *cropOption)
+		} else {
+			if cropOption = media.GetCropOption(DefaultSizeKey); cropOption != nil {
+				newImage = imaging.Crop(newImage, *cropOption)
+			}
 		}
 		var buffer bytes.Buffer
-		imaging.Encode(&buffer, resizeImageTo(newImage, size, *format), *format)
+		if err = imaging.Encode(&buffer, resizeImageTo(newImage, size, *format), *format); err != nil {
+			return
+		}
 		fileSizes[key] = buffer.Len()
-		media.Store(media.URL(key), option, &buffer)
+		if err = media.Store(media.URL(key), option, &buffer); err != nil {
+			return
+		}
 	}
 	SetFileSizes(media, fileSizes)
 

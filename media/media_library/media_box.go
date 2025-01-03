@@ -19,8 +19,8 @@ const (
 
 type MediaBox struct {
 	ID          json.Number
-	UpdatedAt   time.Time
 	Url         string
+	ParentUrl   string
 	VideoLink   string
 	FileName    string
 	Description string
@@ -77,11 +77,10 @@ func (mediaBox *MediaBox) IsSVG() bool {
 }
 
 func (mediaBox *MediaBox) URL(styles ...string) (s string) {
-	defer func() {
-		if !mediaBox.UpdatedAt.IsZero() {
-			s += "?" + fmt.Sprint(mediaBox.UpdatedAt.Nanosecond())
-		}
-	}()
+	if mediaBox.ParentUrl != "" && len(styles) > 0 && styles[0] == base.OriginalSizeKey {
+		ext := path.Ext(mediaBox.ParentUrl)
+		return fmt.Sprintf("%v.%v%v", strings.TrimSuffix(mediaBox.ParentUrl, ext), styles[0], ext)
+	}
 	if mediaBox.Url != "" && len(styles) > 0 {
 		ext := path.Ext(mediaBox.Url)
 		return fmt.Sprintf("%v.%v%v", strings.TrimSuffix(mediaBox.Url, ext), styles[0], ext)
@@ -91,7 +90,7 @@ func (mediaBox *MediaBox) URL(styles ...string) (s string) {
 
 func (mediaBox *MediaBox) URLNoCached(styles ...string) string {
 	i := mediaBox.URL(styles...)
-	if i != "" {
+	if i != "" && !strings.Contains(i, "?") {
 		return i + "?" + fmt.Sprint(time.Now().Nanosecond())
 	}
 	return i
