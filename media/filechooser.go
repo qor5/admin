@@ -224,16 +224,16 @@ func chooseFile(mb *Builder) web.EventFunc {
 					cropOption := AdjustCropOption(m.File.Width, m.File.Height, size, baseCropOption)
 					m.File.CropOptions[key] = &cropOption
 				}
-				err = db.Save(&m).Error
-				if err != nil {
-					return
-				}
+			}
+			err = db.Save(&m).Error
+			if err != nil {
+				return
+			}
 
-				err = mb.saverFunc(db, &m, strconv.Itoa(id), ctx)
-				if err != nil {
-					presets.ShowMessage(&r, err.Error(), "error")
-					return r, nil
-				}
+			err = mb.saverFunc(db, &m, strconv.Itoa(id), ctx)
+			if err != nil {
+				presets.ShowMessage(&r, err.Error(), "error")
+				return r, nil
 			}
 		}
 
