@@ -82,21 +82,7 @@ func (mediaLibraryStorage *MediaLibraryStorage) GetSizes() map[string]*base.Size
 		return map[string]*base.Size{}
 	}
 
-	width := mediaLibraryStorage.Width
-	height := mediaLibraryStorage.Height
-	max := math.Max(float64(width), float64(height))
-	if int(max) > QorPreviewMaxSize {
-		ratio := float64(QorPreviewMaxSize) / max
-		width = int(float64(width) * ratio)
-		height = int(float64(height) * ratio)
-	}
-	sizes := map[string]*base.Size{
-		QorPreviewSizeName: {
-			Width:  width,
-			Height: height,
-		},
-	}
-
+	sizes := GetQorPreviewSize(mediaLibraryStorage.Width, mediaLibraryStorage.Height)
 	for key, value := range mediaLibraryStorage.Sizes {
 		sizes[key] = value
 	}
@@ -168,9 +154,29 @@ func (mediaLibraryStorage MediaLibraryStorage) Value() (driver.Value, error) {
 }
 
 func (mediaLibraryStorage *MediaLibraryStorage) URL(styles ...string) string {
+	if mediaLibraryStorage.ParentUrl != "" && len(styles) > 0 && styles[0] == base.OriginalSizeKey {
+		ext := path.Ext(mediaLibraryStorage.ParentUrl)
+		return fmt.Sprintf("%v.%v%v", strings.TrimSuffix(mediaLibraryStorage.ParentUrl, ext), styles[0], ext)
+	}
 	if mediaLibraryStorage.Url != "" && len(styles) > 0 {
 		ext := path.Ext(mediaLibraryStorage.Url)
 		return fmt.Sprintf("%v.%v%v", strings.TrimSuffix(mediaLibraryStorage.Url, ext), styles[0], ext)
 	}
 	return mediaLibraryStorage.Url
+}
+
+func GetQorPreviewSize(width, height int) map[string]*base.Size {
+	maxSize := math.Max(float64(width), float64(height))
+	if int(maxSize) > QorPreviewMaxSize {
+		ratio := float64(QorPreviewMaxSize) / maxSize
+		width = int(float64(width) * ratio)
+		height = int(float64(height) * ratio)
+	}
+	sizes := map[string]*base.Size{
+		QorPreviewSizeName: {
+			Width:  width,
+			Height: height,
+		},
+	}
+	return sizes
 }

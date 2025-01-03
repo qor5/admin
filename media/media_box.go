@@ -559,6 +559,7 @@ func thumbName(name string, size *base.Size, fileSize int, f *media_library.Medi
 	}
 	if size != nil {
 		title = name
+		base.SaleUpDown(f.Width, f.Height, size)
 		if size.Width != 0 && size.Height != 0 {
 			text = fmt.Sprintf("%d X %d", size.Width, size.Height)
 		}
