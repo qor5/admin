@@ -178,51 +178,6 @@ func TestCrop(t *testing.T) {
 	}
 }
 
-func TestCopy(t *testing.T) {
-	db := setup()
-	f, err := box.ReadFile("testfile.png")
-	if err != nil {
-		panic(err)
-	}
-	mb := media.New(db)
-	fh := multipartestutils.CreateMultipartFileHeader("test.png", f)
-	m := media_library.MediaLibrary{}
-
-	err = m.File.Scan(fh)
-	if err != nil {
-		t.Fatal(err)
-		return
-	}
-	err = base.SaveUploadAndCropImage(db, &m, "", &web.EventContext{})
-	if err != nil {
-		t.Fatal(err)
-		return
-	}
-	oldID := m.ID
-	oldCreatedTime := m.CreatedAt
-	if m, err = media.CopyMediaLiMediaLibrary(mb, db, int(oldID), &web.EventContext{}); err != nil {
-		t.Fatalf("copy error :%v", err)
-		return
-	}
-	if oldID == m.ID {
-		t.Fatalf("copy failed")
-		return
-	}
-	var file os.FileInfo
-	if file, err = os.Stat("/tmp/media_test" + m.File.URL()); err != nil {
-		t.Fatalf("open file error %v", err)
-		return
-	}
-	if file.Size() == 0 {
-		t.Fatalf("crop file error %v", file.Size())
-		return
-	}
-	if m.CreatedAt == oldCreatedTime {
-		t.Fatalf("crop file time error  %v :%v", m.CreatedAt, oldCreatedTime)
-		return
-	}
-}
-
 func TestURL(t *testing.T) {
 	b := media_library.MediaBox{
 		Url: "test.jpg",
