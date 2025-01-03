@@ -121,7 +121,7 @@ func TestPageBuilder(t *testing.T) {
 				return req
 			},
 			ExpectPageBodyContainsInOrder: []string{
-				`eventFunc("page_builder_EditContainerEvent").query("containerDataID", vars.containerDataID)`,
+				`eventFunc("page_builder_EditContainerEvent").mergeQuery(true).query("containerDataID", vars.containerDataID)`,
 			},
 		},
 		{
