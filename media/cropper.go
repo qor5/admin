@@ -63,7 +63,7 @@ func loadImageCropper(mb *Builder) web.EventFunc {
 			AutoCropArea(1).
 			Attr("@update:model-value", "cropLocals.CropOption=JSON.stringify($event)")
 		if size != nil {
-			//scale up and down keep width/height ratio
+			// scale up and down keep width/height ratio
 			c.AspectRatio(float64(size.Width), float64(size.Height))
 		}
 		// Attr("style", "max-width: 800px; max-height: 600px;")

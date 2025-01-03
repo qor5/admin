@@ -91,7 +91,6 @@ func ByteCountSI(b int) string {
 func SaleUpDown(width, height int, size *Size) {
 	if size.Height == 0 && size.Width > 0 {
 		size.Height = int(float64(size.Width) / float64(width) * float64(height))
-
 	} else if size.Height > 0 && size.Width == 0 {
 		size.Width = int(float64(size.Height) / float64(height) * float64(width))
 	}
