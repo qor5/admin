@@ -72,6 +72,7 @@ func TestUpload(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
 func checkFileExisted(t *testing.T, filename string) {
 	var (
 		file os.FileInfo
@@ -86,6 +87,7 @@ func checkFileExisted(t *testing.T, filename string) {
 		return
 	}
 }
+
 func checkCropOption(t *testing.T, name string, cropOption *base.CropOption) {
 	if cropOption == nil {
 		t.Fatalf("%s cropOption is nil", name)
