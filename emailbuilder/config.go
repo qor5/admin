@@ -3,9 +3,12 @@ package emailbuilder
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/web/v3"
+	v "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
 	"github.com/theplant/osenv"
@@ -51,29 +54,91 @@ func LoadSenderConfig() (config SESDriverConfig) {
 
 func ConfigMailTemplate(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder {
 	mb := pb.Model(&MailTemplate{})
-	lb := mb.Listing("ID", "Subject").NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
-		return h.Div(vx.VXBtn("New").Href("//localhost:9500/email_builder/editor"))
-	})
+	lb := mb.Listing("ID", "Subject")
 	_ = lb
 	dp := mb.Detailing("Demo")
 	_ = dp
-	dp.Field("Demo").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		et := obj.(*MailTemplate)
-		// fmt.Println(et.ID)
-		// fmt.Println(et.Subject)
-		return h.Div(
-			h.Iframe().
-				Class("flex-1").
-				Attr("frameborder", "0").
-				Attr("width", "100%").
-				Src(fmt.Sprintf("//localhost:9500/email_builder/editor?id=%d&userId=undefined", et.ID)),
-		).Class("d-flex").Style("height: calc(100vh - 100px - 16px);")
+	eb := mb.Editing("Subject", "JSONBody", "HTMLBody")
+
+	eb.Creating().WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		// JSON_Body
+		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			et := obj.(*MailTemplate)
+			et.JSONBody = fmt.Sprintf(`{
+  "subject": %s,
+  "subTitle": "",
+  "content": {
+    "type": "page",
+    "data": {
+      "value": {
+        "breakpoint": "480px",
+        "headAttributes": "",
+        "font-size": "14px",
+        "font-weight": "400",
+        "line-height": "1.7",
+        "headStyles": [],
+        "fonts": [],
+        "responsive": true,
+        "font-family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans','Helvetica Neue', sans-serif",
+        "text-color": "#000000"
+      }
+    },
+    "attributes": {
+      "background-color": "#efeeea",
+      "width": "600px"
+    },
+    "children": [
+      {
+        "type": "advanced_wrapper",
+        "data": {
+          "value": {}
+        },
+        "attributes": {
+          "padding": "20px 0px 20px 0px",
+          "border": "none",
+          "direction": "ltr",
+          "text-align": "center"
+        },
+        "children": []
+      }
+    ]
+  }
+}`, strconv.Quote(et.Subject))
+			return in(obj, id, ctx)
+		}
 	})
-	// eb := mb.Editing()
-	// eb.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
-	// 	return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-	// 		return in(obj, id, ctx)
-	// 	}
-	// })
+
+	dp.Title(func(evCtx *web.EventContext, obj any, style presets.DetailingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error) {
+		titleCompo = h.Div(
+			v.VToolbarTitle("Inbox"),
+			v.VSpacer(),
+			vx.VXBtn("Save").Variant("elevated").Attr("@click", web.Emit("save_mail")).Color("primary"),
+			vx.VXBtn("Send Email").Variant("elevated").Color("secondary").Attr("@click", web.Emit("send_mail")).Color("secondary").Class("ml-2"),
+		).Class("d-flex align-center w-100")
+
+		return
+	})
+
+	dp.Field("Demo").
+		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			et := obj.(*MailTemplate)
+			return h.Div(
+				web.Scope(
+					web.Listen("save_mail",
+						fmt.Sprintf(`() => { $refs.emailEditor.emit('getData').then(res=> {%s})}`,
+							web.Plaid().EventFunc(actions.Update).Query(presets.ParamID, et.ID).Form(web.Var("res")).Go())),
+					web.Listen("send_mail", `()=> {
+						$refs.emailEditor.emit('sendMail')
+							.then(res=> { window.alert('Email sent!')})
+							.catch(err=> { window.alert('Email failed to send!')})
+					}`),
+					vx.VXIframeEmailEditor().
+						Ref("emailEditor").
+						Src(fmt.Sprintf("http://localhost:9500/email_builder/editor?id=%d&userId=undefined", et.ID)).
+						Class("flex-1"),
+				).VSlot("{locals}"),
+			).Class("d-flex").Style("height: calc(100vh - 100px - 20px);")
+		})
+
 	return mb
 }
