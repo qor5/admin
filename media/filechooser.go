@@ -309,18 +309,6 @@ func fileComponent(mb *Builder, field string, tab string, ctx *web.EventContext,
 		fullSrc = fmt.Sprintf("%q", src)
 	}
 	*menus = append(*menus,
-		h.If(mb.copyIsAllowed(ctx.R) == nil,
-			VListItem(h.Text(msgr.Copy)).Attr("@click", web.Plaid().
-				EventFunc(CopyFileEvent).
-				Query(ParamField, field).
-				Query(paramTab, tab).
-				Query(ParamCfg, h.JSONString(cfg)).
-				Query(ParamParentID, ctx.Param(ParamParentID)).
-				Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
-				Query(ParamMediaIDS, fmt.Sprint(f.ID)).
-				Query(searchKeywordName(inMediaLibrary, field), ctx.Param(searchKeywordName(inMediaLibrary, field))).
-				Go()),
-		),
 		h.If(mb.updateDescIsAllowed(ctx.R, f) == nil,
 			VListItem(
 				h.Text(msgr.DescriptionForAccessibility)).
