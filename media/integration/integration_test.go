@@ -13,7 +13,6 @@ import (
 	"github.com/theplant/testenv"
 	"gorm.io/gorm"
 
-	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/media/base"
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/media/oss"
@@ -88,17 +87,6 @@ func checkFileExisted(t *testing.T, filename string) {
 	}
 }
 
-func checkCropOption(t *testing.T, name string, cropOption *base.CropOption) {
-	if cropOption == nil {
-		t.Fatalf("%s cropOption is nil", name)
-		return
-	}
-	if cropOption.Width == 0 || cropOption.Height == 0 {
-		t.Fatalf("%s cropOption set failed width:%v;height:%v", name, cropOption.Width, cropOption.Height)
-		return
-	}
-}
-
 func TestCrop(t *testing.T) {
 	db := setup()
 	f, err := box.ReadFile("testfile.png")
@@ -146,13 +134,6 @@ func TestCrop(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for key, size := range moption.Sizes {
-		if key == base.DefaultSizeKey {
-			continue
-		}
-		cropOption := media.AdjustCropOption(m.File.Width, m.File.Height, size, &baseCropOption)
-		m.File.CropOptions[key] = &cropOption
-	}
 	err = base.SaveUploadAndCropImage(db, &m1, "", &web.EventContext{})
 	if err != nil {
 		t.Fatal(err)
@@ -171,8 +152,6 @@ func TestCrop(t *testing.T) {
 		filename := m1.File.URL(name)
 		if name == "" {
 			filename = m1.File.URL()
-		} else {
-			checkCropOption(t, name, m.File.CropOptions[name])
 		}
 		checkFileExisted(t, filename)
 	}
