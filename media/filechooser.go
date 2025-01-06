@@ -197,6 +197,10 @@ func chooseFile(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		db := mb.db
 		id := ctx.ParamAsInt(ParamMediaIDS)
+		if id == ctx.ParamAsInt(ParamSelectIDS) {
+			r.RunScript = `vars.showFileChooser = false`
+			return
+		}
 		field := ctx.Param(ParamField)
 		cfg := stringToCfg(ctx.Param(ParamCfg))
 
@@ -215,16 +219,16 @@ func chooseFile(mb *Builder) web.EventFunc {
 			if err != nil {
 				return
 			}
-			baseCropOption := m.File.CropOptions[base.DefaultSizeKey]
-			if baseCropOption != nil {
-				for key, size := range sizes {
-					if key == base.DefaultSizeKey {
-						continue
-					}
-					cropOption := AdjustCropOption(m.File.Width, m.File.Height, size, baseCropOption)
-					m.File.CropOptions[key] = &cropOption
-				}
-			}
+			//baseCropOption := m.File.CropOptions[base.DefaultSizeKey]
+			//if baseCropOption != nil {
+			//	for key, size := range sizes {
+			//		if key == base.DefaultSizeKey {
+			//			continue
+			//		}
+			//		cropOption := AdjustCropOption(m.File.Width, m.File.Height, size, baseCropOption)
+			//		m.File.CropOptions[key] = &cropOption
+			//	}
+			//}
 			err = db.Save(&m).Error
 			if err != nil {
 				return
@@ -240,7 +244,6 @@ func chooseFile(mb *Builder) web.EventFunc {
 		mediaBox := media_library.MediaBox{
 			ID:          json.Number(fmt.Sprint(m.ID)),
 			Url:         m.File.Url,
-			ParentUrl:   m.File.ParentUrl,
 			VideoLink:   "",
 			FileName:    m.File.FileName,
 			Description: m.File.Description,
@@ -248,11 +251,6 @@ func chooseFile(mb *Builder) web.EventFunc {
 			Width:       m.File.Width,
 			Height:      m.File.Height,
 		}
-		if cropValue := m.File.CropOptions[base.DefaultSizeKey]; cropValue != nil {
-			mediaBox.Width = cropValue.Width
-			mediaBox.Height = cropValue.Height
-		}
-
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: mediaBoxThumbnailsPortalName(field),
 			Body: mediaBoxThumbnails(ctx, &mediaBox, field, cfg, false, false),
@@ -342,6 +340,7 @@ func fileComponent(mb *Builder, field string, tab string, ctx *web.EventContext,
 			EventFunc(chooseFileEvent).
 			Query(ParamField, field).
 			Query(ParamMediaIDS, fmt.Sprint(f.ID)).
+			Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
 			Query(ParamCfg, h.JSONString(cfg)).
 			Go()
 	}

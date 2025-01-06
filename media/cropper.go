@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/google/uuid"
+	"golang.org/x/exp/slices"
 	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/media/base"
@@ -39,7 +41,12 @@ func loadImageCropper(mb *Builder) web.EventFunc {
 			msgr                  = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 			pMsgr                 = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 			field, id, thumb, cfg = getParams(ctx)
+			mediaBox              = &media_library.MediaBox{}
 		)
+		err = mediaBox.Scan(ctx.R.FormValue(fmt.Sprintf("%s.Values", field)))
+		if err != nil {
+			panic(err)
+		}
 
 		err = db.First(&m, id).Error
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -68,7 +75,7 @@ func loadImageCropper(mb *Builder) web.EventFunc {
 		}
 		// Attr("style", "max-width: 800px; max-height: 600px;")
 
-		cropOption := moption.CropOptions[thumb]
+		cropOption := mediaBox.CropOptions[thumb]
 		if cropOption != nil {
 			c.ModelValue(cropper.Value{
 				X:      float64(cropOption.X),
@@ -154,27 +161,24 @@ func cropImage(b *Builder) web.EventFunc {
 				Width:  int(cropValue.Width),
 				Height: int(cropValue.Height),
 			}
-			if thumb == base.DefaultSizeKey {
-				m.ID = 0
-				if m.File.ParentUrl == "" {
-					m.File.ParentUrl = m.File.Url
-				}
-				m.File.CropOptions = make(map[string]*base.CropOption)
-				m.File.Sizes = make(map[string]*base.Size)
-				m.File.FileSizes = make(map[string]int)
-				moption.CropOptions = map[string]*base.CropOption{
-					thumb: moption.CropOptions[thumb],
-				}
-				moption.Sizes = media_library.GetQorPreviewSize(int(cropValue.Width), int(cropValue.Height))
-				m.CreatedAt = db.NowFunc()
-				m.UpdatedAt = db.NowFunc()
+			cropID := uuid.New().String()
+			oldCropID := mb.CropID[thumb]
+			// save related cropid
+			if m.File.CropIDS == nil {
+				m.File.CropIDS = make(map[string][]string)
 			}
-
+			m.File.CropIDS[thumb] = slices.DeleteFunc(m.File.CropIDS[thumb], func(s string) bool {
+				return s == oldCropID
+			})
+			m.File.CropIDS[thumb] = append(m.File.CropIDS[thumb], cropID)
 			moption.Crop = true
+			// don`t scan url field media box in media library record
+			moption.URL = ""
 			err = m.ScanMediaOptions(moption)
 			if err != nil {
 				return
 			}
+
 			err = b.saverFunc(db, &m, strconv.Itoa(id), ctx)
 			if err != nil {
 				presets.ShowMessage(&r, err.Error(), "error")
@@ -183,8 +187,13 @@ func cropImage(b *Builder) web.EventFunc {
 			b.onEdit(ctx, old, m)
 
 			mb.Url = m.File.Url
-			mb.ParentUrl = m.File.ParentUrl
 			mb.FileSizes = m.File.FileSizes
+			mb.CropOptions = m.File.CropOptions
+			mb.Sizes = m.File.Sizes
+			if mb.CropID == nil {
+				mb.CropID = make(map[string]string)
+			}
+			mb.CropID[thumb] = cropID
 			if thumb == base.DefaultSizeKey {
 				mb.Width = int(cropValue.Width)
 				mb.Height = int(cropValue.Height)

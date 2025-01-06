@@ -20,14 +20,16 @@ const (
 type MediaBox struct {
 	ID          json.Number
 	Url         string
-	ParentUrl   string
 	VideoLink   string
 	FileName    string
 	Description string
 	FileSizes   map[string]int `json:",omitempty"`
 	// for default image
-	Width  int `json:",omitempty"`
-	Height int `json:",omitempty"`
+	Width       int                         `json:",omitempty"`
+	Height      int                         `json:",omitempty"`
+	CropOptions map[string]*base.CropOption `json:",omitempty"`
+	Sizes       map[string]*base.Size       `json:",omitempty"`
+	CropID      map[string]string           `json:"crop_id"`
 }
 
 // MediaBoxConfig configure MediaBox metas
@@ -77,15 +79,25 @@ func (mediaBox *MediaBox) IsSVG() bool {
 }
 
 func (mediaBox *MediaBox) URL(styles ...string) (s string) {
-	if mediaBox.ParentUrl != "" && len(styles) > 0 && styles[0] == base.OriginalSizeKey {
-		ext := path.Ext(mediaBox.ParentUrl)
-		return fmt.Sprintf("%v.%v%v", strings.TrimSuffix(mediaBox.ParentUrl, ext), styles[0], ext)
+	var CropID string
+	if len(styles) == 0 {
+		CropID = mediaBox.CropID[base.DefaultSizeKey]
+	} else {
+		CropID = mediaBox.CropID[styles[0]]
 	}
+	ext := path.Ext(mediaBox.Url)
+
+	defer func() {
+		if len(CropID) > 0 {
+			s = fmt.Sprintf("%v_%v%v", s, CropID, ext)
+			return
+		}
+		s = fmt.Sprintf("%v%v", s, ext)
+	}()
 	if mediaBox.Url != "" && len(styles) > 0 {
-		ext := path.Ext(mediaBox.Url)
-		return fmt.Sprintf("%v.%v%v", strings.TrimSuffix(mediaBox.Url, ext), styles[0], ext)
+		return fmt.Sprintf("%v.%v", strings.TrimSuffix(mediaBox.Url, ext), styles[0])
 	}
-	return mediaBox.Url
+	return strings.TrimSuffix(mediaBox.Url, ext)
 }
 
 func (mediaBox *MediaBox) URLNoCached(styles ...string) string {
