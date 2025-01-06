@@ -2,6 +2,7 @@ package emailbuilder
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/json"
 	"errors"
 	"html/template"
@@ -141,6 +142,7 @@ func (b *Builder) send(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var results []SendResult
+	var hasErr bool
 	for _, uid := range sendRequest.UserIds {
 		//  fake username here(actually, should get it by uid)
 		mailData := MailData{
@@ -171,7 +173,7 @@ func (b *Builder) send(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// get ToEmailAddress by config, actually should get it by uid
-		toEmailAddress := LoadToEmailAddress()
+		toEmailAddress := cmp.Or(sendRequest.ToEmailAddress, LoadToEmailAddress())
 
 		input := &sesv2.SendEmailInput{
 			Content: &types.EmailContent{
@@ -212,6 +214,7 @@ func (b *Builder) send(w http.ResponseWriter, r *http.Request) {
 		}
 		output, err := b.sender.SendEmail(r.Context(), input)
 		if err != nil {
+			hasErr = true
 			results = append(results, SendResult{
 				UserId:     uid,
 				TemplateID: sendRequest.TemplateID,
@@ -228,7 +231,11 @@ func (b *Builder) send(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	if hasErr {
+		w.WriteHeader(http.StatusInternalServerError)
+	} else {
+		w.WriteHeader(http.StatusOK)
+	}
 	by, _ := json.Marshal(&UnifyResponse{Data: results})
 	_, _ = w.Write(by)
 }
@@ -247,8 +254,9 @@ func (b *Builder) Sender(config SESDriverConfig) *Builder {
 }
 
 type SendRequest struct {
-	TemplateID int   `json:"template_id"`
-	UserIds    []int `json:"user_ids"`
+	TemplateID     int    `json:"template_id"`
+	UserIds        []int  `json:"user_ids"`
+	ToEmailAddress string `json:"to_email_address"`
 }
 
 type SendResult struct {
