@@ -46,10 +46,9 @@ func (fileWrapper *fileWrapper) Open() (multipart.File, error) {
 type Base struct {
 	FileName    string
 	Url         string
-	ParentUrl   string
-	CropOptions map[string]*CropOption `json:",omitempty"`
+	CropOptions map[string]*CropOption `json:"-"`
 	Delete      bool                   `json:"-"`
-	Crop        bool                   `json:",omitempty"`
+	Crop        bool                   `json:"-"`
 	FileHeader  FileHeader             `json:"-"`
 	Reader      io.Reader              `json:"-"`
 	Options     map[string]string      `json:",omitempty"`
