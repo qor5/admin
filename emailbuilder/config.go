@@ -135,7 +135,7 @@ func ConfigMailTemplate(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder 
 					vx.VXIframeEmailEditor().
 						Ref("emailEditor").
 						Src(fmt.Sprintf("http://localhost:9500/email_builder/editor?id=%d&userId=undefined", et.ID)).
-						Class("flex-1"),
+						Class("flex-1 ml-2"),
 				).VSlot("{locals}"),
 			).Class("d-flex").Style("height: calc(100vh - 100px - 20px);")
 		})
