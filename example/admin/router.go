@@ -16,7 +16,7 @@ import (
 	"github.com/qor5/x/v3/sitemap"
 	"gorm.io/gorm"
 
-	emailbuilder "github.com/qor5/admin/v3/emailbuilder"
+	"github.com/qor5/admin/v3/emailbuilder"
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/role"
 	"github.com/qor5/admin/v3/utils"
@@ -153,6 +153,7 @@ func Router(db *gorm.DB) http.Handler {
 			http.ServeContent(w, r, "index.html", fileInfo.ModTime(), bytes.NewReader(content))
 		}))
 	}
+	mux.Handle("/email_template/", http.StripPrefix("/email_template", emailbuilder.ConfigEmailBuilder(db)))
 	// email_builder register end
 
 	mux.Handle("/", c.pb)

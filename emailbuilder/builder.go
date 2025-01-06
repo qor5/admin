@@ -2,12 +2,12 @@ package emailbuilder
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/json"
 	"errors"
 	"html/template"
 	"net/http"
 	"net/mail"
-	"os"
 	"strconv"
 	"strings"
 
@@ -142,6 +142,7 @@ func (b *Builder) send(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var results []SendResult
+	var hasErr bool
 	for _, uid := range sendRequest.UserIds {
 		//  fake username here(actually, should get it by uid)
 		mailData := MailData{
@@ -172,7 +173,7 @@ func (b *Builder) send(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// get ToEmailAddress by config, actually should get it by uid
-		toEmailAddress := LoadToEmailAddress()
+		toEmailAddress := cmp.Or(sendRequest.ToEmailAddress, LoadToEmailAddress())
 
 		input := &sesv2.SendEmailInput{
 			Content: &types.EmailContent{
@@ -213,6 +214,7 @@ func (b *Builder) send(w http.ResponseWriter, r *http.Request) {
 		}
 		output, err := b.sender.SendEmail(r.Context(), input)
 		if err != nil {
+			hasErr = true
 			results = append(results, SendResult{
 				UserId:     uid,
 				TemplateID: sendRequest.TemplateID,
@@ -229,7 +231,11 @@ func (b *Builder) send(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	if hasErr {
+		w.WriteHeader(http.StatusInternalServerError)
+	} else {
+		w.WriteHeader(http.StatusOK)
+	}
 	by, _ := json.Marshal(&UnifyResponse{Data: results})
 	_, _ = w.Write(by)
 }
@@ -248,8 +254,9 @@ func (b *Builder) Sender(config SESDriverConfig) *Builder {
 }
 
 type SendRequest struct {
-	TemplateID int   `json:"template_id"`
-	UserIds    []int `json:"user_ids"`
+	TemplateID     int    `json:"template_id"`
+	UserIds        []int  `json:"user_ids"`
+	ToEmailAddress string `json:"to_email_address"`
 }
 
 type SendResult struct {
@@ -261,34 +268,6 @@ type SendResult struct {
 
 type UnifyResponse struct {
 	Data interface{} `json:"data"`
-}
-
-func LoadToEmailAddress() string {
-	to := os.Getenv("TO_ADDRESS")
-	if to == "" {
-		panic("please set TO_ADDRESS env")
-	}
-	return to
-}
-
-func LoadSenderConfig() (config SESDriverConfig) {
-	from := os.Getenv("FROM_ADDRESS")
-	if from == "" {
-		panic("please set FROM_ADDRESS env")
-	}
-	return SESDriverConfig{
-		FromEmailAddress:               from,
-		FromName:                       "ciam",
-		SubjectCharset:                 "UTF-8",
-		HTMLBodyCharset:                "UTF-8",
-		TextBodyCharset:                "UTF-8",
-		ConfigurationSetName:           "",
-		FeedbackForwardingEmailAddress: "",
-		FeedbackForwardingEmailAddressIdentityArn: "",
-		FromEmailAddressIdentityArn:               "",
-		ContactListName:                           "",
-		TopicName:                                 "",
-	}
 }
 
 type MailData struct {

@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
+	"github.com/qor5/admin/v3/emailbuilder"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/login"
@@ -365,6 +366,7 @@ func NewConfig(db *gorm.DB, enableWork bool, opts ...ConfigOption) Config {
 	configOrder(b, db)
 	configECDashboard(b, db)
 	configureDemoCase(b, db)
+	emailbuilder.ConfigMailTemplate(b, db)
 
 	configUser(b, ab, db, publisher, loginSessionBuilder)
 	b.Use(
@@ -497,6 +499,9 @@ func configMenuOrder(b *presets.Builder) {
 		).Icon("featured_play_list"),
 		"Worker",
 		"ActivityLogs",
+		b.MenuGroup("Email Builder").SubItems(
+			"Mail Templates",
+		).Icon("mdi-mail"),
 	)
 }
 

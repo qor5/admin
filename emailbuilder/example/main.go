@@ -5,15 +5,14 @@ import (
 	"net/http"
 
 	"github.com/qor5/admin/v3/emailbuilder"
-	"github.com/theplant/osenv"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/gorm2op"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/ui/vuetify"
+	h "github.com/theplant/htmlgo"
 )
 
 func main() {
-	mux := http.NewServeMux()
-
 	withCORS := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -26,25 +25,29 @@ func main() {
 		})
 	}
 
-	db := ConnectDB()
-	eb := emailbuilder.ConfigEmailBuilder(db)
-	mux.Handle("/email_template/", http.StripPrefix("/email_template", eb))
+	db := emailbuilder.ConnectDB()
+	err := db.AutoMigrate(&emailbuilder.MailTemplate{})
+	if err != nil {
+		panic(err)
+	}
+	b := presets.New()
+	b.URIPrefix("/").
+		BrandTitle("Admin").
+		DataOperator(gorm2op.DataOperator(db)).
+		HomePageFunc(func(_ *web.EventContext) (r web.PageResponse, err error) {
+			r.Body = vuetify.VContainer(
+				h.H1("Home"),
+				h.P().Text("Change your home page here"))
+			return
+		})
 
+	emailbuilder.ConfigMailTemplate(b, db)
+	eb := emailbuilder.ConfigEmailBuilder(db)
+	mux := http.NewServeMux()
+	mux.Handle("/", b)
+	mux.Handle("/email_template/", http.StripPrefix("/email_template", eb))
 	fmt.Println("Listen on http://localhost:9800")
 	if err := http.ListenAndServe(":9800", withCORS(mux)); err != nil {
 		panic(err)
 	}
-}
-
-var dbParamsString = osenv.Get("DB_PARAMS", "email builder example database connection string", "")
-
-func ConnectDB() (db *gorm.DB) {
-	var err error
-	db, err = gorm.Open(postgres.Open(dbParamsString), &gorm.Config{})
-	if err != nil {
-		panic(err)
-	}
-
-	db.Logger = db.Logger.LogMode(logger.Info)
-	return
 }
