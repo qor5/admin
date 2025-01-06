@@ -72,6 +72,7 @@ func (mediaLibrary *MediaLibrary) GetSelectedType() string {
 type MediaLibraryStorage struct {
 	oss.OSS
 	Sizes        map[string]*base.Size `json:",omitempty"`
+	CropID       map[string]string     `json:"-"`
 	CropIDS      map[string][]string   `json:"crop_ids"`
 	Video        string
 	SelectedType string
@@ -160,17 +161,17 @@ func (mediaLibraryStorage *MediaLibraryStorage) URL(styles ...string) (s string)
 			fmt.Println(styles)
 		}
 	}
-	var CropIDS []string
+	var cropID string
 	if len(styles) == 0 {
-		CropIDS = mediaLibraryStorage.CropIDS[base.DefaultSizeKey]
+		cropID = mediaLibraryStorage.CropID[base.DefaultSizeKey]
 	} else {
-		CropIDS = mediaLibraryStorage.CropIDS[styles[0]]
+		cropID = mediaLibraryStorage.CropID[styles[0]]
 	}
 	ext := path.Ext(mediaLibraryStorage.Url)
 
 	defer func() {
-		if len(CropIDS) > 0 {
-			s = fmt.Sprintf("%v_%v%v", s, CropIDS[len(CropIDS)-1], ext)
+		if len(cropID) > 0 {
+			s = fmt.Sprintf("%v_%v%v", s, cropID, ext)
 			return
 		}
 		s = fmt.Sprintf("%v%v", s, ext)

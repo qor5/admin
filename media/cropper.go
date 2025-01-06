@@ -167,6 +167,7 @@ func cropImage(b *Builder) web.EventFunc {
 			if m.File.CropIDS == nil {
 				m.File.CropIDS = make(map[string][]string)
 			}
+			m.File.CropID = map[string]string{thumb: cropID}
 			m.File.CropIDS[thumb] = slices.DeleteFunc(m.File.CropIDS[thumb], func(s string) bool {
 				return s == oldCropID
 			})
