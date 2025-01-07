@@ -112,8 +112,14 @@ func ConfigMailTemplate(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder 
 		titleCompo = h.Div(
 			v.VToolbarTitle("Inbox"),
 			v.VSpacer(),
-			vx.VXBtn("Save").Variant("elevated").Attr("@click", web.Emit("save_mail")).Color("primary"),
-			vx.VXBtn("Send Email").Variant("elevated").Color("secondary").Attr("@click", web.Emit("send_mail")).Color("secondary").Class("ml-2"),
+			vx.VXBtn("Save").Variant("elevated").Attr("@click", web.Emit("save_mail")).Color("primary").Attr(":disabled", "vars.$EmailEditorLoading"),
+			vx.VXBtn("Send Email").
+				Variant("elevated").
+				Color("secondary").
+				Attr("@click", web.Emit("send_mail")).
+				Color("secondary").
+				Attr(":loading", "vars.$EmailEditorLoading").
+				Class("ml-2"),
 		).Class("d-flex align-center w-100")
 
 		return
@@ -127,11 +133,14 @@ func ConfigMailTemplate(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder 
 					web.Listen("save_mail",
 						fmt.Sprintf(`() => { $refs.emailEditor.emit('getData').then(res=> {%s})}`,
 							web.Plaid().EventFunc(actions.Update).Query(presets.ParamID, et.ID).Form(web.Var("res")).Go())),
-					web.Listen("send_mail", `()=> {
+					// web.Listen("send_mail", presets.ShowDialogScript()),
+					web.Listen("send_mail", fmt.Sprintf(`()=> {
+						vars.$EmailEditorLoading = true
 						$refs.emailEditor.emit('sendMail')
-							.then(res=> { window.alert('Email sent!')})
-							.catch(err=> { window.alert('Email failed to send!')})
-					}`),
+							.then(res=> { %s })
+							.catch(err=> { %s })
+							.finally(()=> { vars.$EmailEditorLoading = false })
+					}`, presets.ShowSnackbarScript("Email successfully sent.", "success"), presets.ShowSnackbarScript("Email sent failed.", "error"))),
 					vx.VXIframeEmailEditor().
 						Ref("emailEditor").
 						Src(fmt.Sprintf("/email_builder/editor?id=%d&userId=undefined", et.ID)).
