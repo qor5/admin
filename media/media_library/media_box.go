@@ -29,7 +29,7 @@ type MediaBox struct {
 	Height      int                         `json:",omitempty"`
 	CropOptions map[string]*base.CropOption `json:",omitempty"`
 	Sizes       map[string]*base.Size       `json:",omitempty"`
-	CropID      map[string]string           `json:"crop_id"`
+	CropID      map[string]string           `json:",omitempty"`
 }
 
 // MediaBoxConfig configure MediaBox metas
