@@ -170,10 +170,6 @@ func (imageHandler) Handle(media Media, file FileInterface, option *Option) (err
 		newImage := img
 		if cropOption := media.GetCropOption(key); cropOption != nil {
 			newImage = imaging.Crop(newImage, *cropOption)
-		} else {
-			if cropOption = media.GetCropOption(DefaultSizeKey); cropOption != nil {
-				newImage = imaging.Crop(newImage, *cropOption)
-			}
 		}
 		var buffer bytes.Buffer
 		if err = imaging.Encode(&buffer, resizeImageTo(newImage, size, *format), *format); err != nil {
