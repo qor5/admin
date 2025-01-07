@@ -58,7 +58,7 @@ func ConfigMailTemplate(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder 
 	_ = lb
 	dp := mb.Detailing("Demo")
 	_ = dp
-	eb := mb.Editing("Subject")
+	eb := mb.Editing("Subject", "JSONBody", "HTMLBody")
 
 	eb.Creating().WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		// JSON_Body
