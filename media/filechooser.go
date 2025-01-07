@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"encoding/json"
 	"fmt"
-	"math"
 	"mime/multipart"
 	"strconv"
 	"strings"
@@ -170,33 +169,14 @@ func mergeNewSizes(m *media_library.MediaLibrary, cfg *media_library.MediaBoxCon
 	return
 }
 
-func AdjustCropOption(originalWidth, originalHeight int, size *base.Size, cropOption *base.CropOption) base.CropOption {
-	aspectRatio := float64(size.Width) / float64(size.Height)
-	originalAspectRatio := float64(cropOption.Width) / float64(cropOption.Height)
-	newWidth, newHeight := cropOption.Width, cropOption.Height
-	if aspectRatio > originalAspectRatio {
-		newWidth = int(float64(cropOption.Height) * aspectRatio)
-	} else if aspectRatio < originalAspectRatio {
-		newHeight = int(float64(cropOption.Width) / aspectRatio)
-	}
-	newX := cropOption.X - (newWidth-cropOption.Width)/2
-	newY := cropOption.Y - (newHeight-cropOption.Height)/2
-	newX = int(math.Max(0, float64(newX)))
-	newY = int(math.Max(0, float64(newY)))
-	newWidth = int(math.Min(float64(newWidth), float64(originalWidth-newX)))
-	newHeight = int(math.Min(float64(newHeight), float64(originalHeight-newY)))
-	return base.CropOption{
-		X:      newX,
-		Y:      newY,
-		Width:  newWidth,
-		Height: newHeight,
-	}
-}
-
 func chooseFile(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		db := mb.db
 		id := ctx.ParamAsInt(ParamMediaIDS)
+		if id == ctx.ParamAsInt(ParamSelectIDS) {
+			r.RunScript = `vars.showFileChooser = false`
+			return
+		}
 		field := ctx.Param(ParamField)
 		cfg := stringToCfg(ctx.Param(ParamCfg))
 
@@ -215,16 +195,6 @@ func chooseFile(mb *Builder) web.EventFunc {
 			if err != nil {
 				return
 			}
-			baseCropOption := m.File.CropOptions[base.DefaultSizeKey]
-			if baseCropOption != nil {
-				for key, size := range sizes {
-					if key == base.DefaultSizeKey {
-						continue
-					}
-					cropOption := AdjustCropOption(m.File.Width, m.File.Height, size, baseCropOption)
-					m.File.CropOptions[key] = &cropOption
-				}
-			}
 			err = db.Save(&m).Error
 			if err != nil {
 				return
@@ -240,7 +210,6 @@ func chooseFile(mb *Builder) web.EventFunc {
 		mediaBox := media_library.MediaBox{
 			ID:          json.Number(fmt.Sprint(m.ID)),
 			Url:         m.File.Url,
-			ParentUrl:   m.File.ParentUrl,
 			VideoLink:   "",
 			FileName:    m.File.FileName,
 			Description: m.File.Description,
@@ -248,11 +217,6 @@ func chooseFile(mb *Builder) web.EventFunc {
 			Width:       m.File.Width,
 			Height:      m.File.Height,
 		}
-		if cropValue := m.File.CropOptions[base.DefaultSizeKey]; cropValue != nil {
-			mediaBox.Width = cropValue.Width
-			mediaBox.Height = cropValue.Height
-		}
-
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: mediaBoxThumbnailsPortalName(field),
 			Body: mediaBoxThumbnails(ctx, &mediaBox, field, cfg, false, false),
@@ -342,6 +306,7 @@ func fileComponent(mb *Builder, field string, tab string, ctx *web.EventContext,
 			EventFunc(chooseFileEvent).
 			Query(ParamField, field).
 			Query(ParamMediaIDS, fmt.Sprint(f.ID)).
+			Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
 			Query(ParamCfg, h.JSONString(cfg)).
 			Go()
 	}
