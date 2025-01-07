@@ -72,6 +72,7 @@ func (mediaLibrary *MediaLibrary) GetSelectedType() string {
 type MediaLibraryStorage struct {
 	oss.OSS
 	Sizes        map[string]*base.Size `json:",omitempty"`
+	CropID       map[string]string     `json:"-"`
 	Video        string
 	SelectedType string
 	Description  string
@@ -153,16 +154,26 @@ func (mediaLibraryStorage MediaLibraryStorage) Value() (driver.Value, error) {
 	return string(results), err
 }
 
-func (mediaLibraryStorage *MediaLibraryStorage) URL(styles ...string) string {
-	if mediaLibraryStorage.ParentUrl != "" && len(styles) > 0 && styles[0] == base.OriginalSizeKey {
-		ext := path.Ext(mediaLibraryStorage.ParentUrl)
-		return fmt.Sprintf("%v.%v%v", strings.TrimSuffix(mediaLibraryStorage.ParentUrl, ext), styles[0], ext)
+func (mediaLibraryStorage *MediaLibraryStorage) URL(styles ...string) (s string) {
+	var cropID string
+	if len(styles) == 0 {
+		cropID = mediaLibraryStorage.CropID[base.DefaultSizeKey]
+	} else {
+		cropID = mediaLibraryStorage.CropID[styles[0]]
 	}
+	ext := path.Ext(mediaLibraryStorage.Url)
+
+	defer func() {
+		if len(cropID) > 0 {
+			s = fmt.Sprintf("%v_%v%v", s, cropID, ext)
+			return
+		}
+		s = fmt.Sprintf("%v%v", s, ext)
+	}()
 	if mediaLibraryStorage.Url != "" && len(styles) > 0 {
-		ext := path.Ext(mediaLibraryStorage.Url)
-		return fmt.Sprintf("%v.%v%v", strings.TrimSuffix(mediaLibraryStorage.Url, ext), styles[0], ext)
+		return fmt.Sprintf("%v.%v", strings.TrimSuffix(mediaLibraryStorage.Url, ext), styles[0])
 	}
-	return mediaLibraryStorage.Url
+	return strings.TrimSuffix(mediaLibraryStorage.Url, ext)
 }
 
 func GetQorPreviewSize(width, height int) map[string]*base.Size {
