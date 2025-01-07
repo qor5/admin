@@ -143,7 +143,7 @@ func ConfigMailTemplate(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder 
 					}`, presets.ShowSnackbarScript("Email successfully sent.", "success"), presets.ShowSnackbarScript("Email sent failed.", "error"))),
 					vx.VXIframeEmailEditor().
 						Ref("emailEditor").
-						Src(fmt.Sprintf("http://localhost:9500/email_builder/editor?id=%d&userId=undefined", et.ID)).
+						Src(fmt.Sprintf("/email_builder/editor?id=%d&userId=undefined", et.ID)).
 						Class("flex-1 ml-2"),
 				).VSlot("{locals}"),
 			).Class("d-flex").Style("height: calc(100vh - 100px - 20px);")

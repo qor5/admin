@@ -6,8 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"html/template"
+	"io"
+	"log"
 	"net/http"
 	"net/mail"
+	"os"
 	"strconv"
 	"strings"
 
@@ -26,6 +29,12 @@ type Builder struct {
 
 func ConfigEmailBuilder(db *gorm.DB) *Builder {
 	b := New(db).AutoMigrate()
+	err := b.PresetData()
+	if err != nil {
+		log.Println("preset data err:", err)
+	} else {
+		log.Println("preset data success")
+	}
 	b.Sender(LoadSenderConfig())
 	return b
 }
@@ -289,4 +298,20 @@ func GetContent(tmpl *template.Template, mailData MailData) (string, error) {
 		return "", err
 	}
 	return b.String(), nil
+}
+
+func (b *Builder) PresetData() error {
+	sqlFile := "../emailbuilder/data/data.sql"
+	file, err := os.Open(sqlFile)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	sqlContent, err := io.ReadAll(file)
+	if err != nil {
+		return err
+	}
+
+	return b.db.Exec(string(sqlContent)).Error
 }
