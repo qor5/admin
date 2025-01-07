@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/google/uuid"
-	"golang.org/x/exp/slices"
 	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/media/base"
@@ -162,16 +161,8 @@ func cropImage(b *Builder) web.EventFunc {
 				Height: int(cropValue.Height),
 			}
 			cropID := uuid.New().String()
-			oldCropID := mb.CropID[thumb]
-			// save related cropid
-			if m.File.CropIDS == nil {
-				m.File.CropIDS = make(map[string][]string)
-			}
+			// save new file with crop id
 			m.File.CropID = map[string]string{thumb: cropID}
-			m.File.CropIDS[thumb] = slices.DeleteFunc(m.File.CropIDS[thumb], func(s string) bool {
-				return s == oldCropID
-			})
-			m.File.CropIDS[thumb] = append(m.File.CropIDS[thumb], cropID)
 			moption.Crop = true
 			// don`t scan url field media box in media library record
 			moption.URL = ""

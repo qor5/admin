@@ -73,7 +73,6 @@ type MediaLibraryStorage struct {
 	oss.OSS
 	Sizes        map[string]*base.Size `json:",omitempty"`
 	CropID       map[string]string     `json:"-"`
-	CropIDS      map[string][]string   `json:"crop_ids"`
 	Video        string
 	SelectedType string
 	Description  string
