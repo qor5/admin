@@ -164,8 +164,6 @@ func cropImage(b *Builder) web.EventFunc {
 			// save new file with crop id
 			m.File.CropID = map[string]string{thumb: cropID}
 			moption.Crop = true
-			// don`t scan url field media box in media library record
-			moption.URL = ""
 			err = m.ScanMediaOptions(moption)
 			if err != nil {
 				return

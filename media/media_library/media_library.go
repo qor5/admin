@@ -155,11 +155,6 @@ func (mediaLibraryStorage MediaLibraryStorage) Value() (driver.Value, error) {
 }
 
 func (mediaLibraryStorage *MediaLibraryStorage) URL(styles ...string) (s string) {
-	if len(styles) > 0 {
-		if styles[0] == base.OriginalSizeKey {
-			fmt.Println(styles)
-		}
-	}
 	var cropID string
 	if len(styles) == 0 {
 		cropID = mediaLibraryStorage.CropID[base.DefaultSizeKey]
