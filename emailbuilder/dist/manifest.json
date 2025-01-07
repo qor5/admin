@@ -1,6 +1,6 @@
 {
   "index.html": {
-    "file": "assets/index.1f418dbd.js",
+    "file": "assets/index.f0925cb6.js",
     "src": "index.html",
     "isEntry": true,
     "imports": [
@@ -21,7 +21,7 @@
       "src/templates/Stay Updated On Our Shopping.json",
       "src/templates/We Serve Healthy & Delicious Foods.json",
       "src/templates/St. Patrick Day - Newsletter.json",
-      "_index-b0e2b21e.js"
+      "_index-27eb1861.js"
     ],
     "css": [
       "assets/index.57e1656f.css"
@@ -42,8 +42,8 @@
       "_lodash-39fc179f.js"
     ]
   },
-  "_index-b0e2b21e.js": {
-    "file": "index-b0e2b21e.js",
+  "_index-27eb1861.js": {
+    "file": "index-27eb1861.js",
     "isDynamicEntry": true,
     "imports": [
       "index.html",
@@ -118,12 +118,12 @@
     "isDynamicEntry": true
   },
   "../packages/easy-email-extensions/lib/index3.js": {
-    "file": "index3-f8bb4b76.js",
+    "file": "index3-f24e87da.js",
     "src": "../packages/easy-email-extensions/lib/index3.js",
     "isDynamicEntry": true,
     "imports": [
       "index.html",
-      "_index-b0e2b21e.js",
+      "_index-27eb1861.js",
       "_mjml-browser.js",
       "_lodash-39fc179f.js"
     ]
