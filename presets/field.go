@@ -902,16 +902,18 @@ func (b *FieldsBuilder) fieldToComponentWithFormValueKey(info *ModelInfo, obj in
 			disabled = info.Verifier().Do(PermCreate).ObjectOn(obj).SnakeOn("f_"+f.name).WithReq(ctx.R).IsAllowed() != nil
 		}
 	}
-	return f.lazyCompFunc().FieldComponent(obj, &FieldContext{
-		ModelInfo:           info,
-		Name:                f.name,
-		FormKey:             contextKeyPath,
-		Label:               label,
-		Errors:              vErr.GetFieldErrors(contextKeyPath),
-		NestedFieldsBuilder: f.nestedFieldsBuilder,
-		Context:             f.context,
-		Disabled:            disabled,
-	}, ctx)
+	return h.Div(
+		f.lazyCompFunc().FieldComponent(obj, &FieldContext{
+			ModelInfo:           info,
+			Name:                f.name,
+			FormKey:             contextKeyPath,
+			Label:               label,
+			Errors:              vErr.GetFieldErrors(contextKeyPath),
+			NestedFieldsBuilder: f.nestedFieldsBuilder,
+			Context:             f.context,
+			Disabled:            disabled,
+		}, ctx),
+	).Attr("v-if", fmt.Sprintf("!dash.visible || dash.visible[%q]===undefined || dash.visible[%q]", contextKeyPath, contextKeyPath))
 }
 
 type RowFunc func(obj interface{}, formKey string, content h.HTMLComponent, ctx *web.EventContext) h.HTMLComponent
