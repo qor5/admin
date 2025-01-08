@@ -18,13 +18,26 @@ func PresetsEditingTabController(b *presets.Builder, db *gorm.DB) (
 ) {
 	mb, cl, ce, dp = PresetsHelloWorld(b, db)
 	ce.Creating()
-	mb.Editing("Tabs", "Name", "Email", "Description", "ApprovedAt").Field("Tabs").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	ed := mb.Editing("Notes", "Tabs", "Name", "Email", "Tabs2", "Description", "ApprovedAt")
+	ed.Field("Tabs").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		option := presets.TabsControllerOption{
 			DefaultIndex: 1,
 			Tabs: []presets.TabControllerOption{
-				{Tab: v.VTab().Text("t1"), Fields: []string{"Name", "Email", "Description"}},
-				{Tab: v.VTab().Text("t2"), Fields: []string{"Email", "Description"}},
-				{Tab: v.VTab().Text("t3"), Fields: []string{"ApprovedAt"}},
+				{Tab: v.VTab().Text("t1"), Fields: []string{"Name"}},
+				{Tab: v.VTab().Text("t2"), Fields: []string{"Email"}},
+			},
+			WrapTabComponent: func(comp *vx.VXTabsBuilder) *vx.VXTabsBuilder {
+				return comp.UnderlineBorder("full")
+			},
+		}
+		return presets.TabsController(field, &option)
+	})
+	ed.Field("Tabs2").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		option := presets.TabsControllerOption{
+			DefaultIndex: 1,
+			Tabs: []presets.TabControllerOption{
+				{Tab: v.VTab().Text("t3"), Fields: []string{"Description"}},
+				{Tab: v.VTab().Text("t4"), Fields: []string{"ApprovedAt"}},
 			},
 			WrapTabComponent: func(comp *vx.VXTabsBuilder) *vx.VXTabsBuilder {
 				return comp.UnderlineBorder("full")
