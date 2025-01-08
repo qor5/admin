@@ -116,9 +116,8 @@ func ConfigMailTemplate(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder 
 			vx.VXBtn("Send Email").
 				Variant("elevated").
 				Color("secondary").
-				Attr("@click", web.Emit("send_mail")).
+				Attr("@click", web.Emit("open_send_mail_dialog")).
 				Color("secondary").
-				Attr(":loading", "vars.$EmailEditorLoading").
 				Class("ml-2"),
 		).Class("d-flex align-center w-100")
 
@@ -128,24 +127,39 @@ func ConfigMailTemplate(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder 
 	dp.Field("Demo").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			et := obj.(*MailTemplate)
+			modalName := "emailEditorDialog"
+
 			return h.Div(
-				web.Scope(
-					web.Listen("save_mail",
-						fmt.Sprintf(`() => { $refs.emailEditor.emit('getData').then(res=> {%s})}`,
-							web.Plaid().EventFunc(actions.Update).Query(presets.ParamID, et.ID).Form(web.Var("res")).Go())),
-					// web.Listen("send_mail", presets.ShowDialogScript()),
-					web.Listen("send_mail", fmt.Sprintf(`()=> {
+				web.Listen("save_mail",
+					fmt.Sprintf(`() => { $refs.emailEditor.emit('getData').then(res=> {%s})}`,
+						web.Plaid().EventFunc(actions.Update).Query(presets.ParamID, et.ID).Form(web.Var("res")).Go())),
+
+				web.Listen("open_send_mail_dialog", ShowDialogScript(modalName, UtilDialogPayloadType{
+					Title: "Please Enter a Email Address",
+					ContentEl: vx.VXField().
+						Label("To").
+						Placeholder("Enter a email address").
+						Attr("v-model", "vars.to_email_address").
+						// Attr(":rules", "(v) => !!v || 'Email is required'").
+						Required(true),
+					OkAction:  web.Emit("send_mail"),
+					LoadingOk: "vars.$EmailEditorLoading",
+				})),
+
+				web.Listen("send_mail", fmt.Sprintf(`(payload)=> {
 						vars.$EmailEditorLoading = true
-						$refs.emailEditor.emit('sendMail')
+
+						$refs.emailEditor.emit('sendMail', {to: vars.to_email_address})
 							.then(res=> { %s })
-							.catch(err=> { %s })
+							.catch(err=> { %s }) 
 							.finally(()=> { vars.$EmailEditorLoading = false })
 					}`, presets.ShowSnackbarScript("Email successfully sent.", "success"), presets.ShowSnackbarScript("Email sent failed.", "error"))),
-					vx.VXIframeEmailEditor().
-						Ref("emailEditor").
-						Src(fmt.Sprintf("/email_builder/editor?id=%d&userId=undefined", et.ID)).
-						Class("flex-1 ml-2"),
-				).VSlot("{locals}"),
+				vx.VXIframeEmailEditor().
+					Ref("emailEditor").
+					Src(fmt.Sprintf("/email_builder/editor?id=%d&userId=undefined", et.ID)).
+					Class("flex-1 ml-2"),
+
+				web.Portal().Name(modalName),
 			).Class("d-flex").Style("height: calc(100vh - 100px - 20px);")
 		})
 
