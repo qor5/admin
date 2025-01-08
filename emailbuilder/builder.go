@@ -464,7 +464,7 @@ VALUES (1, '2024-12-26 15:01:13.985362 +00:00', '2024-12-26 15:01:13.985362 +00:
                 "type": "text",
                 "data": {
                   "value": {
-                    "content": "St. Patrick\'s{{.Name}} Day"
+                    "content": "St. Patrick\'s{{Name}} Day"
                   }
                 },
                 "attributes": {
@@ -1883,5 +1883,5 @@ UPDATE SET
     html_body = EXCLUDED.html_body;
 `
 
-	return b.db.Exec(string(upsertSql)).Error
+	return b.db.Exec(upsertSql).Error
 }
