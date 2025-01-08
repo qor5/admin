@@ -26,7 +26,7 @@ func TestPresetsEditingTabController(t *testing.T) {
 					EventFunc(actions.Edit).
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`tab:1`, `vx-tabs underline-border='contain'`, "t1", "t2"},
+			ExpectPortalUpdate0ContainsInOrder: []string{`tab:1`, `vx-tabs underline-border='full'`, "t1", "t2"},
 		},
 	}
 

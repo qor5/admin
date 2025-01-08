@@ -27,7 +27,7 @@ func PresetsEditingTabController(b *presets.Builder, db *gorm.DB) (
 				{Tab: v.VTab().Text("t3"), Fields: []string{"ApprovedAt"}},
 			},
 			WrapTabComponent: func(comp *vx.VXTabsBuilder) *vx.VXTabsBuilder {
-				return comp.UnderlineBorder("contain")
+				return comp.UnderlineBorder("full")
 			},
 		}
 		return presets.TabsController(field, &option)

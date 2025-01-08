@@ -58,13 +58,14 @@ func TabsController(field *FieldContext, option *TabsControllerOption) h.HTMLCom
 		tabs = append(tabs, tabController.Tab.Value(index))
 		tabFields = append(tabFields, tabController.Fields)
 	}
-	vxTabs := vx.VXTabs(tabs...)
+	vxTabs := vx.VXTabs(tabs...).UnderlineBorder("full")
 	if option.WrapTabComponent != nil {
 		vxTabs = option.WrapTabComponent(vxTabs)
 	}
 
-	return web.Scope(
-		h.Div().Attr("v-on-mounted", fmt.Sprintf(`() => {
+	return h.Div(
+		web.Scope(
+			h.Div().Attr("v-on-mounted", fmt.Sprintf(`() => {
 tabsTabsControllerLocals.__setTabFieldVisible = (index) => {
         dash.visible = {
 %v:true};
@@ -73,10 +74,11 @@ tabsTabsControllerLocals.__setTabFieldVisible = (index) => {
         })}
    tabsTabsControllerLocals.__setTabFieldVisible(tabsTabsControllerLocals.tab)
 }`, field.FormKey)).Style("display:none"),
-		vxTabs.Attr("@update:model-value",
-			`
+			vxTabs.Attr("@update:model-value",
+				`
 tabsTabsControllerLocals.__setTabFieldVisible($event)`).
-			Attr("v-model", "tabsTabsControllerLocals.tab"),
-	).VSlot("{locals:tabsTabsControllerLocals}").
-		Init(fmt.Sprintf("{tab:%v,items:%v}", option.DefaultIndex, h.JSONString(tabFields)))
+				Attr("v-model", "tabsTabsControllerLocals.tab"),
+		).VSlot("{locals:tabsTabsControllerLocals}").
+			Init(fmt.Sprintf("{tab:%v,items:%v}", option.DefaultIndex, h.JSONString(tabFields))),
+	).Class("mb-8")
 }
