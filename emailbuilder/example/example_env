@@ -1,0 +1,4 @@
+# database config
+export DB_PARAMS="user=email password=email dbname=email sslmode=disable host=localhost port=7632 TimeZone=Asia/Tokyo"
+
+# configure env related to AWS Simple Email Service
