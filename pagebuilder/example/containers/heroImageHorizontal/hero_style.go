@@ -105,5 +105,5 @@ func SetHeroStyleComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder) 
 	})
 	// SetCommonStyleComponent(pb, fb.Field("Style"))
 
-	eb.Field("Style").Nested(fb).Label(presets.HiddenLabel)
+	eb.Field("Style").Nested(fb).PlainFieldBody().HideLabel()
 }

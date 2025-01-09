@@ -90,6 +90,19 @@ type FieldBuilder struct {
 	nestedFieldsBuilder *FieldsBuilder
 	tabFieldsBuilders   *TabsFieldBuilder
 	plugins             []FieldPlugin
+
+	hideLabel         bool
+	usePlainFieldBody bool
+}
+
+func (fb *FieldBuilder) HideLabel() *FieldBuilder {
+	fb.hideLabel = true
+	return fb
+}
+
+func (fb *FieldBuilder) PlainFieldBody() *FieldBuilder {
+	fb.usePlainFieldBody = true
+	return fb
 }
 
 type FieldComponentInterface interface {
@@ -199,8 +212,6 @@ func (b *FieldBuilder) LazyWrapComponentFunc(w func(in FieldComponentFunc) Field
 	return b
 }
 
-const HiddenLabel = "_hidden_label_"
-
 func (b *FieldBuilder) lazyCompFunc() FieldComponentInterface {
 	var fn FieldComponentFunc
 
@@ -211,9 +222,6 @@ func (b *FieldBuilder) lazyCompFunc() FieldComponentInterface {
 	}
 
 	return FieldComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		if field.Label == HiddenLabel {
-			field.Label = ""
-		}
 		return fn(obj, field, ctx)
 	})
 }
@@ -316,8 +324,9 @@ func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *Field
 			modifiedIndexes := ContextModifiedIndexesBuilder(ctx)
 			body := b.nestedFieldsBuilder.toComponentWithFormValueKey(field.ModelInfo, val, field.FormKey, modifiedIndexes, ctx)
 			return h.Div(
-				h.If(field.Label != "", h.Label(field.Label).Class("v-label theme--light text-caption")),
-				v.VCard(body).Variant("outlined").Class("mx-0 mt-1 mb-4 px-4 pb-0 pt-4"),
+				h.If(!b.hideLabel, h.Label(field.Label).Class("v-label theme--light text-caption wrapper-field-label")),
+				h.If(b.usePlainFieldBody, body),
+				h.If(!b.usePlainFieldBody, v.VCard(body).Variant("outlined").Class("mx-0 mt-1 mb-4 px-4 pb-0 pt-4")),
 			)
 		})
 	}

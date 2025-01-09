@@ -61,5 +61,5 @@ func SetHeroContentComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder
 
 	// SetCommonStyleComponent(pb, fb.Field("Style"))
 
-	eb.Field("Content").Nested(fb).Label(presets.HiddenLabel)
+	eb.Field("Content").Nested(fb).PlainFieldBody().HideLabel()
 }
