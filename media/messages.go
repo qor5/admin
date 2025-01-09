@@ -39,6 +39,7 @@ type Messages struct {
 	DeleteObjects                         func(v int) string
 	MediaLibrary                          string
 	UnSupportFileType                     string
+	CopyImageURL                          string
 }
 
 var Messages_en_US = &Messages{
@@ -80,6 +81,7 @@ var Messages_en_US = &Messages{
 
 	MediaLibrary:      "Media Library",
 	UnSupportFileType: "UnSupport FileType",
+	CopyImageURL:      "copy image URL",
 }
 
 var Messages_zh_CN = &Messages{
@@ -120,6 +122,7 @@ var Messages_zh_CN = &Messages{
 	},
 	MediaLibrary:      "媒体库",
 	UnSupportFileType: "不支持的文件类型",
+	CopyImageURL:      "拷贝图片链接",
 }
 
 var Messages_ja_JP = &Messages{
@@ -160,4 +163,5 @@ var Messages_ja_JP = &Messages{
 	},
 	MediaLibrary:      "メディアライブラリ",
 	UnSupportFileType: "サポートされていないファイル形式",
+	CopyImageURL:      "画像のURLをコピー",
 }

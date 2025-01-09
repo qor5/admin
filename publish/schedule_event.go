@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
@@ -16,6 +14,9 @@ import (
 	"github.com/samber/lo"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/utils"
 )
 
 const (
@@ -65,19 +66,23 @@ func scheduleDialog(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 				vx.VXDialog(
 					v.VRow().Class("justify-center").Children(
 						h.If(displayStartAtPicker, v.VCol().Children(
-							vx.VXDateTimePicker().Attr(web.VField(fieldScheduledStartAt, valStartAt)...).Label(msgr.ScheduledStartAt).
-								TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}).
-								ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText),
+							vx.VXDatepicker().Type("datetimepicker").
+								Format("YYYY-MM-DD HH:mm").
+								Clearable(true).
+								Attr(web.VField(fieldScheduledStartAt, valStartAt)...).
+								Label(msgr.ScheduledStartAt),
 						)),
 						v.VCol().Children(
-							vx.VXDateTimePicker().Attr(web.VField(fieldScheduledEndAt, valEndAt)...).Label(msgr.ScheduledEndAt).
-								TimePickerProps(vx.TimePickerProps{Format: "24hr", Scrollable: true}).
-								ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText),
+							vx.VXDatepicker().Type("datetimepicker").
+								Format("YYYY-MM-DD HH:mm").
+								Clearable(true).
+								Attr(web.VField(fieldScheduledEndAt, valEndAt)...).
+								Label(msgr.ScheduledEndAt),
 						),
 					),
 				).Attr("v-model", "locals.schedulePublishDialog").
 					Title(msgr.SchedulePublishTime).
-					ContentHeight(88).
+					ContentHeight(108).
 					CancelText(cmsgr.Cancel).
 					OkText(cmsgr.Update).
 					Attr(":disable-ok", "isFetching").

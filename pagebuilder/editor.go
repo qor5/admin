@@ -3,7 +3,6 @@ package pagebuilder
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
@@ -44,15 +43,16 @@ const (
 	paramContainerID     = "containerID"
 	paramContainerUri    = "containerUri"
 	paramContainerDataID = "containerDataID"
-	paramContainerNew    = "new"
+	paramIsUpdate        = "isUpdate"
 	paramMoveResult      = "moveResult"
 	paramContainerName   = "containerName"
 	paramSharedContainer = "sharedContainer"
 	paramModelID         = "modelID"
 	paramModelName       = "modelName"
 	paramMoveDirection   = "moveDirection"
-	paramsDevice         = "device"
-	paramsDisplayName    = "DisplayName"
+	paramDevice          = "device"
+	paramDisplayName     = "DisplayName"
+	paramDemoContainer   = "demoContainer"
 
 	DevicePhone    = "phone"
 	DeviceTablet   = "tablet"
@@ -122,16 +122,13 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 
 		}
 		if containerDataID != "" {
-			arr := strings.Split(containerDataID, "_")
-			if len(arr) >= 2 {
-				editEvent := web.Plaid().
-					EventFunc(EditContainerEvent).
-					Query(paramContainerUri, fmt.Sprintf(`%s/%s`, b.prefix, arr[0])).
-					Query(paramContainerID, arr[1]).
-					Query(presets.ParamPortalName, pageBuilderRightContentPortal).
-					Query(presets.ParamOverlay, actions.Content).Go()
-				editContainerDrawer = web.RunScript(fmt.Sprintf(`function(){%s}`, editEvent))
-			}
+			editEvent := web.Plaid().
+				EventFunc(EditContainerEvent).
+				MergeQuery(true).
+				Query(paramContainerDataID, containerDataID).
+				Query(presets.ParamPortalName, pageBuilderRightContentPortal).
+				Query(presets.ParamOverlay, actions.Content).Go()
+			editContainerDrawer = web.RunScript(fmt.Sprintf(`function(){%s}`, editEvent))
 		} else {
 			editContainerDrawer = b.emptyEdit(ctx)
 		}
@@ -146,12 +143,21 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 		if !isStag && m.mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil {
 			isStag = true
 		}
-		afterLeaveEvent := removeVirtualElement() + scrollToContainer(fmt.Sprintf("vars.%s", paramContainerDataID))
-		addOverlay := vx.VXOverlay(m.newContainerContent(ctx)).
-			MaxWidth(665).
-			Attr("ref", "overlay").
-			Attr("@after-leave", afterLeaveEvent).
-			Attr("v-model", "vars.overlay")
+		afterLeaveEvent := removeVirtualElement()
+		addOverlay := web.Scope(
+			h.Div().Style("display:none").Attr("v-on-mounted", `({watch})=>{
+					watch(() => vars.overlay, (value) => {
+						if(value){xLocals.add=false;}
+						})
+				}`),
+			vx.VXOverlay(
+				m.newContainerContent(ctx),
+			).
+				MaxWidth(665).
+				Attr("ref", "overlay").
+				Attr("@after-leave", fmt.Sprintf("if (!xLocals.add){%s}", afterLeaveEvent)).
+				Attr("v-model", "vars.overlay"),
+		).VSlot("{locals:xLocals}").Init("{add:false}")
 		versionComponent = publish.DefaultVersionComponentFunc(m.editor, publish.VersionComponentConfig{Top: true, DisableListeners: true, DisableDataChangeTracking: true})(obj, &presets.FieldContext{ModelInfo: m.editor.Info()}, ctx)
 		pageAppbarContent = h.Components(
 			h.Div(
@@ -186,10 +192,13 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 				vars.$pbRightThrottleTimer = null
 			}`)).
 				Attr("v-on-mounted", fmt.Sprintf(`({ref, window, computed})=>{
+				const rightDrawerExpendMinWidth = 350 + 56 // 56 is the width of the gap, 390 is the actual size
+				const leftDrawerExpendMinWidth = 350
+
 				vars.$pbLeftDrawerFolded = window.localStorage.getItem("$pbLeftDrawerFolded") === '1'
 				vars.$pbRightDrawerFolded = window.localStorage.getItem("$pbRightDrawerFolded") === '1'
-				vars.$pbLeftDrawerWidth = computed(()=>vars.$pbLeftDrawerFolded ? 32 : 350)
-				vars.$pbRightAdjustableWidth = +window.localStorage.getItem("$pbRightAdjustableWidth") || 350
+				vars.$pbLeftDrawerWidth = computed(()=>vars.$pbLeftDrawerFolded ? 32 : leftDrawerExpendMinWidth)
+				vars.$pbRightAdjustableWidth = +window.localStorage.getItem("$pbRightAdjustableWidth") || rightDrawerExpendMinWidth
 				vars.$pbRightDrawerWidth = computed(()=>vars.$pbRightDrawerFolded ? 32 : vars.$pbRightAdjustableWidth)
 				vars.$pbLeftIconName = computed(()=> vars.$pbLeftDrawerFolded ? "mdi-chevron-right": "mdi-chevron-left")
 				vars.$pbRightIconName = computed(()=> vars.$pbRightDrawerFolded ? "mdi-chevron-left": "mdi-chevron-right")
@@ -206,7 +215,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 					vars.$pbRightThrottleTimer = window.setTimeout(() => {
 						const halfWindowWidth = window.innerWidth / 2
 						vars.$pbRightThrottleTimer = null
-						if((vars.$pbRightDrawerWidth > halfWindowWidth) && (vars.$pbRightDrawerWidth > 350)) {
+						if((vars.$pbRightDrawerWidth > halfWindowWidth) && (vars.$pbRightDrawerWidth > rightDrawerExpendMinWidth)) {
 						vars.$pbRightAdjustableWidth =  halfWindowWidth
 					} 
 						window.localStorage.setItem("$pbRightAdjustableWidth", vars.$pbRightAdjustableWidth)
@@ -248,7 +257,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 						animationFrameId = window.requestAnimationFrame(() => {
 							const rect = draggableEl.value.getBoundingClientRect();
 							const dx = rect.right - event.clientX;
-							const minWidth = 350; 
+							const minWidth = rightDrawerExpendMinWidth; 
 							const maxWidth = window.innerWidth / 2;
 
 							const newWidth = Math.min(Math.max(dx, minWidth), maxWidth);
@@ -379,7 +388,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 }
 
 func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string) {
-	device = ctx.R.FormValue(paramsDevice)
+	device = ctx.R.FormValue(paramDevice)
 	if len(device) == 0 {
 		device = b.defaultDevice
 	}
@@ -534,7 +543,7 @@ func (b *Builder) containerWrapper(r *h.HTMLTagBuilder, ctx *web.EventContext, i
 		} else {
 			r = h.Div(
 				h.Div().Class("inner-shadow"),
-				h.Div(h.Div(r).Attr("style", "pointer-events:none")).Attr("onclick", "event.stopPropagation();document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('highlight')});this.parentElement.classList.add('highlight');"+pmb.postMessage(EventEdit)),
+				h.Div(h.Div(r).Class("inner-container")).Attr("onclick", "event.stopPropagation();document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('highlight')});this.parentElement.classList.add('highlight');"+pmb.postMessage(EventEdit)),
 				h.Div(
 					h.Div(h.Text(input.DisplayName)).Class("title"),
 					h.Div(

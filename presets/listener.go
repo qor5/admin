@@ -58,7 +58,7 @@ func (mb *ModelBuilder) NotifModelsSectionValidate(name string) string {
 }
 
 type PayloadModelsSetter struct {
-	Id     string      `json:"id"`
-	Form   interface{} `json:"form"`
-	Passed bool        `json:"passed"`
+	Id          string      `json:"id"`
+	FieldErrors interface{} `json:"field_errors"`
+	Passed      bool        `json:"passed"`
 }

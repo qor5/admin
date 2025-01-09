@@ -82,7 +82,7 @@ func TestPageBuilderOnline(t *testing.T) {
 
 				return req
 			},
-			ExpectRunScriptContainsInOrder: []string{"vars.presetsMessage = { show: true, message:", "plaid().vars(vars).locals(locals).form(form).reload().go()"},
+			ExpectRunScriptContainsInOrder: []string{"vars.presetsMessage = { show: true, message:", "plaid().vars(vars).locals(locals).form(form).dash(dash).reload().go()"},
 		},
 		{
 			Name:  "PageBuilder Online Wrap UpdateContainerEvent",
@@ -98,7 +98,7 @@ func TestPageBuilderOnline(t *testing.T) {
 
 				return req
 			},
-			ExpectRunScriptContainsInOrder: []string{"vars.presetsMessage = { show: true, message:", "plaid().vars(vars).locals(locals).form(form).reload().go()"},
+			ExpectRunScriptContainsInOrder: []string{"vars.presetsMessage = { show: true, message:", "plaid().vars(vars).locals(locals).form(form).dash(dash).reload().go()"},
 		},
 		{
 			Name:  "PageBuilder Online Wrap AddContainerEvent",
@@ -113,7 +113,7 @@ func TestPageBuilderOnline(t *testing.T) {
 
 				return req
 			},
-			ExpectRunScriptContainsInOrder: []string{"vars.presetsMessage = { show: true, message:", "plaid().vars(vars).locals(locals).form(form).reload().go()"},
+			ExpectRunScriptContainsInOrder: []string{"vars.presetsMessage = { show: true, message:", "plaid().vars(vars).locals(locals).form(form).dash(dash).reload().go()"},
 		},
 		{
 			Name:  "PageBuilder Online Edit Page",

@@ -439,7 +439,7 @@ func TestMedia(t *testing.T) {
 					PageURL("/media-libraries").
 					Query(media.ParamField, "media").
 					Query(web.EventFuncIDName, media.ImageSearchEvent).
-					Query("media_file_chooser_search_keyword", "test_search2").
+					Query("keyword", "test_search2").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -456,7 +456,7 @@ func TestMedia(t *testing.T) {
 					PageURL("/media-libraries").
 					Query(media.ParamField, "media").
 					Query(web.EventFuncIDName, media.ImageSearchEvent).
-					Query("media_file_chooser_search_keyword", "2").
+					Query("keyword", "2").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -472,7 +472,7 @@ func TestMedia(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/media-libraries").
 					Query(media.ParamField, "media").
-					Query("media_file_chooser_current_page", "2").
+					Query("page", "2").
 					Query(web.EventFuncIDName, media.ImageJumpPageEvent).
 					BuildEventFuncRequest()
 				return req

@@ -1,6 +1,7 @@
 package pagebuilder
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"path"
@@ -155,15 +156,15 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 		)
 	}
 	pushState := web.Plaid().PushState(true).MergeQuery(true).
-		Query(paramContainerDataID, web.Var(`element.label+"_"+element.model_id`))
+		Query(paramContainerDataID, web.Var(`element.container_data_id`))
 	var clickColumnEvent string
 	if !isReadonly {
 		pushState.Query(paramContainerID, web.Var("element.param_id"))
 		clickColumnEvent = fmt.Sprintf(`vars.%s=element.container_data_id;`, paramContainerDataID) +
 			web.Plaid().
 				EventFunc(EditContainerEvent).
-				Query(paramContainerUri, web.Var(fmt.Sprintf(`"%s/"+element.label`, b.builder.prefix))).
-				Query(paramContainerID, web.Var("element.model_id")).
+				MergeQuery(true).
+				Query(paramContainerDataID, web.Var("element.container_data_id")).
 				Query(presets.ParamOverlay, actions.Content).
 				Query(presets.ParamPortalName, pageBuilderRightContentPortal).
 				Go() + ";" + pushState.RunPushState() +
@@ -175,11 +176,12 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 	// container functions
 	containerOperations := h.Div(
 		VBtn("").Variant(VariantText).Icon("mdi-content-copy").Size(SizeSmall).Attr("@click",
-			web.Plaid().
-				EventFunc(ReplicateContainerEvent).
-				Query(paramContainerID, web.Var("element.param_id")).
-				Query(paramStatus, ctx.Param(paramStatus)).
-				Go(),
+			"$event.stopPropagation();"+
+				web.Plaid().
+					EventFunc(ReplicateContainerEvent).
+					Query(paramContainerID, web.Var("element.param_id")).
+					Query(paramStatus, ctx.Param(paramStatus)).
+					Go(),
 		).Attr("v-show", "isHovering"),
 		VMenu(
 			web.Slot(
@@ -234,7 +236,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 												web.Scope(
 													vx.VXField().Autofocus(true).
 														Attr(":hide-details", "true").
-														Attr("v-model", fmt.Sprintf("form.%s", paramsDisplayName)).
+														Attr("v-model", fmt.Sprintf("form.%s", paramDisplayName)).
 														Attr("v-if", "element.editShow").
 														Attr("@blur", "element.editShow=false;"+renameEvent).
 														Attr("@keyup.enter", renameEvent),
@@ -255,18 +257,44 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 								).Name("default").Scope("{ isHovering, props }"),
 							),
 							VDivider(),
-						),
+						).Attr(":data-container-id", "element.container_data_id"),
 					).Attr("#item", " { element } "),
 				),
 			),
-		).Class("px-4 overflow-y-auto").MaxHeight("86vh"),
+		).Class("px-4 overflow-y-auto").Attr("id", "test001").MaxHeight("86vh").Attr("v-on-mounted", fmt.Sprintf(`({ el, window }) => {
+      locals.__pageBuilderLeftContentKeepScroll = (container_data_id) => {
+			if (container_data_id){
+				const container = el.querySelector("div[data-container-id='" + container_data_id + "']")
+				if (container){
+               		 el.scrollTop = container.offsetTop;
+					return
+				}
+			}
+            const scrollTop = locals.__pageBuilderLeftContentScrollTop;
+            window.setTimeout(() => {
+                el.scrollTop = scrollTop;
+            }, 0)
+        }
+    el.__handleScroll = (event) => {
+        locals.__pageBuilderLeftContentScrollTop = event.target.scrollTop;
+    }
+    el.addEventListener('scroll', el.__handleScroll)
+}`)).
+			Attr("v-on-unmounted", `({el}) => {
+				el.removeEventListener('scroll', el.__handleScroll);
+						}`),
 		VBtn("").Children(
 			web.Slot(
 				VIcon("mdi-plus-circle-outline"),
 			).Name(VSlotPrepend),
 			h.Span(msgr.AddContainer).Class("ml-5"),
 		).BaseColor(ColorPrimary).Variant(VariantText).Class(W100, "pl-14", "justify-start").
-			Height(50).
+			Height(50).Attr("v-on-mounted", fmt.Sprintf(`()=>{
+			if (!!locals.__pageBuilderLeftContentKeepScroll &&locals.__pageBuilderLeftContentKeepScrollFlag) {
+       		 	locals.__pageBuilderLeftContentKeepScroll(%q);
+             }
+			locals.__pageBuilderLeftContentKeepScrollFlag=true;
+			}`, ctx.Param(paramContainerDataID))).
 			Attr(":disabled", "vars.__pageBuilderAddContainerBtnDisabled").
 			Attr("@click", appendVirtualElement()+web.Plaid().PushState(true).ClearMergeQuery([]string{paramContainerID}).RunPushState()+";vars.containerPreview=false;vars.overlay=true;vars.overlayEl.refs.overlay.showByElement($event)"),
 	).Init(h.JSONString(sorterData)).VSlot("{ locals:sortLocals,form }")
@@ -299,7 +327,7 @@ func (b *ModelBuilder) addContainer(ctx *web.EventContext) (r web.EventResponse,
 		web.Plaid().EventFunc(ShowSortedContainerDrawerEvent).Query(paramContainerDataID, containerDataId).
 			Query(paramStatus, ctx.Param(paramStatus)).Go(),
 		web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).Query(paramContainerDataID, containerDataId).Go(),
-		web.Plaid().EventFunc(EditContainerEvent).Query(paramContainerUri, cb.mb.Info().ListingHref()).Query(paramContainerID, modelID).Go(),
+		web.Plaid().EventFunc(EditContainerEvent).MergeQuery(true).Query(paramContainerDataID, containerDataId).Go(),
 		"vars.emptyIframe=false;",
 	)
 	return
@@ -523,7 +551,7 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 				MergeQuery(true).
 				Query(paramModelName, cb.name).
 				Query(paramStatus, ctx.Param(paramStatus)).
-				ThenScript("vars.overlay=false").
+				ThenScript("vars.overlay=false;xLocals.add=true").
 				Go()
 			containers = append(containers,
 				VHover(
@@ -576,7 +604,7 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 					MergeQuery(true).
 					Query(paramModelName, builder.name).
 					Query(paramStatus, ctx.Param(paramStatus)).
-					ThenScript("vars.overlay=false").
+					ThenScript("vars.overlay=false;xLocals.add=true").
 					Go()
 				listItems = append(listItems,
 					VHover(
@@ -667,7 +695,7 @@ func (b *ModelBuilder) renameContainer(ctx *web.EventContext) (r web.EventRespon
 		cs          = container.PrimaryColumnValuesBySlug(paramID)
 		containerID = cs[presets.ParamID]
 		locale      = cs[l10n.SlugLocaleCode]
-		name        = ctx.R.FormValue(paramsDisplayName)
+		name        = ctx.R.FormValue(paramDisplayName)
 	)
 	err = b.db.First(&container, "id = ? AND locale_code = ?  ", containerID, locale).Error
 	if err != nil {
@@ -803,28 +831,26 @@ func (b *ModelBuilder) replicateContainer(ctx *web.EventContext) (r web.EventRes
 		web.Plaid().EventFunc(ShowSortedContainerDrawerEvent).Query(paramContainerDataID, containerDataId).
 			Query(paramStatus, ctx.Param(paramStatus)).Go(),
 		web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).Query(paramContainerDataID, containerDataId).Go(),
-		web.Plaid().EventFunc(EditContainerEvent).Query(paramContainerUri, cb.mb.Info().ListingHref()).Query(paramContainerID, modelID).Go(),
+		web.Plaid().EventFunc(EditContainerEvent).MergeQuery(true).Query(containerDataId, containerDataId).Go(),
 	)
 	return
 }
 
 func (b *ModelBuilder) editContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
-	var (
-		containerUri = ctx.Param(paramContainerUri)
-		containerID  = ctx.Param(paramContainerID)
-	)
-	if containerUri == "" && containerID == "" {
+	data := strings.Split(ctx.Param(paramContainerDataID), "_")
+	if len(data) != 2 {
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: pageBuilderRightContentPortal,
 			Body: b.builder.emptyEdit(ctx),
 		})
 		return
 	}
-	r.RunScript = web.Plaid().URL(containerUri).
+	r.RunScript = web.Plaid().URL(b.builder.prefix+"/"+data[0]).
 		EventFunc(actions.Edit).
-		Query(presets.ParamID, containerID).
+		Query(presets.ParamID, data[1]).
 		Query(presets.ParamPortalName, pageBuilderRightContentPortal).
 		Query(presets.ParamOverlay, actions.Content).
+		Query(paramDevice, cmp.Or(ctx.Param(paramDevice), b.builder.defaultDevice)).
 		Go()
 	return
 }
@@ -838,8 +864,10 @@ func (b *ModelBuilder) updateContainer(ctx *web.EventContext) (r web.EventRespon
 		EventFunc(actions.Update).
 		Query(presets.ParamID, containerID).
 		Query(presets.ParamPortalName, pageBuilderRightContentPortal).
-		ThenScript(web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).
-			Query(paramStatus, ctx.Param(paramStatus)).MergeQuery(true).Go()).
+		ThenScript(
+			web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).
+				Query(paramStatus, ctx.Param(paramStatus)).MergeQuery(true).
+				Query(paramIsUpdate, true).Go()).
 		Query(presets.ParamOverlay, actions.Content).
 		Go()
 	return
@@ -859,7 +887,11 @@ func (b *ModelBuilder) reloadRenderPageOrTemplateBody(ctx *web.EventContext) (r 
 	}
 	web.AppendRunScripts(&r,
 		web.Emit(b.notifIframeBodyUpdated(),
-			notifIframeBodyUpdatedPayload{Body: string(data), ContainerDataID: ctx.Param(paramContainerDataID)},
+			notifIframeBodyUpdatedPayload{
+				Body:            string(data),
+				ContainerDataID: ctx.Param(paramContainerDataID),
+				IsUpdate:        ctx.Param(paramIsUpdate) == "true",
+			},
 		),
 	)
 	return
@@ -872,4 +904,5 @@ func (b *ModelBuilder) notifIframeBodyUpdated() string {
 type notifIframeBodyUpdatedPayload struct {
 	Body            string `json:"body"`
 	ContainerDataID string `json:"containerDataID"`
+	IsUpdate        bool   `json:"isUpdate"`
 }

@@ -121,7 +121,7 @@ func TestPageBuilder(t *testing.T) {
 				return req
 			},
 			ExpectPageBodyContainsInOrder: []string{
-				`eventFunc("page_builder_EditContainerEvent").query("containerUri", "/page_builder/list-content").query("containerID", "10")`,
+				`eventFunc("page_builder_EditContainerEvent").mergeQuery(true).query("containerDataID", vars.containerDataID)`,
 			},
 		},
 		{
@@ -1029,7 +1029,7 @@ func TestPageBuilder(t *testing.T) {
 
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`"AddTopSpace":true,`, "blue", "LinkText 不能为空"},
+			ExpectPortalUpdate0ContainsInOrder: []string{`"AddTopSpace":true`, "blue", "LinkText 不能为空"},
 		},
 		{
 			Name:  "Container Heading Update Reload Editing",
@@ -1143,13 +1143,12 @@ func TestPageBuilder(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
 					EventFunc(pagebuilder.EditContainerEvent).
-					Query("containerUri", "/page_builder/headers").
-					Query("containerID", "10").
+					Query("containerDataID", "headers_10").
 					BuildEventFuncRequest()
 
 				return req
 			},
-			ExpectRunScriptContainsInOrder: []string{`plaid().vars(vars).locals(locals).form(form).url("/page_builder/headers").eventFunc("presets_Edit").query("id", "10").query("portal_name", "pageBuilderRightContentPortal").query("overlay", "content").go()`},
+			ExpectRunScriptContainsInOrder: []string{`url("/page_builder/headers").eventFunc("presets_Edit").query("id", "10").query("portal_name", "pageBuilderRightContentPortal").query("overlay", "content")`},
 		},
 		{
 			Name:  "PageBuilder Wrap UpdateContainerEvent",
@@ -1165,7 +1164,7 @@ func TestPageBuilder(t *testing.T) {
 
 				return req
 			},
-			ExpectRunScriptContainsInOrder: []string{`plaid().vars(vars).locals(locals).form(form).url("/page_builder/headers").eventFunc("presets_Update").query("id", "10").query("portal_name", "pageBuilderRightContentPortal").query("overlay", "content").go()`},
+			ExpectRunScriptContainsInOrder: []string{`plaid().vars(vars).locals(locals).form(form).dash(dash).url("/page_builder/headers").eventFunc("presets_Update").query("id", "10").query("portal_name", "pageBuilderRightContentPortal").query("overlay", "content").go()`},
 		},
 		{
 			Name:  "Container Heading  Validate",

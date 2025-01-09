@@ -342,10 +342,19 @@ github.com/qor5/imaging v1.6.4 h1:6VNy1EnFKAns8e73uzsZa6UQDw0oekvUHui1oeydy78=
 github.com/qor5/imaging v1.6.4/go.mod h1:i1E3GRDbTFbXuzZtm1/8zWu+lDbDw6O1hCmjtyQFnR4=
 github.com/qor5/web v1.3.2 h1:zw796YJeDLe8vRwGR1cM+uS1ZuSkPutchBEXv2GgOhI=
 github.com/qor5/web v1.3.2/go.mod h1:LszskQJbFQDJwOeZC6j6afOiHxxyjrzz8B3zuBwfgKQ=
+<<<<<<< HEAD
 github.com/qor5/web/v3 v3.0.11 h1:4J/DbKPl3tYtXRCgqIMCUXSs+bgWkqhvdp/NeGFk/9E=
 github.com/qor5/web/v3 v3.0.11/go.mod h1:32vdHHcZb2JimlcaclW9hLUyimdXjrllZDHTh3rl6d0=
 github.com/qor5/x/v3 v3.0.14-0.20241213111047-ee1be2017334 h1:mM/RASB4IgUrdJ0/09amIljKexm6tlxh46/w5QaPI24=
 github.com/qor5/x/v3 v3.0.14-0.20241213111047-ee1be2017334/go.mod h1:iKxPG7ZZw2KXmz03g9OrPYryJVpfvgDxiabptAoPvfw=
+=======
+github.com/qor5/web/v3 v3.0.12-0.20241218104310-f11d78471a09 h1:PiQ2PNpv/ZddU5YpW4WBUJvYCzF0UAo1ao/pX1eaDA0=
+github.com/qor5/web/v3 v3.0.12-0.20241218104310-f11d78471a09/go.mod h1:32vdHHcZb2JimlcaclW9hLUyimdXjrllZDHTh3rl6d0=
+github.com/qor5/x/v3 v3.0.14-0.20241231035353-98ed8ca5ec85 h1:+QP2CEQO4WAWizEdmSYJBepU7BCuTHTNv+RCihmO/xE=
+github.com/qor5/x/v3 v3.0.14-0.20241231035353-98ed8ca5ec85/go.mod h1:NAQjgqZYgY167V8AgRkJw1XKwp06xN58SK8UNTEXXkI=
+github.com/qor5/x/v3 v3.0.14-0.20250109021601-aed511d8de1f h1:WAFwWfqlnOxPK5j0V/Wld0JCvcKXj4LjisHphNKuirA=
+github.com/qor5/x/v3 v3.0.14-0.20250109021601-aed511d8de1f/go.mod h1:NAQjgqZYgY167V8AgRkJw1XKwp06xN58SK8UNTEXXkI=
+>>>>>>> main
 github.com/robfig/cron/v3 v3.0.1/go.mod h1:eQICP3HwyT7UooqI/z+Ov+PtYAWygg1TEWWzGIFLtro=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.12.0 h1:exVL4IDcn6na9z1rAb56Vxr+CgyK3nn3O+epU5NdKM8=

@@ -3,10 +3,11 @@ package examples_presets
 import (
 	"fmt"
 
-	docsexamples "github.com/qor5/admin/v3/docs/docsrc/examples"
-	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3/examples"
 	"gorm.io/gorm"
+
+	docsexamples "github.com/qor5/admin/v3/docs/docsrc/examples"
+	"github.com/qor5/admin/v3/presets"
 )
 
 func SamplesHandler(mux examples.Muxer) {
@@ -21,6 +22,7 @@ func SamplesHandler(mux examples.Muxer) {
 	addExample(mux, db, PresetsEditingCustomizationDescription)
 	addExample(mux, db, PresetsEditingTiptap)
 	addExample(mux, db, PresetsEditingCustomizationFileType)
+	addExample(mux, db, PresetsEditingTabController)
 	addExample(mux, db, PresetsEditingCustomizationValidation)
 	addExample(mux, db, PresetsDetailPageTopNotes)
 	addExample(mux, db, PresetsDetailPageDetails)
