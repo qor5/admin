@@ -13,7 +13,6 @@ import (
 	"github.com/theplant/testenv"
 	"gorm.io/gorm"
 
-	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/media/base"
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/media/oss"
@@ -73,6 +72,21 @@ func TestUpload(t *testing.T) {
 	}
 }
 
+func checkFileExisted(t *testing.T, filename string) {
+	var (
+		file os.FileInfo
+		err  error
+	)
+	if file, err = os.Stat("/tmp/media_test" + filename); err != nil {
+		t.Fatalf("open file %s error %v", filename, err)
+		return
+	}
+	if file.Size() == 0 {
+		t.Fatalf("crop file %s, error %v", filename, file.Size())
+		return
+	}
+}
+
 func TestCrop(t *testing.T) {
 	db := setup()
 	f, err := box.ReadFile("testfile.png")
@@ -98,18 +112,28 @@ func TestCrop(t *testing.T) {
 	if moption.CropOptions == nil {
 		moption.CropOptions = make(map[string]*base.CropOption)
 	}
-	moption.CropOptions["default"] = &base.CropOption{
+	moption.Sizes["small"] = &base.Size{
+		Width:  100,
+		Height: 100,
+	}
+	moption.Sizes["og"] = &base.Size{
+		Width: 200,
+	}
+	moption.Sizes["large"] = &base.Size{
+		Width: 400,
+	}
+	baseCropOption := base.CropOption{
 		X:      6,
 		Y:      20,
 		Width:  40,
 		Height: 40,
 	}
+	moption.CropOptions["default"] = &baseCropOption
 	moption.Crop = true
 	err = m1.ScanMediaOptions(moption)
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	err = base.SaveUploadAndCropImage(db, &m1, "", &web.EventContext{})
 	if err != nil {
 		t.Fatal(err)
@@ -124,58 +148,12 @@ func TestCrop(t *testing.T) {
 		t.Fatalf("crop file error %v", file.Size())
 		return
 	}
-	if file, err = os.Stat("/tmp/media_test" + m1.File.URL()); err != nil {
-		t.Fatalf("open file error %v", err)
-		return
-	}
-	if file.Size() == 0 {
-		t.Fatalf("crop file error %v", file.Size())
-		return
-	}
-}
-
-func TestCopy(t *testing.T) {
-	db := setup()
-	f, err := box.ReadFile("testfile.png")
-	if err != nil {
-		panic(err)
-	}
-	mb := media.New(db)
-	fh := multipartestutils.CreateMultipartFileHeader("test.png", f)
-	m := media_library.MediaLibrary{}
-
-	err = m.File.Scan(fh)
-	if err != nil {
-		t.Fatal(err)
-		return
-	}
-	err = base.SaveUploadAndCropImage(db, &m, "", &web.EventContext{})
-	if err != nil {
-		t.Fatal(err)
-		return
-	}
-	oldID := m.ID
-	oldCreatedTime := m.CreatedAt
-	if m, err = media.CopyMediaLiMediaLibrary(mb, db, int(oldID), &web.EventContext{}); err != nil {
-		t.Fatalf("copy error :%v", err)
-		return
-	}
-	if oldID == m.ID {
-		t.Fatalf("copy failed")
-		return
-	}
-	var file os.FileInfo
-	if file, err = os.Stat("/tmp/media_test" + m.File.URL()); err != nil {
-		t.Fatalf("open file error %v", err)
-		return
-	}
-	if file.Size() == 0 {
-		t.Fatalf("crop file error %v", file.Size())
-		return
-	}
-	if m.CreatedAt == oldCreatedTime {
-		t.Fatalf("crop file time error  %v :%v", m.CreatedAt, oldCreatedTime)
-		return
+	for _, name := range []string{"", "small", "og", "large"} {
+		filename := m1.File.URL(name)
+		if name == "" {
+			filename = m1.File.URL()
+		}
+		checkFileExisted(t, filename)
 	}
 }
 

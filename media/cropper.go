@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/media/base"
@@ -40,7 +40,12 @@ func loadImageCropper(mb *Builder) web.EventFunc {
 			msgr                  = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 			pMsgr                 = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 			field, id, thumb, cfg = getParams(ctx)
+			mediaBox              = &media_library.MediaBox{}
 		)
+		err = mediaBox.Scan(ctx.R.FormValue(fmt.Sprintf("%s.Values", field)))
+		if err != nil {
+			panic(err)
+		}
 
 		err = db.First(&m, id).Error
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -55,19 +60,21 @@ func loadImageCropper(mb *Builder) web.EventFunc {
 		)
 		if size == nil && thumb != base.DefaultSizeKey {
 			return
+		} else if thumb != base.DefaultSizeKey {
+			base.SaleUpDown(m.File.Width, m.File.Height, size)
 		}
-
 		c := cropper.Cropper().
 			Src(m.File.URL("original")).
 			ViewMode(cropper.VIEW_MODE_FILL_FIT_CONTAINER).
 			AutoCropArea(1).
 			Attr("@update:model-value", "cropLocals.CropOption=JSON.stringify($event)")
 		if size != nil {
+			// scale up and down keep width/height ratio
 			c.AspectRatio(float64(size.Width), float64(size.Height))
 		}
 		// Attr("style", "max-width: 800px; max-height: 600px;")
 
-		cropOption := moption.CropOptions[thumb]
+		cropOption := mediaBox.CropOptions[thumb]
 		if cropOption != nil {
 			c.ModelValue(cropper.Value{
 				X:      float64(cropOption.X),
@@ -153,11 +160,15 @@ func cropImage(b *Builder) web.EventFunc {
 				Width:  int(cropValue.Width),
 				Height: int(cropValue.Height),
 			}
+			cropID := uuid.New().String()
+			// save new file with crop id
+			m.File.CropID = map[string]string{thumb: cropID}
 			moption.Crop = true
 			err = m.ScanMediaOptions(moption)
 			if err != nil {
 				return
 			}
+
 			err = b.saverFunc(db, &m, strconv.Itoa(id), ctx)
 			if err != nil {
 				presets.ShowMessage(&r, err.Error(), "error")
@@ -166,12 +177,19 @@ func cropImage(b *Builder) web.EventFunc {
 			b.onEdit(ctx, old, m)
 
 			mb.Url = m.File.Url
-			m.UpdatedAt = time.Now()
 			mb.FileSizes = m.File.FileSizes
+			mb.CropOptions = m.File.CropOptions
+			mb.Sizes = m.File.Sizes
+			if mb.CropID == nil {
+				mb.CropID = make(map[string]string)
+			}
+			mb.CropID[thumb] = cropID
 			if thumb == base.DefaultSizeKey {
 				mb.Width = int(cropValue.Width)
 				mb.Height = int(cropValue.Height)
 			}
+			mb.ID = json.Number(fmt.Sprint(m.ID))
+
 		}
 
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{

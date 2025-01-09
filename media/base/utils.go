@@ -6,8 +6,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/imaging"
+
+	"github.com/qor5/admin/v3/utils"
 )
 
 func GetImageFormat(url string) (*imaging.Format, error) {
@@ -85,4 +86,12 @@ func ByteCountSI(b int) string {
 	}
 	return fmt.Sprintf(format,
 		float64(b)/float64(div), suffix)
+}
+
+func SaleUpDown(width, height int, size *Size) {
+	if size.Height == 0 && size.Width > 0 {
+		size.Height = int(float64(size.Width) / float64(width) * float64(height))
+	} else if size.Height > 0 && size.Width == 0 {
+		size.Width = int(float64(size.Height) / float64(height) * float64(width))
+	}
 }
