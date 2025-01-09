@@ -32,11 +32,10 @@ func RegisterHeroContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 			return HeroBody(v, input)
 		})
 
-	ed := vb.Model(&Hero{}).Editing("Tabs")
+	ed := vb.Model(&Hero{}).Editing("Tabs", "Content", "Style")
 
 	ed.Field("Tabs").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		option := presets.TabsControllerOption{
-			DefaultIndex: 1,
 			Tabs: []presets.TabControllerOption{
 				{Tab: v.VTab().Text("Content"), Fields: []string{"Content"}},
 				{Tab: v.VTab().Text("Style"), Fields: []string{"Style"}},

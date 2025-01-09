@@ -14,6 +14,7 @@ import (
 
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/pagebuilder/example/containers"
+	"github.com/qor5/admin/v3/pagebuilder/example/containers/heroImageHorizontal"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/tiptap"
 )
@@ -40,7 +41,7 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, b *presets.Builder) *p
 		&containers.WebFooter{},
 		&containers.VideoBanner{},
 		&containers.Heading{},
-		&containers.Hero{},
+		&heroImageHorizontal.Hero{},
 		&containers.BrandGrid{},
 		&containers.ListContent{},
 		&containers.ImageContainer{},
@@ -65,7 +66,7 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, b *presets.Builder) *p
 	containers.RegisterHeader(pb)
 	containers.RegisterFooter(pb)
 	containers.RegisterVideoBannerContainer(pb)
-	containers.RegisterHeroContainer(pb, db)
+	heroImageHorizontal.RegisterHeroContainer(pb, db)
 	containers.RegisterHeadingContainer(pb, db)
 	containers.RegisterBrandGridContainer(pb, db)
 	containers.RegisterListContentContainer(pb, db)

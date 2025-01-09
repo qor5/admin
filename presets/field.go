@@ -199,11 +199,23 @@ func (b *FieldBuilder) LazyWrapComponentFunc(w func(in FieldComponentFunc) Field
 	return b
 }
 
+const HiddenLabel = "_hidden_label_"
+
 func (b *FieldBuilder) lazyCompFunc() FieldComponentInterface {
+	var fn FieldComponentFunc
+
 	if b.lazyWrapCompFunc == nil {
-		return b.GetCompFunc()
+		fn = b.GetCompFunc()
+	} else {
+		fn = b.lazyWrapCompFunc(b.comp.FieldComponent)
 	}
-	return b.lazyWrapCompFunc(b.comp.FieldComponent)
+
+	return FieldComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		if field.Label == HiddenLabel {
+			field.Label = ""
+		}
+		return fn(obj, field, ctx)
+	})
 }
 
 func (b *FieldBuilder) SetterFunc(v FieldSetterFunc) (r *FieldBuilder) {
@@ -304,7 +316,7 @@ func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *Field
 			modifiedIndexes := ContextModifiedIndexesBuilder(ctx)
 			body := b.nestedFieldsBuilder.toComponentWithFormValueKey(field.ModelInfo, val, field.FormKey, modifiedIndexes, ctx)
 			return h.Div(
-				h.Label(field.Label).Class("v-label theme--light text-caption wrapper-field-label"),
+				h.If(field.Label != "", h.Label(field.Label).Class("v-label theme--light text-caption")),
 				v.VCard(body).Variant("outlined").Class("mx-0 mt-1 mb-4 px-4 pb-0 pt-4"),
 			)
 		})
