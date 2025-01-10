@@ -49,6 +49,9 @@
     </script>
 
     <style>
+      @import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Monoton&family=Pacifico&display=swap');
+
       * {
         box-sizing: border-box;
       }
@@ -69,6 +72,22 @@
         --color-base: 47, 45, 39;
         --color-surface: 255, 255, 255;
         --color-brand: 137, 255, 176;
+        --font-family-h1: '';
+        --font-family-h2: '';
+        --font-family-p: '';
+        --font-family-fallback: InterVariable, system-ui, sans-serif;
+      }
+
+      .tailwind-scope .tw-theme-h1 {
+        font-family: var(--font-family-h1), var(--font-family-fallback);
+      }
+
+      .tailwind-scope .tw-theme-h2 {
+        font-family: var(--font-family-h2), var(--font-family-fallback);
+      }
+
+      .tailwind-scope .tw-theme-p {
+        font-family: var(--font-family-p), var(--font-family-fallback);
       }
 
       .tw-theme-filter-container {
@@ -125,15 +144,17 @@
     <!-- title -->
     <header class="tailwind-scope py-12 tw-theme-bg-base">
       <div class="w-[1152px] m-0 mx-auto leading-9 flex justify-between">
-        <span class="logo text-3xl font-bold tw-theme-text">Logo</span>
+        <span class="logo text-3xl tw-theme-p font-bold tw-theme-text"
+          >Logo</span
+        >
         <ul
           class="list-none flex tw-theme-text text-[28px] gap-[72px] font-[500]"
           data-list-unset
         >
-          <li><a href="#">What we do</a></li>
-          <li><a href="#">Projects</a></li>
-          <li><a href="#">Why clients choose us</a></li>
-          <li><a href="#">Our company</a></li>
+          <li><a class="tw-theme-p" href="#">What we do</a></li>
+          <li><a class="tw-theme-p" href="#">Projects</a></li>
+          <li><a class="tw-theme-p" href="#">Why clients choose us</a></li>
+          <li><a class="tw-theme-p" href="#">Our company</a></li>
         </ul>
       </div>
     </header>
@@ -142,12 +163,12 @@
     <div class="tailwind-scope tw-theme-bg-base">
       <div class="p-[120px] gap-10 flex flex-col w-[1280px] m-auto">
         <h1
-          class="tw-theme-text text-center font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px]"
+          class="tw-theme-text tw-theme-h1 text-center font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px]"
         >
           This is a title
         </h1>
 
-        <p class="tw-theme-text text-2xl text-center break-all">
+        <p class="tw-theme-text tw-theme-p text-2xl text-center break-all">
           From end-to-end solutions to consulting, we draw on decades of
           expertise to solve new challenges in e-commerce, content management,
           and digital innovation.
@@ -168,10 +189,10 @@
     </div>
 
     <!-- hero-image-list -->
-    <div class="tailwind-scop tw-theme-bg-base">
+    <div class="tailwind-scope tw-theme-bg-base">
       <div class="p-[120px] w-[1280px] m-auto">
         <h1
-          class="tw-theme-text text-center font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px]"
+          class="tw-theme-text tw-theme-h1 text-center font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px]"
         >
           This is a title
         </h1>
@@ -182,8 +203,10 @@
               class="w-[320px] h-[288px] tw-theme-filter-container"
               style="background-image: url(https://placehold.co/320x288)"
             ></div>
-            <h2 class="tw-theme-text text-[35px] leading-10 mt-6">Commerce</h2>
-            <p class="mt-4 tw-theme-text text-[16px] leading-6">
+            <h2 class="tw-theme-text tw-theme-h2 text-[35px] leading-10 mt-6">
+              Commerce
+            </h2>
+            <p class="mt-4 tw-theme-text tw-theme-p text-[16px] leading-6">
               Ultra-reliable Omni-channel software tuned to the needs of any
               market.Ultra-reliable Ultra-reliable
             </p>
@@ -193,8 +216,10 @@
               class="w-[320px] h-[288px] tw-theme-filter-container"
               style="background-image: url(https://placehold.co/320x288)"
             ></div>
-            <h2 class="tw-theme-text text-[35px] leading-10 mt-6">Commerce</h2>
-            <p class="mt-4 tw-theme-text text-[16px] leading-6">
+            <h2 class="tw-theme-text tw-theme-h2 text-[35px] leading-10 mt-6">
+              Commerce
+            </h2>
+            <p class="mt-4 tw-theme-text tw-theme-p text-[16px] leading-6">
               Ultra-reliable Omni-channel software tuned to the needs of any
               market.Ultra-reliable Ultra-reliable
             </p>
@@ -204,8 +229,10 @@
               class="w-[320px] h-[288px] tw-theme-filter-container"
               style="background-image: url(https://placehold.co/320x288)"
             ></div>
-            <h2 class="tw-theme-text text-[35px] leading-10 mt-6">Commerce</h2>
-            <p class="mt-4 tw-theme-text text-[16px] leading-6">
+            <h2 class="tw-theme-text tw-theme-h2 text-[35px] leading-10 mt-6">
+              Commerce
+            </h2>
+            <p class="mt-4 tw-theme-text tw-theme-p text-[16px] leading-6">
               Ultra-reliable Omni-channel software tuned to the needs of any
               market.Ultra-reliable Ultra-reliable
             </p>
@@ -259,13 +286,13 @@
           <div class="order-1">
             <div x-ref="leftContent" class="flex flex-col h-full">
               <h1
-                class="tw-theme-text font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px]"
+                class="tw-theme-text tw-theme-h1 font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px]"
               >
                 <!-- TODO: tw-theme-text-->
                 This is a title
               </h1>
               <p
-                class="xl:text-[24px] tw-theme-text md:text-[22px] text-[12px] xl:py-10 md:py-6 py-3 font-medium xl:leading-[32px] leading-normal"
+                class="xl:text-[24px] tw-theme-text tw-theme-p md:text-[22px] text-[12px] xl:py-10 md:py-6 py-3 font-medium xl:leading-[32px] leading-normal"
               >
                 <!-- TODO: tw-theme-text-->
                 From end-to-end solutions to consulting, we draw on decades of
@@ -312,8 +339,13 @@
             data-list-unset
           >
             <li>
-              <h2 class="tw-theme-text text-2xl mb-6">What We Do</h2>
-              <ul class="tw-theme-text flex flex-col gap-4" data-list-unset>
+              <h2 class="tw-theme-text tw-theme-h2 text-2xl mb-6">
+                What We Do
+              </h2>
+              <ul
+                class="tw-theme-text tw-theme-p flex flex-col gap-4"
+                data-list-unset
+              >
                 <li>Commerce</li>
                 <li>Content</li>
                 <li>Consulting</li>
@@ -322,8 +354,11 @@
               </ul>
             </li>
             <li>
-              <h2 class="tw-theme-text text-2xl mb-6">Projects</h2>
-              <ul class="tw-theme-text flex flex-col gap-4" data-list-unset>
+              <h2 class="tw-theme-text tw-theme-h2 text-2xl mb-6">Projects</h2>
+              <ul
+                class="tw-theme-text tw-theme-p flex flex-col gap-4"
+                data-list-unset
+              >
                 <li>Commerce</li>
                 <li>Content</li>
                 <li>Consulting</li>
@@ -332,8 +367,13 @@
               </ul>
             </li>
             <li>
-              <h2 class="tw-theme-text text-2xl mb-6">Why clients choose us</h2>
-              <ul class="tw-theme-text flex flex-col gap-4" data-list-unset>
+              <h2 class="tw-theme-text tw-theme-h2 text-2xl mb-6">
+                Why clients choose us
+              </h2>
+              <ul
+                class="tw-theme-text tw-theme-p flex flex-col gap-4"
+                data-list-unset
+              >
                 <li>Commerce</li>
                 <li>Content</li>
                 <li>Consulting</li>
@@ -343,8 +383,13 @@
             </li>
 
             <li>
-              <h2 class="tw-theme-text text-2xl mb-6">Our company</h2>
-              <ul class="tw-theme-text flex flex-col gap-4" data-list-unset>
+              <h2 class="tw-theme-text tw-theme-h2 text-2xl mb-6">
+                Our company
+              </h2>
+              <ul
+                class="tw-theme-text tw-theme-p flex flex-col gap-4"
+                data-list-unset
+              >
                 <li>Commerce</li>
                 <li>Content</li>
                 <li>Consulting</li>
@@ -355,7 +400,7 @@
           </ul>
         </div>
         <div>
-          <h2 class="tw-theme-text text-2xl">Follow us</h2>
+          <h2 class="tw-theme-text tw-theme-h2 text-2xl">Follow us</h2>
         </div>
       </div>
     </div>
