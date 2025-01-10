@@ -90,6 +90,19 @@ type FieldBuilder struct {
 	nestedFieldsBuilder *FieldsBuilder
 	tabFieldsBuilders   *TabsFieldBuilder
 	plugins             []FieldPlugin
+
+	hideLabel         bool
+	usePlainFieldBody bool
+}
+
+func (fb *FieldBuilder) HideLabel() *FieldBuilder {
+	fb.hideLabel = true
+	return fb
+}
+
+func (fb *FieldBuilder) PlainFieldBody() *FieldBuilder {
+	fb.usePlainFieldBody = true
+	return fb
 }
 
 type FieldComponentInterface interface {
@@ -200,10 +213,17 @@ func (b *FieldBuilder) LazyWrapComponentFunc(w func(in FieldComponentFunc) Field
 }
 
 func (b *FieldBuilder) lazyCompFunc() FieldComponentInterface {
+	var fn FieldComponentFunc
+
 	if b.lazyWrapCompFunc == nil {
-		return b.GetCompFunc()
+		fn = b.GetCompFunc()
+	} else {
+		fn = b.lazyWrapCompFunc(b.comp.FieldComponent)
 	}
-	return b.lazyWrapCompFunc(b.comp.FieldComponent)
+
+	return FieldComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return fn(obj, field, ctx)
+	})
 }
 
 func (b *FieldBuilder) SetterFunc(v FieldSetterFunc) (r *FieldBuilder) {
@@ -304,8 +324,9 @@ func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *Field
 			modifiedIndexes := ContextModifiedIndexesBuilder(ctx)
 			body := b.nestedFieldsBuilder.toComponentWithFormValueKey(field.ModelInfo, val, field.FormKey, modifiedIndexes, ctx)
 			return h.Div(
-				h.Label(field.Label).Class("v-label theme--light text-caption"),
-				v.VCard(body).Variant("outlined").Class("mx-0 mt-1 mb-4 px-4 pb-0 pt-4"),
+				h.If(!b.hideLabel, h.Label(field.Label).Class("v-label theme--light text-caption wrapper-field-label")),
+				h.If(b.usePlainFieldBody, body),
+				h.If(!b.usePlainFieldBody, v.VCard(body).Variant("outlined").Class("mx-0 mt-1 mb-4 px-4 pb-0 pt-4")),
 			)
 		})
 	}
@@ -902,16 +923,18 @@ func (b *FieldsBuilder) fieldToComponentWithFormValueKey(info *ModelInfo, obj in
 			disabled = info.Verifier().Do(PermCreate).ObjectOn(obj).SnakeOn("f_"+f.name).WithReq(ctx.R).IsAllowed() != nil
 		}
 	}
-	return f.lazyCompFunc().FieldComponent(obj, &FieldContext{
-		ModelInfo:           info,
-		Name:                f.name,
-		FormKey:             contextKeyPath,
-		Label:               label,
-		Errors:              vErr.GetFieldErrors(contextKeyPath),
-		NestedFieldsBuilder: f.nestedFieldsBuilder,
-		Context:             f.context,
-		Disabled:            disabled,
-	}, ctx)
+	return h.Div(
+		f.lazyCompFunc().FieldComponent(obj, &FieldContext{
+			ModelInfo:           info,
+			Name:                f.name,
+			FormKey:             contextKeyPath,
+			Label:               label,
+			Errors:              vErr.GetFieldErrors(contextKeyPath),
+			NestedFieldsBuilder: f.nestedFieldsBuilder,
+			Context:             f.context,
+			Disabled:            disabled,
+		}, ctx),
+	).Attr("v-show", fmt.Sprintf("!dash.visible || dash.visible[%q]===undefined || dash.visible[%q]", contextKeyPath, contextKeyPath))
 }
 
 type RowFunc func(obj interface{}, formKey string, content h.HTMLComponent, ctx *web.EventContext) h.HTMLComponent

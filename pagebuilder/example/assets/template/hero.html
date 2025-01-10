@@ -49,6 +49,9 @@
     </script>
 
     <style>
+      @import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Monoton&family=Pacifico&display=swap');
+
       * {
         box-sizing: border-box;
       }
@@ -64,15 +67,184 @@
           font-family: InterVariable, system-ui, sans-serif;
         }
       }
+
+      :root {
+        --color-base: 47, 45, 39;
+        --color-surface: 255, 255, 255;
+        --color-brand: 137, 255, 176;
+        --font-family-h1: '';
+        --font-family-h2: '';
+        --font-family-p: '';
+        --font-family-fallback: InterVariable, system-ui, sans-serif;
+      }
+
+      .tailwind-scope .tw-theme-h1 {
+        font-family: var(--font-family-h1), var(--font-family-fallback);
+      }
+
+      .tailwind-scope .tw-theme-h2 {
+        font-family: var(--font-family-h2), var(--font-family-fallback);
+      }
+
+      .tailwind-scope .tw-theme-p {
+        font-family: var(--font-family-p), var(--font-family-fallback);
+      }
+
+      .tw-theme-filter-container {
+        position: relative;
+      }
+
+      .tw-theme-filter-container::before {
+        --color-opacity: 0.2;
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(var(--color-brand), var(--color-opacity));
+        z-index: 1;
+        mix-blend-mode: multiply;
+        pointer-events: none;
+      }
+
+      .tw-theme-bg-base {
+        --color-opacity: 1;
+        background-color: rgba(var(--color-base), var(--color-opacity));
+      }
+
+      .tw-theme-text-base {
+        --color-opacity: 1;
+        color: rgba(var(--color-base), var(--color-opacity));
+      }
+
+      .tw-theme-bg-brand {
+        --color-opacity: 1;
+        background-color: var(
+          --tw-theme-bg-color,
+          rgba(var(--color-brand), var(--color-opacity))
+        );
+      }
+
+      .tw-theme-bg-brand-20 {
+        --color-opacity: 0.2;
+        background-color: var(
+          --tw-theme-bg-color,
+          rgba(var(--color-brand), var(--color-opacity))
+        );
+      }
+
+      .tw-theme-text {
+        --color-opacity: 1;
+        color: rgba(var(--color-surface), var(--color-opacity));
+      }
     </style>
   </head>
   <body>
-    <div class="tailwind-scope">
+    <!-- title -->
+    <header class="tailwind-scope py-12 tw-theme-bg-base">
+      <div class="w-[1152px] m-0 mx-auto leading-9 flex justify-between">
+        <span class="logo text-3xl tw-theme-p font-bold tw-theme-text"
+          >Logo</span
+        >
+        <ul
+          class="list-none flex tw-theme-text text-[28px] gap-[72px] font-[500]"
+          data-list-unset
+        >
+          <li><a class="tw-theme-p" href="#">What we do</a></li>
+          <li><a class="tw-theme-p" href="#">Projects</a></li>
+          <li><a class="tw-theme-p" href="#">Why clients choose us</a></li>
+          <li><a class="tw-theme-p" href="#">Our company</a></li>
+        </ul>
+      </div>
+    </header>
+
+    <!-- hero-image-vertical -->
+    <div class="tailwind-scope tw-theme-bg-base">
+      <div class="p-[120px] gap-10 flex flex-col w-[1280px] m-auto">
+        <h1
+          class="tw-theme-text tw-theme-h1 text-center font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px]"
+        >
+          This is a title
+        </h1>
+
+        <p class="tw-theme-text tw-theme-p text-2xl text-center break-all">
+          From end-to-end solutions to consulting, we draw on decades of
+          expertise to solve new challenges in e-commerce, content management,
+          and digital innovation.
+        </p>
+
+        <button
+          class="tw-theme-bg-brand tw-theme-p tw-theme-text-base mx-auto py-3 px-6 rounded-[4px] text-[16px] leading-6"
+        >
+          Get Start
+        </button>
+
+        <div
+          class="tw-theme-filter-container w-[1024px] m-auto h-[585px] bg-cover bg-no-repeat bg-center"
+          style="background-image: url(https://placehold.co/1024x585)"
+          alt=""
+        ></div>
+      </div>
+    </div>
+
+    <!-- hero-image-list -->
+    <div class="tailwind-scope tw-theme-bg-base">
+      <div class="p-[120px] w-[1280px] m-auto">
+        <h1
+          class="tw-theme-text tw-theme-h1 text-center font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px]"
+        >
+          This is a title
+        </h1>
+
+        <ul class="flex justify-between mt-10" data-list-unset>
+          <li class="w-[320px]">
+            <div
+              class="w-[320px] h-[288px] tw-theme-filter-container"
+              style="background-image: url(https://placehold.co/320x288)"
+            ></div>
+            <h2 class="tw-theme-text tw-theme-h2 text-[35px] leading-10 mt-6">
+              Commerce
+            </h2>
+            <p class="mt-4 tw-theme-text tw-theme-p text-[16px] leading-6">
+              Ultra-reliable Omni-channel software tuned to the needs of any
+              market.Ultra-reliable Ultra-reliable
+            </p>
+          </li>
+          <li class="w-[320px]">
+            <div
+              class="w-[320px] h-[288px] tw-theme-filter-container"
+              style="background-image: url(https://placehold.co/320x288)"
+            ></div>
+            <h2 class="tw-theme-text tw-theme-h2 text-[35px] leading-10 mt-6">
+              Commerce
+            </h2>
+            <p class="mt-4 tw-theme-text tw-theme-p text-[16px] leading-6">
+              Ultra-reliable Omni-channel software tuned to the needs of any
+              market.Ultra-reliable Ultra-reliable
+            </p>
+          </li>
+          <li class="w-[320px]">
+            <div
+              class="w-[320px] h-[288px] tw-theme-filter-container"
+              style="background-image: url(https://placehold.co/320x288)"
+            ></div>
+            <h2 class="tw-theme-text tw-theme-h2 text-[35px] leading-10 mt-6">
+              Commerce
+            </h2>
+            <p class="mt-4 tw-theme-text tw-theme-p text-[16px] leading-6">
+              Ultra-reliable Omni-channel software tuned to the needs of any
+              market.Ultra-reliable Ultra-reliable
+            </p>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- hero-image-horizontal -->
+    <div class="tailwind-scope tw-theme-bg-base">
       <div
-        class="xl:min-h-[530px] md:min-h-[339px] min-h-[190px] bg-white text-[#212121] bg-no-repeat bg-cover"
-        style="
-          background-image: url(https://s3-alpha-sig.figma.com/img/2091/847f/23aed5f700c8474f29fededd296394ba?Expires=1734912000&Key-Pair-Id=APKAQ4GOSFWCVNEHN3O4&Signature=LmpcBano56oNL0jVh6IHDRhAMCfMVmM2N6yEMlo-TCcBlKIdB3eYBOLkOCZWY~arsOiotjZN~yByJbLBXEZOG3b5JTWyXMjcE6CuONVBTimfHftQEqLPssW4UjIhEc1Xyl~BMt~5BXD4vg8fNz5qb-pUOqQEcwXDMayVI7hf3gGIqjDkpqDB0Xb8~v6-sZsbP-AxOYZg65eKECq188sWftjRsqmt85WIJvcNjtiSQvdd0fCQz3fbft535yMNpzsX6c9M9L7~H3ySGlxFIR-qj-02Z-8Lcyu-GgKFf~p31u-qXzqTMr5tcRz6VVQ1bIraAvF0sCK~8k1nmWNQHUV7HQ__);
-        "
+        class="xl:min-h-[530px] md:min-h-[339px] min-h-[190px] text-[#212121] bg-no-repeat bg-cover tw-theme-bg-brand-20"
       >
         <div
           x-data="{
@@ -114,12 +286,12 @@
           <div class="order-1">
             <div x-ref="leftContent" class="flex flex-col h-full">
               <h1
-                class="font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px]"
+                class="tw-theme-text tw-theme-h1 font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px]"
               >
                 This is a title
               </h1>
               <p
-                class="xl:text-[24px] md:text-[22px] text-[12px] xl:py-10 md:py-6 py-3 font-medium xl:leading-[32px] leading-normal"
+                class="xl:text-[24px] tw-theme-text tw-theme-p md:text-[22px] text-[12px] xl:py-10 md:py-6 py-3 font-medium xl:leading-[32px] leading-normal"
               >
                 From end-to-end solutions to consulting, we draw on decades of
                 From end-to-end solutions to consulting, we draw on decades of
@@ -127,7 +299,7 @@
               </p>
               <div class="mt-auto">
                 <button
-                  class="bg-[#3E63DD] xl:text-[16px] md:text-[14px] xl:px-6 px-4 xl:py-3 md:py-2 py-[6px] rounded-[4px] text-white"
+                  class="tw-theme-bg-brand tw-theme-p tw-theme-text-base xl:text-[16px] md:text-[14px] xl:px-6 px-4 xl:py-3 md:py-2 py-[6px] rounded-[4px]"
                 >
                   Get Start
                 </button>
@@ -135,19 +307,96 @@
             </div>
           </div>
           <div
-            class="order-1 xl:ml-10 md:ml-[20px] ml-3 xl:w-[500px] xl:min-h-[400px] md:min-h-[251px] min-h-[135px] relative md:w-[314px] w-[169px] overflow-hidden flex-shrink-0"
+            class="tw-theme-filter-container order-1 xl:ml-10 md:ml-[20px] ml-3 xl:w-[500px] xl:min-h-[400px] md:min-h-[251px] min-h-[135px] relative md:w-[314px] w-[169px] overflow-hidden flex-shrink-0"
           >
             <div
               x-ref="rightImageForCalc"
-              :style="`background-image: url(https://s3-alpha-sig.figma.com/img/90f2/44c4/b4f73ff2ff491f9dff7524de1755baf2?Expires=1734912000&Key-Pair-Id=APKAQ4GOSFWCVNEHN3O4&Signature=JxwQ6TtGoE48HBsxpABrZu4GimuBm0HGZK~23eZ~IHRpM27EYGSZpYoo26o6b6uSA3eoY5oyMkwzv0Z2VkdCYvXzRILYIolGcYo6DeUTbXeZRXAGZnAcVU-MqArnRR3cb4Hj7KPpN9X0UudO4k~QMIjt11FOuAstJjFuI~wx3fIisp~YCtilCjqM0zhyZun2gSPqhyeU4NTNAuKNYnx2En-4xj~5CMOI1Pv6yFwH91HWGFLgR-BaGt5XYhVw2OOpfyThK83dfoPJn3SrhJ0A~67f-JqsRr0SJmwaoHqkdCAx3hPIoatpKZNZc~AM25Wi0XvxLfiIDV73J6pBOGOiBg__); aspect-ratio: ${imageAspectRatioForCalc};`"
+              :style="`background-image: url(https://placehold.co/500x400); aspect-ratio: ${imageAspectRatioForCalc};`"
               class="absolute -z-10 bg-cover bg-center bg-no-repeat flex-shrink-0 xl:w-[500px] md:w-[314px] w-[169px]"
             ></div>
             <div
               x-ref="rightImage"
-              :style="`background-image: url(https://s3-alpha-sig.figma.com/img/90f2/44c4/b4f73ff2ff491f9dff7524de1755baf2?Expires=1734912000&Key-Pair-Id=APKAQ4GOSFWCVNEHN3O4&Signature=JxwQ6TtGoE48HBsxpABrZu4GimuBm0HGZK~23eZ~IHRpM27EYGSZpYoo26o6b6uSA3eoY5oyMkwzv0Z2VkdCYvXzRILYIolGcYo6DeUTbXeZRXAGZnAcVU-MqArnRR3cb4Hj7KPpN9X0UudO4k~QMIjt11FOuAstJjFuI~wx3fIisp~YCtilCjqM0zhyZun2gSPqhyeU4NTNAuKNYnx2En-4xj~5CMOI1Pv6yFwH91HWGFLgR-BaGt5XYhVw2OOpfyThK83dfoPJn3SrhJ0A~67f-JqsRr0SJmwaoHqkdCAx3hPIoatpKZNZc~AM25Wi0XvxLfiIDV73J6pBOGOiBg__); aspect-ratio: ${imageAspectRatio};`"
+              :style="`background-image: url(https://placehold.co/500x400); aspect-ratio: ${imageAspectRatio};`"
               class="bg-cover absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] transition-all bg-center bg-no-repeat flex-shrink-0 xl:w-[500px] md:w-[314px] w-[169px]"
             ></div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- footer -->
+    <div class="tailwind-scope tw-theme-bg-base">
+      <div
+        class="py-[120px] px-[82px] flex justify-between gap-8 w-[1280px] m-auto"
+      >
+        <div class="flex-1">
+          <ul
+            class="grid grid-cols-[repeat(auto-fill,_minmax(235px,_1fr))] gap-8"
+            data-list-unset
+          >
+            <li>
+              <h2 class="tw-theme-text tw-theme-h2 text-2xl mb-6">
+                What We Do
+              </h2>
+              <ul
+                class="tw-theme-text tw-theme-p flex flex-col gap-4"
+                data-list-unset
+              >
+                <li>Commerce</li>
+                <li>Content</li>
+                <li>Consulting</li>
+                <li>Personalization</li>
+                <li></li>
+              </ul>
+            </li>
+            <li>
+              <h2 class="tw-theme-text tw-theme-h2 text-2xl mb-6">Projects</h2>
+              <ul
+                class="tw-theme-text tw-theme-p flex flex-col gap-4"
+                data-list-unset
+              >
+                <li>Commerce</li>
+                <li>Content</li>
+                <li>Consulting</li>
+                <li>Personalization</li>
+                <li></li>
+              </ul>
+            </li>
+            <li>
+              <h2 class="tw-theme-text tw-theme-h2 text-2xl mb-6">
+                Why clients choose us
+              </h2>
+              <ul
+                class="tw-theme-text tw-theme-p flex flex-col gap-4"
+                data-list-unset
+              >
+                <li>Commerce</li>
+                <li>Content</li>
+                <li>Consulting</li>
+                <li>Personalization</li>
+                <li></li>
+              </ul>
+            </li>
+
+            <li>
+              <h2 class="tw-theme-text tw-theme-h2 text-2xl mb-6">
+                Our company
+              </h2>
+              <ul
+                class="tw-theme-text tw-theme-p flex flex-col gap-4"
+                data-list-unset
+              >
+                <li>Commerce</li>
+                <li>Content</li>
+                <li>Consulting</li>
+                <li>Personalization</li>
+                <li></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h2 class="tw-theme-text tw-theme-h2 text-2xl">Follow us</h2>
         </div>
       </div>
     </div>

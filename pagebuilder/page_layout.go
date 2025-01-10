@@ -24,13 +24,104 @@ func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *we
 	InferCss := "https://rsms.me/inter/inter.css"
 
 	pbThemeCss := []string{`
-		:root {
-  --pb-primary: #3e63dd;
-  --pb-secondary: #5b6471;
-  --pb-success: #30a46c;
-  --pb-info: #0091ff;
-  --pb-warning: #f76808;
-  --pb-error: #e5484d;
+@import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Monoton&family=Pacifico&display=swap');
+
+:root {
+/**
+	--color-base: 47, 45, 39;
+	--color-surface: 255, 255, 255;
+	--color-brand: 137, 255, 176;
+	--font-family-h1: 'Monoton';
+	--font-family-h2: '';
+	--font-family-p: '';
+**/
+/**
+	--color-base: 255, 242, 185;
+	--color-surface: 153, 93, 15;
+	--color-brand: 229, 72, 77;
+	--font-family-h1: 'Pacifico';
+	--font-family-h2: 'Times New Roman';
+	--font-family-p: 'Times New Roman';
+**/
+
+	--color-base: 255, 255, 255;
+	--color-surface: 51, 51, 51;
+	--color-brand: 62, 99, 221;
+	--font-family-h1: '';
+	--font-family-h2: '';
+	--font-family-p: '';
+
+
+	--font-family-fallback: InterVariable, system-ui, sans-serif;
+
+	--pb-primary: #3e63dd;
+	--pb-secondary: #5b6471;
+	--pb-success: #30a46c;
+	--pb-info: #0091ff;
+	--pb-warning: #f76808;
+	--pb-error: #e5484d;
+}
+
+.tailwind-scope .tw-theme-h1 {
+	font-family: var(--font-family-h1), var(--font-family-fallback);
+}
+
+.tailwind-scope .tw-theme-h2 {
+	font-family: var(--font-family-h2), var(--font-family-fallback);
+}
+
+.tailwind-scope .tw-theme-p {
+	font-family: var(--font-family-p), var(--font-family-fallback);
+}
+
+.tw-theme-filter-container {
+	position: relative;
+}
+
+.tw-theme-filter-container::before {
+	--color-opacity: 0.2;
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: rgba(var(--color-brand), var(--color-opacity));
+	z-index: 1;
+	mix-blend-mode: multiply;
+	pointer-events: none;
+}
+
+.tw-theme-bg-base {
+	--color-opacity: 1;
+	background-color: rgba(var(--color-base), var(--color-opacity));
+}
+
+.tw-theme-text-base {
+	--color-opacity: 1;
+	color: rgba(var(--color-base), var(--color-opacity));
+}
+
+.tw-theme-bg-brand {
+	--color-opacity: 1;
+	background-color: var(
+		--tw-theme-bg-color,
+		rgba(var(--color-brand), var(--color-opacity))
+	);
+}
+
+.tw-theme-bg-brand-20 {
+	--color-opacity: 0.2;
+	background-color: var(
+		--tw-theme-bg-color,
+		rgba(var(--color-brand), var(--color-opacity))
+	);
+}
+
+.tw-theme-text {
+	--color-opacity: 1;
+	color: rgba(var(--color-surface), var(--color-opacity));
 }
 
 .btn-primary {
