@@ -934,7 +934,7 @@ func (b *FieldsBuilder) fieldToComponentWithFormValueKey(info *ModelInfo, obj in
 			Context:             f.context,
 			Disabled:            disabled,
 		}, ctx),
-	).Attr("v-if", fmt.Sprintf("!dash.visible || dash.visible[%q]===undefined || dash.visible[%q]", contextKeyPath, contextKeyPath))
+	).Attr("v-show", fmt.Sprintf("!dash.visible || dash.visible[%q]===undefined || dash.visible[%q]", contextKeyPath, contextKeyPath))
 }
 
 type RowFunc func(obj interface{}, formKey string, content h.HTMLComponent, ctx *web.EventContext) h.HTMLComponent
