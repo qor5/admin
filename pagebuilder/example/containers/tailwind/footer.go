@@ -28,6 +28,7 @@ func RegisterFooterContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 
 func footerBody(data *TailWindExampleFooter, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	html := Div(
+
 		Div(
 			Div(
 				Div(
