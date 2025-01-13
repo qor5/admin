@@ -47,15 +47,17 @@ func TestGetLocation(t *testing.T) {
 
 		{"en", args{lang: language.English, addr: "81.2.69.160"}, "London, United Kingdom", ""},
 		{"zh-CN", args{lang: language.SimplifiedChinese, addr: "81.2.69.160"}, "英国", ""},
-		{"ja", args{lang: language.Japanese, addr: "81.2.69.160"}, "ロンドン、イギリス", ""},
+		{"ja", args{lang: language.Japanese, addr: "81.2.69.160"}, "イギリス、ロンドン", ""},
 
 		{"en", args{lang: language.English, addr: "2001:218:abcd:1234:5678:90ab:cdef:1"}, "Japan", ""},
 		{"en", args{lang: language.English, addr: "[2001:218:abcd:1234:5678:90ab:cdef:1]"}, "Japan", ""},
 		{"zh-CN", args{lang: language.SimplifiedChinese, addr: "2001:218:abcd:1234:5678:90ab:cdef:1"}, "日本", ""},
 
 		{"en", args{lang: language.English, addr: "175.16.199.26"}, "Changchun, China", ""},
-		{"zh-CN", args{lang: language.SimplifiedChinese, addr: "175.16.199.26"}, "长春，中国", ""},
-		{"ja", args{lang: language.Japanese, addr: "175.16.199.26"}, "長春市、中国", ""},
+		{"zh-CN", args{lang: language.SimplifiedChinese, addr: "175.16.199.26"}, "中国，长春", ""},
+		{"ja", args{lang: language.Japanese, addr: "175.16.199.26"}, "中国、長春市", ""},
+		{"ru", args{lang: language.Russian, addr: "175.16.199.26"}, "Китай, Чанчунь", ""},
+		{"pt-BR", args{lang: language.BrazilianPortuguese, addr: "81.2.69.160"}, "Reino Unido, Londres", ""},
 	}
 
 	db, err := New("test-data/test-data/GeoIP2-City-Test.mmdb")

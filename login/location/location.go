@@ -72,11 +72,22 @@ func (g *GEOIP2) GetLocation(_ context.Context, lang language.Tag, addr string) 
 		sep = "，"
 	}
 
-	return strings.Join(
-		lo.Filter([]string{
+	var parts []string
+	switch lang {
+	case language.SimplifiedChinese, language.TraditionalChinese, language.Japanese, language.Russian, language.BrazilianPortuguese:
+		parts = []string{
+			strings.TrimSpace(record.Country.Names[locale]),
+			strings.TrimSpace(record.City.Names[locale]),
+		}
+	default:
+		parts = []string{
 			strings.TrimSpace(record.City.Names[locale]),
 			strings.TrimSpace(record.Country.Names[locale]),
-		}, func(item string, _ int) bool {
+		}
+	}
+
+	return strings.Join(
+		lo.Filter(parts, func(item string, _ int) bool {
 			return item != ""
 		}),
 		sep,
