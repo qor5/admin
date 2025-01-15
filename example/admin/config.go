@@ -45,6 +45,7 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
+	"github.com/qor5/admin/v3/redirection"
 	"github.com/qor5/admin/v3/role"
 	"github.com/qor5/admin/v3/seo"
 	"github.com/qor5/admin/v3/tiptap"
@@ -232,7 +233,7 @@ func NewConfig(db *gorm.DB, enableWork bool, opts ...ConfigOption) Config {
 		})
 	publisher := publish.New(db, PublishStorage).
 		ContextValueFuncs(l10nBuilder.ContextValueProvider)
-
+	redirectionBuilder := redirection.New(db, publisher)
 	utils.Install(b)
 
 	publisher.Activity(ab)
@@ -376,6 +377,7 @@ func NewConfig(db *gorm.DB, enableWork bool, opts ...ConfigOption) Config {
 		roleBuilder,
 		loginSessionBuilder,
 		profileBuilder,
+		redirectionBuilder,
 	)
 
 	if resetAndImportInitialData {
