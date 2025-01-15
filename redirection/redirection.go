@@ -1,6 +1,8 @@
 package redirection
 
 import (
+	"fmt"
+
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/oss"
 	v "github.com/qor5/x/v3/ui/vuetify"
@@ -15,31 +17,32 @@ import (
 
 type (
 	Builder struct {
-		db      *gorm.DB
-		mb      *presets.ModelBuilder
-		pb      *publish.Builder
-		storage oss.StorageInterface
+		db        *gorm.DB
+		mb        *presets.ModelBuilder
+		publisher *publish.Builder
+		storage   oss.StorageInterface
 	}
 )
 
-func New(db *gorm.DB, pb *publish.Builder) *Builder {
+func New(db *gorm.DB, publisher *publish.Builder) *Builder {
 	return &Builder{
-		db: db,
-		pb: pb,
+		db:        db,
+		publisher: publisher,
 	}
 }
 
-func (r *Builder) AutoMigrate() *Builder {
-	if err := AutoMigrate(r.db); err != nil {
+func (b *Builder) AutoMigrate() *Builder {
+	if err := AutoMigrate(b.db); err != nil {
 		panic(err)
 	}
-	return r
+	return b
 }
 
-func (r *Builder) Install(b *presets.Builder) (err error) {
-	r.mb = b.Model(&ObjectRedirection{})
-	r.mb.RegisterEventFunc(UploadFileEvent, r.uploadFile)
-	listing := r.mb.Listing("Source", "Target")
+func (b *Builder) Install(pb *presets.Builder) (err error) {
+	m := &ObjectRedirection{}
+	b.mb = pb.Model(m)
+	b.mb.RegisterEventFunc(UploadFileEvent, b.uploadFile)
+	listing := b.mb.Listing("Source", "Target")
 	listing.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
 		return h.Div(
 			vx.VXBtn("UploadFile").PrependIcon("mdi-upload").Color(v.ColorPrimary).
@@ -63,12 +66,17 @@ func (r *Builder) Install(b *presets.Builder) (err error) {
 				Field: "CreatedAt",
 				Desc:  true,
 			})
+			params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
+				Query: fmt.Sprintf(`%s.created_at=(SELECT MAX(created_at)
+    FROM %s tb
+    WHERE source = %s.source)`, m.TableName(), m.TableName(), m.TableName()),
+			})
 			return in(ctx, params)
 		}
 	})
-	r.pb.WrapStorage(func(v oss.StorageInterface) oss.StorageInterface {
-		r.storage = v
-		return r
+	b.publisher.WrapStorage(func(v oss.StorageInterface) oss.StorageInterface {
+		b.storage = v
+		return b
 	})
 	return
 }
