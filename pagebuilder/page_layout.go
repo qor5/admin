@@ -9,12 +9,16 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
-//go:embed assets/css/page-builder-theme.css
+//go:embed assets/css
 var theme embed.FS
 
 func WrapDefaultPageLayoutFunc(css ...string) PageLayoutFunc {
 	return func(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent {
-		input.FreeStyleCss = append(input.FreeStyleCss, css...)
+		val, err := theme.ReadFile("assets/css/page-builder-default.css")
+		if err != nil {
+			panic(err)
+		}
+		input.FreeStyleCss = append(input.FreeStyleCss, append(css, string(val))...)
 		return pageLayoutFunc(body, input, ctx)
 	}
 }
