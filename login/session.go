@@ -2,7 +2,9 @@ package login
 
 import (
 	"cmp"
+	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"sync"
 	"sync/atomic"
@@ -10,6 +12,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/common"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
@@ -68,14 +71,15 @@ type SessionBuilder struct {
 	once              sync.Once
 	calledAutoMigrate atomic.Bool // auto migrate flag
 
-	disableIPCheck bool
-	lb             *login.Builder
-	dbPrimitive    *gorm.DB // primitive db
-	db             *gorm.DB // global db with table prefix scope
-	tablePrefix    string
-	amb            *activity.ModelBuilder
-	pb             *presets.Builder
-	isPublicUser   func(user any) bool
+	disableIPCheck      bool
+	lb                  *login.Builder
+	dbPrimitive         *gorm.DB // primitive db
+	db                  *gorm.DB // global db with table prefix scope
+	tablePrefix         string
+	amb                 *activity.ModelBuilder
+	pb                  *presets.Builder
+	isPublicUser        func(user any) bool
+	validateSessionHook func(next ValidateSessionFunc) ValidateSessionFunc
 }
 
 func NewSessionBuilder(lb *login.Builder, db *gorm.DB) *SessionBuilder {
@@ -134,6 +138,30 @@ func AutoMigrateSession(db *gorm.DB, tablePrefix string) error {
 func (b *SessionBuilder) DisableIPCheck(disabled bool) *SessionBuilder {
 	b.disableIPCheck = disabled
 	return b
+}
+
+func ValidateMaxLifetimeHook(maxLifeTime time.Duration) func(next ValidateSessionFunc) ValidateSessionFunc {
+	return func(next ValidateSessionFunc) ValidateSessionFunc {
+		return func(ctx context.Context, input *ValidateSessionInput) (*ValidateSessionOutput, error) {
+			if input.Session.CreatedAt.Add(maxLifeTime).Before(time.Now()) {
+				return nil, errors.New("login: session lifetime exceeded")
+			}
+			return next(ctx, input)
+		}
+	}
+}
+
+type (
+	ValidateSessionInput struct {
+		Session *LoginSession
+	}
+	ValidateSessionOutput struct{}
+	ValidateSessionFunc   func(ctx context.Context, input *ValidateSessionInput) (*ValidateSessionOutput, error)
+)
+
+func (c *SessionBuilder) WithValidateSessionHook(hooks ...common.Hook[ValidateSessionFunc]) *SessionBuilder {
+	c.validateSessionHook = common.ChainHookWith(c.validateSessionHook, hooks...)
+	return c
 }
 
 func (b *SessionBuilder) GetLoginBuilder() *login.Builder {
@@ -242,32 +270,44 @@ func (b *SessionBuilder) ExpireOtherSessions(r *http.Request, uid string) error 
 	return nil
 }
 
-func (b *SessionBuilder) IsSessionValid(r *http.Request, uid string) (valid bool, err error) {
+func (b *SessionBuilder) IsSessionValid(r *http.Request, uid string) error {
 	token := login.GetSessionToken(b.lb, r)
 	if token == "" {
-		return false, nil
+		return errors.New("login: token not found")
 	}
 	tokenHash := getStringHash(token, LoginTokenHashLen)
 	sess := LoginSession{}
-	if err = b.db.Where(
+	if err := b.db.Where(
 		"user_id = ? and (token_hash = ? OR (last_token_hash = ? AND extended_at > ?))",
 		uid, tokenHash, tokenHash, b.db.NowFunc().Add(-GracePeriodAfterExtend),
 	).First(&sess).Error; err != nil {
-		if err != gorm.ErrRecordNotFound {
-			return false, errors.Wrap(err, "login: failed to find session")
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("login: session not found")
 		}
-		return false, nil
+		return errors.Wrap(err, "login: failed to find session")
 	}
-	if sess.ExpiredAt.Before(b.db.NowFunc()) {
-		return false, nil
-	}
-	// IP check
-	if !b.disableIPCheck {
-		if sess.IP != ip(r) {
-			return false, nil
+
+	validate := func(ctx context.Context, input *ValidateSessionInput) (*ValidateSessionOutput, error) {
+		if input.Session.ExpiredAt.Before(b.db.NowFunc()) {
+			return nil, errors.New("login: session expired")
 		}
+		// IP check
+		if !b.disableIPCheck {
+			currentIP := ip(r)
+			if input.Session.IP != currentIP {
+				return nil, errors.Errorf("login: IP mismatch: %v != %v", input.Session.IP, currentIP)
+			}
+		}
+		return &ValidateSessionOutput{}, nil
 	}
-	return true, nil
+	if b.validateSessionHook != nil {
+		validate = b.validateSessionHook(validate)
+	}
+	if _, err := validate(r.Context(), &ValidateSessionInput{Session: &sess}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (b *SessionBuilder) Middleware(cfgs ...login.MiddlewareConfig) func(next http.Handler) http.Handler {
@@ -290,8 +330,9 @@ func (b *SessionBuilder) validateSessionToken() func(next http.Handler) http.Han
 				return
 			}
 
-			valid, err := b.IsSessionValid(r, presets.MustObjectID(user))
-			if err != nil || !valid {
+			err := b.IsSessionValid(r, presets.MustObjectID(user))
+			if err != nil {
+				log.Printf("login: session invalid: %v", err)
 				if r.URL.Path == b.lb.LogoutURL {
 					next.ServeHTTP(w, r)
 					return
