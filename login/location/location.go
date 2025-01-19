@@ -38,6 +38,21 @@ func NewFromBytes(data []byte) (*GEOIP2, error) {
 	}, nil
 }
 
+func (g *GEOIP2) GetCity(_ context.Context, addr string) (*geoip2.City, error) {
+	addr = strings.Trim(addr, "[]")
+	ip := net.ParseIP(addr)
+	if ip == nil {
+		return nil, ErrInvalidIP
+	}
+
+	record, err := g.City(ip)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get city")
+	}
+
+	return record, nil
+}
+
 // https://dev.maxmind.com/geoip/docs/databases/enterprise/#locations-files
 // locales: “de”, “en”, “es”, “fr”, “ja”, “pt-BR”, “ru”, “zh-CN”
 func LocaleFromLanguage(t language.Tag) string {
@@ -50,19 +65,18 @@ func LocaleFromLanguage(t language.Tag) string {
 	}
 }
 
-func (g *GEOIP2) GetLocation(_ context.Context, lang language.Tag, addr string) (string, error) {
-	addr = strings.Trim(addr, "[]")
-	ip := net.ParseIP(addr)
-	if ip == nil {
-		return "", ErrInvalidIP
-	}
-
-	record, err := g.City(ip)
-	if err != nil {
-		return "", err
-	}
-
+func GeneralLocalizedCountryCity(record *geoip2.City, lang language.Tag, fallback language.Tag) string {
 	locale := LocaleFromLanguage(lang)
+	fallbackLocale := LocaleFromLanguage(fallback)
+
+	country := strings.TrimSpace(record.Country.Names[locale])
+	city := strings.TrimSpace(record.City.Names[locale])
+	if country == "" {
+		country = strings.TrimSpace(record.Country.Names[fallbackLocale])
+	}
+	if city == "" {
+		city = strings.TrimSpace(record.City.Names[fallbackLocale])
+	}
 
 	sep := ", "
 	switch lang {
@@ -75,15 +89,9 @@ func (g *GEOIP2) GetLocation(_ context.Context, lang language.Tag, addr string) 
 	var parts []string
 	switch lang {
 	case language.SimplifiedChinese, language.TraditionalChinese, language.Japanese, language.Russian, language.BrazilianPortuguese:
-		parts = []string{
-			strings.TrimSpace(record.Country.Names[locale]),
-			strings.TrimSpace(record.City.Names[locale]),
-		}
+		parts = []string{country, city}
 	default:
-		parts = []string{
-			strings.TrimSpace(record.City.Names[locale]),
-			strings.TrimSpace(record.Country.Names[locale]),
-		}
+		parts = []string{city, country}
 	}
 
 	return strings.Join(
@@ -91,5 +99,5 @@ func (g *GEOIP2) GetLocation(_ context.Context, lang language.Tag, addr string) 
 			return item != ""
 		}),
 		sep,
-	), nil
+	)
 }
