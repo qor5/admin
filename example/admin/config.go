@@ -235,7 +235,7 @@ func NewConfig(db *gorm.DB, enableWork bool, opts ...ConfigOption) Config {
 		})
 	publisher := publish.New(db, PublishStorage).
 		ContextValueFuncs(l10nBuilder.ContextValueProvider)
-	redirectionBuilder := redirection.New(s3Client, db, publisher)
+	redirectionBuilder := redirection.New(s3Client, db, publisher).AutoMigrate()
 	utils.Install(b)
 
 	publisher.Activity(ab)
