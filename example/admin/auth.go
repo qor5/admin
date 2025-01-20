@@ -170,7 +170,11 @@ func initLoginSessionBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Buil
 		}).
 		TablePrefix("cms_").
 		// ParseIPFunc(func(ctx context.Context, lang language.Tag, addr string) (string, error) {
-		// 	return locationDB.GetLocation(ctx, lang, addr)
+		// 	city, err := locationDB.GetCity(ctx, addr)
+		// 	if err != nil {
+		// 		return err
+		// 	}
+		// 	return location.GeneralLocalizedCountryCity(city, lang, language.English), nil
 		// }).
 		AutoMigrate()
 }

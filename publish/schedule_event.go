@@ -82,7 +82,7 @@ func scheduleDialog(_ *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 					),
 				).Attr("v-model", "locals.schedulePublishDialog").
 					Title(msgr.SchedulePublishTime).
-					ContentHeight(88).
+					ContentHeight(108).
 					CancelText(cmsgr.Cancel).
 					OkText(cmsgr.Update).
 					Attr(":disable-ok", "isFetching").

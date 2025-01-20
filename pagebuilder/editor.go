@@ -3,7 +3,6 @@ package pagebuilder
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
@@ -51,8 +50,9 @@ const (
 	paramModelID         = "modelID"
 	paramModelName       = "modelName"
 	paramMoveDirection   = "moveDirection"
-	paramsDevice         = "device"
-	paramsDisplayName    = "DisplayName"
+	paramDevice          = "device"
+	paramDisplayName     = "DisplayName"
+	paramDemoContainer   = "demoContainer"
 
 	DevicePhone    = "phone"
 	DeviceTablet   = "tablet"
@@ -122,16 +122,13 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 
 		}
 		if containerDataID != "" {
-			arr := strings.Split(containerDataID, "_")
-			if len(arr) >= 2 {
-				editEvent := web.Plaid().
-					EventFunc(EditContainerEvent).
-					Query(paramContainerUri, fmt.Sprintf(`%s/%s`, b.prefix, arr[0])).
-					Query(paramContainerID, arr[1]).
-					Query(presets.ParamPortalName, pageBuilderRightContentPortal).
-					Query(presets.ParamOverlay, actions.Content).Go()
-				editContainerDrawer = web.RunScript(fmt.Sprintf(`function(){%s}`, editEvent))
-			}
+			editEvent := web.Plaid().
+				EventFunc(EditContainerEvent).
+				MergeQuery(true).
+				Query(paramContainerDataID, containerDataID).
+				Query(presets.ParamPortalName, pageBuilderRightContentPortal).
+				Query(presets.ParamOverlay, actions.Content).Go()
+			editContainerDrawer = web.RunScript(fmt.Sprintf(`function(){%s}`, editEvent))
 		} else {
 			editContainerDrawer = b.emptyEdit(ctx)
 		}
@@ -146,12 +143,21 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 		if !isStag && m.mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil {
 			isStag = true
 		}
-		afterLeaveEvent := removeVirtualElement() + scrollToContainer(fmt.Sprintf("vars.%s", paramContainerDataID))
-		addOverlay := vx.VXOverlay(m.newContainerContent(ctx)).
-			MaxWidth(665).
-			Attr("ref", "overlay").
-			Attr("@after-leave", afterLeaveEvent).
-			Attr("v-model", "vars.overlay")
+		afterLeaveEvent := removeVirtualElement()
+		addOverlay := web.Scope(
+			h.Div().Style("display:none").Attr("v-on-mounted", `({watch})=>{
+					watch(() => vars.overlay, (value) => {
+						if(value){xLocals.add=false;}
+						})
+				}`),
+			vx.VXOverlay(
+				m.newContainerContent(ctx),
+			).
+				MaxWidth(665).
+				Attr("ref", "overlay").
+				Attr("@after-leave", fmt.Sprintf("if (!xLocals.add){%s}", afterLeaveEvent)).
+				Attr("v-model", "vars.overlay"),
+		).VSlot("{locals:xLocals}").Init("{add:false}")
 		versionComponent = publish.DefaultVersionComponentFunc(m.editor, publish.VersionComponentConfig{Top: true, DisableListeners: true, DisableDataChangeTracking: true})(obj, &presets.FieldContext{ModelInfo: m.editor.Info()}, ctx)
 		pageAppbarContent = h.Components(
 			h.Div(
@@ -381,7 +387,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 }
 
 func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string) {
-	device = ctx.R.FormValue(paramsDevice)
+	device = ctx.R.FormValue(paramDevice)
 	if len(device) == 0 {
 		device = b.defaultDevice
 	}
@@ -536,7 +542,7 @@ func (b *Builder) containerWrapper(r *h.HTMLTagBuilder, ctx *web.EventContext, i
 		} else {
 			r = h.Div(
 				h.Div().Class("inner-shadow"),
-				h.Div(h.Div(r).Attr("style", "pointer-events:none")).Attr("onclick", "event.stopPropagation();document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('highlight')});this.parentElement.classList.add('highlight');"+pmb.postMessage(EventEdit)),
+				h.Div(h.Div(r).Class("inner-container")).Attr("onclick", "event.stopPropagation();document.querySelectorAll('.highlight').forEach(item=>{item.classList.remove('highlight')});this.parentElement.classList.add('highlight');"+pmb.postMessage(EventEdit)),
 				h.Div(
 					h.Div(h.Text(input.DisplayName)).Class("title"),
 					h.Div(

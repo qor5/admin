@@ -173,6 +173,10 @@ func chooseFile(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		db := mb.db
 		id := ctx.ParamAsInt(ParamMediaIDS)
+		if id == ctx.ParamAsInt(ParamSelectIDS) {
+			r.RunScript = `vars.showFileChooser = false`
+			return
+		}
 		field := ctx.Param(ParamField)
 		cfg := stringToCfg(ctx.Param(ParamCfg))
 
@@ -213,7 +217,6 @@ func chooseFile(mb *Builder) web.EventFunc {
 			Width:       m.File.Width,
 			Height:      m.File.Height,
 		}
-
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: mediaBoxThumbnailsPortalName(field),
 			Body: mediaBoxThumbnails(ctx, &mediaBox, field, cfg, false, false),
@@ -271,18 +274,6 @@ func fileComponent(mb *Builder, field string, tab string, ctx *web.EventContext,
 		fullSrc = fmt.Sprintf("%q", src)
 	}
 	*menus = append(*menus,
-		h.If(mb.copyIsAllowed(ctx.R) == nil,
-			VListItem(h.Text(msgr.Copy)).Attr("@click", web.Plaid().
-				EventFunc(CopyFileEvent).
-				Query(ParamField, field).
-				Query(paramTab, tab).
-				Query(ParamCfg, h.JSONString(cfg)).
-				Query(ParamParentID, ctx.Param(ParamParentID)).
-				Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
-				Query(ParamMediaIDS, fmt.Sprint(f.ID)).
-				Query(searchKeywordName(inMediaLibrary, field), ctx.Param(searchKeywordName(inMediaLibrary, field))).
-				Go()),
-		),
 		h.If(mb.updateDescIsAllowed(ctx.R, f) == nil,
 			VListItem(
 				h.Text(msgr.DescriptionForAccessibility)).
@@ -315,6 +306,7 @@ func fileComponent(mb *Builder, field string, tab string, ctx *web.EventContext,
 			EventFunc(chooseFileEvent).
 			Query(ParamField, field).
 			Query(ParamMediaIDS, fmt.Sprint(f.ID)).
+			Query(ParamSelectIDS, ctx.Param(ParamSelectIDS)).
 			Query(ParamCfg, h.JSONString(cfg)).
 			Go()
 	}

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"path"
 	"slices"
 	"sort"
@@ -559,6 +558,7 @@ func thumbName(name string, size *base.Size, fileSize int, f *media_library.Medi
 	}
 	if size != nil {
 		title = name
+		base.SaleUpDown(f.Width, f.Height, size)
 		if size.Width != 0 && size.Height != 0 {
 			text = fmt.Sprintf("%d X %d", size.Width, size.Height)
 		}
@@ -944,64 +944,4 @@ func folderGroupsComponents(db *gorm.DB, ctx *web.EventContext, parentID int) (i
 		}
 	}
 	return
-}
-
-func CopyMediaLiMediaLibrary(mb *Builder, db *gorm.DB, id int, ctx *web.EventContext) (m media_library.MediaLibrary, err error) {
-	if err = db.First(&m, id).Error; err != nil {
-		return
-	}
-	fileName := m.File.FileName
-	if !m.Folder {
-		var fi base.FileInterface
-		fi, err = m.File.Retrieve(m.File.URL())
-		if err != nil {
-			return
-		}
-		defer fi.Close()
-		m.File = media_library.MediaLibraryStorage{}
-		var body []byte
-		if body, err = io.ReadAll(fi); err != nil {
-			return
-		}
-		mf := base.NewMemoryFile(fileName, body)
-
-		if err = m.File.Scan(mf); err != nil {
-			return
-		}
-	}
-	m.Model = gorm.Model{ID: 0}
-	err = mb.saverFunc(db, &m, "", ctx)
-	return
-}
-
-func copyFile(mb *Builder) web.EventFunc {
-	db := mb.db
-	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		var (
-			id    = ctx.ParamAsInt(ParamMediaIDS)
-			msgr  = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
-			pMsgr = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
-			m     media_library.MediaLibrary
-		)
-		if err = mb.copyIsAllowed(ctx.R); err != nil {
-			return
-		}
-		m, err = CopyMediaLiMediaLibrary(mb, db, id, ctx)
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			presets.ShowMessage(&r, pMsgr.RecordNotFound, ColorError)
-			return r, nil
-		} else if err != nil {
-			return
-		}
-		mb.onCreate(ctx, m)
-
-		web.AppendRunScripts(&r,
-			web.Plaid().EventFunc(ImageJumpPageEvent).
-				MergeQuery(true).
-				Queries(ctx.Queries()).
-				Go(),
-		)
-		presets.ShowMessage(&r, msgr.CopyUpdated, ColorSuccess)
-		return
-	}
 }
