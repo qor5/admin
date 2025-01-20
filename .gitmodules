@@ -1,0 +1,3 @@
+[submodule "login/location/test-data"]
+	path = login/location/test-data
+	url = https://github.com/maxmind/MaxMind-DB

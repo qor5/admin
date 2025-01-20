@@ -169,6 +169,13 @@ func initLoginSessionBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Buil
 			return user.GetAccountName() == loginInitialUserEmail
 		}).
 		TablePrefix("cms_").
+		// ParseIPFunc(func(ctx context.Context, lang language.Tag, addr string) (string, error) {
+		// 	city, err := locationDB.GetCity(ctx, addr)
+		// 	if err != nil {
+		// 		return err
+		// 	}
+		// 	return location.GeneralLocalizedCountryCity(city, lang, language.English), nil
+		// }).
 		AutoMigrate()
 }
 
