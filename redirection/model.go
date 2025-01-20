@@ -5,17 +5,17 @@ import (
 )
 
 type (
-	ObjectRedirection struct {
+	Redirection struct {
 		gorm.Model
 		Source string `csv:"source"`
 		Target string `csv:"target"`
 	}
 )
 
-func (b *ObjectRedirection) TableName() string {
-	return "object_redirections"
+func (b *Redirection) TableName() string {
+	return "redirections"
 }
 
 func AutoMigrate(db *gorm.DB) error {
-	return db.AutoMigrate(&ObjectRedirection{})
+	return db.AutoMigrate(&Redirection{})
 }
