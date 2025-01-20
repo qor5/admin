@@ -1,6 +1,8 @@
 package integration_test
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"testing"
 	"time"
@@ -18,7 +20,8 @@ import (
 )
 
 var sessionData = gofixtures.Data(gofixtures.Sql(`
-INSERT INTO "public"."cms_login_sessions" ("id", "created_at", "updated_at", "deleted_at", "user_id", "device", "ip", "token_hash", "expired_at", "extended_at", "last_token_hash") VALUES ('2', '2024-11-26 16:23:40.940667+00', '2024-11-26 16:32:18.264294+00', NULL, '1', 'Chrome - Mac OS X', '127.0.0.1', '37e8f8b8', '2024-11-26 17:32:18.26309+00', '2024-11-26 16:32:18.263089+00', '95606eff'),
+INSERT INTO "public"."cms_login_sessions" ("id", "created_at", "updated_at", "deleted_at", "user_id", "device", "ip", "token_hash", "expired_at", "extended_at", "last_token_hash") VALUES 
+('2', '2024-11-26 16:23:40.940667+00', '2024-11-26 16:32:18.264294+00', NULL, '1', 'Chrome - Mac OS X', '127.0.0.1', '37e8f8b8', '2024-11-26 17:32:18.26309+00', '2024-11-26 16:32:18.263089+00', '95606eff'),
 ('3', '2024-11-27 06:01:32.667847+00', '2024-11-27 06:01:32.667847+00', NULL, '1', 'Chrome - Mac OS X', '127.0.0.1', '2d528b6d', '2024-11-27 07:01:32.665893+00', '2024-11-27 06:01:32.665892+00', '');
 `, []string{`user_role_join`, `roles`, "users"}))
 
@@ -108,9 +111,21 @@ func TestSession(t *testing.T) {
 		r, err := http.NewRequest("GET", "/", nil)
 		require.NoError(t, err)
 		r.AddCookie(&http.Cookie{Name: "auth", Value: "token1"})
-		valid, err := sb.IsSessionValid(r, uid)
+		err = sb.IsSessionValid(r, uid)
 		require.NoError(t, err)
-		require.True(t, valid)
+
+		simulateValidateError := true
+		sb.WithValidateSessionHook(func(next login.ValidateSessionFunc) login.ValidateSessionFunc {
+			return func(ctx context.Context, input *login.ValidateSessionInput) (*login.ValidateSessionOutput, error) {
+				if simulateValidateError {
+					return nil, errors.New("additional validate error")
+				}
+				return next(ctx, input)
+			}
+		})
+		err = sb.IsSessionValid(r, uid)
+		require.ErrorContains(t, err, "additional validate error")
+		simulateValidateError = false
 	}
 
 	{
@@ -118,9 +133,8 @@ func TestSession(t *testing.T) {
 		r, err := http.NewRequest("GET", "/", nil)
 		require.NoError(t, err)
 		r.AddCookie(&http.Cookie{Name: "auth", Value: "token0"})
-		valid, err := sb.IsSessionValid(r, uid)
+		err = sb.IsSessionValid(r, uid)
 		require.NoError(t, err)
-		require.True(t, valid)
 
 		// force change the extended_at
 		err = db.Model(&login.LoginSession{}).Where("token_hash = ?", currentTokenHash).
@@ -131,9 +145,8 @@ func TestSession(t *testing.T) {
 		r, err = http.NewRequest("GET", "/", nil)
 		require.NoError(t, err)
 		r.AddCookie(&http.Cookie{Name: "auth", Value: "token0"})
-		valid, err = sb.IsSessionValid(r, uid)
-		require.NoError(t, err)
-		require.False(t, valid)
+		err = sb.IsSessionValid(r, uid)
+		require.ErrorContains(t, err, "session not found")
 	}
 
 	{
@@ -142,15 +155,13 @@ func TestSession(t *testing.T) {
 		require.NoError(t, err)
 		r.AddCookie(&http.Cookie{Name: "auth", Value: "token1"})
 		r.Header.Set("X-Forwarded-For", "192.168.1.1")
-		valid, err := sb.IsSessionValid(r, uid)
-		require.NoError(t, err)
-		require.False(t, valid)
+		err = sb.IsSessionValid(r, uid)
+		require.ErrorContains(t, err, "IP mismatch")
 
 		// disable ip check
 		sb.DisableIPCheck(true)
-		valid, err = sb.IsSessionValid(r, uid)
+		err = sb.IsSessionValid(r, uid)
 		require.NoError(t, err)
-		require.True(t, valid)
 	}
 
 	{
@@ -223,5 +234,30 @@ func TestSession(t *testing.T) {
 		require.Len(t, sessions, 3)
 		validCount = lo.CountBy(sessions, func(session *login.LoginSession) bool { return session.ExpiredAt.After(db.NowFunc()) })
 		require.Equal(t, 0, validCount)
+	}
+
+	{
+		// add validate max lifetime hook
+		sb.WithValidateSessionHook(login.ValidateMaxLifetimeHook(5 * time.Minute))
+
+		// active current session
+		err := db.Model(&login.LoginSession{}).Where("token_hash = ?", currentTokenHash).
+			Update("expired_at", db.NowFunc().Add(10*time.Minute)).Error
+		require.NoError(t, err)
+
+		r, err := http.NewRequest("GET", "/", nil)
+		require.NoError(t, err)
+		r.AddCookie(&http.Cookie{Name: "auth", Value: "token1"})
+
+		err = sb.IsSessionValid(r, uid)
+		require.NoError(t, err) // current session is valid
+
+		// change its created_at
+		err = db.Model(&login.LoginSession{}).Where("token_hash = ?", currentTokenHash).
+			Update("created_at", db.NowFunc().Add(-6*time.Minute)).Error
+		require.NoError(t, err)
+
+		err = sb.IsSessionValid(r, uid)
+		require.ErrorContains(t, err, "session lifetime exceeded")
 	}
 }
