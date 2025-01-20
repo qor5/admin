@@ -3,26 +3,19 @@ package redirection
 import (
 	"bytes"
 	"context"
-	"errors"
-	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
-	"net/url"
 	"os"
-	"slices"
+	"path"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/gocarina/gocsv"
-	"github.com/qor5/web/v3"
-
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/qor5/x/v3/oss"
-	"github.com/qor5/x/v3/oss/s3"
-	v "github.com/qor5/x/v3/ui/vuetify"
-
-	"github.com/qor5/admin/v3/presets"
 )
 
 const (
@@ -71,7 +64,7 @@ func (b *Builder) createEmptyTargetRecord(path string) {
 	var (
 		tx  = b.db.Begin()
 		err error
-		m   ObjectRedirection
+		//m   Redirection
 	)
 	defer func() {
 		if err != nil {
@@ -80,65 +73,21 @@ func (b *Builder) createEmptyTargetRecord(path string) {
 			tx.Commit()
 		}
 	}()
-	tx.Where(`Source = ?`, path).Order("created_at desc").First(&m)
-	if m.ID != 0 && m.Target == "" {
-		return
-	}
-	err = tx.Create(&ObjectRedirection{
+	//tx.Where(`Source = ?`, path).Order("created_at desc").First(&m)
+	//if m.ID != 0 && m.Target == "" {
+	//	return
+	//}
+	err = tx.Create(&Redirection{
 		Source: path,
 		Target: "",
 	}).Error
 }
 
-var (
-	repeatedSourceErrors = errors.New("RepeatedSource")
-	unreachableErrors    = errors.New("SomeURLAreUnreachable")
-)
+func (b *Builder) saver(ctx context.Context, record *Redirection) (err error) {
 
-func (b *Builder) importRecords(ctx *web.EventContext, r *web.EventResponse) (err error) {
 	var (
-		uf             uploadFiles
-		file           multipart.File
-		body           []byte
-		records        []ObjectRedirection
-		existedSource  = make(map[string]bool)
-		repeatedSource []string
-		items          []ObjectRedirection
-		urls           []string
+		tx = b.db.Begin()
 	)
-	ctx.MustUnmarshalForm(&uf)
-	for _, fh := range uf.NewFiles {
-		if file, err = fh.Open(); err != nil {
-			return
-		}
-		if body, err = io.ReadAll(file); err != nil {
-			return
-		}
-		if err = gocsv.UnmarshalBytes(body, &items); err != nil {
-			return
-		}
-		for _, item := range items {
-			if existedSource[item.Source] {
-				if !slices.Contains(repeatedSource, item.Source) {
-					repeatedSource = append(repeatedSource, item.Source)
-				}
-				continue
-			}
-			existedSource[item.Source] = true
-			records = append(records, item)
-		}
-	}
-	if len(repeatedSource) > 0 {
-		presets.ShowMessage(r,
-			fmt.Sprintf("%v:\n %v", repeatedSourceErrors.Error(),
-				strings.Join(repeatedSource, "\n")), v.ColorError)
-		return
-	}
-	if !checkURLsBatch(ctx.R, urls) {
-		presets.ShowMessage(r, unreachableErrors.Error(), v.ColorError)
-		return
-	}
-	tx := b.db.Begin()
 	defer func() {
 		if err == nil {
 			tx.Commit()
@@ -146,95 +95,87 @@ func (b *Builder) importRecords(ctx *web.EventContext, r *web.EventResponse) (er
 			tx.Rollback()
 		}
 	}()
-	if err = tx.Save(&records).Error; err != nil {
+
+	if err = tx.Save(&record).Error; err != nil {
 		return
 	}
-	for _, item := range records {
-		con := context.Background()
-		context.WithValue(con, s3.WebsiteRedirectLocation{}, item.Source)
-		if _, err = b.Put(con, item.Target, bytes.NewReader([]byte{})); err != nil {
-			return
+	err = b.redirection(ctx, record)
+	return
+}
+func (b *Builder) redirection(ctx context.Context, record *Redirection) (err error) {
+	var (
+		client = b.s3Client
+		bucket = client.Config.Bucket
+		source = strings.TrimPrefix(record.Source, "/")
+	)
+	target := record.Target
+	if !strings.HasPrefix(target, "http") {
+		target = path.Join("/", record.Target)
+	}
+	if b.checkObjectExists(ctx, source) {
+		_, err = client.S3.CopyObject(ctx, &s3.CopyObjectInput{
+			Bucket:                  aws.String(bucket),
+			CopySource:              aws.String(path.Join(bucket, record.Source)),
+			Key:                     aws.String(strings.TrimPrefix(record.Source, "/")),
+			WebsiteRedirectLocation: aws.String(target),
+		})
+	} else {
+		params := &s3.PutObjectInput{
+			Bucket:                  aws.String(client.Config.Bucket),
+			Key:                     aws.String(client.ToS3Key(source)),
+			ACL:                     types.ObjectCannedACL(client.Config.ACL),
+			Body:                    bytes.NewReader([]byte{}),
+			WebsiteRedirectLocation: aws.String(target),
 		}
+		if client.Config.CacheControl != "" {
+			params.CacheControl = aws.String(client.Config.CacheControl)
+		}
+		_, err = client.S3.PutObject(ctx, params)
 	}
 	return
 }
 
+func (b *Builder) checkObjectExists(ctx context.Context, key string) bool {
+	_, err := b.s3Client.S3.HeadObject(ctx, &s3.HeadObjectInput{
+		Bucket: aws.String(b.s3Client.Config.Bucket),
+		Key:    aws.String(strings.TrimPrefix(key, "/")),
+	})
+	return err == nil
+}
+
+// checkURL checks if a single URL is reachable.
 func checkURL(url string) bool {
 	client := http.Client{
 		Timeout: time.Duration(defaultTimeout) * time.Second, // Set a timeout for the HTTP client
 	}
 	resp, err := client.Get(url) // Send a GET request to the URL
-	if err != nil {
+	if err != nil || resp == nil || resp.StatusCode/100 != 2 {
 		return false // Return false if there is an error (e.g., unreachable URL)
 	}
 	defer resp.Body.Close() // Ensure the response body is closed after use
 	return true             // Return true if the request succeeds
 }
 
-func constructFullURL(r *http.Request, relativePath string) string {
-	// Determine the scheme
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
-	}
-
-	// Parse the base URL
-	baseURL := &url.URL{
-		Scheme: scheme,
-		Host:   r.Host,
-	}
-
-	// Resolve the relative path
-	relativeURL, err := url.Parse(relativePath)
-	if err != nil {
-		panic(err) // Handle error in production code
-	}
-
-	// Resolve relative URL against the base
-	fullURL := baseURL.ResolveReference(relativeURL)
-
-	return fullURL.String()
-}
-
-func prependBaseURL(r *http.Request, urls []string) {
-	for i := 0; i < len(urls); i++ {
-		if !strings.HasPrefix(urls[i], "http") {
-			urls[i] = constructFullURL(r, urls[i])
-		}
-	}
-}
-
-func checkURLsBatch(r *http.Request, urls []string) bool {
+// checkURLsBatch checks a batch of URLs and returns only the ones that failed.
+func checkURLsBatch(urls map[string][]string) []string {
 	var wg sync.WaitGroup                          // WaitGroup to ensure all goroutines finish
 	urlChan := make(chan string, len(urls))        // Channel for distributing URLs to workers
-	resultChan := make(chan bool)                  // Channel for collecting successful results
+	resultChan := make(chan string, len(urls))     // Channel for collecting failed results
 	sem := make(chan struct{}, defaultConcurrency) // Semaphore to limit concurrency
-	abort := make(chan struct{})                   // Channel to signal an early exit when a failure is detected
-	prependBaseURL(r, urls)
+
 	// Launch worker goroutines
 	for i := 0; i < defaultConcurrency; i++ {
-		wg.Add(1) // Increment WaitGroup counter for each goroutine
+		wg.Add(1)
 		go func() {
 			defer wg.Done() // Decrement WaitGroup counter when the goroutine finishes
-			for {
-				select {
-				case <-abort: // If an abort signal is received, exit the goroutine
-					return
-				case url, ok := <-urlChan: // Receive a URL from the channel
-					if !ok { // If the channel is closed, exit the goroutine
-						return
-					}
-					sem <- struct{}{}       // Acquire a semaphore slot
-					result := checkURL(url) // Check the URL
-					<-sem                   // Release the semaphore slot
-					if !result {            // If the URL check fails
-						select {
-						case abort <- struct{}{}: // Send an abort signal
-						default: // Prevent duplicate abort signals
-						}
-						return // Exit the goroutine immediately
-					}
-					resultChan <- true // Send success result to the result channel
+			for url := range urlChan {
+				sem <- struct{}{}       // Acquire a semaphore slot
+				status := checkURL(url) // Check the URL
+				<-sem                   // Release the semaphore slot
+
+				// If the URL check fails, send it to the result channel
+				if !status {
+					resultChan <- url
 				}
 			}
 		}()
@@ -242,27 +183,23 @@ func checkURLsBatch(r *http.Request, urls []string) bool {
 
 	// Send URLs to the channel
 	go func() {
-		for _, url := range urls {
-			urlChan <- url // Send each URL to the channel
+		for u := range urls {
+			urlChan <- u
 		}
 		close(urlChan) // Close the URL channel after sending all URLs
 	}()
 
-	// Wait for all goroutines to finish and close result-related channels
+	// Wait for all goroutines to finish and close the result channel
 	go func() {
-		wg.Wait()         // Wait for all goroutines to complete
+		wg.Wait()
 		close(resultChan) // Close the result channel
-		close(abort)      // Close the abort channel
 	}()
 
-	// Collect results or handle aborts
-	for range urls {
-		select {
-		case <-abort: // If an abort signal is received, return false
-			return false
-		case <-resultChan: // Consume successful results
-		}
+	// Collect failed results
+	var failedURLs []string
+	for failedURL := range resultChan {
+		failedURLs = append(failedURLs, failedURL)
 	}
 
-	return true // If all URLs are reachable, return true
+	return failedURLs
 }
