@@ -19,7 +19,6 @@ const (
 )
 
 func (b *Builder) uploadFile(ctx *web.EventContext) (r web.EventResponse, err error) {
-
 	var (
 		uf      uploadFiles
 		file    multipart.File
@@ -112,6 +111,7 @@ func (b *Builder) checkRecords(r *web.EventResponse, msgr *Messages, records []R
 
 	return true
 }
+
 func (b *Builder) checkObjects(ctx *web.EventContext, r *web.EventResponse, msgr *Messages, records []Redirection) (passed bool) {
 	var (
 		errorRows         []string

@@ -101,8 +101,8 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 			})
 			//		params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
 			//			Query: fmt.Sprintf(`%s.created_at=(SELECT MAX(created_at)
-			//FROM %s tb
-			//WHERE source = %s.source)`, m.TableName(), m.TableName(), m.TableName()),
+			// FROM %s tb
+			// WHERE source = %s.source)`, m.TableName(), m.TableName(), m.TableName()),
 			//		})
 			return in(ctx, params)
 		}
