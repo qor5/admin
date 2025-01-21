@@ -27,12 +27,13 @@ require (
 	github.com/mholt/archiver/v4 v4.0.0-alpha.8
 	github.com/orcaman/concurrent-map/v2 v2.0.1
 	github.com/ory/ladon v1.3.0
+	github.com/oschwald/geoip2-golang v1.11.0
 	github.com/pkg/errors v0.9.1
 	github.com/pquerna/otp v1.4.0
 	github.com/qor5/imaging v1.6.4
 	github.com/qor5/web v1.3.2
 	github.com/qor5/web/v3 v3.0.12-0.20250108021443-325c9ca76ac5
-	github.com/qor5/x/v3 v3.0.14-0.20250120070648-ccf65b4ed1c1
+	github.com/qor5/x/v3 v3.0.14-0.20250121144911-6a138a6ec32c
 	github.com/samber/lo v1.47.0
 	github.com/shurcooL/sanitized_anchor_name v1.0.0
 	github.com/spf13/cast v1.6.0
@@ -148,6 +149,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/ory/pagination v0.0.1 // indirect
+	github.com/oschwald/maxminddb-golang v1.13.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
