@@ -110,6 +110,7 @@ func (msgr *Messages) TargetInvalidFormat(name string) string {
 		"{Name}", name,
 	).Replace(msgr.TargetInvalidFormatTemplate)
 }
+
 func (msgr *Messages) InvalidFormat(vs map[string]string) string {
 	var messages []string
 	for rows, message := range vs {
