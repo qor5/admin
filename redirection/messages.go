@@ -15,6 +15,7 @@ type Messages struct {
 	NormalErrorTemplate            string
 	RedirectErrorTemplate          string
 	FileUploadFailed               string
+	ErrorTips                      string
 }
 
 const I18nRedirectionKey i18n.ModuleKey = "I18nRedirectionKey"
@@ -28,6 +29,7 @@ var Messages_en_US = &Messages{
 	NormalErrorTemplate:            "Row {Rows}:{Message}",
 	RedirectErrorTemplate:          "Row {Rows}: Redirection Failed.",
 	FileUploadFailed:               "File Upload Failed For Rows: {Rows}.",
+	ErrorTips:                      "ErrorTips",
 }
 
 var Messages_zh_CN = &Messages{
@@ -39,6 +41,7 @@ var Messages_zh_CN = &Messages{
 	NormalErrorTemplate:            "第{Rows}行：{Message}",
 	RedirectErrorTemplate:          "第{Rows}行：重定向失败。",
 	FileUploadFailed:               "第{Rows}行：文件上传失败。",
+	ErrorTips:                      "错误提示",
 }
 
 var Messages_ja_JP = &Messages{
@@ -50,6 +53,7 @@ var Messages_ja_JP = &Messages{
 	NormalErrorTemplate:            "{Rows}行目: {Message}",
 	RedirectErrorTemplate:          "{Rows}行目: リダイレクトに失敗しました。",
 	FileUploadFailed:               "{Rows}行目: ファイルのアップロードに失敗しました。",
+	ErrorTips:                      "エラーのヒント",
 }
 
 func (msgr *Messages) RepeatedSource(vs map[string][]string) string {

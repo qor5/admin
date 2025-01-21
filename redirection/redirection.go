@@ -4,6 +4,7 @@ import (
 	"net/url"
 
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/oss"
 	"github.com/qor5/x/v3/oss/s3"
 	v "github.com/qor5/x/v3/ui/vuetify"
@@ -16,6 +17,8 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/publish"
 )
+
+const redirection_notify_error_msg = "redirection_notify_error_msg"
 
 type (
 	Builder struct {
@@ -56,7 +59,7 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 		RegisterForModule(language.Japanese, I18nRedirectionKey, Messages_ja_JP)
 
 	m := &Redirection{}
-	b.mb = pb.Model(m)
+	b.mb = pb.Model(m).MenuIcon("mdi-link")
 	b.mb.RegisterEventFunc(UploadFileEvent, b.uploadFile)
 	listing := b.mb.Listing("Source", "Target")
 	listing.CellWrapperFunc(func(cell h.MutableAttrHTMLComponent, id string, obj interface{}, dataTableID string) h.HTMLComponent {
@@ -65,7 +68,13 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 	})
 	listing.RowMenu().Empty()
 	listing.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nRedirectionKey, Messages_en_US).(*Messages)
+
 		return web.Scope(
+			web.Listen(redirection_notify_error_msg, `xLocals.text = payload;xLocals.dialog=true;`),
+			vx.VXDialog(
+				h.P(h.Text("{{xLocals.text}}")).Style("white-space: pre-line;"),
+			).Title(msgr.ErrorTips).HideFooter(true).Type(vx.DialogError).Attr("v-model", "xLocals.dialog"),
 			vx.VXBtn("UploadFile").
 				Attr(":loading", "xLocals.loading").
 				PrependIcon("mdi-upload").Color(v.ColorPrimary).
@@ -82,7 +91,7 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 							ThenScript("$refs.uploadInput.value=null;xLocals.loading=false").
 							EventFunc(UploadFileEvent).
 							Go()),
-		).VSlot("{locals:xLocals}").Init("{loading:false}")
+		).VSlot("{locals:xLocals}").Init(`{loading:false,dialog:false,text:""}`)
 	})
 	listing.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
 		return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {

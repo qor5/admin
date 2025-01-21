@@ -29,7 +29,7 @@ func (b *Builder) uploadFile(ctx *web.EventContext) (r web.EventResponse, err er
 	)
 	ctx.MustUnmarshalForm(&uf)
 	if len(uf.NewFiles) == 0 {
-		presets.ShowMessage(&r, msgr.FileUploadFailed, v.ColorError)
+		web.AppendRunScripts(&r, web.Emit(redirection_notify_error_msg, msgr.FileUploadFailed))
 		return
 	}
 	if file, err = uf.NewFiles[0].Open(); err != nil {
@@ -83,7 +83,7 @@ func (b *Builder) checkRecords(r *web.EventResponse, msgr *Messages, records []R
 		}
 	}
 	if len(invalidFormat) > 0 {
-		presets.ShowMessage(r, msgr.InvalidFormat(invalidFormat), v.ColorError)
+		web.AppendRunScripts(r, web.Emit(redirection_notify_error_msg, msgr.InvalidFormat(invalidFormat)))
 		return
 	}
 	duplicateSources := make(map[string][]string)
@@ -93,7 +93,7 @@ func (b *Builder) checkRecords(r *web.EventResponse, msgr *Messages, records []R
 		}
 	}
 	if len(duplicateSources) > 0 {
-		presets.ShowMessage(r, msgr.RepeatedSource(duplicateSources), v.ColorError)
+		web.AppendRunScripts(r, web.Emit(redirection_notify_error_msg, msgr.RepeatedSource(duplicateSources)))
 		return
 	}
 
@@ -105,7 +105,7 @@ func (b *Builder) checkRecords(r *web.EventResponse, msgr *Messages, records []R
 			for _, failedUrl := range failedUrls {
 				errorFieldUrls[failedUrl] = urls[failedUrl]
 			}
-			presets.ShowMessage(r, msgr.TargetUnreachableError(errorFieldUrls), v.ColorError)
+			web.AppendRunScripts(r, web.Emit(redirection_notify_error_msg, msgr.TargetUnreachableError(errorFieldUrls)))
 			return
 		}
 	}
@@ -125,7 +125,7 @@ func (b *Builder) checkObjects(ctx *web.EventContext, r *web.EventResponse, msgr
 		}
 	}
 	if len(errorRows) > 0 {
-		presets.ShowMessage(r, msgr.TargetObjectNotExisted(errorRows), v.ColorError)
+		web.AppendRunScripts(r, web.Emit(redirection_notify_error_msg, msgr.TargetObjectNotExisted(errorRows)))
 		return
 	}
 	for index, item := range records {
@@ -135,7 +135,7 @@ func (b *Builder) checkObjects(ctx *web.EventContext, r *web.EventResponse, msgr
 		}
 	}
 	if len(errorRedirectRows) > 0 {
-		presets.ShowMessage(r, msgr.RedirectError(errorRedirectRows), v.ColorError)
+		web.AppendRunScripts(r, web.Emit(redirection_notify_error_msg, msgr.RedirectError(errorRedirectRows)))
 		return
 	}
 	return true
