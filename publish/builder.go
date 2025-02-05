@@ -60,6 +60,7 @@ func (b *Builder) Activity(v *activity.Builder) (r *Builder) {
 	b.ab = v
 	return b
 }
+
 func (b *Builder) WrapStorage(v func(oss.StorageInterface) oss.StorageInterface) (r *Builder) {
 	b.storage = v(b.storage)
 	return b

@@ -64,7 +64,7 @@ func (b *Builder) createEmptyTargetRecord(path string) {
 	var (
 		tx  = b.db.Begin()
 		err error
-		//m   Redirection
+		// m   Redirection
 	)
 	defer func() {
 		if err != nil {
@@ -84,10 +84,7 @@ func (b *Builder) createEmptyTargetRecord(path string) {
 }
 
 func (b *Builder) saver(ctx context.Context, record *Redirection) (err error) {
-
-	var (
-		tx = b.db.Begin()
-	)
+	tx := b.db.Begin()
 	defer func() {
 		if err == nil {
 			tx.Commit()
@@ -102,6 +99,7 @@ func (b *Builder) saver(ctx context.Context, record *Redirection) (err error) {
 	err = b.redirection(ctx, record)
 	return
 }
+
 func (b *Builder) redirection(ctx context.Context, record *Redirection) (err error) {
 	var (
 		client = b.s3Client
