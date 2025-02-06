@@ -1,9 +1,10 @@
 package basics
 
 import (
-	"github.com/qor5/admin/v3/docs/docsrc/generated"
 	. "github.com/theplant/docgo"
 	"github.com/theplant/docgo/ch"
+
+	"github.com/qor5/admin/v3/docs/docsrc/generated"
 )
 
 var Layout = Doc(
@@ -14,12 +15,6 @@ And there are some ways to customzie the layout/theme.
 Presets UI is based on [Vuetify](https://v2.vuetifyjs.com/en/), you can modify the Admin theme by configuring the [Vuetify options](https://v2.vuetifyjs.com/en/features/presets/#default-preset)
     `),
 	ch.Code(generated.CustomizeVuetifyOptions).Language("go"),
-	Markdown(`
-## Assets
-If you need third-party front-end libraries to achieve some functions, 
-you can inject them via the *ExtraAsset* method, and they will be automatically served.
-    `),
-	ch.Code(generated.InjectAssetViaExtraAsset).Language("go"),
 	Markdown(`
 you can also call Injector in AssetFunc to add meta, add custom HTML in HEAD and TAIL.
     `),
