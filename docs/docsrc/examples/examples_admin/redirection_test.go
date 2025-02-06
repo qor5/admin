@@ -89,6 +89,19 @@ https://cdn.qor5.theplant-dev.com/international/index4.html,/international/index
 			},
 			ExpectRunScriptContainsInOrder: []string{`RedirectionNotifyErrorMsg`, `File Upload Failed`},
 		},
+
+		{
+			Name:  "Upload File No Records",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				redirectionData.TruncatePut(dbr)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/redirections").
+					AddReader("NewFiles", "test.csv", bytes.NewReader([]byte(`source,target`))).
+					EventFunc(redirection.UploadFileEvent).BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{`success`},
+		},
 	}
 
 	for _, c := range cases {
