@@ -602,6 +602,7 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 				}
 				addContainerEvent := web.Plaid().EventFunc(AddContainerEvent).
 					MergeQuery(true).
+					BeforeScript("pLocals.creating=true").
 					Query(paramModelName, builder.name).
 					Query(paramStatus, ctx.Param(paramStatus)).
 					ThenScript("vars.overlay=false;xLocals.add=true").
@@ -609,13 +610,15 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 				listItems = append(listItems,
 					VHover(
 						web.Slot(
-							VListItem(
-								VListItemTitle(h.Text(containerName)),
-								web.Slot(VBtn(msgr.Add).Color(ColorPrimary).Size(SizeSmall).Attr("v-if", "isHovering")).Name(VSlotAppend),
-							).Attr("v-bind", "props", ":active", "isHovering").
-								Class("cursor-pointer").
-								Attr("@click", fmt.Sprintf(`isHovering?%s:null`, addContainerEvent)).
-								ActiveColor(ColorPrimary),
+							web.Scope(
+								VListItem(
+									VListItemTitle(h.Text(containerName)),
+									web.Slot(VBtn(msgr.Add).Color(ColorPrimary).Size(SizeSmall).Attr("v-if", "isHovering")).Name(VSlotAppend),
+								).Attr("v-bind", "props", ":active", "isHovering").
+									Class("cursor-pointer").
+									Attr("@click", fmt.Sprintf(`if (isHovering &&!pLocals.creating){%s}`, addContainerEvent)).
+									ActiveColor(ColorPrimary),
+							).VSlot("{ locals: pLocals }").Init(`{ creating : false }`),
 						).Name("default").Scope(`{isHovering, props }`),
 					).Attr("@update:model-value", fmt.Sprintf(`(val)=>{if (val){%s} }`,
 						web.Plaid().EventFunc(ContainerPreviewEvent).
