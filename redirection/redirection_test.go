@@ -41,7 +41,6 @@ func TestMain(m *testing.M) {
 	b = &Builder{db: TestDB}
 	b.AutoMigrate()
 	m.Run()
-
 }
 
 func TestCheckURLsBatch(t *testing.T) {
