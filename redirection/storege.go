@@ -150,7 +150,9 @@ func checkURL(url string) bool {
 	if err != nil {
 		return false
 	}
-	defer resp.Body.Close() // Ensure the response body is closed after use
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	_, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return false
