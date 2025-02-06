@@ -118,6 +118,10 @@
 <a href='basics/l10n.html' id='basics/l10n.html' onclick='window.storeMenuState("basics/l10n.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Localization</a>
 </li>
 
+<li class='m-0'>
+<a href='basics/redirection.html' id='basics/redirection.html' onclick='window.storeMenuState("basics/redirection.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Redirection</a>
+</li>
+
 <li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Web Application</li>
 
 <li class='m-0'>
@@ -226,7 +230,7 @@ javascript libraries etc. You can see we put vue.js into head, but put main.js i
 
 <p>Next part describe about these asset references:</p>
 
-<highlightjs :language='"go"' :code='"mux.Handle(\"/assets/main.js\",\n\tweb.PacksHandler(\"text/javascript\",\n\t\tvuetifyx.JSComponentsPack(),\n\t\tVuetify(),\n\t\tJSComponentsPack(),\n\t\tweb.JSComponentsPack(),\n\t),\n)\n\nmux.Handle(\"/assets/vue.js\",\n\tweb.PacksHandler(\"text/javascript\",\n\t\tweb.JSVueComponentsPack(),\n\t),\n)\n"'></highlightjs>
+<highlightjs :language='"go"' :code='"mux.Handle(\"/assets/main.js\",\n\tweb.PacksHandler(\"text/javascript\",\n\t\tvuetifyx.JSComponentsPack(),\n\t\tweb.JSComponentsPack(),\n\t),\n)\n\nmux.Handle(\"/assets/vue.js\",\n\tweb.PacksHandler(\"text/javascript\",\n\t\tweb.JSVueComponentsPack(),\n\t),\n)\n"'></highlightjs>
 <p><code>web.JSComponentsPack</code> is the production version of QOR5 core javascript code.
 Created by using <a href="https://cli.vuejs.org/guide/creating-a-project.html" rel="nofollow">@vue/cli</a>,
 It does the basic functions like render server side returned html as vue templates.
