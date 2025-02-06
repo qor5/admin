@@ -118,6 +118,10 @@
 <a href='basics/l10n.html' id='basics/l10n.html' onclick='window.storeMenuState("basics/l10n.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Localization</a>
 </li>
 
+<li class='m-0'>
+<a href='basics/redirection.html' id='basics/redirection.html' onclick='window.storeMenuState("basics/redirection.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Redirection</a>
+</li>
+
 <li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Web Application</li>
 
 <li class='m-0'>
@@ -235,16 +239,16 @@ Usage</h2>
 <highlightjs :language='"go"' :code='"var (\n\t_ presets.SlugEncoder = (*WithPublishProduct)(nil)\n\t_ presets.SlugDecoder = (*WithPublishProduct)(nil)\n)\n\nfunc (p *WithPublishProduct) PrimarySlug() string {\n\treturn fmt.Sprintf(\"%v_%v\", p.ID, p.Version.Version)\n}\n\nfunc (p *WithPublishProduct) PrimaryColumnValuesBySlug(slug string) map[string]string {\n\tsegs := strings.Split(slug, \"_\")\n\tif len(segs) != 2 {\n\t\tpanic(\"wrong slug\")\n\t}\n\n\treturn map[string]string{\n\t\t\"id\":      segs[0],\n\t\t\"version\": segs[1],\n\t}\n}\n"'></highlightjs>
 <p>Create publisher and configure Publish view for model, and remember to display Status and Schedule fields in Editing</p>
 
-<highlightjs :language='"go"' :code='"mb := b.Model(\u0026WithPublishProduct{})\ndp := mb.Detailing(publish.VersionsPublishBar, \"Details\").Drawer(true)\ndp.Section(\"Details\").\n\tViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {\n\t\tproduct := obj.(*WithPublishProduct)\n\t\tdetail := vx.DetailInfo(\n\t\t\tvx.DetailColumn(\n\t\t\t\tvx.DetailField(vx.OptionalText(product.Name).ZeroLabel(\"No Name\")).Label(\"Name\"),\n\t\t\t\tvx.DetailField(vx.OptionalText(fmt.Sprint(product.Price)).ZeroLabel(\"No Price\")).Label(\"Price\"),\n\t\t\t).Header(\"PRODUCT INFORMATION\"),\n\t\t)\n\t\treturn detail\n\t}).\n\tEditing(\"Name\", \"Price\")\n\npublisher := publish.New(db, nil)\nb.Use(publisher)\nmb.Use(publisher)\n// run the publisher job if Schedule is used\ngo publish.RunPublisher(db, nil, publisher)"'></highlightjs>
+<highlightjs :language='"go"' :code='"mb := b.Model(\u0026WithPublishProduct{})\ndp := mb.Detailing(publish.VersionsPublishBar, \"Details\").Drawer(true)\ndetailSection := presets.NewSectionBuilder(mb, \"Details\").\n\tViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {\n\t\tproduct := obj.(*WithPublishProduct)\n\t\tdetail := vx.DetailInfo(\n\t\t\tvx.DetailColumn(\n\t\t\t\tvx.DetailField(vx.OptionalText(product.Name).ZeroLabel(\"No Name\")).Label(\"Name\"),\n\t\t\t\tvx.DetailField(vx.OptionalText(fmt.Sprint(product.Price)).ZeroLabel(\"No Price\")).Label(\"Price\"),\n\t\t\t).Header(\"PRODUCT INFORMATION\"),\n\t\t)\n\t\treturn detail\n\t}).\n\tEditing(\"Name\", \"Price\")\ndp.Section(detailSection)\nab := activity.New(db, func(ctx context.Context) (*activity.User, error) {\n\treturn \u0026activity.User{\n\t\tID:   \"1\",\n\t\tName: \"John\",\n\t}, nil\n}).\n\tAutoMigrate()\npublisher := publish.New(db, nil).Activity(ab)\nb.Use(publisher)\nmb.Use(publisher)\n\nif customize != nil {\n\tcustomize(mb, publisher)\n}\n\n// run the publisher job if Schedule is used\ngo publish.RunPublisher(context.Background(), db, nil, publisher)"'></highlightjs>
 <p>Implement the publish interfaces if there is a need to publish content to storage(filesystem, AWS S3, ...)</p>
 
-<highlightjs :language='"go"' :code='"var (\n\t_ publish.PublishInterface   = (*WithPublishProduct)(nil)\n\t_ publish.UnPublishInterface = (*WithPublishProduct)(nil)\n)\n\nfunc (p *WithPublishProduct) GetPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {\n\t// create publish actions\n\treturn\n}\n\nfunc (p *WithPublishProduct) GetUnPublishActions(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (objs []*publish.PublishAction, err error) {\n\t// create unpublish actions\n\treturn\n}\n"'></highlightjs>
+<highlightjs :language='"go"' :code='"var (\n\t_ publish.PublishInterface   = (*WithPublishProduct)(nil)\n\t_ publish.UnPublishInterface = (*WithPublishProduct)(nil)\n)\n\nfunc (p *WithPublishProduct) GetPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {\n\t// create publish actions\n\treturn\n}\n\nfunc (p *WithPublishProduct) GetUnPublishActions(ctx context.Context, db *gorm.DB, storage oss.StorageInterface) (actions []*publish.PublishAction, err error) {\n\t// create unpublish actions\n\treturn\n}\n"'></highlightjs>
 
 <div>
 <div class='demo'>
 <a href='/examples/publish-example/with-publish-products' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_admin/publish.go#L58-L74' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_admin/publish.go#L60-L76' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 <h2><a name="modules" class="anchor" href="#modules" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Modules</h2>
@@ -253,7 +257,7 @@ Status</h3>
 
 <p><code>Status</code> module stores the status of the record.</p>
 
-<highlightjs :language='"go"' :code='"const (\n\tStatusDraft   = \"draft\"\n\tStatusOnline  = \"online\"\n\tStatusOffline = \"offline\"\n)\n\ntype Status struct {\n\tStatus    string `gorm:\"default:&#39;draft&#39;\"`\n\tOnlineUrl string\n}\n"'></highlightjs>
+<highlightjs :language='"go"' :code='"var (\n\tStatusDraft   = \"draft\"\n\tStatusOnline  = \"online\"\n\tStatusOffline = \"offline\"\n)\n\ntype Status struct {\n\tStatus    string `gorm:\"default:&#39;draft&#39;\"`\n\tOnlineUrl string\n}\n"'></highlightjs>
 <p>The initial status is <strong>draft</strong>, after publishing it becomes <strong>online</strong>, and after unpublishing it becomes <strong>offline</strong>.</p>
 <h3><a name="schedule" class="anchor" href="#schedule" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Schedule</h3>
 
@@ -266,7 +270,7 @@ If a record has <code>ScheduledEndAt</code> set, and the current time is larger 
 
 <p><code>Version</code> module allows one record to have multiple copies, with Schedule, you can even schedule different prices of a product for a whole year.</p>
 
-<highlightjs :language='"go"' :code='"type Version struct {\n\tVersion       string `gorm:\"primary_key;size:128;not null;\"`\n\tVersionName   string\n\tParentVersion string\n}\n"'></highlightjs>
+<highlightjs :language='"go"' :code='"type Version struct {\n\tVersion       string `gorm:\"primaryKey;size:128;not null;\"`\n\tVersionName   string\n\tParentVersion string\n}\n"'></highlightjs>
 <p>The <code>Version</code> will be the primary key. By default, the <code>Version</code> value will be <code>YYYY-MM-DD-vSeq</code>, e.g. <code>2006-01-02-v01</code>. And you can rename a version on interface, which will modify the value of <code>VersionName</code>.</p>
 <h3><a name="list" class="anchor" href="#list" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>List</h3>
 

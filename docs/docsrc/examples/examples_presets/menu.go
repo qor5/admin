@@ -4,12 +4,13 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
 	"github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/presets"
 )
 
 type (
@@ -197,7 +198,7 @@ func PresetsGroupMenuWithPermission(b *presets.Builder, db *gorm.DB) (
 		)
 		return
 	})
-	// @snippet_begin(MenuGroupSample)
+	// @snippet_begin(MenuGroupPermissionSample)
 	mb = b.Model(&book{}).MenuIcon("mdi-book")
 
 	mb.Listing().PageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {

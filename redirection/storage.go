@@ -64,7 +64,7 @@ func (b *Builder) createEmptyTargetRecord(path string) {
 	var (
 		tx  = b.db.Begin()
 		err error
-		//m   Redirection
+		// m   Redirection
 	)
 	defer func() {
 		if err != nil {
@@ -73,10 +73,6 @@ func (b *Builder) createEmptyTargetRecord(path string) {
 			tx.Commit()
 		}
 	}()
-	//tx.Where(`Source = ?`, path).Order("created_at desc").First(&m)
-	//if m.ID != 0 && m.Target == "" {
-	//	return
-	//}
 	err = tx.Create(&Redirection{
 		Source: path,
 		Target: "",
@@ -84,10 +80,7 @@ func (b *Builder) createEmptyTargetRecord(path string) {
 }
 
 func (b *Builder) saver(ctx context.Context, record *Redirection) (err error) {
-
-	var (
-		tx = b.db.Begin()
-	)
+	tx := b.db.Begin()
 	defer func() {
 		if err == nil {
 			tx.Commit()
@@ -102,6 +95,7 @@ func (b *Builder) saver(ctx context.Context, record *Redirection) (err error) {
 	err = b.redirection(ctx, record)
 	return
 }
+
 func (b *Builder) redirection(ctx context.Context, record *Redirection) (err error) {
 	var (
 		client = b.s3Client
@@ -149,11 +143,17 @@ func checkURL(url string) bool {
 		Timeout: time.Duration(defaultTimeout) * time.Second, // Set a timeout for the HTTP client
 	}
 	resp, err := client.Get(url) // Send a GET request to the URL
-	if err != nil || resp == nil || resp.StatusCode/100 != 2 {
-		return false // Return false if there is an error (e.g., unreachable URL)
+	if err != nil {
+		return false
 	}
-	defer resp.Body.Close() // Ensure the response body is closed after use
-	return true             // Return true if the request succeeds
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	_, err = io.ReadAll(resp.Body)
+	if err != nil {
+		return false
+	}
+	return resp.StatusCode/100 == 2
 }
 
 // checkURLsBatch checks a batch of URLs and returns only the ones that failed.

@@ -28,7 +28,7 @@ var Messages_en_US = &Messages{
 	TargetObjectNotExistedTemplate: "Row {Rows}: Target Object Not Existed",
 	NormalErrorTemplate:            "Row {Rows}:{Message}",
 	RedirectErrorTemplate:          "Row {Rows}: Redirection Failed.",
-	FileUploadFailed:               "File Upload Failed For Rows: {Rows}.",
+	FileUploadFailed:               "File Upload Failed",
 	ErrorTips:                      "ErrorTips",
 }
 
@@ -40,7 +40,7 @@ var Messages_zh_CN = &Messages{
 	TargetObjectNotExistedTemplate: "第{Rows}行：目标对象不存在。",
 	NormalErrorTemplate:            "第{Rows}行：{Message}",
 	RedirectErrorTemplate:          "第{Rows}行：重定向失败。",
-	FileUploadFailed:               "第{Rows}行：文件上传失败。",
+	FileUploadFailed:               "文件上传失败。",
 	ErrorTips:                      "错误提示",
 }
 
@@ -52,7 +52,7 @@ var Messages_ja_JP = &Messages{
 	TargetObjectNotExistedTemplate: "ターゲットオブジェクトが存在しません。",
 	NormalErrorTemplate:            "{Rows}行目: {Message}",
 	RedirectErrorTemplate:          "{Rows}行目: リダイレクトに失敗しました。",
-	FileUploadFailed:               "{Rows}行目: ファイルのアップロードに失敗しました。",
+	FileUploadFailed:               "ファイルのアップロードに失敗しました。",
 	ErrorTips:                      "エラーのヒント",
 }
 
@@ -76,27 +76,10 @@ func (msgr *Messages) TargetUnreachableError(vs map[string][]string) string {
 	return strings.Join(messages, "\n")
 }
 
-func (msgr *Messages) NormalError(vs map[string][]string) string {
-	var messages []string
-	for name, rows := range vs {
-		messages = append(messages, strings.NewReplacer(
-			"{Rows}", strings.Join(rows, ","),
-			"{Message}", name,
-		).Replace(msgr.NormalErrorTemplate))
-	}
-	return strings.Join(messages, "\n")
-}
-
 func (msgr *Messages) RedirectError(vs []string) string {
 	return strings.NewReplacer(
 		"{Rows}", strings.Join(vs, ","),
 	).Replace(msgr.RedirectErrorTemplate)
-}
-
-func (msgr *Messages) FileUploadError(rows []string) string {
-	return strings.NewReplacer(
-		"{Rows}", strings.Join(rows, ","),
-	).Replace(msgr.FileUploadFailed)
 }
 
 func (msgr *Messages) SourceInvalidFormat(name string) string {
@@ -110,6 +93,7 @@ func (msgr *Messages) TargetInvalidFormat(name string) string {
 		"{Name}", name,
 	).Replace(msgr.TargetInvalidFormatTemplate)
 }
+
 func (msgr *Messages) InvalidFormat(vs map[string]string) string {
 	var messages []string
 	for rows, message := range vs {

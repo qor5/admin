@@ -118,6 +118,10 @@
 <a href='basics/l10n.html' id='basics/l10n.html' onclick='window.storeMenuState("basics/l10n.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Localization</a>
 </li>
 
+<li class='m-0'>
+<a href='basics/redirection.html' id='basics/redirection.html' onclick='window.storeMenuState("basics/redirection.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Redirection</a>
+</li>
+
 <li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Web Application</li>
 
 <li class='m-0'>
@@ -227,18 +231,18 @@ of component that is used to do the editing.</p>
 <p>Use a customized component is as simple as add the extra asset to the preset instance.
 And configure the component func on the field:</p>
 
-<highlightjs :language='"go"' :code='"//\n//go:embed assets\nvar assets embed.FS\n\nfunc PresetsEditingCustomizationDescription(b *presets.Builder, db *gorm.DB) (\n\tmb *presets.ModelBuilder,\n\tcl *presets.ListingBuilder,\n\tce *presets.EditingBuilder,\n\tdp *presets.DetailingBuilder,\n) {\n\tjs, _ := assets.ReadFile(\"assets/fontcolor.min.js\")\n\tricheditor.Plugins = []string{\"alignment\", \"table\", \"video\", \"imageinsert\", \"fontcolor\"}\n\tricheditor.PluginsJS = [][]byte{js}\n\tb.ExtraAsset(\"/redactor.js\", \"text/javascript\", richeditor.JSComponentsPack())\n\tb.ExtraAsset(\"/redactor.css\", \"text/css\", richeditor.CSSComponentsPack())\n\n\tmb, cl, ce, _ = PresetsListingCustomizationBulkActions(b, db)\n\n\tce.Only(\"Name\", \"CompanyID\", \"Description\")\n\n\tce.Field(\"Description\").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {\n\t\treturn richeditor.RichEditor(db, \"Body\").Plugins([]string{\"alignment\", \"video\", \"imageinsert\", \"fontcolor\"}).Value(obj.(*Customer).Description).Label(field.Label)\n\t})\n\treturn\n}\n"'></highlightjs>
+<highlightjs :language='"go"' :code='"//\n//go:embed assets\nvar assets embed.FS\n\nfunc PresetsEditingCustomizationDescription(b *presets.Builder, db *gorm.DB) (\n\tmb *presets.ModelBuilder,\n\tcl *presets.ListingBuilder,\n\tce *presets.EditingBuilder,\n\tdp *presets.DetailingBuilder,\n) {\n\tmb, cl, ce, _ = PresetsListingCustomizationBulkActions(b, db)\n\n\tce.Only(\"Name\", \"Email\", \"CompanyID\", \"Description\")\n\n\tce.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {\n\t\tcustomer := obj.(*Customer)\n\t\tif customer.Name == \"\" {\n\t\t\terr.FieldError(\"Name\", \"name must not be empty\")\n\t\t}\n\t\tif customer.Email == \"\" {\n\t\t\terr.FieldError(\"Email\", \"email must not be empty\")\n\t\t}\n\t\tif customer.Description == \"\" {\n\t\t\terr.FieldError(\"Description\", \"description must not be empty\")\n\t\t}\n\t\treturn\n\t})\n\n\tce.Field(\"Description\").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {\n\t\textensions := vx.TiptapSlackLikeExtensions()\n\t\treturn tiptap.TiptapEditor(db, field.Name).\n\t\t\tExtensions(extensions).\n\t\t\tAttr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).\n\t\t\tLabel(field.Label).\n\t\t\tDisabled(field.Disabled).\n\t\t\tErrorMessages(field.Errors...)\n\t})\n\n\t// If you just want to specify the label to be displayed\n\twrapper := presets.WrapperFieldLabel(func(evCtx *web.EventContext, obj interface{}, field *presets.FieldContext) (name2label map[string]string, err error) {\n\t\treturn map[string]string{\n\t\t\t\"Name\":  \"Customer Name\",\n\t\t\t\"Email\": \"Customer Email\",\n\t\t}, nil\n\t})\n\tce.Field(\"Name\").LazyWrapComponentFunc(wrapper)\n\tce.Field(\"Email\").LazyWrapComponentFunc(wrapper)\n\treturn\n}\n"'></highlightjs>
 
 <div>
 <div class='demo'>
 <a href='/examples/presets-editing-customization-description/customers' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/editing.go#L19-L46' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/editing.go#L23-L74' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 <ul>
 <li>Added the redactor javascript and css component pack as an extra asset</li>
-<li>Configure the description field to use the component func that returns the <code>richeditor.RichEditor</code> component</li>
+<li>Configure the description field to use the component func that returns the <code>tiptap.TipTapEditor</code> component</li>
 <li>Set the field name and value of the component</li>
 </ul>
 
@@ -253,7 +257,7 @@ And configure the component func on the field:</p>
 <div class='demo'>
 <a href='/examples/presets-editing-customization-file-type/products' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/editing.go#L48-L122' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/editing.go#L109-L183' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 <ul>
@@ -279,7 +283,7 @@ of how to display the edit controls, and How to save the object.</p>
 <div class='demo'>
 <a href='/examples/presets-editing-customization-tabs/companies' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/editing.go#L146-L168' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/editing.go#L207-L229' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 
@@ -295,7 +299,7 @@ and set the <code>web.ValidationErrors</code> result:</p>
 <div class='demo'>
 <a href='/examples/presets-editing-customization-validation/customers' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/editing.go#L124-L144' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/editing.go#L185-L205' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 <ul>
