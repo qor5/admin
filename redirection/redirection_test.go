@@ -96,10 +96,8 @@ func TestCheckRecords(t *testing.T) {
 	}
 }
 
-var (
-	redirectionData = gofixtures.Data(gofixtures.Sql(`
+var redirectionData = gofixtures.Data(gofixtures.Sql(`
 `, []string{"redirections"}))
-)
 
 func TestCreateEmptyTargetRecord(t *testing.T) {
 	dbr, _ := TestDB.DB()
@@ -117,5 +115,4 @@ func TestCreateEmptyTargetRecord(t *testing.T) {
 		t.Fatalf("create record failed targe:%v", m.Target)
 		return
 	}
-
 }
