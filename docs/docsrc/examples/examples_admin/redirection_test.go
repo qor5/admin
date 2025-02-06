@@ -77,6 +77,18 @@ https://cdn.qor5.theplant-dev.com/international/index4.html,/international/index
 			},
 			ExpectRunScriptContainsInOrder: []string{`RedirectionNotifyErrorMsg`, `Target Is Unreachable`},
 		},
+
+		{
+			Name:  "Upload File No File",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				redirectionData.TruncatePut(dbr)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/redirections").
+					EventFunc(redirection.UploadFileEvent).BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{`RedirectionNotifyErrorMsg`, `File Upload Failed`},
+		},
 	}
 
 	for _, c := range cases {

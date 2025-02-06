@@ -6,12 +6,17 @@ import (
 	"testing"
 
 	"github.com/qor5/web/v3"
+	"github.com/theplant/gofixtures"
+	"github.com/theplant/testenv"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var (
 	mockServer *httptest.Server
 	successUrl string
 	failedUrl  string
+	TestDB     *gorm.DB
 )
 
 func TestMain(m *testing.M) {
@@ -25,6 +30,13 @@ func TestMain(m *testing.M) {
 	successUrl = mockServer.URL + "/success"
 	failedUrl = mockServer.URL + "/failure"
 	defer mockServer.Close()
+	env, err := testenv.New().DBEnable(true).SetUp()
+	if err != nil {
+		panic(err)
+	}
+	defer env.TearDown()
+	TestDB = env.DB
+	TestDB.Logger = TestDB.Logger.LogMode(logger.Info)
 	m.Run()
 }
 
@@ -82,4 +94,28 @@ func TestCheckRecords(t *testing.T) {
 			}
 		})
 	}
+}
+
+var (
+	redirectionData = gofixtures.Data(gofixtures.Sql(`
+`, []string{"redirections"}))
+)
+
+func TestCreateEmptyTargetRecord(t *testing.T) {
+	dbr, _ := TestDB.DB()
+	b := Builder{db: TestDB}
+	b.AutoMigrate()
+	redirectionData.TruncatePut(dbr)
+	b.createEmptyTargetRecord("/index_empty.html")
+	m := Redirection{}
+	TestDB.Order("id desc").First(&m)
+	if m.Source != "/index_empty.html" {
+		t.Fatalf("create record failed source:%v", m.Source)
+		return
+	}
+	if m.Target != "" {
+		t.Fatalf("create record failed targe:%v", m.Target)
+		return
+	}
+
 }
