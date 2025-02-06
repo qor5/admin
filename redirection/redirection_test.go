@@ -17,6 +17,7 @@ var (
 	successUrl string
 	failedUrl  string
 	TestDB     *gorm.DB
+	b          *Builder
 )
 
 func TestMain(m *testing.M) {
@@ -37,7 +38,10 @@ func TestMain(m *testing.M) {
 	defer env.TearDown()
 	TestDB = env.DB
 	TestDB.Logger = TestDB.Logger.LogMode(logger.Info)
+	b = &Builder{db: TestDB}
+	b.AutoMigrate()
 	m.Run()
+
 }
 
 func TestCheckURLsBatch(t *testing.T) {
@@ -83,7 +87,6 @@ func TestCheckRecords(t *testing.T) {
 	}
 	var (
 		passed bool
-		b      = Builder{}
 		r      web.EventResponse
 	)
 	for _, item := range items {
@@ -101,8 +104,6 @@ var redirectionData = gofixtures.Data(gofixtures.Sql(`
 
 func TestCreateEmptyTargetRecord(t *testing.T) {
 	dbr, _ := TestDB.DB()
-	b := Builder{db: TestDB}
-	b.AutoMigrate()
 	redirectionData.TruncatePut(dbr)
 	b.createEmptyTargetRecord("/index_empty.html")
 	m := Redirection{}
@@ -113,6 +114,17 @@ func TestCreateEmptyTargetRecord(t *testing.T) {
 	}
 	if m.Target != "" {
 		t.Fatalf("create record failed targe:%v", m.Target)
+		return
+	}
+}
+
+func TestCheckObjects(t *testing.T) {
+	ctx := &web.EventContext{
+		R: &http.Request{},
+	}
+	r := &web.EventResponse{}
+	if !b.checkObjects(ctx, r, Messages_en_US, []Redirection{}) {
+		t.Fatalf("No Objects Is Passed")
 		return
 	}
 }
