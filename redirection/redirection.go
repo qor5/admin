@@ -107,6 +107,9 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 			return in(ctx, params)
 		}
 	})
+	if b.publisher == nil {
+		return
+	}
 	b.publisher.WrapStorage(func(v oss.StorageInterface) oss.StorageInterface {
 		b.storage = v
 		return b
