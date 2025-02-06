@@ -65,11 +65,6 @@ func (b *Builder) WrapStorage(v func(oss.StorageInterface) oss.StorageInterface)
 	return b
 }
 
-func (b *Builder) WrapStorage(v func(oss.StorageInterface) oss.StorageInterface) (r *Builder) {
-	b.storage = v(b.storage)
-	return b
-}
-
 func (b *Builder) AutoSchedule(v bool) (r *Builder) {
 	b.autoSchedule = v
 	return b
