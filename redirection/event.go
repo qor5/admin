@@ -72,10 +72,8 @@ func (b *Builder) checkRecords(r *web.EventResponse, msgr *Messages, records []R
 		}
 		if strings.HasPrefix(item.Target, "http") {
 			urls[item.Target] = append(urls[item.Target], row)
-		} else {
-			if !strings.HasPrefix(item.Target, "/") {
-				messages = append(messages, msgr.TargetInvalidFormat(item.Target))
-			}
+		} else if !strings.HasPrefix(item.Target, "/") {
+			messages = append(messages, msgr.TargetInvalidFormat(item.Target))
 		}
 		if len(messages) > 0 {
 			invalidFormat[row] = strings.Join(messages, ",")

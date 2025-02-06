@@ -73,10 +73,10 @@ func (b *Builder) createEmptyTargetRecord(path string) {
 			tx.Commit()
 		}
 	}()
-	//tx.Where(`Source = ?`, path).Order("created_at desc").First(&m)
-	//if m.ID != 0 && m.Target == "" {
+	// tx.Where(`Source = ?`, path).Order("created_at desc").First(&m)
+	// if m.ID != 0 && m.Target == "" {
 	//	return
-	//}
+	// }
 	err = tx.Create(&Redirection{
 		Source: path,
 		Target: "",
@@ -147,11 +147,14 @@ func checkURL(url string) bool {
 		Timeout: time.Duration(defaultTimeout) * time.Second, // Set a timeout for the HTTP client
 	}
 	resp, err := client.Get(url) // Send a GET request to the URL
-	if err != nil || resp == nil || resp.StatusCode/100 != 2 {
-		return false // Return false if there is an error (e.g., unreachable URL)
+	if err != nil {
+		return false
 	}
 	defer resp.Body.Close() // Ensure the response body is closed after use
-	return true             // Return true if the request succeeds
+	if resp.StatusCode/100 != 2 {
+		return false // Return false if there is an error (e.g., unreachable URL)
+	}
+	return true // Return true if the request succeeds
 }
 
 // checkURLsBatch checks a batch of URLs and returns only the ones that failed.
