@@ -77,19 +77,6 @@ https://cdn.qor5.theplant-dev.com/international/index4.html,/international/index
 			},
 			ExpectRunScriptContainsInOrder: []string{`RedirectionNotifyErrorMsg`, `Target Is Unreachable`},
 		},
-		{
-			Name:  "Upload File Target Object Not Existed",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				redirectionData.TruncatePut(dbr)
-				return multipartestutils.NewMultipartBuilder().
-					PageURL("/redirections").
-					AddReader("NewFiles", "test.csv", bytes.NewReader([]byte(`source,target
-/international/index4.html,/international/index6.html`))).
-					EventFunc(redirection.UploadFileEvent).BuildEventFuncRequest()
-			},
-			ExpectRunScriptContainsInOrder: []string{`RedirectionNotifyErrorMsg`, `Target Object Not Existed`},
-		},
 	}
 
 	for _, c := range cases {

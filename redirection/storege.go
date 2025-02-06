@@ -151,10 +151,7 @@ func checkURL(url string) bool {
 		return false
 	}
 	defer resp.Body.Close() // Ensure the response body is closed after use
-	if resp.StatusCode/100 != 2 {
-		return false // Return false if there is an error (e.g., unreachable URL)
-	}
-	return true // Return true if the request succeeds
+	return resp.StatusCode/100 == 2
 }
 
 // checkURLsBatch checks a batch of URLs and returns only the ones that failed.
