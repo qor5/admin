@@ -73,10 +73,6 @@ func (b *Builder) createEmptyTargetRecord(path string) {
 			tx.Commit()
 		}
 	}()
-	// tx.Where(`Source = ?`, path).Order("created_at desc").First(&m)
-	// if m.ID != 0 && m.Target == "" {
-	//	return
-	// }
 	err = tx.Create(&Redirection{
 		Source: path,
 		Target: "",
