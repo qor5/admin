@@ -222,10 +222,16 @@
 <h1 class='mb-8'>Redirection</h1>
 
 <div class='border-t'><p>Redirection is  S3 Object Level Redirection implement</p>
-<h2><a name="usage" class="anchor" href="#usage" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
-Usage</h2>
 
-<highlightjs :language='"go"' :code='"b.DataOperator(gorm2op.DataOperator(db))\n\ns3Client := s3.New(\u0026s3.Config{\n\tBucket:   s3PublishBucket,\n\tRegion:   s3PublishRegion,\n\tACL:      string(types.ObjectCannedACLBucketOwnerFullControl),\n\tEndpoint: publishURL,\n})\npublisher := publish.New(db, microsite_utils.NewClient(s3Client))\nrb := redirection.New(s3Client, db, publisher).AutoMigrate()\nif customize != nil {\n\tcustomize(rb)\n}"'></highlightjs>
+<ul>
+<li>can control URL redirection via QOR5 Admin</li>
+<li>only for static pages that hosted on s3</li>
+<li>only supports CSV files with the format:</li>
+</ul>
+
+<highlightjs :language='"go"' :code='"```csv\nsource,target\n/international/index.html,https://www.xxx.com"'></highlightjs>
+
+<highlightjs :language='"go"' :code='"b.DataOperator(gorm2op.DataOperator(db))\n\ns3Client := s3.New(\u0026s3.Config{\n\tBucket:   s3PublishBucket,\n\tRegion:   s3PublishRegion,\n\tACL:      string(types.ObjectCannedACLBucketOwnerFullControl),\n\tEndpoint: publishURL,\n})\npublisher := publish.New(db, microsite_utils.NewClient(s3Client))\nrb := redirection.New(s3Client, db, publisher).AutoMigrate()"'></highlightjs>
 </div>
 </div>
 </div>
