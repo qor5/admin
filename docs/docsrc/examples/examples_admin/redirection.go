@@ -42,9 +42,9 @@ func redirectionExample(b *presets.Builder, db *gorm.DB, customize func(rb *redi
 	})
 	publisher := publish.New(db, microsite_utils.NewClient(s3Client))
 	rb := redirection.New(s3Client, db, publisher).AutoMigrate()
+	// @snippet_end
 	if customize != nil {
 		customize(rb)
 	}
-	// @snippet_end
 	return b
 }
