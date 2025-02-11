@@ -2,23 +2,30 @@ package emailbuilder
 
 import (
 	"bytes"
-	"cmp"
 	"encoding/json"
 	"errors"
 	"html/template"
 	"log"
 	"net/http"
 	"net/mail"
+	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sesv2"
 	"github.com/aws/aws-sdk-go-v2/service/sesv2/types"
+	"github.com/aws/smithy-go"
 	"github.com/go-faker/faker/v4"
 	"github.com/samber/lo"
 	"gorm.io/gorm"
 )
+
+var reEmail = regexp.MustCompile(`^[^@]+@[^@]+\.[^@.]+$`)
+
+var EmailValidator = func(email string) bool {
+	return reEmail.MatchString(email)
+}
 
 type Builder struct {
 	db     *gorm.DB
@@ -180,7 +187,11 @@ func (b *Builder) send(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// get ToEmailAddress by config, actually should get it by uid
-		toEmailAddress := cmp.Or(sendRequest.ToEmailAddress, LoadToEmailAddress())
+		toEmailAddress := strings.ToLower(strings.TrimSpace(sendRequest.ToEmailAddress))
+		if !EmailValidator(toEmailAddress) {
+			http.Error(w, "invalid email address", http.StatusBadRequest)
+			return
+		}
 
 		input := &sesv2.SendEmailInput{
 			Content: &types.EmailContent{
@@ -222,11 +233,19 @@ func (b *Builder) send(w http.ResponseWriter, r *http.Request) {
 		output, err := b.sender.SendEmail(r.Context(), input)
 		if err != nil {
 			hasErr = true
+			errMsg := "unknown error"
+			var opErr *smithy.OperationError
+			if errors.As(err, &opErr) {
+				var apiErr smithy.APIError
+				if errors.As(opErr.Err, &apiErr) {
+					errMsg = apiErr.ErrorCode()
+				}
+			}
 			results = append(results, SendResult{
 				UserId:     uid,
 				TemplateID: sendRequest.TemplateID,
 				MessageID:  "",
-				ErrMsg:     err.Error(),
+				ErrMsg:     errMsg,
 			})
 		} else {
 			results = append(results, SendResult{
