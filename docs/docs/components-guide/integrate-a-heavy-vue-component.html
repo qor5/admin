@@ -118,6 +118,10 @@
 <a href='basics/l10n.html' id='basics/l10n.html' onclick='window.storeMenuState("basics/l10n.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Localization</a>
 </li>
 
+<li class='m-0'>
+<a href='basics/redirection.html' id='basics/redirection.html' onclick='window.storeMenuState("basics/redirection.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Redirection</a>
+</li>
+
 <li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Web Application</li>
 
 <li class='m-0'>
@@ -259,7 +263,7 @@ Since we will be sharing one Vue.js for in one page with other libraries.</li>
 <highlightjs :language='"go"' :code='"import (\n\t\"embed\"\n\n\t\"github.com/qor5/web/v3\"\n)\n\n//go:embed tiptapjs/dist\nvar box embed.FS\n\nfunc JSComponentsPack() web.ComponentsPack {\n\tv, err := box.ReadFile(\"tiptapjs/dist/tiptapjs.umd.cjs\")\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\n\treturn web.ComponentsPack(v)\n}\n\nfunc CSSComponentsPack() web.ComponentsPack {\n\tv, err := box.ReadFile(\"tiptapjs/dist/tiptap.css\")\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\n\treturn web.ComponentsPack(v)\n}\n"'></highlightjs>
 <p>And write a <code>build.sh</code> to build the javascript to production version.</p>
 
-<highlightjs :language='"bash"' :code='"CUR=$(pwd)/$(dirname $0)\n\nif test \"$1\" = &#39;clean&#39;; then\n    echo \"Removing node_modules\"\n    rm -rf $CUR/tiptapjs/node_modules/\nfi\n\nrm -r $CUR/tiptapjs/dist\necho \"Building tiptapjs\"\ncd $CUR/tiptapjs \u0026\u0026 npm install \u0026\u0026 npm run build\n"'></highlightjs>
+<highlightjs :language='"bash"' :code='"CUR=$(pwd)/$(dirname $0)\n\nif test \"$1\" = &#39;clean&#39;; then\n    echo \"Removing node_modules\"\n    rm -rf $CUR/tiptapjs/node_modules/\nfi\n\nrm -r $CUR/tiptapjs/dist\necho \"Building tiptapjs\"\ncd $CUR/tiptapjs \u0026\u0026 pnpm install \u0026\u0026 pnpm run build\n"'></highlightjs>
 <p><strong>Step 5</strong>: Write a Go wrapper to wrap it to be a <code>HTMLComponent</code></p>
 
 <highlightjs :language='"go"' :code='"import (\n\t\"context\"\n\n\th \"github.com/theplant/htmlgo\"\n)\n\ntype TipTapEditorBuilder struct {\n\ttag *h.HTMLTagBuilder\n}\n\nfunc TipTapEditor() (r *TipTapEditorBuilder) {\n\tr = \u0026TipTapEditorBuilder{\n\t\ttag: h.Tag(\"tiptap-editor\"),\n\t}\n\n\treturn\n}\n\nfunc (b *TipTapEditorBuilder) Attr(vs ...interface{}) (r *TipTapEditorBuilder) {\n\tb.tag.Attr(vs...)\n\treturn b\n}\n\nfunc (b *TipTapEditorBuilder) MarshalHTML(ctx context.Context) (r []byte, err error) {\n\treturn b.tag.MarshalHTML(ctx)\n}\n"'></highlightjs>

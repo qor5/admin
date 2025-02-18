@@ -2,7 +2,7 @@
 
 <html>
 <head>
-<title>Building Admin - Confirm Dialog - QOR5 Document</title>
+<title>Building Admin - Redirection - QOR5 Document</title>
 
 <meta name='description'>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -87,7 +87,7 @@
 </li>
 
 <li class='m-0'>
-<a href='basics/confirm-dialog.html' id='basics/confirm-dialog.html' onclick='window.storeMenuState("basics/confirm-dialog.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-blue-500'>Confirm Dialog</a>
+<a href='basics/confirm-dialog.html' id='basics/confirm-dialog.html' onclick='window.storeMenuState("basics/confirm-dialog.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Confirm Dialog</a>
 </li>
 
 <li class='m-0'>
@@ -119,7 +119,7 @@
 </li>
 
 <li class='m-0'>
-<a href='basics/redirection.html' id='basics/redirection.html' onclick='window.storeMenuState("basics/redirection.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Redirection</a>
+<a href='basics/redirection.html' id='basics/redirection.html' onclick='window.storeMenuState("basics/redirection.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-blue-500'>Redirection</a>
 </li>
 
 <li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Web Application</li>
@@ -219,35 +219,19 @@
 </div>
 
 <div id='docMainBox' class='px-16 pb-12 pt-4 overflow-auto'>
-<h1 class='mb-8'>Confirm Dialog</h1>
+<h1 class='mb-8'>Redirection</h1>
 
-<div class='border-t'><p><code>presets.OpenConfirmDialog</code>
- is a pre-defined event used to show a confirm dialog for user to do confirm before executing the actual action.</p>
-<h3><a name="queries" class="anchor" href="#queries" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
-Queries</h3>
+<div class='border-t'><p>Redirection is  S3 Object Level Redirection implement</p>
 
-<p><code>presets.ConfirmDialogConfirmEvent</code><br>
-required<br>
-Usually the value will be <em>web.Plaid().EventFunc(the actual action event)....Go()</em>.</p>
+<ul>
+<li>can control URL redirection via QOR5 Admin</li>
+<li>only for static pages that hosted on s3</li>
+<li>only supports CSV files with the format:</li>
+</ul>
 
-<p><code>presets.ConfirmDialogPromptText</code><br>
-optional<br>
-To customize the prompt text.</p>
+<highlightjs :language='"go"' :code='"```csv\nsource,target\n/international/index.html,https://www.xxx.com"'></highlightjs>
 
-<p><code>presets.ConfirmDialogDialogPortalName</code><br>
-optional<br>
-To use a custom portal for dialog.</p>
-<h2><a name="example" class="anchor" href="#example" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example</h2>
-
-<highlightjs :language='"go"' :code='"vuetify.VBtn(\"Delete File\").\n\tAttr(\"@click\",\n\t\tweb.Plaid().\n\t\t\tEventFunc(presets.OpenConfirmDialog).\n\t\t\tQuery(presets.ConfirmDialogPromptText, `Are you sure you want to delete this file?`).\n\t\t\tQuery(presets.ConfirmDialogConfirmEvent,\n\t\t\t\t`alert(\"file deleted\")`,\n\t\t\t).\n\t\t\tGo(),\n\t),"'></highlightjs>
-
-<div>
-<div class='demo'>
-<a href='/examples/presets-confirm-dialog/confirm-dialog' target='_blank'>Check the demo</a>
- | 
-<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/confirm-dialog.go#L43-L54' target='_blank'>Source on GitHub</a>
-</div>
-</div>
+<highlightjs :language='"go"' :code='"b.DataOperator(gorm2op.DataOperator(db))\n\ns3Client := s3.New(\u0026s3.Config{\n\tBucket:   s3PublishBucket,\n\tRegion:   s3PublishRegion,\n\tACL:      string(types.ObjectCannedACLBucketOwnerFullControl),\n\tEndpoint: publishURL,\n})\npublisher := publish.New(db, microsite_utils.NewClient(s3Client))\nrb := redirection.New(s3Client, db, publisher).AutoMigrate()"'></highlightjs>
 </div>
 </div>
 </div>
