@@ -131,7 +131,7 @@ func HeroBody(data *Hero, input *pagebuilder.RenderInput) (body HTMLComponent) {
               clearTimeout(this.debounceTimer);
               this.debounceTimer = setTimeout(() => {
                 this.adjustAspectRatio();
-              }, 500);
+              }, 0);
             },
             adjustAspectRatio() {
               this.$nextTick(async () => {
@@ -149,7 +149,7 @@ func HeroBody(data *Hero, input *pagebuilder.RenderInput) (body HTMLComponent) {
               });
             },
             init() {
-
+							console.log('init')
               const resizeObserver = new ResizeObserver(() => {
                 this.debounceAdjust();
               });

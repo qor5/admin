@@ -2,11 +2,13 @@ import install from '@twind/with-web-components'
 import { defineConfig } from '@twind/core'
 import presetAutoprefix from '@twind/preset-autoprefix'
 import presetTailwind from '@twind/preset-tailwind'
+import Alpine from 'alpinejs'
 
 declare global {
   interface Window {
     TwindScope: any
     twindConfig: any
+    Alpine: any
   }
 }
 
@@ -43,7 +45,7 @@ type ScriptType = 'url' | 'inlineScript'
   const withTwind = install(
     defineConfig({
       presets: [presetAutoprefix(), presetTailwind()],
-      theme: win.twindConfig?.theme || {},
+      ...(win.TwindScope?.config || {}),
     })
   )
   class TwindScope extends withTwind(HTMLElement) {
@@ -56,7 +58,13 @@ type ScriptType = 'url' | 'inlineScript'
       if (this.shadowRoot) {
         this.shadowRoot.innerHTML = this.innerHTML
         this.innerHTML = ''
+        Alpine.initTree(this.shadowRoot.firstElementChild as HTMLElement)
       }
+    }
+
+    disconnectedCallback(): void {
+      this.shadowRoot &&
+        Alpine.destroyTree(this.shadowRoot.firstElementChild as HTMLElement)
     }
 
     integrateStyleAndScript() {

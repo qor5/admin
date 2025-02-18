@@ -15,7 +15,7 @@ var theme embed.FS
 
 func WrapDefaultPageLayoutFunc(js []string, css ...string) PageLayoutFunc {
 	return func(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent {
-		val, err := theme.ReadFile("assets/css/page-builder-default.css")
+		val, err := theme.ReadFile("assets/css/common-container-default.css")
 		if err != nil {
 			panic(err)
 		}
@@ -47,49 +47,29 @@ func pageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.Event
 	css := "https://the-plant.com/assets/app/container.4f902c4.css"
 	domain := "https://example.qor5.theplant-dev.com"
 
-	// tailwind ecosystem resources
-	// tailwindJs := "https://cdn.tailwindcss.com"
 	// alpineJs := "https://unpkg.com/alpinejs"
-	// InferCss := "https://rsms.me/inter/inter.css"
 
-	// twindscopeDefaultCss := [] string{
-
-	// }
-
-	twindScopeJs := []string{
-		`window.TwindScope = {}; window.TwindScope.style = [];`,
+	twindScopeConfigJs := []string{
+		`window.TwindScope = {}; window.TwindScope.style = [];window.TwindScope.config = {};`,
 		fmt.Sprintf("window.TwindScope.style.push(`%s`)", string(func() []byte {
-			css, err := theme.ReadFile("assets/css/page-builder-default.css")
+			css, err := theme.ReadFile("assets/css/common-container-default.css")
 			if err != nil {
 				panic(err)
 			}
 			return css
 		}())),
-
-		`window.TwindScope.theme = {
-			extend: {
-				fontFamily: {
-					sans: ["InterVariable", "system-ui", "sans-serif"],
+		// https://twind.dev/handbook/configuration.html#preflight
+		`window.TwindScope.config = {
+			hash: false,
+			theme: {
+				extend: {
+					fontFamily: {
+						sans: ["InterVariable", "system-ui", "sans-serif"],
+					},
 				},
 			},
 		}`,
 	}
-
-	// tailwindOverrides := []string{
-	// 	`.tailwind-scope {
-	//       h1,
-	//       h2,
-	//       h3,
-	//       h4,
-	//       h5,
-	//       h6,
-	//       a,
-	//       p {
-	//         font-family: InterVariable, system-ui, sans-serif;
-	//       }
-	//     }
-	// 	`,
-	// }
 
 	head := h.Components(
 		input.SeoTags,
@@ -106,7 +86,7 @@ func pageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.Event
 		// RawHTML(dataLayer),
 		input.StructuredData,
 		scriptWithCodes(input.FreeStyleTopJs),
-		scriptWithCodes(twindScopeJs),
+		scriptWithCodes(twindScopeConfigJs),
 	)
 	ctx.Injector.HTMLLang(input.LocaleCode)
 	if input.WrapHead != nil {
