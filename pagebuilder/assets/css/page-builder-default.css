@@ -1,7 +1,3 @@
-.hidden {
-  display: none;
-}
-
 .tailwind-scope .tw-theme-h1 {
   font-family: var(--font-family-h1), var(--font-family-fallback);
 }
@@ -61,4 +57,34 @@
 .tw-theme-text {
   --color-opacity: 1;
   color: rgba(var(--color-surface), var(--color-opacity));
+}
+
+.btn-primary {
+  color: #fff;
+  background-color: var(--pb-primary);
+}
+
+.btn-secondary {
+  color: #fff;
+  background-color: var(--pb-secondary);
+}
+
+.btn-info {
+  color: #fff;
+  background-color: var(--pb-info);
+}
+
+.btn-success {
+  color: #fff;
+  background-color: var(--pb-success);
+}
+
+.btn-error {
+  color: #fff;
+  background-color: var(--pb-error);
+}
+
+.btn-warning {
+  color: #fff;
+  background-color: var(--pb-warning);
 }

@@ -7,7 +7,7 @@ function xe(e) {
 function Xe(e, t = ",") {
   return e.map(xe).join(t);
 }
-let Le = typeof CSS < "u" && CSS.escape || // Simplified: escaping only special characters
+let Ve = typeof CSS < "u" && CSS.escape || // Simplified: escaping only special characters
 // Needed for NodeJS and Edge <79 (https://caniuse.com/mdn-api_css_escape)
 ((e) => e.replace(/[!"'`*+.,;:\\/<=>?@#$%&^|~()[\]{}]/g, "\\$&").replace(/^\d/, "\\3$& "));
 function te(e) {
@@ -27,7 +27,7 @@ function w(e = []) {
 function Te(e) {
   return e;
 }
-function ke() {
+function Se() {
 }
 let T = {
   /**
@@ -142,30 +142,30 @@ let Ze = [
   /* re */
   "quire"
 ];
-function Se({ n: e, i: t, v: r = [] }, o, n, l) {
+function ke({ n: e, i: t, v: r = [] }, o, n, s) {
   e && (e = xe({
     n: e,
     i: t,
     v: r
-  })), l = [
-    ...w(l)
+  })), s = [
+    ...w(s)
   ];
   for (let a of r) {
     let i = o.theme("screens", a);
     for (let f of w(i && ve(i) || o.v(a))) {
-      var s;
-      l.push(f), n |= i ? 67108864 | /* Shifts.screens */
+      var l;
+      s.push(f), n |= i ? 67108864 | /* Shifts.screens */
       ue(f) : a == "dark" ? 1073741824 : (
         /* Shifts.darkMode */
-        f[0] == "@" ? ue(f) : (s = f, // use first found pseudo-class
-        1 << ~(/:([a-z-]+)/.test(s) && ~Ze.indexOf(RegExp.$1.slice(2, 7)) || -18))
+        f[0] == "@" ? ue(f) : (l = f, // use first found pseudo-class
+        1 << ~(/:([a-z-]+)/.test(l) && ~Ze.indexOf(RegExp.$1.slice(2, 7)) || -18))
       );
     }
   }
   return {
     n: e,
     p: n,
-    r: l,
+    r: s,
     i: t
   };
 }
@@ -176,28 +176,28 @@ function ge(e) {
       // merge all conditions into a selector string
       e.r.reduce((o, n) => n[0] == "@" ? (t.push(n), o) : (
         // Go over the selector and replace the matching multiple selectors if any
-        n ? ae(o, (l) => ae(
+        n ? ae(o, (s) => ae(
           n,
           // If the current condition has a nested selector replace it
-          (s) => {
-            let a = /(:merge\(.+?\))(:[a-z-]+|\\[.+])/.exec(s);
+          (l) => {
+            let a = /(:merge\(.+?\))(:[a-z-]+|\\[.+])/.exec(l);
             if (a) {
-              let i = l.indexOf(a[1]);
+              let i = s.indexOf(a[1]);
               return ~i ? (
                 // [':merge(.group):hover .rule', ':merge(.group):focus &'] -> ':merge(.group):focus:hover .rule'
                 // ':merge(.group)' + ':focus' + ':hover .rule'
-                l.slice(0, i) + a[0] + l.slice(i + a[1].length)
+                s.slice(0, i) + a[0] + s.slice(i + a[1].length)
               ) : (
                 // [':merge(.peer):focus~&', ':merge(.group):hover &'] -> ':merge(.peer):focus~:merge(.group):hover &'
-                le(l, s)
+                le(s, l)
               );
             }
-            return le(s, l);
+            return le(l, s);
           }
         )) : o
       ), "&"),
       // replace '&' with rule name or an empty string
-      (o) => le(o, e.n ? "." + Le(e.n) : "")
+      (o) => le(o, e.n ? "." + Ve(e.n) : "")
     );
     return r && t.push(r.replace(/:merge\((.+?)\)/g, "$1")), t.reduceRight((o, n) => n + "{" + o + "}", e.d);
   }
@@ -208,7 +208,7 @@ function ae(e, t) {
 function le(e, t) {
   return e.replace(/&/g, t);
 }
-let ze = new Intl.Collator("en", {
+let Ee = new Intl.Collator("en", {
   numeric: !0
 });
 function Be(e, t) {
@@ -220,12 +220,12 @@ function Be(e, t) {
 }
 function He(e, t) {
   let r = e.p & T.o;
-  return r == (t.p & T.o) && (r == T.b || r == T.o) ? 0 : e.p - t.p || e.o - t.o || ze.compare(Ae(e.n), Ae(t.n)) || ze.compare(Fe(e.n), Fe(t.n));
+  return r == (t.p & T.o) && (r == T.b || r == T.o) ? 0 : e.p - t.p || e.o - t.o || Ee.compare(Ae(e.n), Ae(t.n)) || Ee.compare(ze(e.n), ze(t.n));
 }
 function Ae(e) {
   return (e || "").split(/:/).pop().split("/").pop() || "\0";
 }
-function Fe(e) {
+function ze(e) {
   return (e || "").replace(/\W/g, (t) => String.fromCharCode(127 + t.charCodeAt(0))) + "\0";
 }
 function se(e, t) {
@@ -236,15 +236,15 @@ function U(e, t = {}) {
   let { opacityValue: r = "1", opacityVariable: o } = t, n = o ? `var(${o})` : r;
   if (e.includes("<alpha-value>")) return e.replace("<alpha-value>", n);
   if (e[0] == "#" && (e.length == 4 || e.length == 7)) {
-    let l = (e.length - 1) / 3, s = [
+    let s = (e.length - 1) / 3, l = [
       17,
       1,
       0.062272
-    ][l - 1];
+    ][s - 1];
     return `rgba(${[
-      se(e.substr(1, l), s),
-      se(e.substr(1 + l, l), s),
-      se(e.substr(1 + 2 * l, l), s),
+      se(e.substr(1, s), l),
+      se(e.substr(1 + s, s), l),
+      se(e.substr(1 + 2 * s, s), l),
       n
     ]})`;
   }
@@ -254,102 +254,102 @@ function U(e, t = {}) {
   );
 }
 function Ne(e, t, r, o, n = []) {
-  return function l(s, { n: a, p: i, r: f = [], i: p }, u) {
+  return function s(l, { n: a, p: i, r: f = [], i: u }, p) {
     let g = [], y = "", x = 0, v = 0;
-    for (let b in s || {}) {
-      var $, B;
-      let k = s[b];
-      if (b[0] == "@") {
-        if (!k) continue;
-        if (b[1] == "a") {
-          g.push(...$e(a, i, oe("" + k), u, i, f, p, !0));
+    for (let h in l || {}) {
+      var R, B;
+      let S = l[h];
+      if (h[0] == "@") {
+        if (!S) continue;
+        if (h[1] == "a") {
+          g.push(...Re(a, i, oe("" + S), p, i, f, u, !0));
           continue;
         }
-        if (b[1] == "l") {
-          for (let z of w(k)) g.push(...l(z, {
+        if (h[1] == "l") {
+          for (let E of w(S)) g.push(...s(E, {
             n: a,
-            p: ($ = T[b[7]], // Set layer (first reset, than set)
-            i & -939524097 | $),
-            r: b[7] == "d" ? [] : f,
-            i: p
-          }, u));
+            p: (R = T[h[7]], // Set layer (first reset, than set)
+            i & -939524097 | R),
+            r: h[7] == "d" ? [] : f,
+            i: u
+          }, p));
           continue;
         }
-        if (b[1] == "i") {
-          g.push(...w(k).map((z) => ({
+        if (h[1] == "i") {
+          g.push(...w(S).map((E) => ({
             // before all layers
             p: -1,
             o: 0,
             r: [],
-            d: b + " " + z
+            d: h + " " + E
           })));
           continue;
         }
-        if (b[1] == "k") {
+        if (h[1] == "k") {
           g.push({
             p: T.d,
             o: 0,
             r: [
-              b
+              h
             ],
-            d: l(k, {
+            d: s(S, {
               p: T.d
-            }, u).map(ge).join("")
+            }, p).map(ge).join("")
           });
           continue;
         }
-        if (b[1] == "f") {
-          g.push(...w(k).map((z) => ({
+        if (h[1] == "f") {
+          g.push(...w(S).map((E) => ({
             p: T.d,
             o: 0,
             r: [
-              b
+              h
             ],
-            d: l(z, {
+            d: s(E, {
               p: T.d
-            }, u).map(ge).join("")
+            }, p).map(ge).join("")
           })));
           continue;
         }
       }
-      if (typeof k != "object" || Array.isArray(k))
-        b == "label" && k ? a = k + te(JSON.stringify([
+      if (typeof S != "object" || Array.isArray(S))
+        h == "label" && S ? a = S + te(JSON.stringify([
           i,
-          p,
-          s
-        ])) : (k || k === 0) && (b = b.replace(/[A-Z]/g, (z) => "-" + z.toLowerCase()), v += 1, x = Math.max(x, (B = b)[0] == "-" ? 0 : Ue(B) + (/^(?:(border-(?!w|c|sty)|[tlbr].{2,4}m?$|c.{7,8}$)|([fl].{5}l|g.{8}$|pl))/.test(B) ? +!!RegExp.$1 || /* +1 */
+          u,
+          l
+        ])) : (S || S === 0) && (h = h.replace(/[A-Z]/g, (E) => "-" + E.toLowerCase()), v += 1, x = Math.max(x, (B = h)[0] == "-" ? 0 : Ue(B) + (/^(?:(border-(?!w|c|sty)|[tlbr].{2,4}m?$|c.{7,8}$)|([fl].{5}l|g.{8}$|pl))/.test(B) ? +!!RegExp.$1 || /* +1 */
         -!!RegExp.$2 : (
           /* -1 */
           0
-        )) + 1), y += (y ? ";" : "") + w(k).map((z) => u.s(
-          b,
+        )) + 1), y += (y ? ";" : "") + w(S).map((E) => p.s(
+          h,
           // support theme(...) function in values
           // calc(100vh - theme('spacing.12'))
-          Ce("" + z, u.theme) + (p ? " !important" : "")
+          Ce("" + E, p.theme) + (u ? " !important" : "")
         )).join(";"));
-      else if (b[0] == "@" || b.includes("&")) {
-        let z = i;
-        b[0] == "@" && (b = b.replace(/\bscreen\(([^)]+)\)/g, (ne, q) => {
-          let M = u.theme("screens", q);
-          return M ? (z |= 67108864, /* Shifts.screens */
+      else if (h[0] == "@" || h.includes("&")) {
+        let E = i;
+        h[0] == "@" && (h = h.replace(/\bscreen\(([^)]+)\)/g, (ne, q) => {
+          let M = p.theme("screens", q);
+          return M ? (E |= 67108864, /* Shifts.screens */
           ve(M, "")) : ne;
-        }), z |= ue(b)), g.push(...l(k, {
+        }), E |= ue(h)), g.push(...s(S, {
           n: a,
-          p: z,
+          p: E,
           r: [
             ...f,
-            b
+            h
           ],
-          i: p
-        }, u));
+          i: u
+        }, p));
       } else
-        g.push(...l(k, {
+        g.push(...s(S, {
           p: i,
           r: [
             ...f,
-            b
+            h
           ]
-        }, u));
+        }, p));
     }
     return (
       // PERF: prevent unshift using `rules = [{}]` above and then `rules[0] = {...}`
@@ -368,11 +368,11 @@ function Ne(e, t, r, o, n = []) {
         d: y
       }), g.sort(He)
     );
-  }(e, Se(t, r, o, n), r);
+  }(e, ke(t, r, o, n), r);
 }
 function Ce(e, t) {
-  return e.replace(/theme\((["'`])?(.+?)\1(?:\s*,\s*(["'`])?(.+?)\3)?\)/g, (r, o, n, l, s = "") => {
-    let a = t(n, s);
+  return e.replace(/theme\((["'`])?(.+?)\1(?:\s*,\s*(["'`])?(.+?)\3)?\)/g, (r, o, n, s, l = "") => {
+    let a = t(n, l);
     return typeof a == "function" && /color|fill|stroke/i.test(n) ? U(a) : "" + w(a).filter((i) => Object(i) !== i);
   });
 }
@@ -392,30 +392,30 @@ function Pe(e, t) {
   return o;
 }
 function re(e, t, r = T.u, o, n) {
-  let l = [];
-  for (let s of e) for (let a of function(i, f, p, u, g) {
+  let s = [];
+  for (let l of e) for (let a of function(i, f, u, p, g) {
     i = {
       ...i,
       i: i.i || g
     };
     let y = function(x, v) {
-      let $ = Ie.get(x.n);
-      return $ ? $(x, v) : v.r(x.n, x.v[0] == "dark");
+      let R = Ie.get(x.n);
+      return R ? R(x, v) : v.r(x.n, x.v[0] == "dark");
     }(i, f);
     return y ? (
       // a list of class names
-      typeof y == "string" ? ({ r: u, p } = Se(i, f, p, u), Pe(re(oe(y), f, p, u, i.i), i.n)) : Array.isArray(y) ? y.map((x) => {
-        var v, $;
+      typeof y == "string" ? ({ r: p, p: u } = ke(i, f, u, p), Pe(re(oe(y), f, u, p, i.i), i.n)) : Array.isArray(y) ? y.map((x) => {
+        var v, R;
         return {
           o: 0,
           ...x,
           r: [
-            ...w(u),
+            ...w(p),
             ...w(x.r)
           ],
-          p: (v = p, $ = x.p ?? p, v & -939524097 | $)
+          p: (v = u, R = x.p ?? u, v & -939524097 | R)
         };
-      }) : Ne(y, i, f, p, u)
+      }) : Ne(y, i, f, u, p)
     ) : (
       // propagate className as is
       [
@@ -427,13 +427,13 @@ function re(e, t, r = T.u, o, n) {
         }
       ]
     );
-  }(s, t, r, o, n)) l.splice(Be(l, a), 0, a);
-  return l;
+  }(l, t, r, o, n)) s.splice(Be(s, a), 0, a);
+  return s;
 }
-function $e(e, t, r, o, n, l, s, a) {
+function Re(e, t, r, o, n, s, l, a) {
   return Pe((a ? r.flatMap((i) => re([
     i
-  ], o, n, l, s)) : re(r, o, n, l, s)).map((i) => (
+  ], o, n, s, l)) : re(r, o, n, s, l)).map((i) => (
     // do not move defaults
     // move only rules with a name unless they are in the base layer
     i.p & T.o && (i.n || t == T.b) ? {
@@ -445,23 +445,23 @@ function $e(e, t, r, o, n, l, s, a) {
 }
 function Qe(e, t, r, o) {
   var n;
-  return n = (l, s) => {
-    let { n: a, p: i, r: f, i: p } = Se(l, s, t);
-    return r && $e(a, t, r, s, i, f, p, o);
+  return n = (s, l) => {
+    let { n: a, p: i, r: f, i: u } = ke(s, l, t);
+    return r && Re(a, t, r, l, i, f, u, o);
   }, Ie.set(e, n), e;
 }
 function ce(e, t, r) {
   if (e[e.length - 1] != "(") {
-    let o = [], n = !1, l = !1, s = "";
+    let o = [], n = !1, s = !1, l = "";
     for (let a of e) if (!(a == "(" || /[~@]$/.test(a))) {
       if (a[0] == "!" && (a = a.slice(1), n = !n), a.endsWith(":")) {
         o[a == "dark:" ? "unshift" : "push"](a.slice(0, -1));
         continue;
       }
-      a[0] == "-" && (a = a.slice(1), l = !l), a.endsWith("-") && (a = a.slice(0, -1)), a && a != "&" && (s += (s && "-") + a);
+      a[0] == "-" && (a = a.slice(1), s = !s), a.endsWith("-") && (a = a.slice(0, -1)), a && a != "&" && (l += (l && "-") + a);
     }
-    s && (l && (s = "-" + s), t[0].push({
-      n: s,
+    l && (s && (l = "-" + l), t[0].push({
+      n: l,
       v: o.filter(Ke),
       i: n
     }));
@@ -470,35 +470,35 @@ function ce(e, t, r) {
 function Ke(e, t, r) {
   return r.indexOf(e) == t;
 }
-let Ee = /* @__PURE__ */ new Map();
+let Fe = /* @__PURE__ */ new Map();
 function oe(e) {
-  let t = Ee.get(e);
+  let t = Fe.get(e);
   if (!t) {
     let r = [], o = [
       []
-    ], n = 0, l = 0, s = null, a = 0, i = (f, p = 0) => {
-      n != a && (r.push(e.slice(n, a + p)), f && ce(r, o)), n = a + 1;
+    ], n = 0, s = 0, l = null, a = 0, i = (f, u = 0) => {
+      n != a && (r.push(e.slice(n, a + u)), f && ce(r, o)), n = a + 1;
     };
     for (; a < e.length; a++) {
       let f = e[a];
-      if (l) e[a - 1] != "\\" && (l += +(f == "[") || -(f == "]"));
+      if (s) e[a - 1] != "\\" && (s += +(f == "[") || -(f == "]"));
       else if (f == "[")
-        l += 1;
-      else if (s)
-        e[a - 1] != "\\" && s.test(e.slice(a)) && (s = null, n = a + RegExp.lastMatch.length);
+        s += 1;
+      else if (l)
+        e[a - 1] != "\\" && l.test(e.slice(a)) && (l = null, n = a + RegExp.lastMatch.length);
       else if (f == "/" && e[a - 1] != "\\" && (e[a + 1] == "*" || e[a + 1] == "/"))
-        s = e[a + 1] == "*" ? /^\*\// : /^[\r\n]/;
+        l = e[a + 1] == "*" ? /^\*\// : /^[\r\n]/;
       else if (f == "(")
         i(), r.push(f);
       else if (f == ":") e[a + 1] != ":" && i(!1, 1);
       else if (/[\s,)]/.test(f)) {
         i(!0);
-        let p = r.lastIndexOf("(");
+        let u = r.lastIndexOf("(");
         if (f == ")") {
-          let u = r[p - 1];
-          if (/[~@]$/.test(u)) {
+          let p = r[u - 1];
+          if (/[~@]$/.test(p)) {
             let g = o.shift();
-            r.length = p, ce([
+            r.length = u, ce([
               ...r,
               "#"
             ], o);
@@ -509,25 +509,25 @@ function oe(e) {
               ...r,
               Qe(
                 // named nested
-                u.length > 1 ? u.slice(0, -1) + te(JSON.stringify([
-                  u,
+                p.length > 1 ? p.slice(0, -1) + te(JSON.stringify([
+                  p,
                   g
-                ])) : u + "(" + Xe(g) + ")",
+                ])) : p + "(" + Xe(g) + ")",
                 T.a,
                 g,
-                /@$/.test(u)
+                /@$/.test(p)
               )
             ], o);
           }
-          p = r.lastIndexOf("(", p - 1);
+          u = r.lastIndexOf("(", u - 1);
         }
-        r.length = p + 1;
+        r.length = u + 1;
       } else /[~@]/.test(f) && e[a + 1] == "(" && // start nested block
       // ~(...) or button~(...)
       // @(...) or button@(...)
       o.unshift([]);
     }
-    i(!0), Ee.set(e, t = o[0]);
+    i(!0), Fe.set(e, t = o[0]);
   }
   return t;
 }
@@ -541,16 +541,16 @@ function me(e, t) {
   return typeof e == "function" ? e : typeof e == "string" && /^[\w-]+$/.test(e) ? (
     // a CSS property alias
     (r, o) => ({
-      [e]: t ? t(r, o) : be(r, 1)
+      [e]: t ? t(r, o) : he(r, 1)
     })
   ) : (r) => (
     // CSSObject, shortcut or apply
     e || {
-      [r[1]]: be(r, 2)
+      [r[1]]: he(r, 2)
     }
   );
 }
-function be(e, t, r = e.slice(t).find(Boolean) || e.$$ || e.input) {
+function he(e, t, r = e.slice(t).find(Boolean) || e.$$ || e.input) {
   return e.input[0] == "-" ? `calc(${r} * -1)` : r;
 }
 function d(e, t, r, o) {
@@ -560,17 +560,17 @@ function d(e, t, r, o) {
   ];
 }
 function et(e, t, r) {
-  let o = typeof t == "string" ? (n, l) => ({
-    [t]: r ? r(n, l) : n._
-  }) : t || (({ 1: n, _: l }, s, a) => ({
-    [n || a]: l
+  let o = typeof t == "string" ? (n, s) => ({
+    [t]: r ? r(n, s) : n._
+  }) : t || (({ 1: n, _: s }, l, a) => ({
+    [n || a]: s
   }));
-  return (n, l) => {
-    let s = qe(e || n[1]), a = l.theme(s, n.$$) ?? I(n.$$, s, l);
-    if (a != null) return n._ = be(n, 0, a), o(n, l, s);
+  return (n, s) => {
+    let l = qe(e || n[1]), a = s.theme(l, n.$$) ?? I(n.$$, l, s);
+    if (a != null) return n._ = he(n, 0, a), o(n, s, l);
   };
 }
-function S(e, t = {}, r) {
+function k(e, t = {}, r) {
   return [
     e,
     tt(t, r)
@@ -578,9 +578,9 @@ function S(e, t = {}, r) {
 }
 function tt(e = {}, t) {
   return (r, o) => {
-    let { section: n = qe(r[0]).replace("-", "") + "Color" } = e, [l, s] = rt(r.$$);
-    if (!l) return;
-    let a = o.theme(n, l) || I(l, n, o);
+    let { section: n = qe(r[0]).replace("-", "") + "Color" } = e, [s, l] = rt(r.$$);
+    if (!s) return;
+    let a = o.theme(n, s) || I(s, n, o);
     if (!a || typeof a == "object") return;
     let {
       // text- -> --tw-text-opacity
@@ -588,13 +588,13 @@ function tt(e = {}, t) {
       // TODO move this default into preset-tailwind?
       opacityVariable: i = `--tw-${r[0].replace(/-$/, "")}-opacity`,
       opacitySection: f = n.replace("Color", "Opacity"),
-      property: p = n,
-      selector: u
-    } = e, g = o.theme(f, s || "DEFAULT") || s && I(s, f, o), y = t || (({ _: v }) => {
-      let $ = ee(p, v);
-      return u ? {
-        [u]: $
-      } : $;
+      property: u = n,
+      selector: p
+    } = e, g = o.theme(f, l || "DEFAULT") || l && I(l, f, o), y = t || (({ _: v }) => {
+      let R = ee(u, v);
+      return p ? {
+        [p]: R
+      } : R;
     });
     r._ = {
       value: U(a, {
@@ -607,13 +607,13 @@ function tt(e = {}, t) {
     };
     let x = y(r, o);
     if (!r.dark) {
-      let v = o.d(n, l, a);
+      let v = o.d(n, s, a);
       v && v !== a && (r._ = {
         value: U(v, {
           opacityVariable: i || void 0,
           opacityValue: g || "1"
         }),
-        color: ($) => U(v, $),
+        color: (R) => U(v, R),
         opacityVariable: i || void 0,
         opacityValue: g || void 0
       }, x = {
@@ -683,15 +683,15 @@ function Ge({ presets: e = [], ...t }) {
       finalize: t.finalize
     }
   ])) {
-    let { preflight: n, darkMode: l = r.darkMode, darkColor: s = r.darkColor, theme: a, variants: i, rules: f, ignorelist: p, hash: u = r.hash, stringify: g = r.stringify, finalize: y } = typeof o == "function" ? o(r) : o;
+    let { preflight: n, darkMode: s = r.darkMode, darkColor: l = r.darkColor, theme: a, variants: i, rules: f, ignorelist: u, hash: p = r.hash, stringify: g = r.stringify, finalize: y } = typeof o == "function" ? o(r) : o;
     r = {
       // values defined by user or previous presets take precedence
       preflight: r.preflight !== !1 && n !== !1 && [
         ...r.preflight,
         ...w(n)
       ],
-      darkMode: l,
-      darkColor: s,
+      darkMode: s,
+      darkColor: l,
       theme: {
         ...r.theme,
         ...a,
@@ -710,9 +710,9 @@ function Ge({ presets: e = [], ...t }) {
       ],
       ignorelist: [
         ...r.ignorelist,
-        ...w(p)
+        ...w(u)
       ],
-      hash: u,
+      hash: p,
       stringify: g,
       finalize: [
         ...r.finalize,
@@ -722,36 +722,36 @@ function Ge({ presets: e = [], ...t }) {
   }
   return r;
 }
-function Oe(e, t, r, o, n, l) {
-  for (let s of t) {
-    let a = r.get(s);
-    a || r.set(s, a = o(s));
-    let i = a(e, n, l);
+function Oe(e, t, r, o, n, s) {
+  for (let l of t) {
+    let a = r.get(l);
+    a || r.set(l, a = o(l));
+    let i = a(e, n, s);
     if (i) return i;
   }
 }
 function ot(e) {
   var t;
-  return he(e[0], typeof (t = e[1]) == "function" ? t : () => t);
+  return be(e[0], typeof (t = e[1]) == "function" ? t : () => t);
 }
 function nt(e) {
   var t, r;
-  return Array.isArray(e) ? he(e[0], me(e[1], e[2])) : he(e, me(t, r));
+  return Array.isArray(e) ? be(e[0], me(e[1], e[2])) : be(e, me(t, r));
 }
-function he(e, t) {
-  return Ye(e, (r, o, n, l) => {
-    let s = o.exec(r);
-    if (s) return (
+function be(e, t) {
+  return Ye(e, (r, o, n, s) => {
+    let l = o.exec(r);
+    if (l) return (
       // MATCH.$_ = value
-      s.$$ = r.slice(s[0].length), s.dark = l, t(s, n)
+      l.$$ = r.slice(l[0].length), l.dark = s, t(l, n)
     );
   });
 }
 function Ye(e, t) {
   let r = w(e).map(it);
-  return (o, n, l) => {
-    for (let s of r) {
-      let a = t(o, s, n, l);
+  return (o, n, s) => {
+    for (let l of r) {
+      let a = t(o, l, n, s);
       if (a) return a;
     }
   };
@@ -760,26 +760,26 @@ function it(e) {
   return typeof e == "string" ? RegExp("^" + e + (e.includes("$") || e.slice(-1) == "-" ? "" : "$")) : e;
 }
 function at(e, t) {
-  let r = Ge(e), o = function({ theme: i, darkMode: f, darkColor: p = ke, variants: u, rules: g, hash: y, stringify: x, ignorelist: v, finalize: $ }) {
-    let B = /* @__PURE__ */ new Map(), b = /* @__PURE__ */ new Map(), k = /* @__PURE__ */ new Map(), z = /* @__PURE__ */ new Map(), ne = Ye(v, (h, R) => R.test(h));
-    u.push([
+  let r = Ge(e), o = function({ theme: i, darkMode: f, darkColor: u = Se, variants: p, rules: g, hash: y, stringify: x, ignorelist: v, finalize: R }) {
+    let B = /* @__PURE__ */ new Map(), h = /* @__PURE__ */ new Map(), S = /* @__PURE__ */ new Map(), E = /* @__PURE__ */ new Map(), ne = Ye(v, (b, $) => $.test(b));
+    p.push([
       "dark",
       Array.isArray(f) || f == "class" ? `${w(f)[1] || ".dark"} &` : typeof f == "string" && f != "media" ? f : (
         // a custom selector
         "@media (prefers-color-scheme:dark)"
       )
     ]);
-    let q = typeof y == "function" ? (h) => y(h, te) : y ? te : Te;
-    q !== Te && $.push((h) => {
-      var R;
+    let q = typeof y == "function" ? (b) => y(b, te) : y ? te : Te;
+    q !== Te && R.push((b) => {
+      var $;
       return {
-        ...h,
-        n: h.n && q(h.n),
-        d: (R = h.d) == null ? void 0 : R.replace(/--(tw(?:-[\w-]+)?)\b/g, (j, ie) => "--" + q(ie).replace("#", ""))
+        ...b,
+        n: b.n && q(b.n),
+        d: ($ = b.d) == null ? void 0 : $.replace(/--(tw(?:-[\w-]+)?)\b/g, (j, ie) => "--" + q(ie).replace("#", ""))
       };
     });
     let M = {
-      theme: function({ extend: h = {}, ...R }) {
+      theme: function({ extend: b = {}, ...$ }) {
         let j = {}, ie = {
           get colors() {
             return Y("colors");
@@ -791,12 +791,12 @@ function at(e, t) {
           },
           breakpoints(C) {
             let A = {};
-            for (let F in C) typeof C[F] == "string" && (A["screen-" + F] = C[F]);
+            for (let z in C) typeof C[z] == "string" && (A["screen-" + z] = C[z]);
             return A;
           }
         };
         return Y;
-        function Y(C, A, F, _) {
+        function Y(C, A, z, _) {
           if (C) {
             if ({ 1: C, 2: _ } = // eslint-disable-next-line no-sparse-arrays
             /^(\S+?)(?:\s*\/\s*([^/]+))?$/.exec(C) || [
@@ -804,92 +804,92 @@ function at(e, t) {
               C
             ], /[.[]/.test(C)) {
               let D = [];
-              C.replace(/\[([^\]]+)\]|([^.[]+)/g, (N, X, Je = X) => D.push(Je)), C = D.shift(), F = A, A = D.join("-");
+              C.replace(/\[([^\]]+)\]|([^.[]+)/g, (N, X, Je = X) => D.push(Je)), C = D.shift(), z = A, A = D.join("-");
             }
-            let V = j[C] || // two-step deref to allow extend section to reference base section
+            let L = j[C] || // two-step deref to allow extend section to reference base section
             Object.assign(Object.assign(
               // Make sure to not get into recursive calls
               j[C] = {},
-              Re(R, C)
-            ), Re(h, C));
-            if (A == null) return V;
+              $e($, C)
+            ), $e(b, C));
+            if (A == null) return L;
             A || (A = "DEFAULT");
-            let H = V[A] ?? A.split("-").reduce((D, N) => D == null ? void 0 : D[N], V) ?? F;
+            let H = L[A] ?? A.split("-").reduce((D, N) => D == null ? void 0 : D[N], L) ?? z;
             return _ ? U(H, {
               opacityValue: Ce(_, Y)
             }) : H;
           }
           let J = {};
-          for (let V of [
-            ...Object.keys(R),
-            ...Object.keys(h)
-          ]) J[V] = Y(V);
+          for (let L of [
+            ...Object.keys($),
+            ...Object.keys(b)
+          ]) J[L] = Y(L);
           return J;
         }
-        function Re(C, A) {
-          let F = C[A];
-          return typeof F == "function" && (F = F(ie)), F && /color|fill|stroke/i.test(A) ? function _(J, V = []) {
+        function $e(C, A) {
+          let z = C[A];
+          return typeof z == "function" && (z = z(ie)), z && /color|fill|stroke/i.test(A) ? function _(J, L = []) {
             let H = {};
             for (let D in J) {
               let N = J[D], X = [
-                ...V,
+                ...L,
                 D
               ];
-              H[X.join("-")] = N, D == "DEFAULT" && (X = V, H[V.join("-")] = N), typeof N == "object" && Object.assign(H, _(N, X));
+              H[X.join("-")] = N, D == "DEFAULT" && (X = L, H[L.join("-")] = N), typeof N == "object" && Object.assign(H, _(N, X));
             }
             return H;
-          }(F) : F;
+          }(z) : z;
         }
       }(i),
-      e: Le,
+      e: Ve,
       h: q,
-      s(h, R) {
-        return x(h, R, M);
+      s(b, $) {
+        return x(b, $, M);
       },
-      d(h, R, j) {
-        return p(h, R, M, j);
+      d(b, $, j) {
+        return u(b, $, M, j);
       },
-      v(h) {
-        return B.has(h) || B.set(h, Oe(h, u, b, ot, M) || "&:" + h), B.get(h);
+      v(b) {
+        return B.has(b) || B.set(b, Oe(b, p, h, ot, M) || "&:" + b), B.get(b);
       },
-      r(h, R) {
+      r(b, $) {
         let j = JSON.stringify([
-          h,
-          R
+          b,
+          $
         ]);
-        return k.has(j) || k.set(j, !ne(h, M) && Oe(h, g, z, nt, M, R)), k.get(j);
+        return S.has(j) || S.set(j, !ne(b, M) && Oe(b, g, E, nt, M, $)), S.get(j);
       },
-      f(h) {
-        return $.reduce((R, j) => j(R, M), h);
+      f(b) {
+        return R.reduce(($, j) => j($, M), b);
       }
     };
     return M;
-  }(r), n = /* @__PURE__ */ new Map(), l = [], s = /* @__PURE__ */ new Set();
+  }(r), n = /* @__PURE__ */ new Map(), s = [], l = /* @__PURE__ */ new Set();
   t.resume((i) => n.set(i, i), (i, f) => {
-    t.insert(i, l.length, f), l.push(f), s.add(i);
+    t.insert(i, s.length, f), s.push(f), l.add(i);
   });
   function a(i) {
-    let f = o.f(i), p = ge(f);
-    if (p && !s.has(p)) {
-      s.add(p);
-      let u = Be(l, i);
-      t.insert(p, u, i), l.splice(u, 0, i);
+    let f = o.f(i), u = ge(f);
+    if (u && !l.has(u)) {
+      l.add(u);
+      let p = Be(s, i);
+      t.insert(u, p, i), s.splice(p, 0, i);
     }
     return f.n;
   }
   return Object.defineProperties(function(f) {
-    if (!n.size) for (let u of w(r.preflight))
-      typeof u == "function" && (u = u(o)), u && (typeof u == "string" ? $e("", T.b, oe(u), o, T.b, [], !1, !0) : Ne(u, {}, o, T.b)).forEach(a);
+    if (!n.size) for (let p of w(r.preflight))
+      typeof p == "function" && (p = p(o)), p && (typeof p == "string" ? Re("", T.b, oe(p), o, T.b, [], !1, !0) : Ne(p, {}, o, T.b)).forEach(a);
     f = "" + f;
-    let p = n.get(f);
-    if (!p) {
-      let u = /* @__PURE__ */ new Set();
-      for (let g of re(oe(f), o)) u.add(g.c).add(a(g));
-      p = [
-        ...u
-      ].filter(Boolean).join(" "), n.set(f, p).set(p, p);
+    let u = n.get(f);
+    if (!u) {
+      let p = /* @__PURE__ */ new Set();
+      for (let g of re(oe(f), o)) p.add(g.c).add(a(g));
+      u = [
+        ...p
+      ].filter(Boolean).join(" "), n.set(f, u).set(u, u);
     }
-    return p;
+    return u;
   }, Object.getOwnPropertyDescriptors({
     get target() {
       return t.target;
@@ -897,15 +897,15 @@ function at(e, t) {
     theme: o.theme,
     config: r,
     snapshot() {
-      let i = t.snapshot(), f = new Set(s), p = new Map(n), u = [
-        ...l
+      let i = t.snapshot(), f = new Set(l), u = new Map(n), p = [
+        ...s
       ];
       return () => {
-        i(), s = f, n = p, l = u;
+        i(), l = f, n = u, s = p;
       };
     },
     clear() {
-      t.clear(), s = /* @__PURE__ */ new Set(), n = /* @__PURE__ */ new Map(), l = [];
+      t.clear(), l = /* @__PURE__ */ new Set(), n = /* @__PURE__ */ new Map(), s = [];
     },
     destroy() {
       this.clear(), t.destroy();
@@ -937,17 +937,17 @@ function st(e) {
     }
   };
   function r(n) {
-    for (let { type: l, target: s } of n) if (l[0] == "a")
-      o(s);
+    for (let { type: s, target: l } of n) if (s[0] == "a")
+      o(l);
     else
-      for (let a of s.querySelectorAll("[class]")) o(a);
+      for (let a of l.querySelectorAll("[class]")) o(a);
     t.takeRecords();
   }
   function o(n) {
     var a;
-    let l, s = (a = n.getAttribute) == null ? void 0 : a.call(n, "class");
-    s && lt(s, l = e(s)) && // Not using `target.className = ...` as that is read-only for SVGElements
-    n.setAttribute("class", l);
+    let s, l = (a = n.getAttribute) == null ? void 0 : a.call(n, "class");
+    l && lt(l, s = e(l)) && // Not using `target.className = ...` as that is read-only for SVGElements
+    n.setAttribute("class", s);
   }
 }
 function ct(e) {
@@ -978,7 +978,7 @@ function de(e) {
         t.insertRule(":root{}", o);
       }
     },
-    resume: ke
+    resume: Se
   };
 }
 function dt(e, t = !0) {
@@ -986,51 +986,51 @@ function dt(e, t = !0) {
     if (ft) try {
       let i = de(new CSSStyleSheet());
       return i.connect = (f) => {
-        let p = fe(f);
-        p.adoptedStyleSheets = [
-          ...p.adoptedStyleSheets,
+        let u = fe(f);
+        u.adoptedStyleSheets = [
+          ...u.adoptedStyleSheets,
           i.target
         ];
-      }, i.disconnect = ke, i;
+      }, i.disconnect = Se, i;
     } catch {
     }
-    let l = document.createElement("style");
-    l.media = "not all", document.head.prepend(l);
-    let s = [
-      de(l)
+    let s = document.createElement("style");
+    s.media = "not all", document.head.prepend(s);
+    let l = [
+      de(s)
     ], a = /* @__PURE__ */ new WeakMap();
     return {
       get target() {
-        return s[0].target;
+        return l[0].target;
       },
       snapshot() {
-        let i = s.map((f) => f.snapshot());
+        let i = l.map((f) => f.snapshot());
         return () => i.forEach((f) => f());
       },
       clear() {
-        s.forEach((i) => i.clear());
+        l.forEach((i) => i.clear());
       },
       destroy() {
-        s.forEach((i) => i.destroy());
+        l.forEach((i) => i.destroy());
       },
-      insert(i, f, p) {
-        s[0].insert(i, f, p);
-        let u = this.target.cssRules[f];
-        s.forEach((g, y) => y && g.target.insertRule(u.cssText, f));
+      insert(i, f, u) {
+        l[0].insert(i, f, u);
+        let p = this.target.cssRules[f];
+        l.forEach((g, y) => y && g.target.insertRule(p.cssText, f));
       },
       resume(i, f) {
-        return s[0].resume(i, f);
+        return l[0].resume(i, f);
       },
       connect(i) {
         let f = document.createElement("style");
         fe(i).appendChild(f);
-        let p = de(f), { cssRules: u } = this.target;
-        for (let g = 0; g < u.length; g++) p.target.insertRule(u[g].cssText, g);
-        s.push(p), a.set(i, p);
+        let u = de(f), { cssRules: p } = this.target;
+        for (let g = 0; g < p.length; g++) u.target.insertRule(p[g].cssText, g);
+        l.push(u), a.set(i, u);
       },
       disconnect(i) {
-        let f = s.indexOf(a.get(i));
-        f >= 0 && s.splice(f, 1);
+        let f = l.indexOf(a.get(i));
+        f >= 0 && l.splice(f, 1);
       }
     };
   }(), o = at({
@@ -1038,8 +1038,8 @@ function dt(e, t = !0) {
     // in production use short hashed class names
     hash: e.hash ?? t
   }, r), n = st(o);
-  return function(s) {
-    return class extends s {
+  return function(l) {
+    return class extends l {
       connectedCallback() {
         var i;
         (i = super.connectedCallback) == null || i.call(this), r.connect(this), n.observe(fe(this));
@@ -1072,7 +1072,7 @@ function mt(e, t) {
   var r = /^(?:(pos)|(cli)|(background-i)|(flex(?:$|-b)|(?:max-|min-)?(?:block-s|inl|he|widt))|dis)/i.exec(e);
   return r ? r[1] ? /^sti/i.test(t) ? 1 : 0 : r[2] ? /^pat/i.test(t) ? 1 : 0 : r[3] ? /^image-/i.test(t) ? 1 : 0 : r[4] ? t[3] === "-" ? 2 : 0 : /^(?:inline-)?grid$/i.test(t) ? 4 : 0 : 0;
 }
-let bt = [
+let ht = [
   [
     "-webkit-",
     1
@@ -1088,14 +1088,14 @@ let bt = [
     4
   ]
 ];
-function ht() {
+function bt() {
   return ({ stringify: e }) => ({
     stringify(t, r, o) {
-      let n = "", l = ut(t);
-      l && (n += e(l, r, o) + ";");
-      let s = gt(t), a = mt(t, r);
-      for (let i of bt)
-        s & i[1] && (n += e(i[0] + t, r, o) + ";"), a & i[1] && (n += e(t, i[0] + r, o) + ";");
+      let n = "", s = ut(t);
+      s && (n += e(s, r, o) + ";");
+      let l = gt(t), a = mt(t, r);
+      for (let i of ht)
+        l & i[1] && (n += e(i[0] + t, r, o) + ";"), a & i[1] && (n += e(t, i[0] + r, o) + ";");
       return n + e(t, r, o);
     }
   });
@@ -1140,7 +1140,7 @@ let we = {
   spacing: {
     px: "1px",
     0: "0px",
-    .../* @__PURE__ */ E(4, "rem", 4, 0.5, 0.5),
+    .../* @__PURE__ */ F(4, "rem", 4, 0.5, 0.5),
     // 0.5: '0.125rem',
     // 1: '0.25rem',
     // 1.5: '0.375rem',
@@ -1149,7 +1149,7 @@ let we = {
     // 3: '0.75rem',
     // 3.5: '0.875rem',
     // 4: '1rem',
-    .../* @__PURE__ */ E(12, "rem", 4, 5),
+    .../* @__PURE__ */ F(12, "rem", 4, 5),
     // 5: '1.25rem',
     // 6: '1.5rem',
     // 7: '1.75rem',
@@ -1159,7 +1159,7 @@ let we = {
     // 11: '2.75rem',
     // 12: '3rem',
     14: "3.5rem",
-    .../* @__PURE__ */ E(64, "rem", 4, 16, 4),
+    .../* @__PURE__ */ F(64, "rem", 4, 16, 4),
     // 16: '4rem',
     // 20: '5rem',
     // 24: '6rem',
@@ -1244,12 +1244,12 @@ let we = {
     "3xl": "64px"
   },
   brightness: {
-    .../* @__PURE__ */ E(200, "", 100, 0, 50),
+    .../* @__PURE__ */ F(200, "", 100, 0, 50),
     // 0: '0',
     // 50: '.5',
     // 150: '1.5',
     // 200: '2',
-    .../* @__PURE__ */ E(110, "", 100, 90, 5),
+    .../* @__PURE__ */ F(110, "", 100, 90, 5),
     // 90: '.9',
     // 95: '.95',
     // 100: '1',
@@ -1305,7 +1305,7 @@ let we = {
     ...e("colors")
   }),
   contrast: {
-    .../* @__PURE__ */ E(200, "", 100, 0, 50),
+    .../* @__PURE__ */ F(200, "", 100, 0, 50),
     // 0: '0',
     // 50: '.5',
     // 150: '1.5',
@@ -1605,7 +1605,7 @@ let we = {
     widest: "0.1em"
   },
   lineHeight: {
-    .../* @__PURE__ */ E(10, "rem", 4, 3),
+    .../* @__PURE__ */ F(10, "rem", 4, 3),
     // 3: '.75rem',
     // 4: '1rem',
     // 5: '1.25rem',
@@ -1676,7 +1676,7 @@ let we = {
   //   // The plugins joins all arguments by default
   // },
   opacity: {
-    .../* @__PURE__ */ E(100, "", 100, 0, 10),
+    .../* @__PURE__ */ F(100, "", 100, 0, 10),
     // 0: '0',
     // 10: '0.1',
     // 20: '0.2',
@@ -1764,18 +1764,18 @@ let we = {
   // 45: '45deg',
   // 90: '90deg',
   // 180: '180deg',
-  saturate: /* @__PURE__ */ E(200, "", 100, 0, 50),
+  saturate: /* @__PURE__ */ F(200, "", 100, 0, 50),
   // 0: '0',
   // 50: '.5',
   // 100: '1',
   // 150: '1.5',
   // 200: '2',
   scale: {
-    .../* @__PURE__ */ E(150, "", 100, 0, 50),
+    .../* @__PURE__ */ F(150, "", 100, 0, 50),
     // 0: '0',
     // 50: '.5',
     // 150: '1.5',
-    .../* @__PURE__ */ E(110, "", 100, 90, 5),
+    .../* @__PURE__ */ F(110, "", 100, 90, 5),
     // 90: '.9',
     // 95: '.95',
     // 100: '1',
@@ -1805,7 +1805,7 @@ let we = {
     ...e("colors"),
     none: "none"
   }),
-  strokeWidth: /* @__PURE__ */ E(2),
+  strokeWidth: /* @__PURE__ */ F(2),
   // 0: '0',
   // 1: '1',
   // 2: '2',,
@@ -1884,7 +1884,7 @@ let we = {
   // contents: 'contents',
   // transform: 'transform',
   zIndex: {
-    .../* @__PURE__ */ E(50, "", 1, 0, 10),
+    .../* @__PURE__ */ F(50, "", 1, 0, 10),
     // 0: '0',
     // 10: '10',
     // 20: '20',
@@ -1906,9 +1906,9 @@ function O(e, t, r = 0) {
   for (; r <= e; r = 2 * r || 1) o[r] = r + t;
   return o;
 }
-function E(e, t = "", r = 1, o = 0, n = 1, l = {}) {
-  for (; o <= e; o += n) l[o] = o / r + t;
-  return l;
+function F(e, t = "", r = 1, o = 0, n = 1, s = {}) {
+  for (; o <= e; o += n) s[o] = o / r + t;
+  return s;
 }
 function m(e) {
   return ({ theme: t }) => t(e);
@@ -2224,23 +2224,23 @@ let wt = {
   /* LAYOUT */
   d("aspect-", "aspectRatio"),
   c("container", (e, { theme: t }) => {
-    let { screens: r = t("screens"), center: o, padding: n } = t("container"), l = {
+    let { screens: r = t("screens"), center: o, padding: n } = t("container"), s = {
       width: "100%",
       marginRight: o && "auto",
       marginLeft: o && "auto",
-      ...s("xs")
+      ...l("xs")
     };
     for (let a in r) {
       let i = r[a];
-      typeof i == "string" && (l[ve(i)] = {
+      typeof i == "string" && (s[ve(i)] = {
         "&": {
           maxWidth: i,
-          ...s(a)
+          ...l(a)
         }
       });
     }
-    return l;
-    function s(a) {
+    return s;
+    function l(a) {
       let i = n && (typeof n == "string" ? n : n[a] || n.DEFAULT);
       if (i) return {
         paddingRight: i,
@@ -2321,7 +2321,7 @@ let wt = {
   /* GRID */
   // Grid Template Columns
   d("grid-cols-", "gridTemplateColumns"),
-  c("grid-cols-(\\d+)", "gridTemplateColumns", Ve),
+  c("grid-cols-(\\d+)", "gridTemplateColumns", Le),
   // Grid Column Start / End
   d("col-", "gridColumn"),
   c("col-(span)-(\\d+)", "gridColumn", Me),
@@ -2331,7 +2331,7 @@ let wt = {
   c("col-end-(auto|\\d+)", "gridColumnEnd"),
   // Grid Template Rows
   d("grid-rows-", "gridTemplateRows"),
-  c("grid-rows-(\\d+)", "gridTemplateRows", Ve),
+  c("grid-rows-(\\d+)", "gridTemplateRows", Le),
   // Grid Row Start / End
   d("row-", "gridRow"),
   c("row-(span)-(\\d+)", "gridRow", Me),
@@ -2449,7 +2449,7 @@ let wt = {
         e
       ))]: e,
       fontVariantNumeric: "var(--tw-ordinal) var(--tw-slashed-zero) var(--tw-numeric-figure) var(--tw-numeric-spacing) var(--tw-numeric-fraction)",
-      ...L({
+      ...V({
         "--tw-ordinal": "var(--tw-empty,/*!*/ /*!*/)",
         "--tw-slashed-zero": "var(--tw-empty,/*!*/ /*!*/)",
         "--tw-numeric-figure": "var(--tw-empty,/*!*/ /*!*/)",
@@ -2474,7 +2474,7 @@ let wt = {
     }
   })),
   // Placeholder Color
-  S("placeholder-", {
+  k("placeholder-", {
     property: "color",
     selector: "&::placeholder"
   }),
@@ -2484,7 +2484,7 @@ let wt = {
   // Text Opacity
   d("text-opacity-", "textOpacity", "--tw-text-opacity"),
   // Text Color
-  S("text-", {
+  k("text-", {
     property: "color"
   }),
   // Font Size
@@ -2506,7 +2506,7 @@ let wt = {
   // Text Underline offset
   d("underline-offset-", "textUnderlineOffset"),
   // Text Decoration Color
-  S("decoration-", {
+  k("decoration-", {
     section: "textDecorationColor",
     opacityVariable: !1,
     opacitySection: "opacity"
@@ -2545,20 +2545,20 @@ let wt = {
     wordBreak: "keep-all"
   }),
   // Caret Color
-  S("caret-", {
+  k("caret-", {
     // section: 'caretColor',
     opacityVariable: !1,
     opacitySection: "opacity"
   }),
   // Accent Color
-  S("accent-", {
+  k("accent-", {
     // section: 'accentColor',
     opacityVariable: !1,
     opacitySection: "opacity"
   }),
   // Gradient Color Stops
   c("bg-gradient-to-([trbl]|[tb][rl])", "backgroundImage", ({ 1: e }) => `linear-gradient(to ${P(e, " ")},var(--tw-gradient-stops))`),
-  S("from-", {
+  k("from-", {
     section: "gradientColorStops",
     opacityVariable: !1,
     opacitySection: "opacity"
@@ -2569,7 +2569,7 @@ let wt = {
     }),
     "--tw-gradient-stops": "var(--tw-gradient-from),var(--tw-gradient-to)"
   })),
-  S("via-", {
+  k("via-", {
     section: "gradientColorStops",
     opacityVariable: !1,
     opacitySection: "opacity"
@@ -2579,7 +2579,7 @@ let wt = {
     }),
     "--tw-gradient-stops": `var(--tw-gradient-from),${e.value},var(--tw-gradient-to)`
   })),
-  S("to-", {
+  k("to-", {
     section: "gradientColorStops",
     property: "--tw-gradient-to",
     opacityVariable: !1,
@@ -2603,7 +2603,7 @@ let wt = {
   d("bg-opacity-", "backgroundOpacity", "--tw-bg-opacity"),
   // Background Color
   // bg-${backgroundColor}/${backgroundOpacity}
-  S("bg-", {
+  k("bg-", {
     section: "backgroundColor"
   }),
   // Background Image
@@ -2652,7 +2652,7 @@ let wt = {
   c("border-(solid|dashed|dotted|double|none)", "borderStyle"),
   // Border Spacing
   d("border-spacing(-[xy])?(?:$|-)", "borderSpacing", ({ 1: e, _: t }) => ({
-    ...L({
+    ...V({
       "--tw-border-spacing-x": "0",
       "--tw-border-spacing-y": "0"
     }),
@@ -2661,10 +2661,10 @@ let wt = {
     "border-spacing": "var(--tw-border-spacing-x) var(--tw-border-spacing-y)"
   })),
   // Border Color
-  S("border-([xytrbl])-", {
+  k("border-([xytrbl])-", {
     section: "borderColor"
   }, G("border", "Color")),
-  S("border-"),
+  k("border-"),
   // Border Width
   d("border-([xytrbl])(?:$|-)", "borderWidth", G("border", "Width")),
   d("border(?:$|-)", "borderWidth"),
@@ -2700,7 +2700,7 @@ let wt = {
     };
   }),
   // Divide Color
-  S("divide-", {
+  k("divide-", {
     // section: $0.replace('-', 'Color') -> 'divideColor'
     property: "borderColor",
     // opacityVariable: '--tw-border-opacity',
@@ -2710,7 +2710,7 @@ let wt = {
   // Ring Offset Opacity
   d("ring-opacity(?:$|-)", "ringOpacity", "--tw-ring-opacity"),
   // Ring Offset Color
-  S("ring-offset-", {
+  k("ring-offset-", {
     // section: 'ringOffsetColor',
     property: "--tw-ring-offset-color",
     opacityVariable: !1
@@ -2723,7 +2723,7 @@ let wt = {
     "--tw-ring-inset": "inset"
   }),
   // Ring Color
-  S("ring-", {
+  k("ring-", {
     // section: 'ringColor',
     property: "--tw-ring-color"
   }),
@@ -2731,7 +2731,7 @@ let wt = {
   // opacitySection: section.replace('Color', 'Opacity') -> 'ringOpacity'
   // Ring Width
   d("ring(?:$|-)", "ringWidth", ({ _: e }, { theme: t }) => ({
-    ...L({
+    ...V({
       "--tw-ring-offset-shadow": "0 0 #0000",
       "--tw-ring-shadow": "0 0 #0000",
       "--tw-shadow": "0 0 #0000",
@@ -2753,7 +2753,7 @@ let wt = {
   })),
   /* EFFECTS */
   // Box Shadow Color
-  S("shadow-", {
+  k("shadow-", {
     section: "boxShadowColor",
     opacityVariable: !1,
     opacitySection: "opacity"
@@ -2763,7 +2763,7 @@ let wt = {
   })),
   // Box Shadow
   d("shadow(?:$|-)", "boxShadow", ({ _: e }) => ({
-    ...L({
+    ...V({
       "--tw-ring-offset-shadow": "0 0 #0000",
       "--tw-ring-shadow": "0 0 #0000",
       "--tw-shadow": "0 0 #0000",
@@ -2797,10 +2797,10 @@ let wt = {
   // Transition Delay
   d("delay(?:$|-)", "transitionDelay", "transitionDelay", W),
   d("animate(?:$|-)", "animation", (e, { theme: t, h: r, e: o }) => {
-    let n = W(e), l = n.split(" "), s = t("keyframes", l[0]);
-    return s ? {
-      ["@keyframes " + (l[0] = o(r(l[0])))]: s,
-      animation: l.join(" ")
+    let n = W(e), s = n.split(" "), l = t("keyframes", s[0]);
+    return l ? {
+      ["@keyframes " + (s[0] = o(r(s[0])))]: l,
+      animation: s.join(" ")
     } : {
       animation: n
     };
@@ -2842,7 +2842,7 @@ let wt = {
   // Scroll Snap Type
   c("snap-(none)", "scroll-snap-type"),
   c("snap-(x|y|both)", ({ 1: e }) => ({
-    ...L({
+    ...V({
       "--tw-scroll-snap-strictness": "proximity"
     }),
     "scroll-snap-type": e + " var(--tw-scroll-snap-strictness)"
@@ -2861,7 +2861,7 @@ let wt = {
   // Touch Action
   c("touch-(auto|none|manipulation)", "touch-action"),
   c("touch-(pinch-zoom|pan-(?:(x|left|right)|(y|up|down)))", ({ 1: e, 2: t, 3: r }) => ({
-    ...L({
+    ...V({
       "--tw-pan-x": "var(--tw-empty,/*!*/ /*!*/)",
       "--tw-pan-y": "var(--tw-empty,/*!*/ /*!*/)",
       "--tw-pinch-zoom": "var(--tw-empty,/*!*/ /*!*/)",
@@ -2886,7 +2886,7 @@ let wt = {
   d("-?(outline-offset)-"),
   /*, 'outlineOffset'*/
   // Outline Color
-  S("outline-", {
+  k("outline-", {
     opacityVariable: !1,
     opacitySection: "opacity"
   }),
@@ -2911,12 +2911,12 @@ let wt = {
   c("select-(none|text|all|auto)", "userSelect"),
   /* SVG */
   // Fill, Stroke
-  S("fill-", {
+  k("fill-", {
     section: "fill",
     opacityVariable: !1,
     opacitySection: "opacity"
   }),
-  S("stroke-", {
+  k("stroke-", {
     section: "stroke",
     opacityVariable: !1,
     opacitySection: "opacity"
@@ -3022,7 +3022,7 @@ function We(e = "") {
   for (let o of t) r[`--tw-${e}${o}`] = "var(--tw-empty,/*!*/ /*!*/)";
   return r = {
     // move defaults
-    ...L(r),
+    ...V(r),
     // add default filter which allows standalone usage
     [`${e}filter`]: t.map((o) => `var(--tw-${e}${o})`).join(" ")
   }, [
@@ -3032,8 +3032,8 @@ function We(e = "") {
       // hue-rotate can be negated
       `${o[0] == "h" ? "-?" : ""}(${e}${o})(?:$|-)`,
       o,
-      ({ 1: n, _: l }) => ({
-        [`--tw-${n}`]: w(l).map((s) => `${o}(${s})`).join(" "),
+      ({ 1: n, _: s }) => ({
+        [`--tw-${n}`]: w(s).map((l) => `${o}(${l})`).join(" "),
         ...r
       })
     ))
@@ -3047,7 +3047,7 @@ function pe({ 1: e, _: t }) {
 }
 function ye() {
   return {
-    ...L({
+    ...V({
       "--tw-translate-x": "0",
       "--tw-translate-y": "0",
       "--tw-rotate": "0",
@@ -3076,10 +3076,10 @@ function _e(e) {
 function Me({ 1: e, 2: t }) {
   return `${e} ${t} / ${e} ${t}`;
 }
-function Ve({ 1: e }) {
+function Le({ 1: e }) {
   return `repeat(${e},minmax(0,1fr))`;
 }
-function L(e) {
+function V(e) {
   return {
     "@layer defaults": {
       "*,::before,::after": e,
@@ -3158,9 +3158,9 @@ let xt = [
   // => '.group:focus .group-focus:selector'
   [
     "((group|peer)(~[^-[]+)?)(-\\[(.+)]|[-[].+?)(\\/.+)?",
-    ({ 2: e, 3: t = "", 4: r, 5: o = "", 6: n = t }, { e: l, h: s, v: a }) => {
+    ({ 2: e, 3: t = "", 4: r, 5: o = "", 6: n = t }, { e: s, h: l, v: a }) => {
       let i = Q(o) || (r[0] == "[" ? r : a(r.slice(1)));
-      return `${(i.includes("&") ? i : "&" + i).replace(/&/g, `:merge(.${l(s(e + n))})`)}${e[0] == "p" ? "~" : " "}&`;
+      return `${(i.includes("&") ? i : "&" + i).replace(/&/g, `:merge(.${s(l(e + n))})`)}${e[0] == "p" ? "~" : " "}&`;
     }
   ],
   // direction variants
@@ -3224,7 +3224,7 @@ function vt({ colors: e, disablePreflight: t } = {}) {
     }
   };
 }
-let kt = {
+let St = {
   50: "#f8fafc",
   100: "#f1f5f9",
   200: "#e2e8f0",
@@ -3235,7 +3235,7 @@ let kt = {
   700: "#334155",
   800: "#1e293b",
   900: "#0f172a"
-}, St = {
+}, kt = {
   50: "#f9fafb",
   100: "#f3f4f6",
   200: "#e5e7eb",
@@ -3257,7 +3257,7 @@ let kt = {
   700: "#3f3f46",
   800: "#27272a",
   900: "#18181b"
-}, $t = {
+}, Rt = {
   50: "#fafafa",
   100: "#f5f5f5",
   200: "#e5e5e5",
@@ -3268,7 +3268,7 @@ let kt = {
   700: "#404040",
   800: "#262626",
   900: "#171717"
-}, Rt = {
+}, $t = {
   50: "#fafaf9",
   100: "#f5f5f4",
   200: "#e7e5e4",
@@ -3290,7 +3290,7 @@ let kt = {
   700: "#b91c1c",
   800: "#991b1b",
   900: "#7f1d1d"
-}, zt = {
+}, Et = {
   50: "#fff7ed",
   100: "#ffedd5",
   200: "#fed7aa",
@@ -3312,7 +3312,7 @@ let kt = {
   700: "#b45309",
   800: "#92400e",
   900: "#78350f"
-}, Ft = {
+}, zt = {
   50: "#fefce8",
   100: "#fef9c3",
   200: "#fef08a",
@@ -3323,7 +3323,7 @@ let kt = {
   700: "#a16207",
   800: "#854d0e",
   900: "#713f12"
-}, Et = {
+}, Ft = {
   50: "#f7fee7",
   100: "#ecfccb",
   200: "#d9f99d",
@@ -3389,7 +3389,7 @@ let kt = {
   700: "#0369a1",
   800: "#075985",
   900: "#0c4a6e"
-}, Vt = {
+}, Lt = {
   50: "#eff6ff",
   100: "#dbeafe",
   200: "#bfdbfe",
@@ -3400,7 +3400,7 @@ let kt = {
   700: "#1d4ed8",
   800: "#1e40af",
   900: "#1e3a8a"
-}, Lt = {
+}, Vt = {
   50: "#eef2ff",
   100: "#e0e7ff",
   200: "#c7d2fe",
@@ -3468,23 +3468,23 @@ let kt = {
   900: "#881337"
 }, Pt = {
   __proto__: null,
-  slate: kt,
-  gray: St,
+  slate: St,
+  gray: kt,
   zinc: Ct,
-  neutral: $t,
-  stone: Rt,
+  neutral: Rt,
+  stone: $t,
   red: Tt,
-  orange: zt,
+  orange: Et,
   amber: At,
-  yellow: Ft,
-  lime: Et,
+  yellow: zt,
+  lime: Ft,
   green: Ot,
   emerald: jt,
   teal: Dt,
   cyan: Wt,
   sky: Mt,
-  blue: Vt,
-  indigo: Lt,
+  blue: Lt,
+  indigo: Vt,
   violet: Ut,
   purple: It,
   fuchsia: Bt,
@@ -3497,15 +3497,60 @@ function qt({ disablePreflight: e } = {}) {
     disablePreflight: e
   });
 }
-const Gt = Ge({
-  presets: [ht(), qt()]
-});
-(function() {
-  const e = dt(Gt);
-  class t extends e(HTMLElement) {
+(function(e) {
+  var l, a, i;
+  const t = [], r = [];
+  o(((l = e.TwindScope) == null ? void 0 : l.style) || [], ((a = e.TwindScope) == null ? void 0 : a.script) || []);
+  function o(f, u) {
+    f.forEach((p) => {
+      let g = "inlineStyle";
+      /^https?:\/\//.test(p) && (g = "url"), t.push({
+        type: g,
+        str: p
+      });
+    }), u.forEach((p) => {
+      let g = "inlineScript";
+      /^https?:\/\//.test(p) && (g = "url"), r.push({
+        type: g,
+        str: p
+      });
+    });
+  }
+  const n = dt(
+    Ge({
+      presets: [bt(), qt()],
+      theme: ((i = e.twindConfig) == null ? void 0 : i.theme) || {}
+    })
+  );
+  class s extends n(HTMLElement) {
     constructor() {
-      super(), this.attachShadow({ mode: "open" }), this.shadowRoot && (this.shadowRoot.innerHTML = this.innerHTML, this.innerHTML = "");
+      super(), this.attachShadow({ mode: "open" }), this.integrateStyleAndScript(), this.shadowRoot && (this.shadowRoot.innerHTML = this.innerHTML, this.innerHTML = "");
+    }
+    integrateStyleAndScript() {
+      t.length > 0 && t.forEach((u) => {
+        if (this.shadowRoot) {
+          if (u.type === "inlineStyle") {
+            const p = new CSSStyleSheet();
+            p.replaceSync(u.str), this.shadowRoot.adoptedStyleSheets = [p];
+          }
+          if (u.type === "url") {
+            const p = document.createElement("link");
+            p.rel = "stylesheet", p.href = u.str, this.shadowRoot.appendChild(p);
+          }
+        }
+      }), r.length > 0 && r.forEach((u) => {
+        if (this.shadowRoot) {
+          if (u.type === "inlineScript") {
+            const p = document.createElement("script");
+            p.textContent = u.str, this.shadowRoot.appendChild(p);
+          }
+          if (u.type === "url") {
+            const p = document.createElement("script");
+            p.src = u.str, this.shadowRoot.appendChild(p);
+          }
+        }
+      });
     }
   }
-  customElements.define("twind-scope", t);
-})();
+  customElements.define("twind-scope", s);
+})(window);

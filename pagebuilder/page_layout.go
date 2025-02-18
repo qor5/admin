@@ -20,7 +20,6 @@ func WrapDefaultPageLayoutFunc(js []string, css ...string) PageLayoutFunc {
 			panic(err)
 		}
 		input.FreeStyleCss = append(input.FreeStyleCss, append(css, string(val))...)
-		// input.FreeStyleTopJs = append(input.FreeStyleTopJs, js...)
 		input.FreeStyleBottomJs = append(input.FreeStyleBottomJs, js...)
 		return pageLayoutFunc(body, input, ctx)
 	}
@@ -50,35 +49,47 @@ func pageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.Event
 
 	// tailwind ecosystem resources
 	// tailwindJs := "https://cdn.tailwindcss.com"
-	alpineJs := "https://unpkg.com/alpinejs"
-	InferCss := "https://rsms.me/inter/inter.css"
+	// alpineJs := "https://unpkg.com/alpinejs"
+	// InferCss := "https://rsms.me/inter/inter.css"
 
-	tailwindPluginJs := []string{
-		`tailwind.config = {
-		theme: {
-		extend: {
-					fontFamily: {
-						sans: ["InterVariable", "sans-serif"],
-					},
-		}
-		}
-	}`,
+	// twindscopeDefaultCss := [] string{
+
+	// }
+
+	twindScopeJs := []string{
+		`window.TwindScope = {}; window.TwindScope.style = [];`,
+		fmt.Sprintf("window.TwindScope.style.push(`%s`)", string(func() []byte {
+			css, err := theme.ReadFile("assets/css/page-builder-default.css")
+			if err != nil {
+				panic(err)
+			}
+			return css
+		}())),
+
+		`window.TwindScope.theme = {
+			extend: {
+				fontFamily: {
+					sans: ["InterVariable", "system-ui", "sans-serif"],
+				},
+			},
+		}`,
 	}
-	tailwindOverrides := []string{
-		`.tailwind-scope {
-        h1,
-        h2,
-        h3,
-        h4,
-        h5,
-        h6,
-        a,
-        p {
-          font-family: InterVariable, system-ui, sans-serif;
-        }
-      }
-		`,
-	}
+
+	// tailwindOverrides := []string{
+	// 	`.tailwind-scope {
+	//       h1,
+	//       h2,
+	//       h3,
+	//       h4,
+	//       h5,
+	//       h6,
+	//       a,
+	//       p {
+	//         font-family: InterVariable, system-ui, sans-serif;
+	//       }
+	//     }
+	// 	`,
+	// }
 
 	head := h.Components(
 		input.SeoTags,
@@ -90,18 +101,12 @@ func pageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.Event
 		h.Meta().Name("format-detection").Content("telephone=no"),
 		h.Link("").Rel("stylesheet").Type("text/css").Href(css),
 
-		// tailwind ecosystem resources
-		h.Link("").Rel("stylesheet").Type("text/css").Href(InferCss),
-		// h.Script("").Src(tailwindJs),
-		h.Script("").Src(alpineJs).Attr("defer", "true"),
-
 		h.If(len(input.EditorCss) > 0, input.EditorCss...),
 		freeStyleCss,
 		// RawHTML(dataLayer),
 		input.StructuredData,
 		scriptWithCodes(input.FreeStyleTopJs),
-		scriptWithCodes(tailwindPluginJs),
-		styleWithCodes(tailwindOverrides),
+		scriptWithCodes(twindScopeJs),
 	)
 	ctx.Injector.HTMLLang(input.LocaleCode)
 	if input.WrapHead != nil {
