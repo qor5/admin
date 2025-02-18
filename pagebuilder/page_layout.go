@@ -10,15 +10,18 @@ import (
 )
 
 //go:embed assets/css
+//go:embed assets/js
 var theme embed.FS
 
-func WrapDefaultPageLayoutFunc(css ...string) PageLayoutFunc {
+func WrapDefaultPageLayoutFunc(js []string, css ...string) PageLayoutFunc {
 	return func(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent {
 		val, err := theme.ReadFile("assets/css/page-builder-default.css")
 		if err != nil {
 			panic(err)
 		}
 		input.FreeStyleCss = append(input.FreeStyleCss, append(css, string(val))...)
+		// input.FreeStyleTopJs = append(input.FreeStyleTopJs, js...)
+		input.FreeStyleBottomJs = append(input.FreeStyleBottomJs, js...)
 		return pageLayoutFunc(body, input, ctx)
 	}
 }
@@ -28,7 +31,11 @@ func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *we
 	if err != nil {
 		panic(err)
 	}
-	return WrapDefaultPageLayoutFunc(string(css))(body, input, ctx)
+	js, err := theme.ReadFile("assets/js/twind-scope.js")
+	if err != nil {
+		panic(err)
+	}
+	return WrapDefaultPageLayoutFunc([]string{string(js)}, string(css))(body, input, ctx)
 }
 
 func pageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent {
@@ -42,7 +49,7 @@ func pageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.Event
 	domain := "https://example.qor5.theplant-dev.com"
 
 	// tailwind ecosystem resources
-	tailwindJs := "https://cdn.tailwindcss.com"
+	// tailwindJs := "https://cdn.tailwindcss.com"
 	alpineJs := "https://unpkg.com/alpinejs"
 	InferCss := "https://rsms.me/inter/inter.css"
 
@@ -85,7 +92,7 @@ func pageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.Event
 
 		// tailwind ecosystem resources
 		h.Link("").Rel("stylesheet").Type("text/css").Href(InferCss),
-		h.Script("").Src(tailwindJs),
+		// h.Script("").Src(tailwindJs),
 		h.Script("").Src(alpineJs).Attr("defer", "true"),
 
 		h.If(len(input.EditorCss) > 0, input.EditorCss...),

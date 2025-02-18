@@ -44,7 +44,7 @@ func headerBody(data *TailWindExampleHeader, input *pagebuilder.RenderInput) (bo
 
 	body = TailwindContainerWrapper(
 		"container-tailwind-example-header",
-		Div(html),
+		Tag("twind-scope").Children(html),
 	)
 	return
 }

@@ -114,7 +114,7 @@ func HeroBody(data *TailWindHeroVertical, input *pagebuilder.RenderInput) (body 
 
 	body = tailwind.TailwindContainerWrapper(
 		"container-hero",
-		Div(heroBody).Class("bg-gray-100"),
+		Tag("twind-scope").Children(Div(heroBody).Class("bg-gray-100")),
 	)
 	return
 }

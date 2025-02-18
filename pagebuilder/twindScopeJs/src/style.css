@@ -1,0 +1,17 @@
+* {
+  box-sizing: content-box;
+  /* margin: 100px; */
+}
+
+h1 {
+  margin: 100px;
+  color: blue;
+}
+
+.text-3xl {
+  font-size: 50px;
+}
+
+.underline {
+  text-decoration: none;
+}

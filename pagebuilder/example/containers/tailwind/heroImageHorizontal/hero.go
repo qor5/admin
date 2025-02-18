@@ -163,7 +163,7 @@ func HeroBody(data *Hero, input *pagebuilder.RenderInput) (body HTMLComponent) {
 
 	body = tailwind.TailwindContainerWrapper(
 		"container-hero",
-		Div(heroBody).Class("bg-gray-100"),
+		Tag("twind-scope").Children(Div(heroBody).Class("bg-gray-100")),
 	)
 	return
 }
