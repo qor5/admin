@@ -1,12 +1,12 @@
-.tailwind-scope .tw-theme-h1 {
+.tw-theme-h1 {
   font-family: var(--font-family-h1), var(--font-family-fallback);
 }
 
-.tailwind-scope .tw-theme-h2 {
+.tw-theme-h2 {
   font-family: var(--font-family-h2), var(--font-family-fallback);
 }
 
-.tailwind-scope .tw-theme-p {
+.tw-theme-p {
   font-family: var(--font-family-p), var(--font-family-fallback);
 }
 

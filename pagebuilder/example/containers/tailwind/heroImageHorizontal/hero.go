@@ -149,7 +149,6 @@ func HeroBody(data *Hero, input *pagebuilder.RenderInput) (body HTMLComponent) {
               });
             },
             init() {
-							console.log('init')
               const resizeObserver = new ResizeObserver(() => {
                 this.debounceAdjust();
               });

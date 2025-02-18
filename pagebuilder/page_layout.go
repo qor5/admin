@@ -47,10 +47,8 @@ func pageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.Event
 	css := "https://the-plant.com/assets/app/container.4f902c4.css"
 	domain := "https://example.qor5.theplant-dev.com"
 
-	// alpineJs := "https://unpkg.com/alpinejs"
-
 	twindScopeConfigJs := []string{
-		`window.TwindScope = {}; window.TwindScope.style = [];window.TwindScope.config = {};`,
+		`window.TwindScope = {style: []};`,
 		fmt.Sprintf("window.TwindScope.style.push(`%s`)", string(func() []byte {
 			css, err := theme.ReadFile("assets/css/common-container-default.css")
 			if err != nil {
