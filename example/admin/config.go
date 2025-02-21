@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
+	"github.com/qor5/admin/v3/emailbuilder"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/login"
@@ -28,8 +29,6 @@ import (
 	"github.com/theplant/osenv"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
-
-	"github.com/qor5/admin/v3/emailbuilder"
 
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/autosync"
@@ -66,7 +65,6 @@ type Config struct {
 	pageBuilder         *pagebuilder.Builder
 	Publisher           *publish.Builder
 	loginSessionBuilder *plogin.SessionBuilder
-	eb                  *emailbuilder.Builder
 }
 
 func (c *Config) GetPresetsBuilder() *presets.Builder {
@@ -370,11 +368,10 @@ func NewConfig(db *gorm.DB, enableWork bool, opts ...ConfigOption) Config {
 	configOrder(b, db)
 	configECDashboard(b, db)
 	configureDemoCase(b, db)
-	eb := emailbuilder.New(b, db, emailbuilder.DefaultMailTemplate(b)).Activity(ab).AutoMigrate()
-	emailbuilder.DefaultMailCampaign(b).Use(eb)
+	emailbuilder.ConfigMailTemplate(b, db)
+
 	configUser(b, ab, db, publisher, loginSessionBuilder)
 	b.Use(
-		eb,
 		mediab,
 		microb,
 		ab,
@@ -397,7 +394,6 @@ func NewConfig(db *gorm.DB, enableWork bool, opts ...ConfigOption) Config {
 		pageBuilder:         pageBuilder,
 		Publisher:           publisher,
 		loginSessionBuilder: loginSessionBuilder,
-		eb:                  eb,
 	}
 }
 
@@ -508,7 +504,6 @@ func configMenuOrder(b *presets.Builder) {
 		"ActivityLogs",
 		b.MenuGroup("Email Builder").SubItems(
 			"Mail Templates",
-			"Mail Campaigns",
 		).Icon("mdi-mail"),
 	)
 }

@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/ui/vuetify"
-	h "github.com/theplant/htmlgo"
-
 	"github.com/qor5/admin/v3/emailbuilder"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
+	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/ui/vuetify"
+	h "github.com/theplant/htmlgo"
 )
 
 func main() {
@@ -42,9 +41,8 @@ func main() {
 			return
 		})
 
-	eb := emailbuilder.New(b, db, emailbuilder.DefaultMailTemplate(b)).AutoMigrate()
-	emailbuilder.DefaultMailCampaign(b).Use(eb)
-	b.Use(eb)
+	emailbuilder.ConfigMailTemplate(b, db)
+	eb := emailbuilder.ConfigEmailBuilder(db)
 	mux := http.NewServeMux()
 	mux.Handle("/", b)
 	mux.Handle("/email_template/", http.StripPrefix("/email_template", eb))
