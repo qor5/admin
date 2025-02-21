@@ -6,12 +6,12 @@ import (
 	"gorm.io/gorm"
 )
 
-type MailTemplate struct {
-	gorm.Model
-	Subject  string `json:"subject"`
-	JSONBody string `json:"json_body"`
-	HTMLBody string `json:"html_body"`
-}
+type (
+	MailTemplate struct {
+		gorm.Model
+		EmailDetail
+	}
+)
 
 func (m *MailTemplate) TableName() string {
 	return "mail_templates"
