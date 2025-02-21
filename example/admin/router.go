@@ -153,7 +153,7 @@ func Router(db *gorm.DB) http.Handler {
 			http.ServeContent(w, r, "index.html", fileInfo.ModTime(), bytes.NewReader(content))
 		}))
 	}
-	mux.Handle("/email_template/", http.StripPrefix("/email_template", c.eb))
+	mux.Handle("/email_template/", http.StripPrefix("/email_template", emailbuilder.ConfigEmailBuilder(db)))
 	// email_builder register end
 
 	mux.Handle("/", c.pb)
