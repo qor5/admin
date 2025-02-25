@@ -515,14 +515,14 @@ func (c *ProfileCompo) switchLanguageCompo(ctx context.Context) h.HTMLComponent 
 		web.Slot(
 			v.VIcon("").Size(v.SizeSmall).Children(
 				h.Div().Attr("v-html", "selectedItems[0].Icon"),
-			).Class("mr-2"),
+			).Class("mr-2").Attr("style", "--v-medium-emphasis-opacity:1"),
 		).Name("prepend-inner").Scope("{selectedItems}"),
 		web.Slot(
 			v.VListItem(
 				web.Slot(
 					v.VIcon("").Size(v.SizeSmall).Children(
 						h.Div().Attr("v-html", "item.raw.Icon"),
-					).Class("mr-n4"),
+					).Class("mr-n4").Attr("style", "--v-medium-emphasis-opacity:1"),
 				).Name(v.VSlotPrepend),
 			).Attr(":title", "item.raw.Title", "v-bind", "props"),
 		).Name("item").Scope("{props,item}"),
