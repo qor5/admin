@@ -11,10 +11,12 @@ import (
 	"github.com/qor5/web/v3/stateful"
 	"github.com/qor5/x/v3/i18n"
 	v "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/samber/lo"
 	h "github.com/theplant/htmlgo"
 	"golang.org/x/exp/maps"
 	"golang.org/x/text/language"
+	"golang.org/x/text/language/display"
 
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
@@ -50,6 +52,7 @@ func (b *ProfileBuilder) Install(pb *presets.Builder) error {
 type ProfileField struct {
 	Name  string
 	Value string
+	Icon  string
 }
 
 type Profile struct {
@@ -338,8 +341,25 @@ func (c *ProfileCompo) userCardCompo(ctx context.Context, user *Profile, vmodel 
 	children := []h.HTMLComponent{}
 	for _, field := range user.Fields {
 		children = append(children, h.Div().Class("d-flex flex-column ga-2").Children(
-			h.Div().Attr("v-pre", true).Class("text-body-2 text-grey-darken-2").Text(field.Name),
+			h.Div(
+				h.If(field.Icon != "", v.VIcon(field.Icon).Size(v.SizeSmall).Class("mr-1")),
+				h.Div().Attr("v-pre", true).Class("text-body-2 text-grey-darken-2").Text(field.Name),
+			).Class("d-inline-flex"),
 			h.Div().Attr("v-pre", true).Class("text-subtitle-2 font-weight-medium text-grey-darken-4").Text(field.Value),
+		))
+	}
+	switchLanguageCompo := c.switchLanguageCompo(ctx)
+	if switchLanguageCompo != nil {
+		evCtx, _ := c.MustGetEventContext(ctx)
+		pMsgr := i18n.MustGetModuleMessages(evCtx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+		children = append(children, h.Div().Class("d-flex flex-column ga-2").Children(
+			h.Div().Class("d-inline-flex").Children(
+				v.VIcon("mdi-google-translate").Size(v.SizeSmall).Class("mr-1"),
+				h.Div(
+					h.Text(pMsgr.Language),
+				).Attr("v-pre", true).Class("text-body-2 text-grey-darken-2"),
+			),
+			switchLanguageCompo,
 		))
 	}
 	var clickLogout string
@@ -446,4 +466,71 @@ func (c *ProfileCompo) Rename(ctx context.Context, req RenameRequest) (r web.Eve
 	presets.ShowMessage(&r, msgr.SuccessfullyRename, v.ColorSuccess)
 	web.AppendRunScripts(&r, web.Plaid().MergeQuery(true).Go())
 	return r, nil
+}
+
+type (
+	languageOption struct {
+		Value string
+		Title string
+		Icon  string
+	}
+)
+
+func (c *ProfileCompo) switchLanguageCompo(ctx context.Context) h.HTMLComponent {
+	var (
+		evCtx, _         = c.MustGetEventContext(ctx)
+		b                = c.b.pb
+		i18nBuilder      = b.GetI18n()
+		supportLanguages = i18nBuilder.GetSupportLanguagesFromRequest(evCtx.R)
+		queryName        = i18nBuilder.GetQueryName()
+	)
+
+	if len(i18nBuilder.GetSupportLanguages()) <= 1 || len(supportLanguages) == 0 {
+		return nil
+	}
+	lang := evCtx.R.FormValue(queryName)
+	if lang == "" {
+		lang = i18nBuilder.GetCurrentLangFromCookie(evCtx.R)
+	}
+	var languages []languageOption
+	for _, tag := range supportLanguages {
+
+		languageIcon := presets.EnLanguageIcon
+		switch tag.String() {
+		case language.SimplifiedChinese.String():
+			languageIcon = presets.ZhLanguageIcon
+		case language.Japanese.String():
+			languageIcon = presets.JPIcon
+		}
+		languages = append(languages,
+			languageOption{
+				Title: display.Self.Name(tag),
+				Value: tag.String(),
+				Icon:  languageIcon,
+			},
+		)
+	}
+
+	return vx.VXSelect(
+		web.Slot(
+			v.VIcon("").Size(v.SizeSmall).Children(
+				h.Div().Attr("v-html", "selectedItems[0].Icon"),
+			).Class("mr-2").Attr("style", "--v-medium-emphasis-opacity:1"),
+		).Name("prepend-inner").Scope("{selectedItems}"),
+		web.Slot(
+			v.VListItem(
+				web.Slot(
+					v.VIcon("").Size(v.SizeSmall).Children(
+						h.Div().Attr("v-html", "item.raw.Icon"),
+					).Class("mr-n4").Attr("style", "--v-medium-emphasis-opacity:1"),
+				).Name(v.VSlotPrepend),
+			).Attr(":title", "item.raw.Title", "v-bind", "props"),
+		).Name("item").Scope("{props,item}"),
+	).Items(languages).
+		ItemTitle("Title").
+		ItemValue("Value").
+		Attr(web.VField(queryName, lang)...).Type("autocomplete").
+		Attr("@update:model-value",
+			web.Plaid().MergeQuery(true).Query(queryName, web.Var("$event")).Go())
+
 }
