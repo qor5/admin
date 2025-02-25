@@ -47,6 +47,7 @@ type Builder struct {
 	brandFunc                             ComponentFunc
 	profileFunc                           ComponentFunc
 	switchLanguageFunc                    ComponentFunc
+	switchLocalCodeFunc                   ComponentFunc
 	brandProfileSwitchLanguageDisplayFunc func(brand, profile, switchLanguage h.HTMLComponent) h.HTMLComponent
 	menuTopItems                          map[string]ComponentFunc
 	notificationCountFunc                 func(ctx *web.EventContext) int
@@ -241,6 +242,10 @@ func (b *Builder) GetProfileFunc() ComponentFunc {
 
 func (b *Builder) SwitchLanguageFunc(v ComponentFunc) (r *Builder) {
 	b.switchLanguageFunc = v
+	return b
+}
+func (b *Builder) SwitchLocalCodeFunc(v ComponentFunc) (r *Builder) {
+	b.switchLocalCodeFunc = v
 	return b
 }
 
@@ -577,6 +582,12 @@ func (b *Builder) AddMenuTopItemFunc(key string, v ComponentFunc) (r *Builder) {
 	b.menuTopItems[key] = v
 	return b
 }
+func (b *Builder) RunSwitchLocalCodeFunc(ctx *web.EventContext) (r h.HTMLComponent) {
+	if b.switchLocalCodeFunc != nil {
+		return b.switchLocalCodeFunc(ctx)
+	}
+	return nil
+}
 
 func (b *Builder) RunBrandProfileSwitchLanguageDisplayFunc(brand, profile, switchLanguage h.HTMLComponent, ctx *web.EventContext) (r h.HTMLComponent) {
 	if b.brandProfileSwitchLanguageDisplayFunc != nil {
@@ -864,13 +875,13 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 			VRow(
 				VCol(b.RunBrandFunc(ctx)).Cols(7),
 				VCol(
-					b.RunSwitchLanguageFunc(ctx),
+					b.RunSwitchLocalCodeFunc(ctx),
 					// VBtn("").Children(
 					//	languageSwitchIcon,
 					//	VIcon("mdi-menu-down"),
 					// ).Attr("variant", "plain").
 					//	Attr("icon", ""),
-				).Cols(3).Class("text-right"),
+				).Cols(3).Class("pa-0"),
 				VDivider().Attr("vertical", true).Class("i18n-divider"),
 				VCol(
 					VAppBarNavIcon().Attr("icon", "mdi-menu").
