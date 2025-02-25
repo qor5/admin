@@ -363,7 +363,8 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 						Name("append"),
 					h.Div(
 						web.Portal(editContainerDrawer).Name(pageBuilderRightContentPortal),
-					).Attr("v-show", "!vars.$pbRightDrawerFolded").Attr(":ref", "vars.$pbRightDrawerRefGet"),
+					).Attr("v-show", "!vars.$pbRightDrawerFolded").Attr(":ref", "vars.$pbRightDrawerRefGet").
+						Class("pageBuilder-right-drawer"),
 				).Location(LocationRight).
 					Permanent(true).
 					Attr(":class", "['draggable-el',{'border-left-draggable-highlight': vars.$pbRightDrawerHighlight}]").

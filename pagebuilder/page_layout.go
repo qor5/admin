@@ -1,6 +1,7 @@
 package pagebuilder
 
 import (
+	"embed"
 	"fmt"
 	"strings"
 
@@ -8,7 +9,35 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
+//go:embed assets/css
+//go:embed assets/js
+var theme embed.FS
+
+func WrapDefaultPageLayoutFunc(js []string, css ...string) PageLayoutFunc {
+	return func(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent {
+		val, err := theme.ReadFile("assets/css/common-container-default.css")
+		if err != nil {
+			panic(err)
+		}
+		input.FreeStyleCss = append(input.FreeStyleCss, append(css, string(val))...)
+		input.FreeStyleBottomJs = append(input.FreeStyleBottomJs, js...)
+		return pageLayoutFunc(body, input, ctx)
+	}
+}
+
 func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent {
+	css, err := theme.ReadFile("assets/css/page-builder-theme.css")
+	if err != nil {
+		panic(err)
+	}
+	js, err := theme.ReadFile("assets/js/twind-scope.js")
+	if err != nil {
+		panic(err)
+	}
+	return WrapDefaultPageLayoutFunc([]string{string(js)}, string(css))(body, input, ctx)
+}
+
+func pageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent {
 	var freeStyleCss h.HTMLComponent
 	if len(input.FreeStyleCss) > 0 {
 		freeStyleCss = h.Style(strings.Join(input.FreeStyleCss, "\n"))
@@ -18,6 +47,28 @@ func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *we
 	css := "https://the-plant.com/assets/app/container.4f902c4.css"
 	domain := "https://example.qor5.theplant-dev.com"
 
+	twindScopeConfigJs := []string{
+		`window.TwindScope = {style: []};`,
+		fmt.Sprintf("window.TwindScope.style.push(`%s`)", string(func() []byte {
+			css, err := theme.ReadFile("assets/css/common-container-default.css")
+			if err != nil {
+				panic(err)
+			}
+			return css
+		}())),
+		// https://twind.dev/handbook/configuration.html#preflight
+		`window.TwindScope.config = {
+			hash: false,
+			theme: {
+				extend: {
+					fontFamily: {
+						sans: ["InterVariable", "system-ui", "sans-serif"],
+					},
+				},
+			},
+		}`,
+	}
+
 	head := h.Components(
 		input.SeoTags,
 		input.CanonicalLink,
@@ -26,13 +77,14 @@ func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *we
 		h.Meta().Content("yes").Name("apple-mobile-web-app-capable"),
 		h.Meta().Content("black").Name("apple-mobile-web-app-status-bar-style"),
 		h.Meta().Name("format-detection").Content("telephone=no"),
-
 		h.Link("").Rel("stylesheet").Type("text/css").Href(css),
+
 		h.If(len(input.EditorCss) > 0, input.EditorCss...),
 		freeStyleCss,
 		// RawHTML(dataLayer),
 		input.StructuredData,
 		scriptWithCodes(input.FreeStyleTopJs),
+		scriptWithCodes(twindScopeConfigJs),
 	)
 	ctx.Injector.HTMLLang(input.LocaleCode)
 	if input.WrapHead != nil {
@@ -68,4 +120,12 @@ try {
 `, strings.Join(jscodes, "\n")))
 	}
 	return js
+}
+
+func styleWithCodes(csscodes []string) h.HTMLComponent {
+	var css h.HTMLComponent
+	if len(csscodes) > 0 {
+		css = h.Style(strings.Join(csscodes, "\n"))
+	}
+	return css
 }
