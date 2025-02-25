@@ -522,8 +522,8 @@ func configProfile(db *gorm.DB, ab *activity.Builder, lsb *plogin.SessionBuilder
 				Roles:  u.GetRoles(),
 				Status: strcase.ToCamel(u.Status),
 				Fields: []*plogin.ProfileField{
-					{Name: "Email", Value: u.Account},
-					{Name: "Company", Value: u.Company},
+					{Name: "Email", Value: u.Account, Icon: "mdi-email-outline"},
+					{Name: "Company", Value: u.Company, Icon: "mdi-domain"},
 				},
 				NotifCounts: notifiCounts,
 			}
