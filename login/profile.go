@@ -532,5 +532,4 @@ func (c *ProfileCompo) switchLanguageCompo(ctx context.Context) h.HTMLComponent 
 		Attr(web.VField(queryName, lang)...).Type("autocomplete").
 		Attr("@update:model-value",
 			web.Plaid().MergeQuery(true).Query(queryName, web.Var("$event")).Go())
-
 }
