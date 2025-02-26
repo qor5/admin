@@ -20,7 +20,6 @@ import (
 	h "github.com/theplant/htmlgo"
 	"go.uber.org/zap"
 	"golang.org/x/text/language"
-	"golang.org/x/text/language/display"
 
 	"github.com/qor5/admin/v3/presets/actions"
 )
@@ -46,7 +45,6 @@ type Builder struct {
 	notFoundPageLayoutConfig              *LayoutConfig
 	brandFunc                             ComponentFunc
 	profileFunc                           ComponentFunc
-	switchLanguageFunc                    ComponentFunc
 	switchLocalCodeFunc                   ComponentFunc
 	brandProfileSwitchLanguageDisplayFunc func(brand, profile, switchLanguage h.HTMLComponent) h.HTMLComponent
 	menuTopItems                          map[string]ComponentFunc
@@ -508,75 +506,6 @@ func (b *Builder) RunBrandFunc(ctx *web.EventContext) (r h.HTMLComponent) {
 	}
 
 	return h.H1(i18n.T(ctx.R, ModelsI18nModuleKey, b.brandTitle)).Class("text-h6")
-}
-
-func (b *Builder) RunSwitchLanguageFunc(ctx *web.EventContext) (r h.HTMLComponent) {
-	if b.switchLanguageFunc != nil {
-		return b.switchLanguageFunc(ctx)
-	}
-
-	supportLanguages := b.GetI18n().GetSupportLanguagesFromRequest(ctx.R)
-
-	if len(b.GetI18n().GetSupportLanguages()) <= 1 || len(supportLanguages) == 0 {
-		return nil
-	}
-	queryName := b.GetI18n().GetQueryName()
-	msgr := MustGetMessages(ctx.R)
-	if len(supportLanguages) == 1 {
-		return h.Template().Children(
-			h.Div(
-				VList(
-					VListItem(
-						web.Slot(
-							VIcon("mdi-widget-translate").Size(SizeSmall).Class("mr-4 ml-1"),
-						).Name("prepend"),
-						VListItemTitle(
-							h.Div(h.Text(fmt.Sprintf("%s%s %s", msgr.Language, msgr.Colon, display.Self.Name(supportLanguages[0])))).Role("button"),
-						),
-					).Class("pa-0").Density(DensityCompact),
-				).Class("pa-0 ma-n4 mt-n6"),
-			).Attr("@click", web.Plaid().MergeQuery(true).Query(queryName, supportLanguages[0].String()).Go()),
-		)
-	}
-	languageIcon := EnLanguageIcon
-	lang := ctx.R.FormValue(queryName)
-	if lang == "" {
-		lang = b.i18nBuilder.GetCurrentLangFromCookie(ctx.R)
-	}
-	switch lang {
-	case language.SimplifiedChinese.String():
-		languageIcon = ZhLanguageIcon
-	case language.Japanese.String():
-		languageIcon = JPIcon
-	}
-	var languages []h.HTMLComponent
-	for _, tag := range supportLanguages {
-		languages = append(languages,
-			h.Div(
-				VListItem(
-					VListItemTitle(
-						h.Div(h.Text(display.Self.Name(tag))),
-					),
-				).Attr("@click", web.Plaid().MergeQuery(true).Query(queryName, tag.String()).Go()),
-			),
-		)
-	}
-
-	return VMenu().Children(
-		h.Template().Attr("v-slot:activator", "{isActive, props}").Children(
-			h.Div(
-				VBtn("").Children(
-					h.RawHTML(languageIcon),
-					// VIcon("mdi-menu-down"),
-				).Attr("variant", "text").
-					Attr("icon", "").
-					Class("i18n-switcher-btn"),
-			).Attr("v-bind", "props").Style("display: inline-block;"),
-		),
-		VList(
-			languages...,
-		).Density(DensityCompact),
-	)
 }
 
 func (b *Builder) AddMenuTopItemFunc(key string, v ComponentFunc) (r *Builder) {
