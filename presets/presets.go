@@ -244,6 +244,7 @@ func (b *Builder) SwitchLanguageFunc(v ComponentFunc) (r *Builder) {
 	b.switchLanguageFunc = v
 	return b
 }
+
 func (b *Builder) SwitchLocalCodeFunc(v ComponentFunc) (r *Builder) {
 	b.switchLocalCodeFunc = v
 	return b
@@ -582,6 +583,7 @@ func (b *Builder) AddMenuTopItemFunc(key string, v ComponentFunc) (r *Builder) {
 	b.menuTopItems[key] = v
 	return b
 }
+
 func (b *Builder) RunSwitchLocalCodeFunc(ctx *web.EventContext) (r h.HTMLComponent) {
 	if b.switchLocalCodeFunc != nil {
 		return b.switchLocalCodeFunc(ctx)
