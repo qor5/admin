@@ -238,11 +238,6 @@ func (b *Builder) GetProfileFunc() ComponentFunc {
 	return b.profileFunc
 }
 
-func (b *Builder) SwitchLanguageFunc(v ComponentFunc) (r *Builder) {
-	b.switchLanguageFunc = v
-	return b
-}
-
 func (b *Builder) SwitchLocalCodeFunc(v ComponentFunc) (r *Builder) {
 	b.switchLocalCodeFunc = v
 	return b
