@@ -13,6 +13,11 @@ import (
 	"gorm.io/gorm/logger"
 
 	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/pagebuilder/commonContainer/footer"
+	"github.com/qor5/admin/v3/pagebuilder/commonContainer/header"
+	"github.com/qor5/admin/v3/pagebuilder/commonContainer/heroImageHorizontal"
+	"github.com/qor5/admin/v3/pagebuilder/commonContainer/heroImageList"
+	"github.com/qor5/admin/v3/pagebuilder/commonContainer/heroImageVertical"
 	"github.com/qor5/admin/v3/pagebuilder/example/containers"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/tiptap"
@@ -40,6 +45,11 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, b *presets.Builder) *p
 		&containers.WebFooter{},
 		&containers.VideoBanner{},
 		&containers.Heading{},
+		&heroImageHorizontal.Hero{},
+		&heroImageList.TailWindHeroList{},
+		&heroImageVertical.TailWindHeroVertical{},
+		&header.TailWindExampleHeader{},
+		&footer.TailWindExampleFooter{},
 		&containers.BrandGrid{},
 		&containers.ListContent{},
 		&containers.ImageContainer{},
@@ -64,6 +74,11 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, b *presets.Builder) *p
 	containers.RegisterHeader(pb)
 	containers.RegisterFooter(pb)
 	containers.RegisterVideoBannerContainer(pb)
+	heroImageHorizontal.RegisterContainer(pb, db)
+	heroImageVertical.RegisterContainer(pb, db)
+	heroImageList.RegisterContainer(pb, db)
+	header.RegisterContainer(pb, db)
+	footer.RegisterContainer(pb, db)
 	containers.RegisterHeadingContainer(pb, db)
 	containers.RegisterBrandGridContainer(pb, db)
 	containers.RegisterListContentContainer(pb, db)
