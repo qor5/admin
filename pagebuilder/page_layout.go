@@ -13,28 +13,50 @@ import (
 //go:embed assets/js
 var theme embed.FS
 
-func WrapDefaultPageLayoutFunc(js []string, css ...string) PageLayoutFunc {
-	return func(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent {
-		val, err := theme.ReadFile("assets/css/common-container-default.css")
-		if err != nil {
-			panic(err)
-		}
-		input.FreeStyleCss = append(input.FreeStyleCss, append(css, string(val))...)
-		input.FreeStyleBottomJs = append(input.FreeStyleBottomJs, js...)
-		return pageLayoutFunc(body, input, ctx)
-	}
-}
-
 func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent {
-	css, err := theme.ReadFile("assets/css/page-builder-theme.css")
+	containerDefaultCss, err := theme.ReadFile("assets/css/common-container-default.css")
 	if err != nil {
 		panic(err)
 	}
-	js, err := theme.ReadFile("assets/js/twind-scope.js")
+
+	containerThemeCss, err := theme.ReadFile("assets/css/common-container-theme.css")
 	if err != nil {
 		panic(err)
 	}
-	return WrapDefaultPageLayoutFunc([]string{string(js)}, string(css))(body, input, ctx)
+
+	containerJs, err := theme.ReadFile("assets/js/common-container-scope.js")
+	if err != nil {
+		panic(err)
+	}
+
+	configJs := []string{
+		`window.TwindScope = {style: []};`,
+		// https://twind.dev/handbook/configuration.html#preflight
+		`window.TwindScope.config = {
+					hash: false,
+					theme: {
+						extend: {
+							fontFamily: {
+								sans: ["InterVariable", "system-ui", "sans-serif"],
+							},
+						},
+					},
+			}`,
+		fmt.Sprintf("window.TwindScope.style.push(`%s`)", string(func() []byte {
+			css, err := theme.ReadFile("assets/css/common-container-default.css")
+			if err != nil {
+				panic(err)
+			}
+			return css
+		}())),
+	}
+
+	input.FreeStyleCss = append(input.FreeStyleCss, string(containerDefaultCss))
+	input.FreeStyleCss = append(input.FreeStyleCss, string(containerThemeCss))
+	input.FreeStyleTopJs = append(input.FreeStyleTopJs, strings.Join(configJs, "\n"))
+	input.FreeStyleBottomJs = append(input.FreeStyleBottomJs, string(containerJs))
+
+	return pageLayoutFunc(body, input, ctx)
 }
 
 func pageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent {
@@ -47,27 +69,27 @@ func pageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.Event
 	css := "https://the-plant.com/assets/app/container.4f902c4.css"
 	domain := "https://example.qor5.theplant-dev.com"
 
-	twindScopeConfigJs := []string{
-		`window.TwindScope = {style: []};`,
-		fmt.Sprintf("window.TwindScope.style.push(`%s`)", string(func() []byte {
-			css, err := theme.ReadFile("assets/css/common-container-default.css")
-			if err != nil {
-				panic(err)
-			}
-			return css
-		}())),
-		// https://twind.dev/handbook/configuration.html#preflight
-		`window.TwindScope.config = {
-			hash: false,
-			theme: {
-				extend: {
-					fontFamily: {
-						sans: ["InterVariable", "system-ui", "sans-serif"],
-					},
-				},
-			},
-		}`,
-	}
+	// twindScopeConfigJs := []string{
+	// 	`window.TwindScope = {style: []};`,
+	// 	fmt.Sprintf("window.TwindScope.style.push(`%s`)", string(func() []byte {
+	// 		css, err := theme.ReadFile("assets/css/common-container-default.css")
+	// 		if err != nil {
+	// 			panic(err)
+	// 		}
+	// 		return css
+	// 	}())),
+	// 	// https://twind.dev/handbook/configuration.html#preflight
+	// 	`window.TwindScope.config = {
+	// 		hash: false,
+	// 		theme: {
+	// 			extend: {
+	// 				fontFamily: {
+	// 					sans: ["InterVariable", "system-ui", "sans-serif"],
+	// 				},
+	// 			},
+	// 		},
+	// 	}`,
+	// }
 
 	head := h.Components(
 		input.SeoTags,
@@ -84,7 +106,7 @@ func pageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.Event
 		// RawHTML(dataLayer),
 		input.StructuredData,
 		scriptWithCodes(input.FreeStyleTopJs),
-		scriptWithCodes(twindScopeConfigJs),
+		// scriptWithCodes(twindScopeConfigJs),
 	)
 	ctx.Injector.HTMLLang(input.LocaleCode)
 	if input.WrapHead != nil {

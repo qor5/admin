@@ -5,8 +5,8 @@ export default defineConfig({
   build: {
     lib: {
       entry: './lib/main.ts',
-      name: 'twind-scope',
-      fileName: 'twind-scope',
+      name: 'common-container-scope',
+      fileName: 'common-container-scope',
     },
     terserOptions: {
       compress: {
@@ -19,7 +19,7 @@ export default defineConfig({
     cp({
       targets: [
         {
-          src: './dist/twind-scope.js',
+          src: './dist/common-container-scope.js',
           dest: '../assets/js',
         },
       ],
