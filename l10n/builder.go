@@ -245,7 +245,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 		RegisterForModule(language.English, I18nLocalizeKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nLocalizeKey, Messages_zh_CN).
 		RegisterForModule(language.Japanese, I18nLocalizeKey, Messages_ja_JP)
-	pb.SwitchLocalCodeFunc(b.runSwitchLocaleCodeFunc)
+	pb.SwitchLocaleFunc(b.runSwitchLocaleFunc)
 	return nil
 }
 

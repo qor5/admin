@@ -45,7 +45,7 @@ type Builder struct {
 	notFoundPageLayoutConfig              *LayoutConfig
 	brandFunc                             ComponentFunc
 	profileFunc                           ComponentFunc
-	switchLocalCodeFunc                   ComponentFunc
+	switchLocaleFunc                      ComponentFunc
 	brandProfileSwitchLanguageDisplayFunc func(brand, profile, switchLanguage h.HTMLComponent) h.HTMLComponent
 	menuTopItems                          map[string]ComponentFunc
 	notificationCountFunc                 func(ctx *web.EventContext) int
@@ -238,8 +238,8 @@ func (b *Builder) GetProfileFunc() ComponentFunc {
 	return b.profileFunc
 }
 
-func (b *Builder) SwitchLocalCodeFunc(v ComponentFunc) (r *Builder) {
-	b.switchLocalCodeFunc = v
+func (b *Builder) SwitchLocaleFunc(v ComponentFunc) (r *Builder) {
+	b.switchLocaleFunc = v
 	return b
 }
 
@@ -509,8 +509,8 @@ func (b *Builder) AddMenuTopItemFunc(key string, v ComponentFunc) (r *Builder) {
 }
 
 func (b *Builder) RunSwitchLocalCodeFunc(ctx *web.EventContext) (r h.HTMLComponent) {
-	if b.switchLocalCodeFunc != nil {
-		return b.switchLocalCodeFunc(ctx)
+	if b.switchLocaleFunc != nil {
+		return b.switchLocaleFunc(ctx)
 	}
 	return nil
 }
