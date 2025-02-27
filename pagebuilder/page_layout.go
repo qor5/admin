@@ -13,44 +13,50 @@ import (
 //go:embed commonContainer/assets/js
 var theme embed.FS
 
-func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent {
-	containerThemeCss, err := theme.ReadFile("commonContainer/assets/css/common-container-theme.css")
-	if err != nil {
-		panic(err)
-	}
+func WrapDefaultPageLayout(pageLayoutFunc PageLayoutFunc) PageLayoutFunc {
+	return func(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent {
+		containerThemeCss, err := theme.ReadFile("commonContainer/assets/css/common-container-theme.css")
+		if err != nil {
+			panic(err)
+		}
 
-	containerJs, err := theme.ReadFile("commonContainer/assets/js/common-container-scope.js")
-	if err != nil {
-		panic(err)
-	}
+		containerJs, err := theme.ReadFile("commonContainer/assets/js/common-container-scope.js")
+		if err != nil {
+			panic(err)
+		}
 
-	configJs := []string{
-		`window.TwindScope = {style: []};`,
-		// https://twind.dev/handbook/configuration.html#preflight
-		`window.TwindScope.config = {
-					hash: false,
-					theme: {
-						extend: {
-							fontFamily: {
-								sans: ["InterVariable", "system-ui", "sans-serif"],
+		configJs := []string{
+			`window.TwindScope = {style: []};`,
+			// https://twind.dev/handbook/configuration.html#preflight
+			`window.TwindScope.config = {
+						hash: false,
+						theme: {
+							extend: {
+								fontFamily: {
+									sans: ["InterVariable", "system-ui", "sans-serif"],
+								},
 							},
 						},
-					},
-			}`,
-		fmt.Sprintf("window.TwindScope.style.push(`%s`)", string(func() []byte {
-			css, err := theme.ReadFile("commonContainer/assets/css/common-container.css")
-			if err != nil {
-				panic(err)
-			}
-			return css
-		}())),
+				}`,
+			fmt.Sprintf("window.TwindScope.style.push(`%s`)", string(func() []byte {
+				css, err := theme.ReadFile("commonContainer/assets/css/common-container.css")
+				if err != nil {
+					panic(err)
+				}
+				return css
+			}())),
+		}
+
+		input.FreeStyleCss = append(input.FreeStyleCss, string(containerThemeCss))
+		input.FreeStyleTopJs = append(input.FreeStyleTopJs, strings.Join(configJs, "\n"))
+		input.FreeStyleBottomJs = append(input.FreeStyleBottomJs, string(containerJs))
+
+		return pageLayoutFunc(body, input, ctx)
 	}
+}
 
-	input.FreeStyleCss = append(input.FreeStyleCss, string(containerThemeCss))
-	input.FreeStyleTopJs = append(input.FreeStyleTopJs, strings.Join(configJs, "\n"))
-	input.FreeStyleBottomJs = append(input.FreeStyleBottomJs, string(containerJs))
-
-	return pageLayoutFunc(body, input, ctx)
+func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent {
+	return WrapDefaultPageLayout(pageLayoutFunc)(body, input, ctx)
 }
 
 func pageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent {

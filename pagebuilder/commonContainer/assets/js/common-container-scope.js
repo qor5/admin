@@ -5633,7 +5633,10 @@ var xs = Le, Vr = xs;
         if (this.shadowRoot) {
           if (f.type === "inlineStyle") {
             const u = new CSSStyleSheet();
-            u.replaceSync(f.str), this.shadowRoot.adoptedStyleSheets = [u];
+            u.replaceSync(f.str), this.shadowRoot.adoptedStyleSheets = [
+              ...this.shadowRoot.adoptedStyleSheets,
+              u
+            ];
           }
           if (f.type === "url") {
             const u = document.createElement("link");

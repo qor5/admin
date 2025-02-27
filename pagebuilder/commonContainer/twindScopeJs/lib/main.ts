@@ -75,7 +75,10 @@ type ScriptType = 'url' | 'inlineScript'
           if (style.type === 'inlineStyle') {
             const sheet = new CSSStyleSheet()
             sheet.replaceSync(style.str)
-            this.shadowRoot.adoptedStyleSheets = [sheet]
+            this.shadowRoot.adoptedStyleSheets = [
+              ...this.shadowRoot.adoptedStyleSheets,
+              sheet,
+            ]
           }
 
           if (style.type === 'url') {
