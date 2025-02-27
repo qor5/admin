@@ -1,4 +1,4 @@
-package tailwind
+package utils
 
 import (
 	. "github.com/theplant/htmlgo"

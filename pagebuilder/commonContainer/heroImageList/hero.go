@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/pagebuilder"
-	"github.com/qor5/admin/v3/pagebuilder/example/containers/tailwind"
+	"github.com/qor5/admin/v3/pagebuilder/commonContainer/utils"
 	"github.com/qor5/admin/v3/presets"
 	v "github.com/qor5/x/v3/ui/vuetify"
 )
@@ -22,7 +22,7 @@ func (*TailWindHeroList) TableName() string {
 	return "container_hero"
 }
 
-func RegisterHeroListContainer(pb *pagebuilder.Builder, db *gorm.DB) {
+func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	vb := pb.RegisterContainer("TailWindHeroList").Group("Navigation").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			v := obj.(*TailWindHeroList)
@@ -125,7 +125,7 @@ func HeroBody(data *TailWindHeroList, input *pagebuilder.RenderInput) (body HTML
 		).Class("tailwind-scope tw-theme-bg-base"),
 	).Class("container-hero-inner")
 
-	body = tailwind.TailwindContainerWrapper(
+	body = utils.TailwindContainerWrapper(
 		"container-hero",
 		Tag("twind-scope").Children(Div(heroBody).Class("bg-gray-100")),
 	)

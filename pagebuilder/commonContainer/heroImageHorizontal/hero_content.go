@@ -7,7 +7,7 @@ import (
 
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/pagebuilder"
-	"github.com/qor5/admin/v3/pagebuilder/example/containers/tailwind"
+	"github.com/qor5/admin/v3/pagebuilder/commonContainer/utils"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 
@@ -47,7 +47,7 @@ func SetHeroContentComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder
 	})
 
 	fb.Field("ButtonStyle").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return presets.SelectField(obj, field, ctx).Items(tailwind.ButtonPresets)
+		return presets.SelectField(obj, field, ctx).Items(utils.ButtonPresets)
 	})
 	// fb.Field("Text").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 	// 	extensions := tiptap.TiptapExtensions()

@@ -1,4 +1,4 @@
-package heroImageList
+package heroImageVertical
 
 import (
 	"database/sql/driver"
@@ -6,7 +6,7 @@ import (
 	"errors"
 
 	"github.com/qor5/admin/v3/pagebuilder"
-	"github.com/qor5/admin/v3/pagebuilder/example/containers/tailwind"
+	"github.com/qor5/admin/v3/pagebuilder/commonContainer/utils"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
@@ -93,11 +93,11 @@ func SetHeroStyleComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder) 
 	// })
 
 	fb.Field("TopSpace").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return presets.SelectField(obj, field, ctx).Items(tailwind.SpaceOptions)
+		return presets.SelectField(obj, field, ctx).Items(utils.SpaceOptions)
 	})
 
 	fb.Field("BottomSpace").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return presets.SelectField(obj, field, ctx).Items(tailwind.SpaceOptions)
+		return presets.SelectField(obj, field, ctx).Items(utils.SpaceOptions)
 	})
 	// SetCommonStyleComponent(pb, fb.Field("Style"))
 

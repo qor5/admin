@@ -1,11 +1,11 @@
-package tailwind
+package header
 
 import (
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/pagebuilder/commonContainer/utils"
 	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
-
-	"github.com/qor5/admin/v3/pagebuilder"
 )
 
 type TailWindExampleHeader struct {
@@ -16,7 +16,7 @@ func (b *TailWindExampleHeader) TableName() string {
 	return "container_tailwind"
 }
 
-func RegisterHeaderContainer(pb *pagebuilder.Builder, db *gorm.DB) {
+func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	vb := pb.RegisterContainer("TailWindExampleHeader").Group("Navigation").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			v := obj.(*TailWindExampleHeader)
@@ -42,7 +42,7 @@ func headerBody(data *TailWindExampleHeader, input *pagebuilder.RenderInput) (bo
 		).Class("tailwind-scope py-12 tw-theme-bg-base"),
 	).Class("container-tailwind-inner")
 
-	body = TailwindContainerWrapper(
+	body = utils.TailwindContainerWrapper(
 		"container-tailwind-example-header",
 		Tag("twind-scope").Children(html),
 	)

@@ -20,7 +20,7 @@ export default defineConfig({
       targets: [
         {
           src: './dist/common-container-scope.js',
-          dest: '../assets/js',
+          dest: '../js',
         },
       ],
     }),

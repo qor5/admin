@@ -13,11 +13,12 @@ import (
 	"gorm.io/gorm/logger"
 
 	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/pagebuilder/commonContainer/footer"
+	"github.com/qor5/admin/v3/pagebuilder/commonContainer/header"
+	"github.com/qor5/admin/v3/pagebuilder/commonContainer/heroImageHorizontal"
+	"github.com/qor5/admin/v3/pagebuilder/commonContainer/heroImageList"
+	"github.com/qor5/admin/v3/pagebuilder/commonContainer/heroImageVertical"
 	"github.com/qor5/admin/v3/pagebuilder/example/containers"
-	"github.com/qor5/admin/v3/pagebuilder/example/containers/tailwind"
-	"github.com/qor5/admin/v3/pagebuilder/example/containers/tailwind/heroImageHorizontal"
-	"github.com/qor5/admin/v3/pagebuilder/example/containers/tailwind/heroImageList"
-	"github.com/qor5/admin/v3/pagebuilder/example/containers/tailwind/heroImageVertical"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/tiptap"
 )
@@ -47,8 +48,8 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, b *presets.Builder) *p
 		&heroImageHorizontal.Hero{},
 		&heroImageList.TailWindHeroList{},
 		&heroImageVertical.TailWindHeroVertical{},
-		&tailwind.TailWindExampleHeader{},
-		&tailwind.TailWindExampleFooter{},
+		&header.TailWindExampleHeader{},
+		&footer.TailWindExampleFooter{},
 		&containers.BrandGrid{},
 		&containers.ListContent{},
 		&containers.ImageContainer{},
@@ -73,11 +74,11 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, b *presets.Builder) *p
 	containers.RegisterHeader(pb)
 	containers.RegisterFooter(pb)
 	containers.RegisterVideoBannerContainer(pb)
-	heroImageHorizontal.RegisterHeroContainer(pb, db)
-	heroImageVertical.RegisterHeroVerticalContainer(pb, db)
-	heroImageList.RegisterHeroListContainer(pb, db)
-	tailwind.RegisterHeaderContainer(pb, db)
-	tailwind.RegisterFooterContainer(pb, db)
+	heroImageHorizontal.RegisterContainer(pb, db)
+	heroImageVertical.RegisterContainer(pb, db)
+	heroImageList.RegisterContainer(pb, db)
+	header.RegisterContainer(pb, db)
+	footer.RegisterContainer(pb, db)
 	containers.RegisterHeadingContainer(pb, db)
 	containers.RegisterBrandGridContainer(pb, db)
 	containers.RegisterListContentContainer(pb, db)

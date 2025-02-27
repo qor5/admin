@@ -9,22 +9,17 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
-//go:embed assets/css
-//go:embed assets/js
+//go:embed commonContainer/assets/css
+//go:embed commonContainer/assets/js
 var theme embed.FS
 
 func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent {
-	containerDefaultCss, err := theme.ReadFile("assets/css/common-container-default.css")
+	containerThemeCss, err := theme.ReadFile("commonContainer/assets/css/common-container-theme.css")
 	if err != nil {
 		panic(err)
 	}
 
-	containerThemeCss, err := theme.ReadFile("assets/css/common-container-theme.css")
-	if err != nil {
-		panic(err)
-	}
-
-	containerJs, err := theme.ReadFile("assets/js/common-container-scope.js")
+	containerJs, err := theme.ReadFile("commonContainer/assets/js/common-container-scope.js")
 	if err != nil {
 		panic(err)
 	}
@@ -43,7 +38,7 @@ func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *we
 					},
 			}`,
 		fmt.Sprintf("window.TwindScope.style.push(`%s`)", string(func() []byte {
-			css, err := theme.ReadFile("assets/css/common-container-default.css")
+			css, err := theme.ReadFile("commonContainer/assets/css/common-container.css")
 			if err != nil {
 				panic(err)
 			}
@@ -51,7 +46,6 @@ func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *we
 		}())),
 	}
 
-	input.FreeStyleCss = append(input.FreeStyleCss, string(containerDefaultCss))
 	input.FreeStyleCss = append(input.FreeStyleCss, string(containerThemeCss))
 	input.FreeStyleTopJs = append(input.FreeStyleTopJs, strings.Join(configJs, "\n"))
 	input.FreeStyleBottomJs = append(input.FreeStyleBottomJs, string(containerJs))
@@ -68,28 +62,6 @@ func pageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.Event
 	js := "https://the-plant.com/assets/app/container.4f902c4.js"
 	css := "https://the-plant.com/assets/app/container.4f902c4.css"
 	domain := "https://example.qor5.theplant-dev.com"
-
-	// twindScopeConfigJs := []string{
-	// 	`window.TwindScope = {style: []};`,
-	// 	fmt.Sprintf("window.TwindScope.style.push(`%s`)", string(func() []byte {
-	// 		css, err := theme.ReadFile("assets/css/common-container-default.css")
-	// 		if err != nil {
-	// 			panic(err)
-	// 		}
-	// 		return css
-	// 	}())),
-	// 	// https://twind.dev/handbook/configuration.html#preflight
-	// 	`window.TwindScope.config = {
-	// 		hash: false,
-	// 		theme: {
-	// 			extend: {
-	// 				fontFamily: {
-	// 					sans: ["InterVariable", "system-ui", "sans-serif"],
-	// 				},
-	// 			},
-	// 		},
-	// 	}`,
-	// }
 
 	head := h.Components(
 		input.SeoTags,
