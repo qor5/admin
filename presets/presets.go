@@ -343,6 +343,7 @@ func (b *Builder) Model(v interface{}) (r *ModelBuilder) {
 	b.models = append(b.models, r)
 	return r
 }
+
 func (b *Builder) HandleCustomPage(pattern string, cb *CustomBuilder) *Builder {
 	cb.pattern = pattern
 	b.customBuilders = append(b.customBuilders, cb)
@@ -897,7 +898,6 @@ func (b *Builder) defaultLayoutCompo(_ *web.EventContext, menu, body h.HTMLCompo
 		Attr(web.VAssign("vars", fmt.Sprintf(`{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false, 
 navDrawer: true,%s:{},presetsMessage: {show: false, color: "", message: ""}
 }`, VarsPresetsDataChanged))...).Class(b.containerClassName)
-
 }
 
 func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.PageFunc) {

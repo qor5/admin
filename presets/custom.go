@@ -28,6 +28,7 @@ func (c *CustomBuilder) Menu(v ComponentFunc) *CustomBuilder {
 	c.menus = v
 	return c
 }
+
 func (c *CustomBuilder) WrapMenu(v func(ComponentFunc) ComponentFunc) *CustomBuilder {
 	c.menus = v(c.menus)
 	return c
@@ -37,6 +38,7 @@ func (c *CustomBuilder) PageTitleFunc(v func(ctx *web.EventContext) string) *Cus
 	c.pageTitleFunc = v
 	return c
 }
+
 func (c *CustomBuilder) WrapLayoutFunc(w func(web.PageFunc) web.PageFunc) *CustomBuilder {
 	c.layoutFunc = w(c.layoutFunc)
 	return c
@@ -46,6 +48,7 @@ func (c *CustomBuilder) Body(v ComponentFunc) *CustomBuilder {
 	c.body = v
 	return c
 }
+
 func (c *CustomBuilder) WrapBody(w func(ComponentFunc) ComponentFunc) *CustomBuilder {
 	c.body = w(c.body)
 	return c
