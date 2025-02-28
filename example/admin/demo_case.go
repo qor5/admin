@@ -215,6 +215,7 @@ func configureDemoCase(b *presets.Builder, db *gorm.DB) {
 	configVxBtn(detailing, mb)
 	configVXBtnGroup(detailing, mb)
 	configVXChip(detailing, mb)
+	configVXBreadCrumb(detailing, mb)
 	return
 }
 
@@ -1428,6 +1429,119 @@ func configVXChip(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder)
 							),
 					).Cols("3").Class("text-center"),
 				)),
+		).Class("section-wrap with-border-b"))
+	})
+	detailing.Section(section)
+}
+
+func configVXBreadCrumb(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder) {
+	label := "vx-breadcrumbs"
+	sectionName := "VXBreadCrumbsSection"
+	section := presets.NewSectionBuilder(mb, sectionName).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		items := []string{
+			"Link_1", "Link_2", "Link_3",
+		}
+
+		itemsHref := []map[string]string{
+			{
+				"title": "Link_1",
+				"href":  "/link1",
+			},
+			{
+				"title": "Link_2",
+				"href":  "/link2",
+			},
+			{
+				"title": "Link_3",
+				"href":  "/link3",
+			},
+		}
+
+		return web.Scope(h.Div(
+			h.Div(
+				h.H2(label).Class("section-title"),
+			).Class("section-title-wrap"),
+
+			h.H3("Simplest Usage").Class("mb-2"),
+			v.VContainer(
+				v.VRow(
+					v.VCol(
+						vx.VXBreadcrumbs().Items(items),
+					).Cols(12),
+				),
+			),
+
+			h.H3("Link Usage").Class("mb-2"),
+			v.VContainer(
+				v.VRow(
+					v.VCol(
+						vx.VXBreadcrumbs().Items(itemsHref),
+					).Cols(12),
+				),
+			),
+
+			h.H3("Slot Usage"),
+			v.VContainer(
+				v.VRow(
+					v.VCol(
+						h.Div(
+							h.Text("Separator Slot"),
+						).Class("text-caption"),
+						vx.VXBreadcrumbs(
+							web.Slot(
+								v.VIcon("mdi-chevron-right"),
+							).Name("divider"),
+						).Items(itemsHref),
+					).Cols(6),
+
+					v.VCol(
+						h.Div(
+							h.Text("Prepend Slot"),
+						).Class("text-caption"),
+						vx.VXBreadcrumbs(
+							web.Slot(
+								v.VIcon("$vuetify"),
+							).Name("prepend"),
+						).Items(itemsHref),
+					).Cols(6),
+
+					v.VCol(
+						h.Div(
+							h.Text("Title Slot"),
+						).Class("text-caption"),
+						vx.VXBreadcrumbs(
+							web.Slot(
+								vx.VXChip("").Children(
+									h.Text("{{item.title}}"),
+								),
+							).Name("title").Scope("{item}"),
+						).Items(itemsHref),
+					).Cols(6),
+
+					v.VCol(
+						h.Div(
+							h.Text("default slot"),
+						).Class("text-caption"),
+						vx.VXBreadcrumbs(
+							v.VBreadcrumbsItem(
+								h.Text("Link_1"),
+							),
+							v.VBreadcrumbsDivider(
+								h.Text("-"),
+							),
+							v.VBreadcrumbsItem(
+								h.Text("Link_2"),
+							),
+							v.VBreadcrumbsDivider(
+								h.Text("-"),
+							),
+							v.VBreadcrumbsItem(
+								h.Text("Link_3"),
+							),
+						),
+					).Cols(6),
+				),
+			),
 		).Class("section-wrap with-border-b"))
 	})
 	detailing.Section(section)
