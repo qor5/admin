@@ -216,6 +216,7 @@ func configureDemoCase(b *presets.Builder, db *gorm.DB) {
 	configVXBtnGroup(detailing, mb)
 	configVXChip(detailing, mb)
 	configVXBreadCrumb(detailing, mb)
+	configVXTreeView(detailing, mb)
 	return
 }
 
@@ -1540,6 +1541,68 @@ func configVXBreadCrumb(detailing *presets.DetailingBuilder, mb *presets.ModelBu
 							),
 						),
 					).Cols(6),
+				),
+			),
+		).Class("section-wrap with-border-b"))
+	})
+	detailing.Section(section)
+}
+
+func configVXTreeView(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder) {
+	label := "vx-treeview"
+	sectionName := "VXTreeViewSection"
+	section := presets.NewSectionBuilder(mb, sectionName).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		type TreeNode struct {
+			ID       int        `json:"id"`
+			Title    string     `json:"title"`
+			Children []TreeNode `json:"children"`
+		}
+
+		linkUsageItems := []TreeNode{
+			{
+				ID:    1,
+				Title: "Node 1 :",
+			},
+			{
+				ID:    5,
+				Title: "Node 5 :",
+			},
+			{
+				ID:    19,
+				Title: "Node 19 :",
+				Children: []TreeNode{
+					{
+						ID:    20,
+						Title: "Node 20 :",
+						Children: []TreeNode{
+							{ID: 21, Title: "Node 21 :"},
+							{ID: 22, Title: "Node 22 :"},
+							{ID: 23, Title: "Node 23 :"},
+						},
+					},
+					{ID: 24, Title: "Node 24 :"},
+					{ID: 25, Title: "Node 25 :"},
+				},
+			},
+		}
+
+		return web.Scope(h.Div(
+			h.Div(
+				h.H2(label).Class("section-title"),
+			).Class("section-title-wrap"),
+
+			h.H3("Simplest Usage").Class("mb-2"),
+			v.VContainer(
+				v.VRow(
+					v.VCol(
+						vx.VXTreeview(
+							web.Slot(
+								v.VIcon("mdi-plus-circle-outline").
+									Attr("size", "small").
+									Attr("color", "grey-darken-3"),
+							).Name("prepend"),
+						).Items(linkUsageItems),
+					).Attr("cols", "6"),
 				),
 			),
 		).Class("section-wrap with-border-b"))
