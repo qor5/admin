@@ -21,21 +21,24 @@ func PresetsCustomPage(b *presets.Builder, db *gorm.DB) (
 ) {
 	cust, cl, ce, dp = PresetsDetailPageTopNotes(b, db)
 
-	b.HandleCustomPage("custom", presets.NewCustomPage().Body(func(ctx *web.EventContext) h.HTMLComponent {
+	b.HandleCustomPage("custom", presets.NewCustomPage(b).Body(func(ctx *web.EventContext) h.HTMLComponent {
 		return v.VCard(
 			v.VCardItem().Title("New Custom Page"),
 		)
-	}).HideMenu(true))
-	b.HandleCustomPage("custom/{id}", presets.NewCustomPage().Body(func(ctx *web.EventContext) h.HTMLComponent {
+	}).Menu(func(ctx *web.EventContext) h.HTMLComponent {
+		return nil
+	}))
+	b.HandleCustomPage("custom/{id}", presets.NewCustomPage(b).Body(func(ctx *web.EventContext) h.HTMLComponent {
 		testId := ctx.Param(presets.ParamID)
 		return v.VCard(
 			v.VCardItem().Title("New Custom Page ID"),
 			v.VCardText(
 				h.Text(testId)),
-
 		)
-	}).HideMenu(true))
-	b.HandleCustomPage("custom-menu", presets.NewCustomPage().Body(func(ctx *web.EventContext) h.HTMLComponent {
+	}).Menu(func(ctx *web.EventContext) h.HTMLComponent {
+		return nil
+	}))
+	b.HandleCustomPage("custom-menu", presets.NewCustomPage(b).Body(func(ctx *web.EventContext) h.HTMLComponent {
 		return v.VCard(
 			v.VCardItem().Title("New Custom Page Show Menu"),
 		)
@@ -45,8 +48,7 @@ func PresetsCustomPage(b *presets.Builder, db *gorm.DB) (
 	})
 	dp.Field("NewCustomPageById").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return v.VBtn("NewCustomPageById").Color(v.ColorPrimary).Attr("@click", web.Plaid().PushState(true).
-			URL(fmt.Sprintf(b.GetURIPrefix()+"/custom/%v", ctx.Param(presets.ParamID)),
-			).Go()).Class("mt-2")
+			URL(fmt.Sprintf(b.GetURIPrefix()+"/custom/%v", ctx.Param(presets.ParamID))).Go()).Class("mt-2")
 	})
 	dp.Field("NewCustomPageShowMenu").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return v.VBtn("NewCustomPageShowMenu").Color(v.ColorPrimary).Attr("@click", web.Plaid().PushState(true).URL(

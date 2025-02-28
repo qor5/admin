@@ -345,7 +345,6 @@ func (b *Builder) Model(v interface{}) (r *ModelBuilder) {
 }
 func (b *Builder) HandleCustomPage(pattern string, cb *CustomBuilder) *Builder {
 	cb.pattern = pattern
-	cb.b = b
 	b.customBuilders = append(b.customBuilders, cb)
 	return b
 }
