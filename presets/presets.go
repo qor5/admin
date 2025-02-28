@@ -64,6 +64,7 @@ type Builder struct {
 	wrapHandlers                          map[string]func(in http.Handler) (out http.Handler)
 	plugins                               []Plugin
 	notFoundHandler                       http.Handler
+	customBuilders                        []*CustomBuilder
 }
 
 type AssetFunc func(ctx *web.EventContext)
@@ -341,6 +342,12 @@ func (b *Builder) Model(v interface{}) (r *ModelBuilder) {
 	r = NewModelBuilder(b, v)
 	b.models = append(b.models, r)
 	return r
+}
+
+func (b *Builder) HandleCustomPage(pattern string, cb *CustomBuilder) *Builder {
+	cb.pattern = pattern
+	b.customBuilders = append(b.customBuilders, cb)
+	return b
 }
 
 func (b *Builder) DataOperator(v DataOperator) (r *Builder) {
@@ -791,32 +798,111 @@ func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse
 	return
 }
 
+func (b *Builder) defaultLeftMenuComp(ctx *web.EventContext) h.HTMLComponent {
+	// call CreateMenus before in(ctx) to fill the menuGroupName for modelBuilders first
+	menu := b.menuOrder.CreateMenus(ctx)
+	var profile h.HTMLComponent
+	if b.profileFunc != nil {
+		profile = VAppBar(
+			b.profileFunc(ctx),
+		).Location("bottom").Class("border-t-sm border-b-0").Elevation(0)
+	}
+	toolbar := VContainer(
+		VRow(
+			VCol(b.RunBrandFunc(ctx)).Cols(7),
+			VCol(
+				b.RunSwitchLocalCodeFunc(ctx),
+				// VBtn("").Children(
+				//	languageSwitchIcon,
+				//	VIcon("mdi-menu-down"),
+				// ).Attr("variant", "plain").
+				//	Attr("icon", ""),
+			).Cols(3).Class("pa-0"),
+			VDivider().Attr("vertical", true).Class("i18n-divider"),
+			VCol(
+				VAppBarNavIcon().Attr("icon", "mdi-menu").
+					Class("text-grey-darken-1 menu-control-icon").
+					Attr("@click", "vars.navDrawer = !vars.navDrawer").Density(DensityCompact),
+			).Cols(2).Class("position-relative"),
+		).Attr("align", "center").Attr("justify", "center"),
+	)
+	return VNavigationDrawer(
+		// b.RunBrandProfileSwitchLanguageDisplayFunc(b.RunBrandFunc(ctx), profile, b.RunSwitchLanguageFunc(ctx), ctx),
+		// b.RunBrandFunc(ctx),
+		// profile,
+		VLayout(
+			VMain(
+				toolbar,
+				VCard(
+					menu,
+				).Class("menu-content mt-2 mb-4 ml-4 pr-4").Variant(VariantText),
+			).Class("menu-wrap"),
+			// VDivider(),
+			profile,
+		).Class("ma-2 border-sm rounded elevation-0").Attr("style",
+			"height: calc(100% - 16px);"),
+		// ).Class("ma-2").
+		// 	Style("height: calc(100% - 20px); border: 1px solid grey"),
+	).
+		// 256px is directly The measured size in figma
+		// in actual use, need plus 8px for padding left and right
+		// plus border 2px
+		Width(256+8+8+2).
+		// App(true).
+		// Clipped(true).
+		// Fixed(true).
+		Attr("v-model", "vars.navDrawer").
+		// Attr("style", "border-right: 1px solid grey ").
+		Permanent(true).
+		Floating(true).
+		Elevation(0)
+}
+
+func (b *Builder) defaultLayoutCompo(_ *web.EventContext, menu, body h.HTMLComponent) h.HTMLComponent {
+	return VCard(
+		VProgressLinear().
+			Attr(":active", "vars.globalProgressBar.show").
+			Attr(":model-value", "vars.globalProgressBar.value").
+			Attr("style", "position: fixed; z-index: 2000;").
+			Height(2).
+			Color(b.progressBarColor),
+		h.Template(
+			VSnackbar(
+				h.Div().Style("white-space: pre-wrap").Text("{{vars.presetsMessage.message}}"),
+			).
+				Attr("v-model", "vars.presetsMessage.show").
+				Attr(":color", "vars.presetsMessage.color").
+				Attr("style", "bottom: 48px;").
+				Timeout(2000).
+				Location(LocationBottom),
+		).Attr("v-if", "vars.presetsMessage"),
+		VLayout(
+
+			web.Portal().Name(RightDrawerPortalName),
+
+			// App(true).
+			// Fixed(true),
+			// ClippedLeft(true),
+			web.Portal().Name(DialogPortalName),
+			web.Portal().Name(DeleteConfirmPortalName),
+			web.Portal().Name(DefaultConfirmDialogPortalName),
+			web.Portal().Name(ListingDialogPortalName),
+			menu,
+			VMain(
+				body,
+			).
+				Class("overflow-y-auto main-container").
+				Attr("style", "height:100vh; padding-left: calc(var(--v-layout-left) + 16px); --v-layout-right: 16px"),
+		),
+	).Attr("id", "vt-app").Elevation(0).
+		Attr(web.VAssign("vars", fmt.Sprintf(`{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false, 
+navDrawer: true,%s:{},presetsMessage: {show: false, color: "", message: ""}
+}`, VarsPresetsDataChanged))...).Class(b.containerClassName)
+}
+
 func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.PageFunc) {
 	return func(ctx *web.EventContext) (pr web.PageResponse, err error) {
 		b.InjectAssets(ctx)
-
-		// call CreateMenus before in(ctx) to fill the menuGroupName for modelBuilders first
-		menu := b.menuOrder.CreateMenus(ctx)
-		toolbar := VContainer(
-			VRow(
-				VCol(b.RunBrandFunc(ctx)).Cols(7),
-				VCol(
-					b.RunSwitchLocalCodeFunc(ctx),
-					// VBtn("").Children(
-					//	languageSwitchIcon,
-					//	VIcon("mdi-menu-down"),
-					// ).Attr("variant", "plain").
-					//	Attr("icon", ""),
-				).Cols(3).Class("pa-0"),
-				VDivider().Attr("vertical", true).Class("i18n-divider"),
-				VCol(
-					VAppBarNavIcon().Attr("icon", "mdi-menu").
-						Class("text-grey-darken-1 menu-control-icon").
-						Attr("@click", "vars.navDrawer = !vars.navDrawer").Density(DensityCompact),
-				).Cols(2).Class("position-relative"),
-			).Attr("align", "center").Attr("justify", "center"),
-		)
-
 		var innerPr web.PageResponse
 		innerPr, err = in(ctx)
 		if errors.Is(err, perm.PermissionDenied) {
@@ -825,13 +911,6 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 		}
 		if err != nil {
 			panic(err)
-		}
-
-		var profile h.HTMLComponent
-		if b.profileFunc != nil {
-			profile = VAppBar(
-				b.profileFunc(ctx),
-			).Location("bottom").Class("border-t-sm border-b-0").Elevation(0)
 		}
 
 		// showNotificationCenter := cfg == nil || !cfg.NotificationCenterInvisible
@@ -870,80 +949,13 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 				)
 			}),
 		).Class("d-flex align-center mx-6 border-b w-100").Style("padding-bottom:24px")
-		pr.Body = VCard(
-			VProgressLinear().
-				Attr(":active", "vars.globalProgressBar.show").
-				Attr(":model-value", "vars.globalProgressBar.value").
-				Attr("style", "position: fixed; z-index: 2000;").
-				Height(2).
-				Color(b.progressBarColor),
-			h.Template(
-				VSnackbar(
-					h.Div().Style("white-space: pre-wrap").Text("{{vars.presetsMessage.message}}"),
-				).
-					Attr("v-model", "vars.presetsMessage.show").
-					Attr(":color", "vars.presetsMessage.color").
-					Attr("style", "bottom: 48px;").
-					Timeout(2000).
-					Location(LocationBottom),
-			).Attr("v-if", "vars.presetsMessage"),
-			VLayout(
-
-				web.Portal().Name(RightDrawerPortalName),
-
-				// App(true).
-				// Fixed(true),
-				// ClippedLeft(true),
-				web.Portal().Name(DialogPortalName),
-				web.Portal().Name(DeleteConfirmPortalName),
-				web.Portal().Name(DefaultConfirmDialogPortalName),
-				web.Portal().Name(ListingDialogPortalName),
-
-				VNavigationDrawer(
-					// b.RunBrandProfileSwitchLanguageDisplayFunc(b.RunBrandFunc(ctx), profile, b.RunSwitchLanguageFunc(ctx), ctx),
-					// b.RunBrandFunc(ctx),
-					// profile,
-					VLayout(
-						VMain(
-							toolbar,
-							VCard(
-								menu,
-							).Class("menu-content mt-2 mb-4 ml-4 pr-4").Variant(VariantText),
-						).Class("menu-wrap"),
-						// VDivider(),
-						profile,
-					).Class("ma-2 border-sm rounded elevation-0").Attr("style",
-						"height: calc(100% - 16px);"),
-					// ).Class("ma-2").
-					// 	Style("height: calc(100% - 20px); border: 1px solid grey"),
-				).
-					// 256px is directly The measured size in figma
-					// in actual use, need plus 8px for padding left and right
-					// plus border 2px
-					Width(256+8+8+2).
-					// App(true).
-					// Clipped(true).
-					// Fixed(true).
-					Attr("v-model", "vars.navDrawer").
-					// Attr("style", "border-right: 1px solid grey ").
-					Permanent(true).
-					Floating(true).
-					Elevation(0),
-
-				VMain(
-					VAppBar(
-						pageTitleComp,
-					).Elevation(0).Attr("height", 100),
-					innerPr.Body,
-				).
-					Class("overflow-y-auto main-container").
-					Attr("style", "height:100vh; padding-left: calc(var(--v-layout-left) + 16px); --v-layout-right: 16px"),
-			),
-		).Attr("id", "vt-app").Elevation(0).
-			Attr(web.VAssign("vars", fmt.Sprintf(`{presetsRightDrawer: false, presetsDialog: false, presetsListingDialog: false, 
-navDrawer: true,%s:{},presetsMessage: {show: false, color: "", message: ""}
-}`, VarsPresetsDataChanged))...).Class(b.containerClassName)
-
+		pr.Body = b.defaultLayoutCompo(ctx, b.defaultLeftMenuComp(ctx), h.Components(
+			VAppBar(
+				pageTitleComp,
+			).Elevation(0).Attr("height", 100),
+			innerPr.Body,
+		),
+		)
 		return
 	}
 }
@@ -1128,7 +1140,14 @@ func (b *Builder) initMux() {
 		homeURL,
 		b.wrap(nil, b.layoutFunc(b.getHomePageFunc(), b.homePageLayoutConfig)),
 	)
-
+	for _, cb := range b.customBuilders {
+		routePath := fmt.Sprintf("%s/%s", b.prefix, cb.pattern)
+		log.Printf("mounted url: %s", routePath)
+		mux.Handle(
+			routePath,
+			b.wrap(nil, cb.defaultLayout),
+		)
+	}
 	for _, m := range b.models {
 		m.listing.setup()
 
@@ -1147,6 +1166,7 @@ func (b *Builder) initMux() {
 			b.wrap(m, b.layoutFunc(inPageFunc, m.layoutConfig)),
 		)
 		log.Printf("mounted url: %s\n", routePath)
+
 		if m.hasDetailing {
 			routePath = fmt.Sprintf("%s/%s/{id}", b.prefix, pluralUri)
 			mux.Handle(
@@ -1155,6 +1175,7 @@ func (b *Builder) initMux() {
 			)
 			log.Printf("mounted url: %s", routePath)
 		}
+
 	}
 
 	// b.handler = mux
