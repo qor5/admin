@@ -2,11 +2,59 @@ package location
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"golang.org/x/text/language"
 )
+
+const (
+	TestDataURL = "https://raw.githubusercontent.com/maxmind/MaxMind-DB/main/test-data/GeoIP2-City-Test.mmdb"
+	TestDataDir = "test-data/test-data"
+)
+
+// ensureTestData ensures the GeoIP2 test database file exists and returns its path.
+// If the file doesn't exist, it downloads it from the official MaxMind test data repository.
+// It panics if any error occurs during the process.
+func ensureTestData() string {
+	filePath := filepath.Join(TestDataDir, "GeoIP2-City-Test.mmdb")
+
+	// Check if file already exists
+	if _, err := os.Stat(filePath); err == nil {
+		return filePath
+	}
+
+	// Create directory if it doesn't exist
+	if err := os.MkdirAll(TestDataDir, 0755); err != nil {
+		panic(fmt.Errorf("failed to create test data directory: %w", err))
+	}
+
+	// Download the file
+	resp, err := http.Get(TestDataURL)
+	if err != nil {
+		panic(fmt.Errorf("failed to download test data: %w", err))
+	}
+	defer resp.Body.Close()
+
+	// Create the file
+	file, err := os.Create(filePath)
+	if err != nil {
+		panic(fmt.Errorf("failed to create file: %w", err))
+	}
+	defer file.Close()
+
+	// Copy the content
+	if _, err := io.Copy(file, resp.Body); err != nil {
+		panic(fmt.Errorf("failed to write test data: %w", err))
+	}
+
+	return filePath
+}
 
 func TestLocaleFromLanguage(t *testing.T) {
 	tests := []struct {
@@ -62,7 +110,7 @@ func TestGetLocation(t *testing.T) {
 		{"ko", args{lang: language.Korean, addr: "81.2.69.160"}, "London, United Kingdom", ""},
 	}
 
-	db, err := New("test-data/test-data/GeoIP2-City-Test.mmdb")
+	db, err := New(ensureTestData())
 	require.Nil(t, err)
 	defer db.Close()
 
