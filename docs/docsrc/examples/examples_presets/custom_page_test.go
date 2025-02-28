@@ -7,9 +7,10 @@ import (
 
 	. "github.com/qor5/web/v3/multipartestutils"
 
+	"github.com/theplant/gofixtures"
+
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
-	"github.com/theplant/gofixtures"
 )
 
 var customPageData = gofixtures.Data(gofixtures.Sql(`
@@ -37,9 +38,9 @@ func TestPresetsCustomPage(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				customPageData.TruncatePut(SqlDB)
-				return httptest.NewRequest("GET", "/custom/12", nil)
+				return httptest.NewRequest("GET", "/custom/12?name=vuetify", nil)
 			},
-			ExpectPageBodyContainsInOrder: []string{`New Custom Page ID`, `12`},
+			ExpectPageBodyContainsInOrder: []string{`New Custom Page Param`, `12`, `vuetify`},
 		},
 		{
 			Name:  "custom page with menu",
@@ -60,9 +61,9 @@ func TestPresetsCustomPage(t *testing.T) {
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{
-				`NewCustomPage`,
-				`NewCustomPageById`,
 				`NewCustomPageShowMenu`,
+				`NewCustomPage`,
+				`NewCustomPageByParam`,
 			},
 		},
 	}
