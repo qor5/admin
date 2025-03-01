@@ -25,7 +25,7 @@ type menuOrderItem struct {
 	model     *ModelBuilder
 }
 
-func NewMenuOrderBuilder(b *Builder) *MenuOrderBuilder {
+func newMenuOrderBuilder(b *Builder) *MenuOrderBuilder {
 	return &MenuOrderBuilder{p: b}
 }
 

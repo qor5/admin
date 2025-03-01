@@ -111,7 +111,7 @@ func New() *Builder {
 		},
 		wrapHandlers: make(map[string]func(in http.Handler) (out http.Handler)),
 	}
-	b.menuOrder = NewMenuOrderBuilder(b)
+	b.menuOrder = newMenuOrderBuilder(b)
 	b.GetWebBuilder().RegisterEventFunc(OpenConfirmDialog, b.openConfirmDialog)
 	b.layoutFunc = b.defaultLayout
 	b.detailLayoutFunc = b.defaultLayout
