@@ -592,7 +592,7 @@ func configBrand(b *presets.Builder) {
 		return h.Div(
 			v.VRow(
 				v.VCol(h.A(h.Img(logo).Attr("width", "80")).Href("/")),
-				//v.VCol(h.H1(msgr.Demo)).Class("pt-4"),
+				// v.VCol(h.H1(msgr.Demo)).Class("pt-4"),
 			),
 			// ).Density(DensityCompact),
 			h.If(dbReset != "",

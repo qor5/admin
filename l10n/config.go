@@ -201,8 +201,7 @@ func runSwitchLocaleFunc(lb *Builder) func(ctx *web.EventContext) (r h.HTMLCompo
 	}
 }
 
-func (b *Builder) runSwitchLocaleCodeFunc(ctx *web.EventContext) (r h.HTMLComponent) {
-
+func (b *Builder) runSwitchLocaleFunc(ctx *web.EventContext) (r h.HTMLComponent) {
 	var (
 		chip            h.HTMLComponent
 		localsListItems []h.HTMLComponent
@@ -245,5 +244,4 @@ func (b *Builder) runSwitchLocaleCodeFunc(ctx *web.EventContext) (r h.HTMLCompon
 			localsListItems...,
 		),
 	)
-
 }
