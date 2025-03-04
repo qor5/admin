@@ -40,7 +40,7 @@ func headerBody(data *TailWindExampleHeader, input *pagebuilder.RenderInput) (bo
 				).Class("list-none flex tw-theme-text text-[28px] gap-[72px] font-[500]").
 					Attr("data-list-unset", "true"),
 			).Class("w-[1152px] m-0 mx-auto leading-9 flex justify-between"),
-		).Class("tailwind-scope py-12 tw-theme-bg-base"),
+		).Class(" py-12 tw-theme-bg-base"),
 	).Class("container-tailwind-inner")
 
 	body = utils.TailwindContainerWrapper(

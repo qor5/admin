@@ -49,6 +49,8 @@ type ScriptType = 'url' | 'inlineScript'
     })
   )
   class TwindScope extends withTwind(HTMLElement) {
+    private props: { type: string; id: string } | {} = {}
+
     constructor() {
       super()
       this.attachShadow({ mode: 'open' })
@@ -56,15 +58,38 @@ type ScriptType = 'url' | 'inlineScript'
       this.integrateStyleAndScript()
 
       if (this.shadowRoot) {
-        this.shadowRoot.innerHTML = this.innerHTML
-        this.innerHTML = ''
+                this.shadowRoot.innerHTML = this.innerHTML
+                this.innerHTML = ''
         Alpine.initTree(this.shadowRoot.firstElementChild as HTMLElement)
       }
+    }
+
+    connectedCallback(): void {
+      super.connectedCallback()
+      this.attachClassAndId()
     }
 
     disconnectedCallback(): void {
       this.shadowRoot &&
         Alpine.destroyTree(this.shadowRoot.firstElementChild as HTMLElement)
+
+      super.disconnectedCallback()
+    }
+
+    attachClassAndId() {
+      if (this.shadowRoot) {
+        try { 
+          this.props = JSON.parse(this.dataset.props ?? '{}') || {}
+         } catch (e) {
+          console.error(e)
+        }
+
+        const firstElement = this.shadowRoot.firstElementChild as HTMLElement
+        if (firstElement) {
+          'type' in this.props && firstElement.classList.add(this.props.type)
+          'id' in this.props && (firstElement.id = this.props.type + '-' + this.props.id)
+        }
+      }
     }
 
     integrateStyleAndScript() {

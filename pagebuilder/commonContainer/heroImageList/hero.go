@@ -123,7 +123,7 @@ func HeroBody(data *TailWindHeroList, input *pagebuilder.RenderInput) (body HTML
 					).Class("w-[320px]"),
 				).Class("flex justify-between mt-10").Attr("data-list-unset", "true"),
 			).Class("p-[120px] w-[1280px] m-auto"),
-		).Class("tailwind-scope tw-theme-bg-base"),
+		).Class("tw-theme-bg-base"),
 	).Class("container-hero-inner")
 
 	body = utils.TailwindContainerWrapper(

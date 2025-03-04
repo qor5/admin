@@ -157,12 +157,12 @@ func HeroBody(data *HeroImageHorizontal, input *pagebuilder.RenderInput) (body H
           }`, hasHeroImage)),
 		).Class(fmt.Sprintf("tw-theme-bg-brand-20 text-[#212121] bg-no-repeat bg-cover bg-center pt-[%dpx] pb-[%dpx]", data.Style.TopSpace, data.Style.BottomSpace)).
 			Style(fmt.Sprintf("background-image: url(%s)", backgroundImgUrl)),
-		).Class("tailwind-scope tw-theme-bg-base"),
+		).Class(" tw-theme-bg-base"),
 	).Class("container-hero-inner")
 
 	body = utils.TailwindContainerWrapper(
 		"container-hero",
-		Tag("twind-scope").Children(Div(heroBody).Class("bg-gray-100")),
+		Tag("twind-scope").Attr("data-props", fmt.Sprintf(`{"type":"heroImageHorizontal", "id": %q}`, input.ContainerId)).Children(Div(heroBody).Class("bg-gray-100")),
 	)
 	return
 }

@@ -80,7 +80,7 @@ func footerBody(data *TailWindExampleFooter, input *pagebuilder.RenderInput) (bo
 					H2("Follow us").Class("tw-theme-text tw-theme-h2 text-2xl"),
 				),
 			).Class("py-[120px] px-[82px] flex justify-between gap-8 w-[1280px] m-auto"),
-		).Class("tailwind-scope tw-theme-bg-base"),
+		).Class(" tw-theme-bg-base"),
 	).Class("container-tailwind-inner").Attr("data-twind-scope", true)
 
 	body = utils.TailwindContainerWrapper(

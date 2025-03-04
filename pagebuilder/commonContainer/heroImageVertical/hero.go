@@ -110,7 +110,7 @@ func HeroBody(data *TailWindHeroVertical, input *pagebuilder.RenderInput) (body 
 					Style(fmt.Sprintf("background-image: url(%s)", heroImgUrl)).
 					Attr("alt", ""),
 			).Class("p-[120px] gap-10 flex flex-col w-[1280px] m-auto"),
-		).Class("tailwind-scope tw-theme-bg-base"),
+		).Class(" tw-theme-bg-base"),
 	).Class("container-hero-inner")
 
 	body = utils.TailwindContainerWrapper(
