@@ -83,8 +83,8 @@ func pageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.Event
 		freeStyleCss,
 		// RawHTML(dataLayer),
 		input.StructuredData,
-		scriptWithCodes(input.FreeStyleTopJs),
-		// scriptWithCodes(twindScopeConfigJs),
+		ScriptWithCodes(input.FreeStyleTopJs),
+		// ScriptWithCodes(twindScopeConfigJs),
 	)
 	ctx.Injector.HTMLLang(input.LocaleCode)
 	if input.WrapHead != nil {
@@ -97,7 +97,7 @@ func pageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.Event
 		body,
 		h.If(input.Footer != nil, input.Footer),
 		h.Script("").Src(js),
-		scriptWithCodes(input.FreeStyleBottomJs),
+		ScriptWithCodes(input.FreeStyleBottomJs),
 	)
 	if input.WrapBody != nil {
 		bodies = input.WrapBody(bodies)
@@ -108,7 +108,7 @@ func pageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.Event
 	).Attr("data-site-domain", domain)
 }
 
-func scriptWithCodes(jscodes []string) h.HTMLComponent {
+func ScriptWithCodes(jscodes []string) h.HTMLComponent {
 	var js h.HTMLComponent
 	if len(jscodes) > 0 {
 		js = h.Script(fmt.Sprintf(`

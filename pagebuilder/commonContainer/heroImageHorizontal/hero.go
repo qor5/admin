@@ -7,10 +7,11 @@ import (
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 
+	v "github.com/qor5/x/v3/ui/vuetify"
+
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/pagebuilder/commonContainer/utils"
 	"github.com/qor5/admin/v3/presets"
-	v "github.com/qor5/x/v3/ui/vuetify"
 )
 
 type Hero struct {
@@ -21,15 +22,14 @@ type Hero struct {
 }
 
 func (*Hero) TableName() string {
-	return "container_hero"
+	return "container_tailwind_hero"
 }
 
 func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	vb := pb.RegisterContainer("Hero").Group("Navigation").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
-			v := obj.(*Hero)
-
-			return HeroBody(v, input)
+			p := obj.(*Hero)
+			return HeroBody(p, input)
 		})
 
 	ed := vb.Model(&Hero{}).Editing("Tabs", "Content", "Style")

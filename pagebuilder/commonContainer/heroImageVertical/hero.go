@@ -7,10 +7,11 @@ import (
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 
+	v "github.com/qor5/x/v3/ui/vuetify"
+
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/pagebuilder/commonContainer/utils"
 	"github.com/qor5/admin/v3/presets"
-	v "github.com/qor5/x/v3/ui/vuetify"
 )
 
 type TailWindHeroVertical struct {
@@ -21,7 +22,7 @@ type TailWindHeroVertical struct {
 }
 
 func (*TailWindHeroVertical) TableName() string {
-	return "container_hero"
+	return "container_tailwind_hero_vertical"
 }
 
 func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {

@@ -1,11 +1,12 @@
 package header
 
 import (
-	"github.com/qor5/admin/v3/pagebuilder"
-	"github.com/qor5/admin/v3/pagebuilder/commonContainer/utils"
 	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/pagebuilder/commonContainer/utils"
 )
 
 type TailWindExampleHeader struct {
@@ -13,7 +14,7 @@ type TailWindExampleHeader struct {
 }
 
 func (b *TailWindExampleHeader) TableName() string {
-	return "container_tailwind"
+	return "container_tailwind_header"
 }
 
 func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {

@@ -1,11 +1,12 @@
 package footer
 
 import (
-	"github.com/qor5/admin/v3/pagebuilder"
-	"github.com/qor5/admin/v3/pagebuilder/commonContainer/utils"
 	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/pagebuilder/commonContainer/utils"
 )
 
 type TailWindExampleFooter struct {
@@ -13,7 +14,7 @@ type TailWindExampleFooter struct {
 }
 
 func (b *TailWindExampleFooter) TableName() string {
-	return "container_tailwind"
+	return "container_tailwind_footer"
 }
 
 func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {
