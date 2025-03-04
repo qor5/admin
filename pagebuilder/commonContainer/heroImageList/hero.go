@@ -1,6 +1,8 @@
 package heroImageList
 
 import (
+	"fmt"
+
 	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
@@ -128,7 +130,7 @@ func HeroBody(data *TailWindHeroList, input *pagebuilder.RenderInput) (body HTML
 
 	body = utils.TailwindContainerWrapper(
 		"container-hero",
-		Tag("twind-scope").Children(Div(heroBody).Class("bg-gray-100")),
+		Tag("twind-scope").Attr("data-props", fmt.Sprintf(`{"type":"heroImageList", "id": %q}`, input.ContainerId)).Children(Div(heroBody).Class("bg-gray-100")),
 	)
 	return
 }

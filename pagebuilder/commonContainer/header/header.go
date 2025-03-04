@@ -1,6 +1,8 @@
 package header
 
 import (
+	"fmt"
+
 	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
@@ -45,7 +47,7 @@ func headerBody(data *TailWindExampleHeader, input *pagebuilder.RenderInput) (bo
 
 	body = utils.TailwindContainerWrapper(
 		"container-tailwind-example-header",
-		Tag("twind-scope").Children(html),
+		Tag("twind-scope").Attr("data-props", fmt.Sprintf(`{"type":"container-tailwind-example-header", "id": %q}`, input.ContainerId)).Children(html),
 	)
 	return
 }

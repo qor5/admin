@@ -115,7 +115,7 @@ func HeroBody(data *TailWindHeroVertical, input *pagebuilder.RenderInput) (body 
 
 	body = utils.TailwindContainerWrapper(
 		"container-hero",
-		Tag("twind-scope").Children(Div(heroBody).Class("bg-gray-100")),
+		Tag("twind-scope").Attr("data-props", fmt.Sprintf(`{"type":"heroImageVertical", "id": %q}`, input.ContainerId)).Children(Div(heroBody).Class("bg-gray-100")),
 	)
 	return
 }
