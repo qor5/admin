@@ -14,25 +14,25 @@ import (
 	"github.com/qor5/admin/v3/presets"
 )
 
-type Hero struct {
+type HeroImageHorizontal struct {
 	ID uint
 
 	Content heroContent
 	Style   heroStyle
 }
 
-func (*Hero) TableName() string {
-	return "container_tailwind_hero"
+func (*HeroImageHorizontal) TableName() string {
+	return "container_tailwind_hero_horizontal"
 }
 
 func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {
-	vb := pb.RegisterContainer("Hero").Group("Navigation").
+	vb := pb.RegisterContainer("HeroImageHorizontal").Group("Navigation").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
-			p := obj.(*Hero)
+			p := obj.(*HeroImageHorizontal)
 			return HeroBody(p, input)
 		})
 
-	ed := vb.Model(&Hero{}).Editing("Tabs", "Content", "Style")
+	ed := vb.Model(&HeroImageHorizontal{}).Editing("Tabs", "Content", "Style")
 
 	ed.Field("Tabs").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		option := presets.TabsControllerOption{
@@ -46,7 +46,7 @@ func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 
 	ed.Creating().WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-			p := obj.(*Hero)
+			p := obj.(*HeroImageHorizontal)
 			p.Content.Title = "This is a title"
 			p.Content.Body = "From end-to-end solutions to consulting, we draw on decades of expertise to solve new challenges in e-commerce, content management, and digital innovation."
 			p.Content.Button = "Get Start"
@@ -65,7 +65,7 @@ func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 
 	ed.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-			p := obj.(*Hero)
+			p := obj.(*HeroImageHorizontal)
 
 			if p.Content.ImageUpload.URL() != "" && !p.Content.ImgInitial {
 				p.Content.ImgInitial = true
@@ -87,7 +87,7 @@ func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	SetHeroStyleComponent(pb, ed)
 }
 
-func HeroBody(data *Hero, input *pagebuilder.RenderInput) (body HTMLComponent) {
+func HeroBody(data *HeroImageHorizontal, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	heroImgUrl := data.Content.ImageUpload.URL()
 	backgroundImgUrl := data.Style.ImageBackground.URL()
 
