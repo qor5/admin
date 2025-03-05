@@ -39,6 +39,9 @@ type Builder struct {
 	ctxValueProviders []ContextValueFunc
 	afterInstallFuncs []func()
 	autoSchedule      bool
+	nonVersionPublishModels map[string]interface{}
+	versionPublishModels    map[string]interface{}
+	listPublishModels       map[string]interface{}
 
 	publish   PublishFunc
 	unpublish UnPublishFunc
@@ -53,6 +56,10 @@ func New(db *gorm.DB, storage oss.StorageInterface) *Builder {
 	}
 	b.publish = b.defaultPublish
 	b.unpublish = b.defaultUnPublish
+	b.nonVersionPublishModels = make(map[string]interface{})
+	b.versionPublishModels = make(map[string]interface{})
+	b.listPublishModels = make(map[string]interface{})
+
 	return b
 }
 
@@ -85,19 +92,19 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 
 	if model, ok := obj.(VersionInterface); ok {
 		if schedulePublishModel, ok := model.(ScheduleInterface); ok {
-			VersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
+			b.versionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 		}
 
 		b.configVersionAndPublish(pb, m, db)
 	} else {
 		if schedulePublishModel, ok := obj.(ScheduleInterface); ok {
-			NonVersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
+			b.nonVersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 		}
 	}
 
 	if model, ok := obj.(ListInterface); ok {
 		if schedulePublishModel, ok := model.(ScheduleInterface); ok {
-			ListPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
+			b.listPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 		}
 	}
 
