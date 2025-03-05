@@ -96,3 +96,8 @@
 /* #heroImageHorizontal-26_International h1{
   color:#0091ff;
 } */
+
+.tw-theme-filter-container {
+  border-radius: 8px;
+  overflow: hidden;
+}
