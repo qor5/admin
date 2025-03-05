@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta content="yes" name="apple-mobile-web-app-capable" />
+    <meta content="black" name="apple-mobile-web-app-status-bar-style" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <meta name="format-detection" content="telephone=no" />
+    <link
+      href="https://the-plant.com/assets/app/container.4f902c4.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <link
+      href="https://rsms.me/inter/inter.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <script type="text/javascript" src="https://cdn.tailwindcss.com"></script>
+    <script
+      type="text/javascript"
+      src="//unpkg.com/alpinejs"
+      defer="true"
+    ></script>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+    />
+    <script type="text/javascript">
+      try {
+        tailwind.config = {
+          theme: {
+            extend: {
+              fontFamily: {
+                sans: ['InterVariable', 'sans-serif'],
+              },
+            },
+          },
+        }
+      } catch (error) {
+        console.log(error)
+      }
+    </script>
+
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Monoton&family=Pacifico&display=swap');
+
+      * {
+        box-sizing: border-box;
+      }
+      .tailwind-scope {
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        a,
+        p {
+          font-family: InterVariable, system-ui, sans-serif;
+        }
+      }
+
+      :root {
+        --color-base: 47, 45, 39;
+        --color-surface: 255, 255, 255;
+        --color-brand: 137, 255, 176;
+        --font-family-h1: '';
+        --font-family-h2: '';
+        --font-family-p: '';
+        --font-family-fallback: InterVariable, system-ui, sans-serif;
+      }
+
+      .tailwind-scope .tw-theme-h1 {
+        font-family: var(--font-family-h1), var(--font-family-fallback);
+      }
+
+      .tailwind-scope .tw-theme-h2 {
+        font-family: var(--font-family-h2), var(--font-family-fallback);
+      }
+
+      .tailwind-scope .tw-theme-p {
+        font-family: var(--font-family-p), var(--font-family-fallback);
+      }
+
+      .tw-theme-filter-container {
+        position: relative;
+      }
+
+      .tw-theme-filter-container::before {
+        --color-opacity: 0.2;
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(var(--color-brand), var(--color-opacity));
+        z-index: 1;
+        mix-blend-mode: multiply;
+        pointer-events: none;
+      }
+
+      .tw-theme-bg-base {
+        --color-opacity: 1;
+        background-color: rgba(var(--color-base), var(--color-opacity));
+      }
+
+      .tw-theme-text-base {
+        --color-opacity: 1;
+        color: rgba(var(--color-base), var(--color-opacity));
+      }
+
+      .tw-theme-bg-brand {
+        --color-opacity: 1;
+        background-color: var(
+          --tw-theme-bg-color,
+          rgba(var(--color-brand), var(--color-opacity))
+        );
+      }
+
+      .tw-theme-bg-brand-20 {
+        --color-opacity: 0.2;
+        background-color: var(
+          --tw-theme-bg-color,
+          rgba(var(--color-brand), var(--color-opacity))
+        );
+      }
+
+      .tw-theme-text {
+        --color-opacity: 1;
+        color: rgba(var(--color-surface), var(--color-opacity));
+      }
+    </style>
+  </head>
+  <body>
+    <header class="w-full bg-white relative z-10 shadow-[0_1px_4px_rgba(0,0,0,0.2)]">
+      <div
+        class="flex items-center px-0 pt-3  mx-auto my-0 w-[1024px] max-md:px-4 max-md:py-0 max-md:w-full max-sm:flex-col max-sm:p-4"
+      >
+        <img
+          src="https://cdn.builder.io/api/v1/image/assets/TEMP/c390a6c64d3a75446d97db5902b64d03575cc7bf"
+          alt="McDonald's Logo"
+          class="h-[90px] w-[100px]"
+          loading="lazy"
+        />
+        <nav class="flex-1 ml-4 max-sm:w-full" aria-label="Main navigation">
+          <div class="flex justify-end mb-7">
+            <ul
+              data-list-unset
+              class="flex gap-3 items-center text-sm text-neutral-400 "
+            >
+              <li>
+                <a
+                  href="#"
+                  class="hover:text-neutral-600 transition-colors duration-200"
+                  >採用情報</a
+                >
+              </li>
+              <li>|</li>
+              <li>
+                <a
+                  href="#"
+                  class="hover:text-neutral-600 transition-colors duration-200"
+                  >公式アプリ</a
+                >
+              </li>
+              <li>|</li>
+              <li>
+                <button
+                  class="flex gap-1 items-center hover:text-neutral-600 transition-colors duration-200 group"
+                >
+                  <i
+                    class="ti ti-search group-hover:text-neutral-600"
+                    aria-hidden="true"
+                  ></i>
+                  <span>検索</span>
+                </button>
+              </li>
+            </ul>
+          </div>
+          <div
+            class="flex relative gap-4 max-sm:flex-wrap max-sm:justify-center"
+          >
+            <nav class="flex gap-4" aria-label="Primary navigation">
+              <a
+                href="#"
+                class="font-bold px-0 py-2 text-lg text-red-700 transition-colors duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-1 after:bg-red-700 after:opacity-0 after:opacity-100 after:transition-opacity"
+                aria-current="page"
+              >
+                ホーム
+              </a>
+              <a
+                href="#"
+                class="font-bold px-0 py-2 text-lg text-zinc-800 hover:text-red-700 transition-colors duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-1 after:bg-red-700 after:opacity-0 hover:after:opacity-100 after:transition-opacity"
+              >
+                メニュー
+              </a>
+              <a
+                href="#"
+                class="font-bold px-0 py-2 text-lg text-zinc-800 hover:text-red-700 transition-colors duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-1 after:bg-red-700 after:opacity-0 hover:after:opacity-100 after:transition-opacity"
+              >
+                キャンペーン
+              </a>
+              <a
+                href="#"
+                class="font-bold px-0 py-2 text-lg text-zinc-800 hover:text-red-700 transition-colors duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-1 after:bg-red-700 after:opacity-0 hover:after:opacity-100 after:transition-opacity"
+              >
+                ファミリー
+              </a>
+              <a
+                href="#"
+                class="font-bold px-0 py-2 text-lg text-zinc-800 hover:text-red-700 transition-colors duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-1 after:bg-red-700 after:opacity-0 hover:after:opacity-100 after:transition-opacity"
+              >
+                サステナビリティ
+              </a>
+              <a
+                href="#"
+                class="font-bold px-0 py-2 text-lg text-zinc-800 hover:text-red-700 transition-colors duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-1 after:bg-red-700 after:opacity-0 hover:after:opacity-100 after:transition-opacity"
+              >
+                お店・サービス
+              </a>
+            </nav>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <section class="w-full bg-[rgb(247,247,247)]">
+      <article
+        class="relative mx-auto py-8 w-[1024px] max-md:px-4 max-md:py-0 max-md:w-full"
+      >
+        <section
+          class="w-full rounded-lg bg-zinc-300 h-[430px]"
+          role="img"
+          aria-label="Hero image"
+        ></section>
+
+        <nav
+          class="flex gap-4 justify-center mt-6"
+          role="navigation"
+          aria-label="Image carousel navigation"
+        >
+          <button
+            class="w-2 h-2 bg-black rounded-full"
+            aria-label="Go to slide 1"
+          ></button>
+          <button
+            class="w-2 h-2 bg-black rounded-full"
+            aria-label="Go to slide 2"
+          ></button>
+          <button
+            class="w-2 h-2 bg-black rounded-full"
+            aria-label="Go to slide 3"
+          ></button>
+          <button
+            class="w-2 h-2 bg-black rounded-full"
+            aria-label="Go to slide 4"
+            aria-current="true"
+          ></button>
+          <button
+            class="w-2 h-2 bg-black rounded-full"
+            aria-label="Go to slide 5"
+          ></button>
+        </nav>
+      </article>
+    </section>
+
+    <section class="w-full bg-[rgb(247,247,247)]">
+      <div
+        class="mx-auto py-20 w-[1024px] max-md:px-4 max-md:py-0 max-md:w-full"
+      >
+        <h2 class="mb-6 text-3xl text-zinc-800">おすすめ</h2>
+        <p class="mb-6 text-lg text-zinc-800">
+          ただいまのお時間のおすすめメニューをご紹介します
+        </p>
+
+        <div class="flex gap-5 mb-6 max-md:flex-wrap max-md:justify-center">
+          <article
+            class="bg-white rounded-lg shadow-[0_1px_4px_rgba(0,0,0,0.2)] w-[241px] max-md:w-[calc(50%_-_10px)] max-sm:w-full"
+          >
+            <div class="w-full bg-zinc-300 h-[241px]"></div>
+            <h3 class="p-4 text-base text-zinc-800">ポテナゲ大</h3>
+            <p class="flex items-baseline p-4">
+              <span class="text-base text-zinc-800">￥</span>
+              <span class="ml-1 text-3xl text-zinc-800">600~</span>
+            </p>
+          </article>
+
+          <article
+            class="bg-white rounded-lg shadow-[0_1px_4px_rgba(0,0,0,0.2)] w-[241px] max-md:w-[calc(50%_-_10px)] max-sm:w-full"
+          >
+            <div class="w-full bg-zinc-300 h-[241px]"></div>
+            <h3 class="p-4 text-base text-zinc-800">ポテナゲ特大</h3>
+            <p class="flex items-baseline p-4">
+              <span class="text-base text-zinc-800">￥</span>
+              <span class="ml-1 text-3xl text-zinc-800">950~</span>
+            </p>
+          </article>
+
+          <article
+            class="bg-white rounded-lg shadow-[0_1px_4px_rgba(0,0,0,0.2)] w-[241px] max-md:w-[calc(50%_-_10px)] max-sm:w-full"
+          >
+            <div class="w-full bg-zinc-300 h-[241px]"></div>
+            <h3 class="p-4 text-base text-zinc-800">倍ビッグマック セット</h3>
+            <p class="flex items-baseline p-4">
+              <span class="text-base text-zinc-800">￥</span>
+              <span class="ml-1 text-3xl text-zinc-800">950~</span>
+            </p>
+          </article>
+
+          <article
+            class="bg-white rounded-lg shadow-[0_1px_4px_rgba(0,0,0,0.2)] w-[241px] max-md:w-[calc(50%_-_10px)] max-sm:w-full"
+          >
+            <div class="w-full bg-zinc-300 h-[241px]"></div>
+            <h3 class="p-4 text-base text-zinc-800">
+              倍てりやきマックバーガーセット
+            </h3>
+            <p class="flex items-baseline p-4">
+              <span class="text-base text-zinc-800">￥</span>
+              <span class="ml-1 text-3xl text-zinc-800">770~</span>
+            </p>
+          </article>
+        </div>
+
+        <a
+          href="#"
+          class="flex gap-2 justify-end items-center text-xl text-zinc-800"
+        >
+          <span>もっと見る</span>
+          <svg
+            width="20"
+            height="24"
+            viewBox="0 0 20 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            class="arrow-icon"
+          >
+            <g clip-path="url(#clip0_1_51)">
+              <path
+                d="M0 2.53029L3.48235 0L20 12L9.74235 19.452L3.48353 24L0 21.4697L13.0353 12L0 2.53029Z"
+                fill="#333333"
+              ></path>
+            </g>
+            <defs>
+              <clipPath id="clip0_1_51">
+                <rect width="20" height="24" fill="white"></rect>
+              </clipPath>
+            </defs>
+          </svg>
+        </a>
+      </div>
+    </section>
+
+    <section class="w-full bg-[rgb(247,247,247)]">
+      <div
+        class="mx-auto py-20 w-[1024px] max-md:px-4 max-md:py-0 max-md:w-full"
+      >
+        <h2 class="mb-6 text-3xl text-zinc-800">新着情報</h2>
+
+      <div class="flex flex-col gap-4">
+        <article
+          class="flex items-center p-6 bg-white rounded-lg shadow-[0_1px_4px_rgba(0,0,0,0.2)]"
+        >
+          <time datetime="2025-02-18" class="w-20 text-base text-zinc-800"
+            >2025.02.18</time
+          >
+          <p class="flex-1 text-base leading-relaxed text-zinc-800">
+            大人気ホットスイーツ"ひとくちチュロス"が大変身！？
+            史上初！「ひとくち黒チュロス いちごチョコ」
+            見た目は黒で中身はピンク！
+            サクふわのカカオ生地と甘酸っぱいいちごチョコクリームの新感覚のおいしさ
+            2月19日(水)から期間限定販売 2月18日(火)から放映の
+          </p>
+          <div>
+            <svg
+              width="20"
+              height="24"
+              viewBox="0 0 20 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              class="arrow-icon"
+            >
+              <g clip-path="url(#clip0_1_51)">
+                <path
+                  d="M0 2.53029L3.48235 0L20 12L9.74235 19.452L3.48353 24L0 21.4697L13.0353 12L0 2.53029Z"
+                  fill="#333333"
+                ></path>
+              </g>
+              <defs>
+                <clipPath id="clip0_1_51">
+                  <rect width="20" height="24" fill="white"></rect>
+                </clipPath>
+              </defs>
+            </svg>
+          </div>
+        </article>
+
+        <article
+          class="flex items-center p-6 bg-white rounded-lg shadow-[0_1px_4px_rgba(0,0,0,0.2)]"
+        >
+          <time datetime="2025-02-14" class="w-20 text-base text-zinc-800"
+            >2025.02.14</time
+          >
+          <p class="flex-1 text-base leading-relaxed text-zinc-800">
+            1分間に1,000セット！売れている※「ひるまック®」
+            平日お昼は「てりやきマックバーガーセット」が600円！
+            600円台のランチセット「ひるまック」新TVCM
+            妻夫木聡さんと濱田岳さんが先輩・後輩役でCM初共演！
+            新TVCMシリーズ「おいしい時間帯」篇は2月17日
+          </p>
+          <div>
+            <svg
+              width="20"
+              height="24"
+              viewBox="0 0 20 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              class="arrow-icon"
+            >
+              <g clip-path="url(#clip0_1_51)">
+                <path
+                  d="M0 2.53029L3.48235 0L20 12L9.74235 19.452L3.48353 24L0 21.4697L13.0353 12L0 2.53029Z"
+                  fill="#333333"
+                ></path>
+              </g>
+              <defs>
+                <clipPath id="clip0_1_51">
+                  <rect width="20" height="24" fill="white"></rect>
+                </clipPath>
+              </defs>
+            </svg>
+          </div>
+        </article>
+
+        <article
+          class="flex items-center p-6 bg-white rounded-lg shadow-[0_1px_4px_rgba(0,0,0,0.2)]"
+        >
+          <time datetime="2025-02-10" class="w-20 text-base text-zinc-800"
+            >2025.02.10</time
+          >
+          <p class="flex-1 text-base leading-relaxed text-zinc-800">
+            ライブ配信を通して、リアルタイムで推しと一緒に
+            マクドナルドメニューをパーティー気分で楽しめる新コンテンツ！
+            「#リアタイマクパ」2月19日(水)に開催
+            XGがTVCMに初出演！2月10日(月)よりOA！
+          </p>
+          <div>
+            <svg
+              width="20"
+              height="24"
+              viewBox="0 0 20 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              class="arrow-icon"
+            >
+              <g clip-path="url(#clip0_1_51)">
+                <path
+                  d="M0 2.53029L3.48235 0L20 12L9.74235 19.452L3.48353 24L0 21.4697L13.0353 12L0 2.53029Z"
+                  fill="#333333"
+                ></path>
+              </g>
+              <defs>
+                <clipPath id="clip0_1_51">
+                  <rect width="20" height="24" fill="white"></rect>
+                </clipPath>
+              </defs>
+            </svg>
+          </div>
+        </article>
+
+        <article
+          class="flex items-center p-6 bg-white rounded-lg shadow-[0_1px_4px_rgba(0,0,0,0.2)]"
+        >
+          <time datetime="2025-02-07" class="w-20 text-base text-zinc-800"
+            >2025.02.07</time
+          >
+          <p class="flex-1 text-base leading-relaxed text-zinc-800">
+            ハッピーセット®のおもちゃで楽しく考えて遊ぼう！
+            マクドナルドオリジナルのスペシャルフレンダピックをゲットしよう！
+            ハッピーセット「ポケモンフレンダ」
+            ポケモンたちのいるお部屋にシールを貼って、眺めて、さがして楽しめる、オリジナルブック
+            ハッピー
+          </p>
+          <div>
+            <svg
+              width="20"
+              height="24"
+              viewBox="0 0 20 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              class="arrow-icon"
+            >
+              <g clip-path="url(#clip0_1_51)">
+                <path
+                  d="M0 2.53029L3.48235 0L20 12L9.74235 19.452L3.48353 24L0 21.4697L13.0353 12L0 2.53029Z"
+                  fill="#333333"
+                ></path>
+              </g>
+              <defs>
+                <clipPath id="clip0_1_51">
+                  <rect width="20" height="24" fill="white"></rect>
+                </clipPath>
+              </defs>
+            </svg>
+          </div>
+        </article>
+
+        <article
+          class="flex items-center p-6 bg-white rounded-lg shadow-[0_1px_4px_rgba(0,0,0,0.2)]"
+        >
+          <time datetime="2025-02-06" class="w-20 text-base text-zinc-800"
+            >2025.02.06</time
+          >
+          <p class="flex-1 text-base leading-relaxed text-zinc-800">
+            日本マクドナルドホールディングス株式会社の役員人事に関するお知らせ
+          </p>
+          <div>
+            <svg
+              width="20"
+              height="24"
+              viewBox="0 0 20 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              class="arrow-icon"
+            >
+              <g clip-path="url(#clip0_1_51)">
+                <path
+                  d="M0 2.53029L3.48235 0L20 12L9.74235 19.452L3.48353 24L0 21.4697L13.0353 12L0 2.53029Z"
+                  fill="#333333"
+                ></path>
+              </g>
+              <defs>
+                <clipPath id="clip0_1_51">
+                  <rect width="20" height="24" fill="white"></rect>
+                </clipPath>
+              </defs>
+            </svg>
+          </div>
+        </article>
+      </div>
+
+      <div
+        class="flex gap-2 justify-end items-center mt-6 text-xl text-zinc-800"
+      >
+        <span>一覧へ</span>
+        <svg
+          width="20"
+          height="24"
+          viewBox="0 0 20 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          class="arrow-icon"
+        >
+          <g clip-path="url(#clip0_1_51)">
+            <path
+              d="M0 2.53029L3.48235 0L20 12L9.74235 19.452L3.48353 24L0 21.4697L13.0353 12L0 2.53029Z"
+              fill="#333333"
+            ></path>
+          </g>
+          <defs>
+            <clipPath id="clip0_1_51">
+              <rect width="20" height="24" fill="white"></rect>
+            </clipPath>
+          </defs>
+        </svg>
+      </div>
+    </section>
+
+    <footer
+      class="px-0 py-10 bg-white border-t border-solid border-t-stone-300"
+    >
+      <div
+        class="mx-auto my-0 w-[1024px] max-md:px-4 max-md:py-0 max-md:w-full"
+      >
+        <nav class="flex gap-10 mb-10 max-sm:flex-col">
+          <section class="flex-1">
+            <h2 class="mb-4 text-sm text-zinc-800">ホーム</h2>
+            <ul data-list-unset class="flex flex-col gap-2">
+              <li class="text-sm text-zinc-800">メニュー</li>
+              <li class="text-xs text-zinc-800">おすすめ</li>
+              <li class="text-xs text-zinc-800">バーガー</li>
+              <li class="text-xs text-zinc-800">セット</li>
+              <li class="text-xs text-zinc-800">サイドメニュー</li>
+              <li class="text-xs text-zinc-800">ドリンク</li>
+              <li class="text-xs text-zinc-800">ハッピーセット®</li>
+              <li class="text-xs text-zinc-800">朝マック</li>
+              <li class="text-xs text-zinc-800">夜マック®</li>
+              <li class="text-xs text-zinc-800">スイーツ</li>
+              <li class="text-xs text-zinc-800">マックカフェ®</li>
+            </ul>
+          </section>
+
+          <section class="flex-1">
+            <h2 class="mb-4 text-sm text-zinc-800">キャンペーン</h2>
+            <ul data-list-unset class="flex flex-col gap-2">
+              <li class="text-xs text-zinc-800">商品</li>
+              <li class="text-xs text-zinc-800">ファミリーサービス</li>
+              <li class="text-xs text-zinc-800">インフォメーション</li>
+            </ul>
+            <h2 class="mb-4 mt-6 text-sm text-zinc-800">ファミリー</h2>
+            <ul data-list-unset class="flex flex-col gap-2">
+              <li class="text-xs text-zinc-800">おもちゃリサイクル</li>
+              <li class="text-xs text-zinc-800">マックアドベンチャー®</li>
+              <li class="text-xs text-zinc-800">
+                ハッピーセット 本・おもちゃ紹介
+              </li>
+              <li class="text-xs text-zinc-800">バースデーパーティー</li>
+              <li class="text-xs text-zinc-800">プレイランド</li>
+            </ul>
+          </section>
+
+          <section class="flex-1">
+            <h2 class="mb-4 text-sm text-zinc-800">サステナビリティ</h2>
+            <ul data-list-unset class="flex flex-col gap-2">
+              <li class="text-xs text-zinc-800">安心でおいしいお食事を</li>
+              <li class="text-xs text-zinc-800">地球環境のために</li>
+              <li class="text-xs text-zinc-800">地域の仲間にサポートを</li>
+              <li class="text-xs text-zinc-800">働きがいをすべての人に</li>
+              <li class="text-xs text-zinc-800">Smile Story</li>
+              <li class="text-xs text-zinc-800">マクドナルドとSDGs</li>
+              <li class="text-xs text-zinc-800">サステナビリティレポート</li>
+            </ul>
+          </section>
+
+          <section class="flex-1">
+            <h2 class="mb-4 text-sm text-zinc-800">お店・サービス</h2>
+            <ul data-list-unset class="flex flex-col gap-2">
+              <li class="text-xs text-zinc-800">未来型店舗体験</li>
+              <li class="text-xs text-zinc-800">日本マクドナルド公式アプリ</li>
+              <li class="text-xs text-zinc-800">マックデリバリー®</li>
+              <li class="text-xs text-zinc-800">マックカフェ®︎</li>
+              <li class="text-xs text-zinc-800">KODO</li>
+              <li class="text-xs text-zinc-800">マクドナルド FREE Wi-Fi</li>
+              <li class="text-xs text-zinc-800">お支払い方法</li>
+            </ul>
+          </section>
+
+          <section class="flex-1">
+            <h2 class="mb-4 text-sm text-zinc-800">会社情報</h2>
+            <ul data-list-unset class="flex flex-col gap-2">
+              <li class="text-xs text-zinc-800">
+                マクドナルドからのメッセージ
+              </li>
+              <li class="text-xs text-zinc-800">会社案内</li>
+              <li class="text-xs text-zinc-800">社会とのつながり</li>
+              <li class="text-xs text-zinc-800">サステナビリティレポート</li>
+              <li class="text-xs text-zinc-800">ハンバーガー大学</li>
+              <li class="text-xs text-zinc-800">土地・建物募集</li>
+              <li class="text-xs text-zinc-800">フランチャイズオーナー募集</li>
+              <li class="text-xs text-zinc-800">ニュースリリース</li>
+            </ul>
+          </section>
+
+          <section class="flex-1">
+            <h2 class="mb-4 text-sm text-zinc-800">お問い合わせ</h2>
+            <ul data-list-unset class="flex flex-col gap-2">
+              <li class="text-xs text-zinc-800">お客様相談窓口</li>
+              <li class="text-xs text-zinc-800">よくあるご質問</li>
+            </ul>
+            <h2 class="mb-4 mt-6 text-sm text-zinc-800">採用情報</h2>
+            <ul data-list-unset class="flex flex-col gap-2">
+              <li class="text-xs text-zinc-800">アルバイト採用</li>
+              <li class="text-xs text-zinc-800">社員採用</li>
+              <li class="text-xs text-zinc-800">障がい者採用</li>
+              <li class="text-xs text-zinc-800">フランチャイズ社員採用</li>
+            </ul>
+            <h2 class="mb-4 mt-6 text-sm text-zinc-800">アプリ・SNS</h2>
+            <ul data-list-unset class="flex flex-col gap-2">
+              <li class="text-xs text-zinc-800">公式アプリ</li>
+              <li class="text-xs text-zinc-800">Facebook</li>
+              <li class="text-xs text-zinc-800">Twitter</li>
+              <li class="text-xs text-zinc-800">YouTube</li>
+            </ul>
+          </section>
+        </nav>
+
+        <div
+          class="flex justify-between items-center px-0 py-6 border-t border-solid border-t-zinc-300 max-sm:flex-col max-sm:gap-4 max-sm:items-start"
+        >
+          <div class="flex gap-4">
+            <div class="flex gap-1 items-center text-xs text-zinc-800">
+              <span>日本語</span>
+              <div>
+                <svg
+                  width="14"
+                  height="10"
+                  viewBox="0 0 14 10"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="check-icon"
+                >
+                  <g clip-path="url(#clip0_1_195)">
+                    <path
+                      fill-rule="evenodd"
+                      clip-rule="evenodd"
+                      d="M216 -547V124H-159V-547H216Z"
+                      fill="white"
+                    ></path>
+                    <path
+                      d="M4.986 6.83L2.158 2.98L0.546997 4.166L4.708 9.83L13.511 1.591L12.145 0.130005L4.986 6.83Z"
+                      fill="#DB0007"
+                    ></path>
+                  </g>
+                  <defs>
+                    <clipPath id="clip0_1_195">
+                      <rect width="14" height="10" fill="white"></rect>
+                    </clipPath>
+                  </defs>
+                </svg>
+              </div>
+            </div>
+            <div class="gap-1 text-xs text-zinc-800">English</div>
+          </div>
+
+          <div class="text-sm text-neutral-400">
+            ©2025 McDONALD'S. All Rights Reserved.
+          </div>
+
+          <div class="flex gap-4">
+            <a href="#" class="text-xs text-zinc-800">利用規約</a>
+            <a href="#" class="text-xs text-zinc-800">個人情報保護方針</a>
+            <a href="#" class="text-xs text-zinc-800">法律に基づく情報</a>
+            <a href="#" class="text-xs text-zinc-800"
+              >日本マクドナルドホールディングス</a
+            >
+          </div>
+        </div>
+
+        <img
+          src="https://cdn.builder.io/api/v1/image/assets/TEMP/10b3138b98d3dcbf4b3900e9099e4e398b39bebc"
+          alt="Footer Logo"
+          class="h-[77px] w-[85px]"
+          loading="lazy"
+        />
+      </div>
+    </footer>
+  </body>
+</html>

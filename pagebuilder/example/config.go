@@ -1,6 +1,7 @@
 package example
 
 import (
+	"context"
 	"embed"
 	"io/fs"
 	"net/http"
@@ -12,12 +13,10 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
+	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/pagebuilder/commonContainer"
 	"github.com/qor5/admin/v3/pagebuilder/example/containers"
-	"github.com/qor5/admin/v3/pagebuilder/example/containers/tailwind"
-	"github.com/qor5/admin/v3/pagebuilder/example/containers/tailwind/heroImageHorizontal"
-	"github.com/qor5/admin/v3/pagebuilder/example/containers/tailwind/heroImageList"
-	"github.com/qor5/admin/v3/pagebuilder/example/containers/tailwind/heroImageVertical"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/tiptap"
 )
@@ -39,16 +38,15 @@ func ConnectDB() (db *gorm.DB) {
 var containerImages embed.FS
 
 func ConfigPageBuilder(db *gorm.DB, prefix, style string, b *presets.Builder) *pagebuilder.Builder {
+	ab := activity.New(db, func(ctx context.Context) (*activity.User, error) {
+		return &activity.User{}, nil
+	}).AutoMigrate()
+
 	err := db.AutoMigrate(
 		&containers.WebHeader{},
 		&containers.WebFooter{},
 		&containers.VideoBanner{},
 		&containers.Heading{},
-		&heroImageHorizontal.Hero{},
-		&heroImageList.TailWindHeroList{},
-		&heroImageVertical.TailWindHeroVertical{},
-		&tailwind.TailWindExampleHeader{},
-		&tailwind.TailWindExampleFooter{},
 		&containers.BrandGrid{},
 		&containers.ListContent{},
 		&containers.ImageContainer{},
@@ -57,11 +55,15 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, b *presets.Builder) *p
 		&containers.PageTitle{},
 		&containers.ListContentLite{},
 		&containers.ListContentWithImage{},
+		&containers.Freestyle{},
 	)
 	if err != nil {
 		panic(err)
 	}
-	pb := pagebuilder.New(prefix, db, b).AutoMigrate()
+	if err = commonContainer.AutoMigrate(db); err != nil {
+		panic(err)
+	}
+	pb := commonContainer.New(db, b, prefix, nil).AutoMigrate()
 	if style != "" {
 		pb.PageStyle(h.RawHTML(style))
 	}
@@ -73,19 +75,13 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, b *presets.Builder) *p
 	containers.RegisterHeader(pb)
 	containers.RegisterFooter(pb)
 	containers.RegisterVideoBannerContainer(pb)
-	heroImageHorizontal.RegisterHeroContainer(pb, db)
-	heroImageVertical.RegisterHeroVerticalContainer(pb, db)
-	heroImageList.RegisterHeroListContainer(pb, db)
-	tailwind.RegisterHeaderContainer(pb, db)
-	tailwind.RegisterFooterContainer(pb, db)
 	containers.RegisterHeadingContainer(pb, db)
 	containers.RegisterBrandGridContainer(pb, db)
 	containers.RegisterListContentContainer(pb, db)
 	containers.RegisterImageContainer(pb, db)
 	containers.RegisterInNumbersContainer(pb, db)
-	containers.RegisterContactFormContainer(pb, db)
-	containers.RegisterPageTitleContainer(pb, db)
 	containers.RegisterListContentLiteContainer(pb, db)
 	containers.RegisterListContentWithImageContainer(pb, db)
+	containers.RegisterFreestyleContainer(pb, db, ab)
 	return pb
 }

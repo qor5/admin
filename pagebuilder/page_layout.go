@@ -9,26 +9,54 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
-//go:embed assets/css
+//go:embed commonContainer/assets/css
+//go:embed commonContainer/assets/js
 var theme embed.FS
 
-func WrapDefaultPageLayoutFunc(css ...string) PageLayoutFunc {
+func WrapDefaultPageLayout(pageLayoutFunc PageLayoutFunc) PageLayoutFunc {
 	return func(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent {
-		val, err := theme.ReadFile("assets/css/page-builder-default.css")
+		containerThemeCss, err := theme.ReadFile("commonContainer/assets/css/common-container-theme.css")
 		if err != nil {
 			panic(err)
 		}
-		input.FreeStyleCss = append(input.FreeStyleCss, append(css, string(val))...)
+
+		containerJs, err := theme.ReadFile("commonContainer/assets/js/common-container-scope.js")
+		if err != nil {
+			panic(err)
+		}
+
+		configJs := []string{
+			`window.TwindScope = {style: []};`,
+			// https://twind.dev/handbook/configuration.html#preflight
+			`window.TwindScope.config = {
+						hash: false,
+						theme: {
+							extend: {
+								fontFamily: {
+									sans: ["InterVariable", "system-ui", "sans-serif"],
+								},
+							},
+						},
+				}`,
+			fmt.Sprintf("window.TwindScope.style.push(`%s`)", string(func() []byte {
+				css, err := theme.ReadFile("commonContainer/assets/css/common-container.css")
+				if err != nil {
+					panic(err)
+				}
+				return css
+			}())),
+		}
+
+		input.FreeStyleCss = append(input.FreeStyleCss, string(containerThemeCss))
+		input.FreeStyleTopJs = append(input.FreeStyleTopJs, strings.Join(configJs, "\n"))
+		input.FreeStyleBottomJs = append(input.FreeStyleBottomJs, string(containerJs))
+
 		return pageLayoutFunc(body, input, ctx)
 	}
 }
 
 func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent {
-	css, err := theme.ReadFile("assets/css/page-builder-theme.css")
-	if err != nil {
-		panic(err)
-	}
-	return WrapDefaultPageLayoutFunc(string(css))(body, input, ctx)
+	return WrapDefaultPageLayout(pageLayoutFunc)(body, input, ctx)
 }
 
 func pageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent {
@@ -41,38 +69,6 @@ func pageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.Event
 	css := "https://the-plant.com/assets/app/container.4f902c4.css"
 	domain := "https://example.qor5.theplant-dev.com"
 
-	// tailwind ecosystem resources
-	tailwindJs := "https://cdn.tailwindcss.com"
-	alpineJs := "https://unpkg.com/alpinejs"
-	InferCss := "https://rsms.me/inter/inter.css"
-
-	tailwindPluginJs := []string{
-		`tailwind.config = {
-		theme: {
-		extend: {
-					fontFamily: {
-						sans: ["InterVariable", "sans-serif"],
-					},
-		}
-		}
-	}`,
-	}
-	tailwindOverrides := []string{
-		`.tailwind-scope {
-        h1,
-        h2,
-        h3,
-        h4,
-        h5,
-        h6,
-        a,
-        p {
-          font-family: InterVariable, system-ui, sans-serif;
-        }
-      }
-		`,
-	}
-
 	head := h.Components(
 		input.SeoTags,
 		input.CanonicalLink,
@@ -83,18 +79,12 @@ func pageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.Event
 		h.Meta().Name("format-detection").Content("telephone=no"),
 		h.Link("").Rel("stylesheet").Type("text/css").Href(css),
 
-		// tailwind ecosystem resources
-		h.Link("").Rel("stylesheet").Type("text/css").Href(InferCss),
-		h.Script("").Src(tailwindJs),
-		h.Script("").Src(alpineJs).Attr("defer", "true"),
-
 		h.If(len(input.EditorCss) > 0, input.EditorCss...),
 		freeStyleCss,
 		// RawHTML(dataLayer),
 		input.StructuredData,
-		scriptWithCodes(input.FreeStyleTopJs),
-		scriptWithCodes(tailwindPluginJs),
-		styleWithCodes(tailwindOverrides),
+		ScriptWithCodes(input.FreeStyleTopJs),
+		// ScriptWithCodes(twindScopeConfigJs),
 	)
 	ctx.Injector.HTMLLang(input.LocaleCode)
 	if input.WrapHead != nil {
@@ -107,7 +97,7 @@ func pageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.Event
 		body,
 		h.If(input.Footer != nil, input.Footer),
 		h.Script("").Src(js),
-		scriptWithCodes(input.FreeStyleBottomJs),
+		ScriptWithCodes(input.FreeStyleBottomJs),
 	)
 	if input.WrapBody != nil {
 		bodies = input.WrapBody(bodies)
@@ -118,7 +108,7 @@ func pageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.Event
 	).Attr("data-site-domain", domain)
 }
 
-func scriptWithCodes(jscodes []string) h.HTMLComponent {
+func ScriptWithCodes(jscodes []string) h.HTMLComponent {
 	var js h.HTMLComponent
 	if len(jscodes) > 0 {
 		js = h.Script(fmt.Sprintf(`
