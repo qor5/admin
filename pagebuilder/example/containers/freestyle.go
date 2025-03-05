@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/iancoleman/strcase"
-	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
@@ -34,7 +33,7 @@ func (*Freestyle) TableName() string {
 	return "container_freestyles"
 }
 
-func RegisterFreestyleContainer(pb *pagebuilder.Builder, db *gorm.DB, ab *activity.Builder) {
+func RegisterFreestyleContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	vb := pb.RegisterContainer("Freestyle").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) h.HTMLComponent {
 			fs := obj.(*Freestyle)
@@ -70,7 +69,7 @@ func RegisterFreestyleContainer(pb *pagebuilder.Builder, db *gorm.DB, ab *activi
 	eb.Field("BottomJS").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return vx.VXField().Type("textarea").Attr(web.VField(field.FormKey, field.Value(obj))...).Label(field.Label).Disabled(field.Disabled)
 	})
-	ab.RegisterModel(mb.GetModelBuilder())
+	// ab.RegisterModel(mb.GetModelBuilder())
 
 	eb.Field("TopSpace").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return vx.VXSelect().
