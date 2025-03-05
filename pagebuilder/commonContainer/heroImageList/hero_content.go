@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/web/v3"
 
+	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 )
 
@@ -17,7 +20,15 @@ type heroContent struct {
 	// Button      string
 	// ButtonStyle string
 	// ImgInitial bool
-	// ImageUpload media_library.MediaBox `sql:"type:text;"`
+	ImageUpload1        media_library.MediaBox `sql:"type:text;"`
+	ProductTitle1       string
+	ProductDescription1 string
+	ImageUpload2        media_library.MediaBox `sql:"type:text;"`
+	ProductTitle2       string
+	ProductDescription2 string
+	ImageUpload3        media_library.MediaBox `sql:"type:text;"`
+	ProductTitle3       string
+	ProductDescription3 string
 }
 
 func (this heroContent) Value() (driver.Value, error) {
@@ -36,11 +47,26 @@ func (this *heroContent) Scan(value interface{}) error {
 }
 
 func SetHeroContentComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder, db *gorm.DB) {
-	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&heroContent{}).Only("Title")
+	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&heroContent{}).Only("Title", "ImageUpload1", "ImageUpload2", "ImageUpload3")
 
-	// fb.Field("Body").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-	// 	return presets.TextField(obj, field, ctx).Type("textarea")
-	// })
+	fb.Field("ProductTitle1").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		return presets.TextField(obj, field, ctx).Type("input")
+	})
+	fb.Field("ProductTitle2").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		return presets.TextField(obj, field, ctx).Type("input")
+	})
+	fb.Field("ProductTitle3").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		return presets.TextField(obj, field, ctx).Type("input")
+	})
+	fb.Field("ProductDescription1").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		return presets.TextField(obj, field, ctx).Type("input")
+	})
+	fb.Field("ProductDescription2").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		return presets.TextField(obj, field, ctx).Type("input")
+	})
+	fb.Field("ProductDescription3").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		return presets.TextField(obj, field, ctx).Type("input")
+	})
 
 	// fb.Field("ButtonStyle").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 	// 	return presets.SelectField(obj, field, ctx).Items(tailwind.ButtonPresets)

@@ -101,3 +101,7 @@
   border-radius: 8px;
   overflow: hidden;
 }
+
+.container-tailwind-example-header header ul{
+  font-size: 20px;
+}

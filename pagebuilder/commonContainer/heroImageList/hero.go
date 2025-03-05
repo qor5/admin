@@ -49,6 +49,12 @@ func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 			p := obj.(*TailWindHeroList)
 			p.Content.Title = "This is a title"
+			p.Content.ProductTitle1 = "Commerce"
+			p.Content.ProductDescription1 = "Ultra-reliable Omni-channel software tuned to the needs of any market.Ultra-reliable Ultra-reliable"
+			p.Content.ProductTitle2 = "Commerce"
+			p.Content.ProductDescription2 = "Ultra-reliable Omni-channel software tuned to the needs of any market.Ultra-reliable Ultra-reliable"
+			p.Content.ProductTitle3 = "Commerce"
+			p.Content.ProductDescription3 = "Ultra-reliable Omni-channel software tuned to the needs of any market.Ultra-reliable Ultra-reliable"
 			// p.Content.Body = "From end-to-end solutions to consulting, we draw on decades of expertise to solve new challenges in e-commerce, content management, and digital innovation."
 			// p.Content.Button = "Get Start"
 			// p.Content.ButtonStyle = "unset"
@@ -89,6 +95,10 @@ func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 }
 
 func HeroBody(data *TailWindHeroList, input *pagebuilder.RenderInput) (body HTMLComponent) {
+	image1 := data.Content.ImageUpload1.URL()
+	image2 := data.Content.ImageUpload2.URL()
+	image3 := data.Content.ImageUpload3.URL()
+
 	// heroImgUrl := data.Content.ImageUpload.URL()
 	// backgroundImgUrl := data.Style.ImageBackground.URL()
 
@@ -103,24 +113,24 @@ func HeroBody(data *TailWindHeroList, input *pagebuilder.RenderInput) (body HTML
 
 				Ul(
 					Li(
-						Div().Class("w-[320px] h-[288px] tw-theme-filter-container").
-							Style("background-image: url(https://placehold.co/320x288)"),
-						H2("Commerce").Class("tw-theme-text tw-theme-h2 text-[35px] leading-10 mt-6"),
-						P(Text("Ultra-reliable Omni-channel software tuned to the needs of any market.Ultra-reliable Ultra-reliable")).
+						Div().Class("w-[320px] h-[288px] tw-theme-filter-container bg-center bg-no-repeat bg-cover").
+							Style(fmt.Sprintf("background-image: url(%s)", image1)),
+						H2(data.Content.ProductTitle1).Class("tw-theme-text tw-theme-h2 text-[35px] leading-10 mt-6"),
+						P(Text(data.Content.ProductDescription1)).
 							Class("mt-4 tw-theme-text tw-theme-p text-[16px] leading-6"),
 					).Class("w-[320px]"),
 					Li(
-						Div().Class("w-[320px] h-[288px] tw-theme-filter-container").
-							Style("background-image: url(https://placehold.co/320x288)"),
-						H2("Commerce").Class("tw-theme-text tw-theme-h2 text-[35px] leading-10 mt-6"),
-						P(Text("Ultra-reliable Omni-channel software tuned to the needs of any market.Ultra-reliable Ultra-reliable")).
+						Div().Class("w-[320px] h-[288px] tw-theme-filter-container bg-center bg-no-repeat bg-cover").
+							Style(fmt.Sprintf("background-image: url(%s)", image2)),
+						H2(data.Content.ProductTitle2).Class("tw-theme-text tw-theme-h2 text-[35px] leading-10 mt-6"),
+						P(Text(data.Content.ProductDescription2)).
 							Class("mt-4 tw-theme-text tw-theme-p text-[16px] leading-6"),
 					).Class("w-[320px]"),
 					Li(
-						Div().Class("w-[320px] h-[288px] tw-theme-filter-container").
-							Style("background-image: url(https://placehold.co/320x288)"),
-						H2("Commerce").Class("tw-theme-text tw-theme-h2 text-[35px] leading-10 mt-6"),
-						P(Text("Ultra-reliable Omni-channel software tuned to the needs of any market.Ultra-reliable Ultra-reliable")).
+						Div().Class("w-[320px] h-[288px] tw-theme-filter-container bg-center bg-no-repeat bg-cover").
+							Style(fmt.Sprintf("background-image: url(%s)", image3)),
+						H2(data.Content.ProductTitle3).Class("tw-theme-text tw-theme-h2 text-[35px] leading-10 mt-6"),
+						P(Text(data.Content.ProductDescription3)).
 							Class("mt-4 tw-theme-text tw-theme-p text-[16px] leading-6"),
 					).Class("w-[320px]"),
 				).Class("flex justify-between mt-10").Attr("data-list-unset", "true"),
