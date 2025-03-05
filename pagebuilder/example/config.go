@@ -1,6 +1,7 @@
 package example
 
 import (
+	"context"
 	"embed"
 	"io/fs"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
+	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/pagebuilder/commonContainer"
 	"github.com/qor5/admin/v3/pagebuilder/example/containers"
@@ -36,6 +38,10 @@ func ConnectDB() (db *gorm.DB) {
 var containerImages embed.FS
 
 func ConfigPageBuilder(db *gorm.DB, prefix, style string, b *presets.Builder) *pagebuilder.Builder {
+	ab := activity.New(db, func(ctx context.Context) (*activity.User, error) {
+		return &activity.User{}, nil
+	}).AutoMigrate()
+
 	err := db.AutoMigrate(
 		&containers.WebHeader{},
 		&containers.WebFooter{},
@@ -49,6 +55,7 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, b *presets.Builder) *p
 		&containers.PageTitle{},
 		&containers.ListContentLite{},
 		&containers.ListContentWithImage{},
+		&containers.Freestyle{},
 	)
 	if err != nil {
 		panic(err)
@@ -73,9 +80,8 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, b *presets.Builder) *p
 	containers.RegisterListContentContainer(pb, db)
 	containers.RegisterImageContainer(pb, db)
 	containers.RegisterInNumbersContainer(pb, db)
-	containers.RegisterContactFormContainer(pb, db)
-	containers.RegisterPageTitleContainer(pb, db)
 	containers.RegisterListContentLiteContainer(pb, db)
 	containers.RegisterListContentWithImageContainer(pb, db)
+	containers.RegisterFreestyleContainer(pb, db, ab)
 	return pb
 }
