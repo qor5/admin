@@ -33,12 +33,16 @@ type ModelBuilder struct {
 	mb    *presets.ModelBuilder
 	b     *Builder
 	IsTpl bool
+	name  string
 }
 
 const (
 	ParamTemplateID        = "mailbuilder_template_id"
 	ParamChangeTemplate    = "mailbuilder_change_template"
 	TemplateSelectionFiled = "mailbuilder_template_selection"
+
+	paramPrimarySlug = "primarySlug"
+	paramModelName   = "modelName"
 
 	EmailEditorDialogPortalName = "mailbuilder_emailEditorDialog"
 
@@ -197,32 +201,17 @@ func (mb *ModelBuilder) createTemplate(w http.ResponseWriter, r *http.Request) {
 func (mb *ModelBuilder) getTemplate(w http.ResponseWriter, r *http.Request) {
 	var (
 		models = mb.mb.NewModelSlice()
+		obj    = mb.mb.NewModel()
 		db     = mb.b.db
+		ctx    = web.MustGetEventContext(r.Context())
 	)
-	idsParam := r.URL.Query().Get("ids")
-	if strings.TrimSpace(idsParam) == "" {
-		if err := db.Order("created_at DESC").Limit(10).Find(models).Error; err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	} else {
-		idsStr := strings.Split(idsParam, ",")
-		ids := make([]int, len(idsStr))
-		for i, idStr := range idsStr {
-			id, err := strconv.Atoi(idStr)
-			if err != nil {
-				http.Error(w, "invalid id params", http.StatusBadRequest)
-				return
-			}
-			ids[i] = id
-		}
-
-		if err := db.Where("id in ?", ids).Find(models).Error; err != nil {
+	primarySlug := ctx.Param(paramPrimarySlug)
+	if primarySlug != "" {
+		if err := utils.PrimarySluggerWhere(db, obj, primarySlug).Find(models).Error; err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	by, _ := json.Marshal(&UnifyResponse{Data: models})
@@ -514,7 +503,7 @@ func (mb *ModelBuilder) emailBuilderBody(ctx *web.EventContext) h.HTMLComponent 
 					}`, presets.ShowSnackbarScript("Email successfully sent.", "success"), presets.ShowSnackbarScript("Email sent failed.", "error"))),
 				vx.VXIframeEmailEditor().
 					Ref("emailEditor").
-					Src(fmt.Sprintf("/email_builder/editor?id=%s&userId=undefined", primarySlug)).
+					Src(fmt.Sprintf("/email_builder/editor?%s=%s&%s=%s&userId=undefined", presets.ParamID, primarySlug, paramModelName, mb.name)).
 					Class("flex-1 ml-2"),
 
 				web.Portal().Name(EmailEditorDialogPortalName),

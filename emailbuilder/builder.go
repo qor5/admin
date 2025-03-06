@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"regexp"
 
+	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
 	"gorm.io/gorm"
 
@@ -67,6 +68,7 @@ func (b *Builder) Model(mb *presets.ModelBuilder, isTpl bool) (r *ModelBuilder) 
 		mb:    mb,
 		b:     b,
 		IsTpl: isTpl,
+		name:  mb.Info().URIName(),
 	}
 	b.models = append(b.models, r)
 	return
@@ -74,6 +76,10 @@ func (b *Builder) Model(mb *presets.ModelBuilder, isTpl bool) (r *ModelBuilder) 
 
 func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, mb := range b.models {
+		ctx := web.MustGetEventContext(r.Context())
+		if ctx.Param(paramModelName) != mb.name {
+			continue
+		}
 		if mb.mb.Info().Verifier().Do(presets.PermGet).WithReq(r).IsAllowed() != nil {
 			_, _ = w.Write([]byte(perm.PermissionDenied.Error()))
 			return
