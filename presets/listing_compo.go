@@ -675,27 +675,32 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 	if err != nil {
 		panic(errors.Wrap(err, "get columns error"))
 	}
+	var dataBody h.HTMLComponent
+	if c.lb.dataTableFunc == nil {
+		dataTable := vx.DataTable(searchResult.Nodes).Hover(true).HoverClass("cursor-pointer").
+			HeadCellWrapperFunc(c.headCellWrapperFunc(ctx, columns, colOrderBys, orderableFieldMap)).
+			RowWrapperFunc(c.rowWrapperFunc(evCtx)).
+			RowMenuHead(btnConfigColumns).
+			RowMenuItemFuncs(c.lb.RowMenu().listingItemFuncs(evCtx)...).
+			CellWrapperFunc(c.cellWrapperFunc(evCtx))
 
-	dataTable := vx.DataTable(searchResult.Nodes).Hover(true).HoverClass("cursor-pointer").
-		HeadCellWrapperFunc(c.headCellWrapperFunc(ctx, columns, colOrderBys, orderableFieldMap)).
-		RowWrapperFunc(c.rowWrapperFunc(evCtx)).
-		RowMenuHead(btnConfigColumns).
-		RowMenuItemFuncs(c.lb.RowMenu().listingItemFuncs(evCtx)...).
-		CellWrapperFunc(c.cellWrapperFunc(evCtx))
+		c.setupBulkActions(ctx, dataTable)
+		c.setupColumns(dataTable, columns)
 
-	c.setupBulkActions(ctx, dataTable)
-	c.setupColumns(dataTable, columns)
-
-	if c.lb.tableProcessor != nil {
-		dataTable, err = c.lb.tableProcessor(evCtx, dataTable)
-		if err != nil {
-			panic(err)
+		if c.lb.tableProcessor != nil {
+			dataTable, err = c.lb.tableProcessor(evCtx, dataTable)
+			if err != nil {
+				panic(err)
+			}
 		}
+		dataBody = dataTable
+	} else {
+		dataBody = c.lb.dataTableFunc(evCtx, searchResult.Nodes)
 	}
 
 	return h.Components(
 		filterScript,
-		dataTable,
+		dataBody,
 		c.buildDataTableAdditions(ctx, searchParams, searchResult),
 	)
 }

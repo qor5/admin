@@ -1,17 +1,25 @@
 package admin
 
 import (
+	"bytes"
 	_ "embed"
 	"fmt"
+	"io"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
+	"os"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/qor5/x/v3/login"
 	"github.com/qor5/x/v3/sitemap"
 	"gorm.io/gorm"
 
+	"github.com/qor5/admin/v3/emailbuilder"
 	"github.com/qor5/admin/v3/example/models"
 	"github.com/qor5/admin/v3/role"
+	"github.com/qor5/admin/v3/utils"
 )
 
 //go:embed assets/favicon.ico
@@ -59,6 +67,15 @@ func TestL18nHandler(db *gorm.DB) (http.Handler, Config) {
 	return mux, c
 }
 
+// a reverse proxy for development
+func NewReverseProxy(target string) (*httputil.ReverseProxy, error) {
+	url, err := url.Parse(target)
+	if err != nil {
+		return nil, err
+	}
+	return httputil.NewSingleHostReverseProxy(url), nil
+}
+
 func Router(db *gorm.DB) http.Handler {
 	c := NewConfig(db, true)
 
@@ -82,6 +99,63 @@ func Router(db *gorm.DB) http.Handler {
 	}))
 
 	mux.Handle("/page_builder/", c.pageBuilder)
+
+	if utils.IsDevelopment() {
+		// development mode：reverse proxy to Vite http server
+		proxy, err := NewReverseProxy("http://localhost:3000/email_builder/")
+		if err != nil {
+			fmt.Printf("Failed to create reverse proxy: %v", err)
+		}
+		mux.Handle("/email_builder/", http.StripPrefix("/email_builder", proxy))
+		mux.Handle("/email_builder", http.RedirectHandler("/email_builder/", http.StatusMovedPermanently))
+	} else {
+
+		// for /email_builder/* fallback is index.html
+		mux.Handle("/email_builder/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			path := strings.TrimPrefix(r.URL.Path, "/email_builder/")
+			if path == "" {
+				path = "index.html"
+			}
+			if strings.Contains(path, "..") || strings.Contains(path, "\\") {
+				http.Error(w, "Invalid file name", http.StatusBadRequest)
+				return
+			}
+			file, err := emailbuilder.EmailBuilderDist.Open(path)
+			if os.IsNotExist(err) {
+				file, _ = emailbuilder.EmailBuilderDist.Open("index.html")
+			}
+			fileInfo, err := file.Stat()
+			if err != nil {
+				http.Error(w, "Error reading file info", http.StatusInternalServerError)
+				return
+			}
+			content, err := io.ReadAll(file)
+			if err != nil {
+				http.Error(w, "Error reading file", http.StatusInternalServerError)
+				return
+			}
+			http.ServeContent(w, r, path, fileInfo.ModTime(), bytes.NewReader(content))
+		}))
+
+		// for exactly /email_builder
+		mux.Handle("/email_builder", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			file, _ := emailbuilder.EmailBuilderDist.Open("index.html")
+			fileInfo, err := file.Stat()
+			if err != nil {
+				http.Error(w, "Error reading file info", http.StatusInternalServerError)
+				return
+			}
+			content, err := io.ReadAll(file)
+			if err != nil {
+				http.Error(w, "Error reading file", http.StatusInternalServerError)
+				return
+			}
+			http.ServeContent(w, r, "index.html", fileInfo.ModTime(), bytes.NewReader(content))
+		}))
+	}
+	mux.Handle("/email_template/", http.StripPrefix("/email_template", c.eb))
+	// email_builder register end
+
 	mux.Handle("/", c.pb)
 	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		w.Write(favicon)
