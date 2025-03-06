@@ -1,13 +1,14 @@
 package docsrc
 
 import (
+	"github.com/theplant/docgo"
+
 	"github.com/qor5/admin/v3/docs/docsrc/content"
 	advanced_functions "github.com/qor5/admin/v3/docs/docsrc/content/advanced-functions"
 	"github.com/qor5/admin/v3/docs/docsrc/content/basics"
 	digging_deeper "github.com/qor5/admin/v3/docs/docsrc/content/digging-deeper"
 	getting_started "github.com/qor5/admin/v3/docs/docsrc/content/getting-started"
 	"github.com/qor5/admin/v3/docs/docsrc/utils"
-	"github.com/theplant/docgo"
 )
 
 var DocTree = []interface{}{
@@ -49,6 +50,8 @@ var DocTree = []interface{}{
 			basics.Publish,
 			basics.I18n,
 			basics.L10n,
+			basics.Redirection,
+			basics.CustomPage,
 		},
 	},
 

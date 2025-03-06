@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>Building Admin - Custom Pages - QOR5 Document</title>
+
+<meta name='description'>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<base href='/docs/'>
+
+<link href='index.css' rel='stylesheet' type='text/css'>
+
+<script type='text/javascript' defer src='index.js'></script>
+</head>
+
+<body>
+<div id='app' v-cloak>
+<div v-init-context:vars='{hideAside: false}' class='flex h-screen'>
+<div class='flex-1 flex flex-col overflow-hidden'>
+<div class='flex h-full'>
+<aside v-show='!vars.hideAside' id='menuScroller' class='flex flex-col w-80 h-full bg-gray-50 border-r border-gray-200 overflow-y-auto'>
+<div class='h-12'><search></search></div>
+
+<ul class='px-0 py-3 mx-0 text-base font-normal list-none text-gray-700'>
+<li class='m-0'>
+<a href='index.html' id='index.html' onclick='window.storeMenuState("index.html")' class='inline-block px-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Introduction</a>
+</li>
+
+<li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Getting Started</li>
+
+<li class='m-0'>
+<a href='getting-started/one-minute-quick-start.html' id='getting-started/one-minute-quick-start.html' onclick='window.storeMenuState("getting-started/one-minute-quick-start.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>1 Minute Quick Start</a>
+</li>
+
+<li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Building Admin</li>
+
+<li class='m-0'>
+<a href='basics/presets-instant-crud.html' id='basics/presets-instant-crud.html' onclick='window.storeMenuState("basics/presets-instant-crud.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>presets, Instant CRUD</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/listing.html' id='basics/listing.html' onclick='window.storeMenuState("basics/listing.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Listing</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/listing-customizations.html' id='basics/listing-customizations.html' onclick='window.storeMenuState("basics/listing-customizations.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Listing Customizations</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/filter.html' id='basics/filter.html' onclick='window.storeMenuState("basics/filter.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Filters</a>
+</li>
+
+<li class='m-0'>
+<a href='presets-guide/editing-customizations.html' id='presets-guide/editing-customizations.html' onclick='window.storeMenuState("presets-guide/editing-customizations.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Editing</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/brand.html' id='basics/brand.html' onclick='window.storeMenuState("basics/brand.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Brand</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/menu.html' id='basics/menu.html' onclick='window.storeMenuState("basics/menu.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Menu</a>
+</li>
+
+<li class='m-0'>
+<a href='presets-guide/detail-page-for-complex-object.html' id='presets-guide/detail-page-for-complex-object.html' onclick='window.storeMenuState("presets-guide/detail-page-for-complex-object.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Detailing</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/layout.html' id='basics/layout.html' onclick='window.storeMenuState("basics/layout.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Layout</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/login.html' id='basics/login.html' onclick='window.storeMenuState("basics/login.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Login</a>
+</li>
+
+<li class='m-0'>
+<a href='presets-guide/permissions.html' id='presets-guide/permissions.html' onclick='window.storeMenuState("presets-guide/permissions.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Permissions</a>
+</li>
+
+<li class='m-0'>
+<a href='presets-guide/role.html' id='presets-guide/role.html' onclick='window.storeMenuState("presets-guide/role.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Role</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/shortcut.html' id='basics/shortcut.html' onclick='window.storeMenuState("basics/shortcut.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Keyboard Shortcut</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/confirm-dialog.html' id='basics/confirm-dialog.html' onclick='window.storeMenuState("basics/confirm-dialog.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Confirm Dialog</a>
+</li>
+
+<li class='m-0'>
+<a href='slug.html' id='slug.html' onclick='window.storeMenuState("slug.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Slug</a>
+</li>
+
+<li class='m-0'>
+<a href='seo.html' id='seo.html' onclick='window.storeMenuState("seo.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>SEO</a>
+</li>
+
+<li class='m-0'>
+<a href='activity-log.html' id='activity-log.html' onclick='window.storeMenuState("activity-log.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Activity Log</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/worker.html' id='basics/worker.html' onclick='window.storeMenuState("basics/worker.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Worker</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/publish.html' id='basics/publish.html' onclick='window.storeMenuState("basics/publish.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Publish</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/i18n.html' id='basics/i18n.html' onclick='window.storeMenuState("basics/i18n.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Internationalization</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/l10n.html' id='basics/l10n.html' onclick='window.storeMenuState("basics/l10n.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Localization</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/redirection.html' id='basics/redirection.html' onclick='window.storeMenuState("basics/redirection.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Redirection</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/custom-page.html' id='basics/custom-page.html' onclick='window.storeMenuState("basics/custom-page.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-blue-500'>Custom Pages</a>
+</li>
+
+<li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Web Application</li>
+
+<li class='m-0'>
+<a href='advanced-functions/the-go-html-builder.html' id='advanced-functions/the-go-html-builder.html' onclick='window.storeMenuState("advanced-functions/the-go-html-builder.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>The Go HTML builder</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/page-func-and-event-func.html' id='basics/page-func-and-event-func.html' onclick='window.storeMenuState("basics/page-func-and-event-func.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Page Func and Event Func</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/layout-function-and-page-injector.html' id='basics/layout-function-and-page-injector.html' onclick='window.storeMenuState("basics/layout-function-and-page-injector.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Layout Function and Page Injector</a>
+</li>
+
+<li class='m-0'>
+<a href='vuetify-components/lazy-portals.html' id='vuetify-components/lazy-portals.html' onclick='window.storeMenuState("vuetify-components/lazy-portals.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Lazy Portals</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/switch-pages-with-push-state.html' id='basics/switch-pages-with-push-state.html' onclick='window.storeMenuState("basics/switch-pages-with-push-state.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Switch Pages with Push State</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/reload-page-with-a-flash.html' id='basics/reload-page-with-a-flash.html' onclick='window.storeMenuState("basics/reload-page-with-a-flash.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Reload Page with a Flash</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/partial-refresh-with-portal.html' id='basics/partial-refresh-with-portal.html' onclick='window.storeMenuState("basics/partial-refresh-with-portal.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Partial Refresh with Portal</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/manipulate-page-url-in-event-func.html' id='basics/manipulate-page-url-in-event-func.html' onclick='window.storeMenuState("basics/manipulate-page-url-in-event-func.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Manipulate Page URL in Event Func</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/summary-of-event-response.html' id='basics/summary-of-event-response.html' onclick='window.storeMenuState("basics/summary-of-event-response.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Summary of Event Response</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/web-scope.html' id='basics/web-scope.html' onclick='window.storeMenuState("basics/web-scope.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>web.Scope</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/event-handling.html' id='basics/event-handling.html' onclick='window.storeMenuState("basics/event-handling.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Event Handling</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/form-handling.html' id='basics/form-handling.html' onclick='window.storeMenuState("basics/form-handling.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Form Handling</a>
+</li>
+
+<li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>UI Components</li>
+
+<li class='m-0'>
+<a href='vuetify-components/basic-inputs.html' id='vuetify-components/basic-inputs.html' onclick='window.storeMenuState("vuetify-components/basic-inputs.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Basic Inputs</a>
+</li>
+
+<li class='m-0'>
+<a href='vuetify-components/a-taste-of-using-vuetify-in-go.html' id='vuetify-components/a-taste-of-using-vuetify-in-go.html' onclick='window.storeMenuState("vuetify-components/a-taste-of-using-vuetify-in-go.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>A Taste of using Vuetify in Go</a>
+</li>
+
+<li class='m-0'>
+<a href='vuetify-components/linkage-select.html' id='vuetify-components/linkage-select.html' onclick='window.storeMenuState("vuetify-components/linkage-select.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Linkage Select</a>
+</li>
+
+<li class='m-0'>
+<a href='components-guide/composite-new-component-with-go.html' id='components-guide/composite-new-component-with-go.html' onclick='window.storeMenuState("components-guide/composite-new-component-with-go.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Composite new Component With Go</a>
+</li>
+
+<li class='m-0'>
+<a href='components-guide/integrate-a-heavy-vue-component.html' id='components-guide/integrate-a-heavy-vue-component.html' onclick='window.storeMenuState("components-guide/integrate-a-heavy-vue-component.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Integrate a heavy Vue Component</a>
+</li>
+
+<li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Appendix</li>
+
+<li class='m-0'>
+<a href='appendix/all-demo-examples.html' id='appendix/all-demo-examples.html' onclick='window.storeMenuState("appendix/all-demo-examples.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>All Demo Examples</a>
+</li>
+</ul>
+</aside>
+
+<main class='flex flex-col w-full bg-white overflow-x-hidden overflow-y-auto'>
+<div id='docContentBox' class='flex flex-row w-full'>
+<div class='flex flex-grow flex-col w-2/3'>
+<div class='flex flex-row'>
+<button @click='vars.hideAside = !vars.hideAside' class='w-12 h-12 p-4'>
+<div class='w-4 h-4 fill-current text-gray-300'>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16px" height="16px" viewBox="0 0 16 16" version="1.1">
+<g id="surface1">
+<path style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;" d="M 2 12 L 2 11 L 14 11 L 14 12 Z M 2 8.5 L 2 7.5 L 14 7.5 L 14 8.5 Z M 2 5 L 2 4 L 14 4 L 14 5 Z M 2 5 "/>
+</g>
+</svg>
+</div>
+</button>
+</div>
+
+<div id='docMainBox' class='px-16 pb-12 pt-4 overflow-auto'>
+<h1 class='mb-8'>Custom Pages</h1>
+
+<div class='border-t'><p>Custom pages allow you to create standalone pages in your admin interface.</p>
+<h2><a name="basic-custom-page" class="anchor" href="#basic-custom-page" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Basic Custom Page</h2>
+
+<p>The simplest way to create a custom page is to use the <code>HandleCustomPage</code> method on the builder. This method takes a path and a <code>CustomPage</code> object that defines the page&#39;s content.</p>
+
+<p>Here&#39;s how to create a basic custom page:</p>
+
+<highlightjs :language='"go"' :code='"b.HandleCustomPage(\"custom-menu\", presets.NewCustomPage(b).Body(func(ctx *web.EventContext) h.HTMLComponent {\n\treturn v.VCard(\n\t\tv.VCardItem().Title(\"New Custom Page Show Menu\"),\n\t)\n}))\ndp.Field(\"NewCustomPageShowMenu\").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {\n\treturn v.VBtn(\"NewCustomPageShowMenu\").Color(v.ColorPrimary).Attr(\"@click\", web.Plaid().PushState(true).URL(\n\t\tb.GetURIPrefix()+\"/custom-menu\",\n\t).Go()).Class(\"mt-2\")\n})"'></highlightjs>
+<h2><a name="custom-page-with-parameters" class="anchor" href="#custom-page-with-parameters" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Custom Page with Parameters</h2>
+
+<p>You can create custom pages that accept URL parameters. This is useful for creating detail pages or any page that needs to display specific data based on an identifier.</p>
+
+<p>The parameter is defined in the URL path using curly braces, and you can access it in your handler using <code>ctx.Param()</code>:</p>
+
+<highlightjs :language='"go"' :code='"b.HandleCustomPage(\"custom/{id}\", presets.NewCustomPage(b).Body(func(ctx *web.EventContext) h.HTMLComponent {\n\ttestId := ctx.Param(presets.ParamID)\n\tname := ctx.Param(\"name\")\n\treturn v.VCard(\n\t\tv.VCardItem().Title(\"New Custom Page Param\"),\n\t\tv.VCardText(\n\t\t\th.Text(testId),\n\t\t\th.Br(),\n\t\t\th.Text(name),\n\t\t),\n\t)\n}).\n\tWrapMenu(func(componentFunc presets.ComponentFunc) presets.ComponentFunc {\n\t\treturn func(ctx *web.EventContext) h.HTMLComponent {\n\t\t\treturn nil\n\t\t}\n\t}))\n\ndp.Field(\"NewCustomPageByParam\").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {\n\treturn v.VBtn(\"NewCustomPageByParam\").Color(v.ColorPrimary).Attr(\"@click\", web.Plaid().PushState(true).\n\t\tURL(fmt.Sprintf(b.GetURIPrefix()+\"/custom/%v?name=vuetify\", ctx.Param(presets.ParamID))).Go()).Class(\"mt-2\")\n})"'></highlightjs>
+<h2><a name="custom-page-with-menu" class="anchor" href="#custom-page-with-menu" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Custom Page with Menu</h2>
+
+<p>By default, custom pages don&#39;t appear in the navigation menu. You can control whether a custom page appears in the menu by using the <code>Menu</code> method or by not providing a menu function.</p>
+<h3><a name="hide-from-menu" class="anchor" href="#hide-from-menu" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Hide from Menu</h3>
+
+<p>To hide a custom page from the menu, you can explicitly set the menu function to return nil:</p>
+
+<highlightjs :language='"go"' :code='"b.HandleCustomPage(\"custom\", presets.NewCustomPage(b).Body(func(ctx *web.EventContext) h.HTMLComponent {\n\treturn v.VCard(\n\t\tv.VCardItem().Title(\"New Custom Page\"),\n\t)\n}).\n\tMenu(func(ctx *web.EventContext) h.HTMLComponent {\n\t\treturn nil\n\t}))\ndp.Field(\"NewCustomPage\").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {\n\treturn v.VBtn(\"NewCustomPage\").Color(v.ColorPrimary).Attr(\"@click\", web.Plaid().PushState(true).URL(b.GetURIPrefix()+\"/custom\").Go()).Class(\"mt-2\")\n})"'></highlightjs>
+</div>
+</div>
+</div>
+
+<div class='font-medium text-base hidden xl:block text-gray-600 pt-4'>
+<div class='sticky top-4 w-52'>On This Page<toc></toc></div>
+</div>
+</div>
+<search-result></search-result></main>
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

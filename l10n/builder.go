@@ -9,14 +9,15 @@ import (
 	"slices"
 	"time"
 
-	"github.com/qor5/admin/v3/activity"
-	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
 	"github.com/sunfmin/reflectutils"
 	. "github.com/theplant/htmlgo"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/utils"
 )
 
 var IncorrectLocaleErr = errors.New("incorrect locale")
@@ -244,6 +245,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 		RegisterForModule(language.English, I18nLocalizeKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nLocalizeKey, Messages_zh_CN).
 		RegisterForModule(language.Japanese, I18nLocalizeKey, Messages_ja_JP)
+	pb.SwitchLocaleFunc(b.runSwitchLocaleFunc)
 	return nil
 }
 

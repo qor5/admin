@@ -57,7 +57,7 @@ func TestProfile(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPageBodyContainsInOrder: []string{`DEMO`, `portal-name='ProfileCompo:`, `<v-avatar`, `text='Q'`, `/v-avatar>`, `qor@theplant.jp`, `Admin`},
+			ExpectPageBodyContainsInOrder: []string{`portal-name='ProfileCompo:`, `<v-avatar`, `text='Q'`, `/v-avatar>`, `qor@theplant.jp`, `Admin`},
 		},
 		{
 			Name:  "rename",

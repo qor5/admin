@@ -45,6 +45,7 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
+	"github.com/qor5/admin/v3/redirection"
 	"github.com/qor5/admin/v3/role"
 	"github.com/qor5/admin/v3/seo"
 	"github.com/qor5/admin/v3/tiptap"
@@ -163,12 +164,13 @@ func NewConfig(db *gorm.DB, enableWork bool, opts ...ConfigOption) Config {
 		ACL:      string(types.ObjectCannedACLBucketOwnerFullControl),
 		Endpoint: s3Endpoint,
 	})
-	PublishStorage = microsite_utils.NewClient(s3.New(&s3.Config{
+	s3Client := s3.New(&s3.Config{
 		Bucket:   s3PublishBucket,
 		Region:   s3PublishRegion,
 		ACL:      string(types.ObjectCannedACLBucketOwnerFullControl),
 		Endpoint: publishURL,
-	}))
+	})
+	PublishStorage = microsite_utils.NewClient(s3Client)
 	if options.StorageWrapper != nil {
 		PublishStorage = options.StorageWrapper(PublishStorage)
 	}
@@ -232,7 +234,7 @@ func NewConfig(db *gorm.DB, enableWork bool, opts ...ConfigOption) Config {
 		})
 	publisher := publish.New(db, PublishStorage).
 		ContextValueFuncs(l10nBuilder.ContextValueProvider)
-
+	redirectionBuilder := redirection.New(s3Client, db, publisher).AutoMigrate()
 	utils.Install(b)
 
 	publisher.Activity(ab)
@@ -376,6 +378,7 @@ func NewConfig(db *gorm.DB, enableWork bool, opts ...ConfigOption) Config {
 		roleBuilder,
 		loginSessionBuilder,
 		profileBuilder,
+		redirectionBuilder,
 	)
 
 	if resetAndImportInitialData {
@@ -519,8 +522,8 @@ func configProfile(db *gorm.DB, ab *activity.Builder, lsb *plogin.SessionBuilder
 				Roles:  u.GetRoles(),
 				Status: strcase.ToCamel(u.Status),
 				Fields: []*plogin.ProfileField{
-					{Name: "Email", Value: u.Account},
-					{Name: "Company", Value: u.Company},
+					{Name: "Email", Value: u.Account, Icon: "mdi-email-outline"},
+					{Name: "Company", Value: u.Company, Icon: "mdi-domain"},
 				},
 				NotifCounts: notifiCounts,
 			}
@@ -579,7 +582,7 @@ func configBrand(b *presets.Builder) {
 		return h.Div(
 			v.VRow(
 				v.VCol(h.A(h.Img(logo).Attr("width", "80")).Href("/")),
-				v.VCol(h.H1(msgr.Demo)).Class("pt-4"),
+				// v.VCol(h.H1(msgr.Demo)).Class("pt-4"),
 			),
 			// ).Density(DensityCompact),
 			h.If(dbReset != "",

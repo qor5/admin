@@ -59,6 +59,7 @@ func SamplesHandler(mux examples.Muxer) {
 	addExample(mux, db, PresetsDetailSimple)
 	addExample(mux, db, PresetsDetailListSection)
 	addExample(mux, db, PresetsUtilsDialog)
+	addExample(mux, db, PresetsCustomPage)
 	return
 }
 

@@ -118,6 +118,14 @@
 <a href='basics/l10n.html' id='basics/l10n.html' onclick='window.storeMenuState("basics/l10n.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-blue-500'>Localization</a>
 </li>
 
+<li class='m-0'>
+<a href='basics/redirection.html' id='basics/redirection.html' onclick='window.storeMenuState("basics/redirection.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Redirection</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/custom-page.html' id='basics/custom-page.html' onclick='window.storeMenuState("basics/custom-page.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Custom Pages</a>
+</li>
+
 <li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Web Application</li>
 
 <li class='m-0'>
@@ -230,7 +238,7 @@ Also this struct must implement <code>PrimarySlug() string</code> and <code>Prim
 <p>Register locales here.<br>
 You can use <code>SupportLocalesFunc</code> to determine who can use which locales.</p>
 
-<highlightjs :language='"go"' :code='"l10nBuilder := l10n.New(db)\nl10nBuilder.\n\tRegisterLocales(\"International\", \"international\", \"International\").\n\tRegisterLocales(\"China\", \"cn\", \"China\").\n\tRegisterLocales(\"Japan\", \"jp\", \"Japan\").\n\tSupportLocalesFunc(func(R *http.Request) []string {\n\t\treturn l10nBuilder.GetSupportLocaleCodes()[:]\n\t})"'></highlightjs>
+<highlightjs :language='"go"' :code='"l10nBuilder := l10n.New(db)\nl10nBuilder.\n\tRegisterLocales(\"International\", \"international\", \"International\", l10n.InternationalSvg).\n\tRegisterLocales(\"China\", \"cn\", \"China\", l10n.ChinaSvg).\n\tRegisterLocales(\"Japan\", \"jp\", \"Japan\", l10n.JapanSvg).\n\tSupportLocalesFunc(func(R *http.Request) []string {\n\t\treturn l10nBuilder.GetSupportLocaleCodes()[:]\n\t})"'></highlightjs>
 <h2><a name="configure-the-model-builder" class="anchor" href="#configure-the-model-builder" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Configure the model builder</h2>
 
 <p>Use <code>l10n_view.Configure()</code> func to configure l10n view.<br>
@@ -241,7 +249,7 @@ The <code>Localize</code> ui will appear in the <code>RowMenuItem</code> under t
 <highlightjs :language='"go"' :code='"mb := b.Model(\u0026L10nModel{}).URIName(\"l10n-models\")\nb.Use(l10nBuilder)\nmb.Use(l10nBuilder)\nmb.Listing(\"ID\", \"Title\", \"Locale\")"'></highlightjs>
 <h2><a name="full-example" class="anchor" href="#full-example" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Full Example</h2>
 
-<highlightjs :language='"go"' :code='"import (\n\t\"fmt\"\n\t\"net/http\"\n\t\"strings\"\n\n\t\"github.com/qor5/admin/v3/l10n\"\n\t\"github.com/qor5/admin/v3/presets\"\n\t\"github.com/qor5/admin/v3/presets/gorm2op\"\n\t\"gorm.io/gorm\"\n)\n\ntype L10nModel struct {\n\tgorm.Model\n\tTitle string\n\n\tl10n.Locale\n}\n\nfunc (lm *L10nModel) PrimarySlug() string {\n\treturn fmt.Sprintf(\"%v_%v\", lm.ID, lm.LocaleCode)\n}\n\nfunc (lm *L10nModel) PrimaryColumnValuesBySlug(slug string) map[string]string {\n\tsegs := strings.Split(slug, \"_\")\n\tif len(segs) != 2 {\n\t\tpanic(\"wrong slug\")\n\t}\n\n\treturn map[string]string{\n\t\t\"id\":                segs[0],\n\t\tl10n.SlugLocaleCode: segs[1],\n\t}\n}\n\n\nfunc LocalizationExample(b *presets.Builder, db *gorm.DB) http.Handler {\n\tif err := db.AutoMigrate(\u0026L10nModel{}); err != nil {\n\t\tpanic(err)\n\t}\n\n\tb.DataOperator(gorm2op.DataOperator(db))\n\n\tl10nBuilder := l10n.New(db)\n\tl10nBuilder.\n\t\tRegisterLocales(\"International\", \"international\", \"International\").\n\t\tRegisterLocales(\"China\", \"cn\", \"China\").\n\t\tRegisterLocales(\"Japan\", \"jp\", \"Japan\").\n\t\tSupportLocalesFunc(func(R *http.Request) []string {\n\t\t\treturn l10nBuilder.GetSupportLocaleCodes()[:]\n\t\t})\n\n\tmb := b.Model(\u0026L10nModel{}).URIName(\"l10n-models\")\n\tb.Use(l10nBuilder)\n\tmb.Use(l10nBuilder)\n\tmb.Listing(\"ID\", \"Title\", \"Locale\")"'></highlightjs>
+<highlightjs :language='"go"' :code='"import (\n\t\"fmt\"\n\t\"net/http\"\n\t\"strings\"\n\n\t\"github.com/qor5/admin/v3/l10n\"\n\t\"github.com/qor5/admin/v3/presets\"\n\t\"github.com/qor5/admin/v3/presets/gorm2op\"\n\t\"gorm.io/gorm\"\n)\n\ntype L10nModel struct {\n\tgorm.Model\n\tTitle string\n\n\tl10n.Locale\n}\n\nfunc (lm *L10nModel) PrimarySlug() string {\n\treturn fmt.Sprintf(\"%v_%v\", lm.ID, lm.LocaleCode)\n}\n\nfunc (lm *L10nModel) PrimaryColumnValuesBySlug(slug string) map[string]string {\n\tsegs := strings.Split(slug, \"_\")\n\tif len(segs) != 2 {\n\t\tpanic(\"wrong slug\")\n\t}\n\n\treturn map[string]string{\n\t\t\"id\":                segs[0],\n\t\tl10n.SlugLocaleCode: segs[1],\n\t}\n}\n\n\nfunc LocalizationExample(b *presets.Builder, db *gorm.DB) http.Handler {\n\tif err := db.AutoMigrate(\u0026L10nModel{}); err != nil {\n\t\tpanic(err)\n\t}\n\n\tb.DataOperator(gorm2op.DataOperator(db))\n\n\tl10nBuilder := l10n.New(db)\n\tl10nBuilder.\n\t\tRegisterLocales(\"International\", \"international\", \"International\", l10n.InternationalSvg).\n\t\tRegisterLocales(\"China\", \"cn\", \"China\", l10n.ChinaSvg).\n\t\tRegisterLocales(\"Japan\", \"jp\", \"Japan\", l10n.JapanSvg).\n\t\tSupportLocalesFunc(func(R *http.Request) []string {\n\t\t\treturn l10nBuilder.GetSupportLocaleCodes()[:]\n\t\t})\n\n\tmb := b.Model(\u0026L10nModel{}).URIName(\"l10n-models\")\n\tb.Use(l10nBuilder)\n\tmb.Use(l10nBuilder)\n\tmb.Listing(\"ID\", \"Title\", \"Locale\")"'></highlightjs>
 
 <div>
 <div class='demo'>
