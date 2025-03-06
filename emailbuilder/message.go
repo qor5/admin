@@ -23,6 +23,7 @@ var Messages_zh_CN = &Messages{
 	Blank:              "空白",
 	ModelLabelTemplate: "模板页面",
 }
+
 var Messages_ja_JP = &Messages{
 	ChangeTemplate: "テンプレートの変更",
 
