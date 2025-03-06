@@ -160,9 +160,7 @@ func (mb *ModelBuilder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (mb *ModelBuilder) createTemplate(w http.ResponseWriter, r *http.Request) {
-	var (
-		model = mb.mb.NewModel()
-	)
+	model := mb.mb.NewModel()
 	et := model.(EmailDetailInterface).EmbedEmailDetail()
 	if err := json.NewDecoder(r.Body).Decode(&et); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
@@ -405,7 +403,6 @@ func (mb *ModelBuilder) setEmailDefaultValue(et *EmailDetail) {
 }
 
 func (mb *ModelBuilder) mailDetailFieldCompoFunc() presets.FieldComponentFunc {
-
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		primaySlug := fmt.Sprint(reflectutils.MustGet(obj, "ID"))
 		p := obj.(EmailDetailInterface).EmbedEmailDetail()
@@ -418,7 +415,6 @@ func (mb *ModelBuilder) mailDetailFieldCompoFunc() presets.FieldComponentFunc {
 					v.VBtn("").Size(v.SizeSmall).Children(v.VIcon("mdi-alarm").Size(v.SizeXLarge)).Rounded("0").Class("rounded-e ml-abs-1").
 						Variant(v.VariantElevated).Color(v.ColorPrimary).Width(36).Height(36),
 				).Class("tagList-bar-warp pb-4"),
-
 			),
 			h.Div(
 				h.Div(
@@ -521,7 +517,6 @@ func (mb *ModelBuilder) emailBuilderBody(ctx *web.EventContext) h.HTMLComponent 
 			).Class("d-flex").Style("height: calc(100vh - 100px - 20px);"),
 		),
 	).Fluid(true).Class("px-0 detailing-page-wrap")
-
 }
 
 func (mb *ModelBuilder) menusComp(ctx *web.EventContext, obj interface{}) []h.HTMLComponent {
@@ -556,9 +551,7 @@ func (mb *ModelBuilder) menusComp(ctx *web.EventContext, obj interface{}) []h.HT
 }
 
 func (mb *ModelBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponent {
-	var (
-		tm = mb.b.getTemplateModelBuilder()
-	)
+	tm := mb.b.getTemplateModelBuilder()
 	if tm == nil {
 		return nil
 	}
@@ -599,9 +592,7 @@ func (mb *ModelBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponent 
 }
 
 func (mb *ModelBuilder) configTemplate() {
-	var (
-		listing = mb.mb.Listing().DialogWidth("700").DialogHeight("476").SearchColumns("Subject")
-	)
+	listing := mb.mb.Listing().DialogWidth("700").DialogHeight("476").SearchColumns("Subject")
 	listing.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
 		if mb.mb.Info().Verifier().Do(presets.PermCreate).WithReq(ctx.R).IsAllowed() != nil || ctx.Param(presets.ParamOverlay) == actions.Dialog {
 			return nil

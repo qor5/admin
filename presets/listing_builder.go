@@ -136,6 +136,7 @@ func (b *ListingBuilder) WrapCell(w func(in CellProcessor) CellProcessor) (r *Li
 	}
 	return b
 }
+
 func (b *ListingBuilder) DataTableFunc(v func(*web.EventContext, interface{}) h.HTMLComponent) *ListingBuilder {
 	b.dataTableFunc = v
 	return b
