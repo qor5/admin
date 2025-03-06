@@ -238,8 +238,7 @@ func (b *ModelBuilder) primaryColumnValuesBySlug(slug string) (pageID int, pageV
 	}
 	pageVersion = ps[publish.SlugVersion]
 	locale = ps[l10n.SlugLocaleCode]
-	pageIDi, _ := strconv.ParseInt(ps["id"], 10, 64)
-	pageID = int(pageIDi)
+	pageID, _ = strconv.Atoi(ps["id"])
 	return
 }
 
