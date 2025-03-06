@@ -351,7 +351,7 @@ func (c *ProfileCompo) userCardCompo(ctx context.Context, user *Profile, vmodel 
 	switchLanguageCompo := c.switchLanguageCompo(ctx)
 	if switchLanguageCompo != nil {
 		evCtx, _ := c.MustGetEventContext(ctx)
-		pMsgr := i18n.MustGetModuleMessages(evCtx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+		pMsgr := i18n.MustGetModuleMessages(evCtx.R, presets.CoreI18nModuleKey, presets.Messages_en_US).(*presets.Messages)
 		children = append(children, h.Div().Class("d-flex flex-column ga-2").Children(
 			h.Div().Class("d-inline-flex").Children(
 				v.VIcon("mdi-google-translate").Size(v.SizeSmall).Class("mr-1"),
