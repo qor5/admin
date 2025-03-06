@@ -85,6 +85,8 @@ type ListingBuilder struct {
 
 	once                  sync.Once
 	disableModelListeners bool
+
+	dataTableFunc func(ctx *web.EventContext, nodes interface{}) h.HTMLComponent
 }
 
 func (mb *ModelBuilder) Listing(vs ...string) (r *ListingBuilder) {
@@ -132,6 +134,10 @@ func (b *ListingBuilder) WrapCell(w func(in CellProcessor) CellProcessor) (r *Li
 	} else {
 		b.cellProcessor = w(b.cellProcessor)
 	}
+	return b
+}
+func (b *ListingBuilder) DataTableFunc(v func(*web.EventContext, interface{}) h.HTMLComponent) *ListingBuilder {
+	b.dataTableFunc = v
 	return b
 }
 

@@ -16,9 +16,11 @@ import (
 	"github.com/aws/smithy-go"
 	"github.com/go-faker/faker/v4"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
 	v "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/samber/lo"
+	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 
@@ -34,16 +36,27 @@ type ModelBuilder struct {
 }
 
 const (
-	ParamTemplateID = "template_id"
+	ParamTemplateID        = "mailbuilder_template_id"
+	ParamChangeTemplate    = "mailbuilder_change_template"
+	TemplateSelectionFiled = "mailbuilder_template_selection"
 
-	EmailEditorDialogPortalName = "emailEditorDialog"
+	EmailEditorDialogPortalName = "mailbuilder_emailEditorDialog"
+
+	TemplateSelectedPortalName  = "mailbuilder_templateSelectedPortal"
+	ReloadSelectedTemplateEvent = "mailbuilder_template_ReloadSelectedTemplateEvent"
 )
 
 func (mb *ModelBuilder) Install(b *presets.Builder) (err error) {
 	if mb.b.ab != nil {
 		mb.mb.Use(mb.b.ab)
 	}
-	mb.mb.Editing().Creating().WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+	var (
+		dp       = mb.mb.Detailing()
+		creating = mb.mb.Editing().Creating()
+		listing  = mb.mb.Listing()
+		tm       = mb.b.getTemplateModelBuilder()
+	)
+	creating.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		// JSON_Body
 		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 			var (
@@ -71,19 +84,50 @@ func (mb *ModelBuilder) Install(b *presets.Builder) (err error) {
 	b.HandleCustomPage(mb.editorPattern(), presets.NewCustomPage(b).Body(mb.emailBuilderBody).Menu(func(*web.EventContext) h.HTMLComponent {
 		return nil
 	}))
-	dp := mb.mb.Detailing()
+
 	if mb.IsTpl {
-		mb.mb.Listing().WrapCell(func(in presets.CellProcessor) presets.CellProcessor {
-			return func(evCtx *web.EventContext, cell h.MutableAttrHTMLComponent, id string, obj any) (h.MutableAttrHTMLComponent, error) {
-				cell.SetAttr("@click", web.Plaid().URL(mb.editorUri(id)).PushState(true).Go())
-				return cell, nil
-			}
-		})
+		mb.configTemplate()
 	} else {
+		mb.registerFunctions()
 		dp.GetField(EmailDetailField).ComponentFunc(mb.mailDetailFieldCompoFunc())
 		if mb.b.ab != nil {
 			dp.SidePanelFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 				return mb.b.ab.MustGetModelBuilder(mb.mb).NewTimelineCompo(ctx, obj, "_side")
+			})
+		}
+		filed := creating.GetField(TemplateSelectionFiled)
+		if filed != nil && filed.GetCompFunc() == nil && tm != nil {
+			listing.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
+				msgr := i18n.MustGetModuleMessages(ctx.R, presets.ModelsI18nModuleKey, presets.Messages_en_US).(*presets.Messages)
+				return h.Components(
+					v.VBtn(msgr.New).
+						Color(v.ColorPrimary).
+						Variant(v.VariantElevated).
+						Theme("light").Class("ml-2").
+						Attr("@click", web.Plaid().URL(tm.mb.Info().ListingHref()).EventFunc(actions.OpenListingDialog).Query(presets.ParamOverlay, actions.Dialog).Go()),
+				)
+			})
+
+			creating.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+				return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+					var (
+						selectID = ctx.Param(ParamTemplateID)
+						template = tm.mb.NewModel()
+					)
+					if selectID != "" && tm != nil {
+						utils.PrimarySluggerWhere(mb.b.db, obj, selectID).First(template)
+						et := obj.(EmailDetailInterface).EmbedEmailDetail()
+						*et = *template.(EmailDetailInterface).EmbedEmailDetail()
+					}
+					if err = in(obj, id, ctx); err != nil {
+						return
+					}
+					return
+				}
+			})
+			filed.ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+				return h.Components(
+					web.Portal(mb.selectedTemplate(ctx)).Name(TemplateSelectedPortalName))
 			})
 		}
 	}
@@ -363,9 +407,8 @@ func (mb *ModelBuilder) setEmailDefaultValue(et *EmailDetail) {
 func (mb *ModelBuilder) mailDetailFieldCompoFunc() presets.FieldComponentFunc {
 
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		db := mb.b.db
-		tm := &MailTemplate{}
-		db.First(&tm, 1)
+		primaySlug := fmt.Sprint(reflectutils.MustGet(obj, "ID"))
+		p := obj.(EmailDetailInterface).EmbedEmailDetail()
 		return h.Div(
 			h.Div(
 				h.Div(
@@ -379,7 +422,7 @@ func (mb *ModelBuilder) mailDetailFieldCompoFunc() presets.FieldComponentFunc {
 			),
 			h.Div(
 				h.Div(
-					h.Iframe().Attr(":srcdoc", h.JSONString(tm.HTMLBody)).
+					h.Iframe().Attr(":srcdoc", h.JSONString(p.HTMLBody)).
 						Attr("scrolling", "no", "frameborder", "0").
 						Style(`pointer-events: none; 
  -webkit-mask-image: radial-gradient(circle, black 80px, transparent);
@@ -393,7 +436,7 @@ transform-origin: 0 0; transform:scale(0.5);width:200%;height:200%`),
 				).Class("pa-6 w-100 d-flex justify-space-between align-center").Style(`position:absolute;bottom:0;left:0`),
 			).Style(`position:relative;height:320px;width:100%`).Class("border-thin rounded-lg").
 				Attr("@click",
-					web.Plaid().URL(mb.b.getTemplateModelBuilder().editorUri("1")).Go(),
+					web.Plaid().URL(mb.editorUri(primaySlug)).PushState(true).Go(),
 				),
 		).Class("my-10")
 	}
@@ -448,7 +491,7 @@ func (mb *ModelBuilder) emailBuilderBody(ctx *web.EventContext) h.HTMLComponent 
 			h.Div(
 				web.Listen("save_mail",
 					fmt.Sprintf(`() => { $refs.emailEditor.emit('getData').then(res=> {%s})}`,
-						web.Plaid().EventFunc(actions.Update).Query(presets.ParamID, primarySlug).Form(web.Var("res")).Go())),
+						web.Plaid().URL(mb.mb.Info().ListingHref()).EventFunc(actions.Update).Query(presets.ParamID, primarySlug).Form(web.Var("res")).Go())),
 				web.Listen("open_send_mail_dialog", ShowDialogScript(EmailEditorDialogPortalName, UtilDialogPayloadType{
 					Title: "Please Enter a Email Address",
 					ContentEl: vx.VXField().
@@ -479,4 +522,163 @@ func (mb *ModelBuilder) emailBuilderBody(ctx *web.EventContext) h.HTMLComponent 
 		),
 	).Fluid(true).Class("px-0 detailing-page-wrap")
 
+}
+
+func (mb *ModelBuilder) menusComp(ctx *web.EventContext, obj interface{}) []h.HTMLComponent {
+	var (
+		menus []h.HTMLComponent
+		err   error
+		ojID  interface{}
+		pMsgr = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, presets.Messages_en_US).(*presets.Messages)
+	)
+	if ojID, err = reflectutils.Get(obj, "ID"); err != nil {
+		panic(err)
+	}
+	if mb.mb.Info().Verifier().Do(presets.PermDelete).WithReq(ctx.R).IsAllowed() == nil {
+		menus = append(menus,
+			v.VListItem(h.Text(pMsgr.Delete)).Attr("@click", web.Plaid().
+				URL(mb.mb.Info().ListingHref()).
+				EventFunc(actions.DeleteConfirmation).
+				Query(presets.ParamID, ojID).
+				Go(),
+			))
+	}
+	if mb.mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() == nil {
+		menus = append(menus,
+			v.VListItem(h.Text(pMsgr.Edit)).Attr("@click", web.Plaid().
+				URL(mb.mb.Info().ListingHref()).
+				EventFunc(actions.Edit).
+				Query(presets.ParamID, ojID).
+				Go(),
+			))
+	}
+	return menus
+}
+
+func (mb *ModelBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponent {
+	var (
+		tm = mb.b.getTemplateModelBuilder()
+	)
+	if tm == nil {
+		return nil
+	}
+	var (
+		template          = tm.mb.NewModel()
+		selectID          = ctx.Param(ParamTemplateID)
+		err               error
+		subject, htmlBody string
+		msgr              = i18n.MustGetModuleMessages(ctx.R, I18nEmailBuilderKey, Messages_en_US).(*Messages)
+	)
+	if selectID != "" {
+		if err = utils.PrimarySluggerWhere(mb.b.db, template, selectID).First(template).Error; err != nil {
+			panic(err)
+		}
+		p := template.(EmailDetailInterface).EmbedEmailDetail()
+		subject = p.Subject
+		htmlBody = p.HTMLBody
+	}
+	return h.Div(
+		h.Div(
+			h.Span(msgr.ModelLabelTemplate).Class("text-body-1"),
+		),
+		v.VBtn(msgr.ChangeTemplate).Color(v.ColorPrimary).
+			Variant(v.VariantTonal).
+			PrependIcon("mdi-cached").
+			Attr("@click", web.Plaid().URL(tm.mb.Info().ListingHref()).EventFunc(actions.OpenListingDialog).Query(ParamChangeTemplate, "1").Query(presets.ParamOverlay, actions.Dialog).Go()),
+		v.VCard(
+			v.VCardText(
+				h.Iframe().Attr(":srcdoc", h.JSONString(htmlBody)).
+					Attr("scrolling", "no", "frameborder", "0").
+					Style(`pointer-events: none;transform-origin: 0 0; transform:scale(0.2);width:500%;height:500%`),
+			).Class("pa-0", v.H100, "border-xl"),
+		).Height(106).Width(224).Elevation(0).Class("mt-2"),
+		h.Div(
+			h.Span(subject).Class("text-caption"),
+		).Class("mt-2"),
+	).Class("mb-6").Attr(web.VAssign("form", fmt.Sprintf(`{%s:%q}`, ParamTemplateID, selectID))...)
+}
+
+func (mb *ModelBuilder) configTemplate() {
+	var (
+		listing = mb.mb.Listing().DialogWidth("700").DialogHeight("476").SearchColumns("Subject")
+	)
+	listing.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
+		if mb.mb.Info().Verifier().Do(presets.PermCreate).WithReq(ctx.R).IsAllowed() != nil || ctx.Param(presets.ParamOverlay) == actions.Dialog {
+			return nil
+		}
+		msgr := i18n.MustGetModuleMessages(ctx.R, presets.ModelsI18nModuleKey, presets.Messages_en_US).(*presets.Messages)
+		return v.VBtn(msgr.New).
+			Color(v.ColorPrimary).
+			Variant(v.VariantElevated).
+			Theme("light").Class("ml-2").
+			Attr("@click", web.Plaid().EventFunc(actions.New).Go())
+	})
+	listing.DataTableFunc(func(ctx *web.EventContext, nodes interface{}) h.HTMLComponent {
+		var (
+			rows           = v.VRow()
+			inDialog       = ctx.Param(presets.ParamOverlay) == actions.Dialog
+			cols           = 3
+			changeTemplate = ctx.Param(ParamChangeTemplate)
+		)
+		if inDialog {
+			cols = 4
+		}
+		reflectutils.ForEach(nodes, func(obj interface{}) {
+			var (
+				p          = obj.(*MailTemplate)
+				menus      = mb.menusComp(ctx, obj)
+				clickEvent = web.Plaid().PushState(true).URL(mb.editorUri(fmt.Sprint(p.ID))).Go()
+			)
+			if inDialog {
+				if changeTemplate != "" {
+					clickEvent = web.Plaid().EventFunc(ReloadSelectedTemplateEvent).ThenScript("vars.presetsListingDialog=false").Query(ParamTemplateID, p.ID).Go()
+				} else {
+					clickEvent = web.Plaid().EventFunc(actions.New).Query(presets.ParamOverlay, actions.Dialog).ThenScript("vars.presetsListingDialog=false").Query(ParamTemplateID, p.ID).Go()
+				}
+			}
+
+			rows.AppendChildren(v.VCol(
+				v.VCard(
+					v.VCardItem(
+						v.VCard(
+							v.VCardText(
+								h.Iframe().Attr(":srcdoc", h.JSONString(p.HTMLBody)).
+									Attr("scrolling", "no", "frameborder", "0").
+									Style(`pointer-events: none;transform-origin: 0 0; transform:scale(0.2);width:500%;height:500%`),
+							).Class("pa-0", v.H100, "bg-"+v.ColorGreyLighten4),
+						).Height(cardHeight).Elevation(0),
+					).Class("pa-0", v.W100),
+					h.If(!inDialog,
+						v.VCardItem(
+							v.VCard(
+								v.VCardItem(
+									h.Components(
+										h.Text(p.Subject),
+									),
+									h.Div(
+										h.Div(),
+										h.If(!inDialog && len(menus) > 0,
+											v.VMenu(
+												web.Slot(
+													v.VBtn("").Children(
+														v.VIcon("mdi-dots-horizontal"),
+													).Attr("v-bind", "props").Variant(v.VariantText).Size(v.SizeSmall),
+												).Name("activator").Scope("{ props }"),
+												v.VList(
+													menus...,
+												),
+											),
+										),
+									).Class(v.W100, "d-flex", "justify-space-between", "align-center"),
+								).Class("pa-2"),
+							).Color(v.ColorGreyLighten5).Height(cardContentHeight),
+						).Class("pa-0"),
+					),
+				).Elevation(0).Attr("@click", clickEvent),
+			).Cols(cols))
+		})
+		return v.VContainer(
+			rows,
+		).Fluid(true)
+	})
 }
