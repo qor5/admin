@@ -106,7 +106,7 @@ func (mb *ModelBuilder) Install(b *presets.Builder) (err error) {
 		filed := creating.GetField(TemplateSelectionFiled)
 		if filed != nil && filed.GetCompFunc() == nil && tm != nil {
 			listing.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
-				msgr := i18n.MustGetModuleMessages(ctx.R, presets.ModelsI18nModuleKey, presets.Messages_en_US).(*presets.Messages)
+				msgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, presets.Messages_en_US).(*presets.Messages)
 				return h.Components(
 					v.VBtn(msgr.New).
 						Color(v.ColorPrimary).
@@ -590,7 +590,7 @@ func (mb *ModelBuilder) configTemplate() {
 		if mb.mb.Info().Verifier().Do(presets.PermCreate).WithReq(ctx.R).IsAllowed() != nil || ctx.Param(presets.ParamOverlay) == actions.Dialog {
 			return nil
 		}
-		msgr := i18n.MustGetModuleMessages(ctx.R, presets.ModelsI18nModuleKey, presets.Messages_en_US).(*presets.Messages)
+		msgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, presets.Messages_en_US).(*presets.Messages)
 		return v.VBtn(msgr.New).
 			Color(v.ColorPrimary).
 			Variant(v.VariantElevated).
