@@ -48,6 +48,10 @@ const (
 
 	TemplateSelectedPortalName  = "mailbuilder_templateSelectedPortal"
 	ReloadSelectedTemplateEvent = "mailbuilder_template_ReloadSelectedTemplateEvent"
+
+	dialogWidth            = "700"
+	dialogHeight           = "476"
+	dialogIframeCardHeight = 120
 )
 
 func (mb *ModelBuilder) Install(b *presets.Builder) (err error) {
@@ -581,7 +585,7 @@ func (mb *ModelBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponent 
 }
 
 func (mb *ModelBuilder) configTemplate() {
-	listing := mb.mb.Listing().DialogWidth("700").DialogHeight("476").SearchColumns("Subject")
+	listing := mb.mb.Listing().DialogWidth(dialogWidth).DialogHeight(dialogHeight).SearchColumns("Subject")
 	listing.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
 		if mb.mb.Info().Verifier().Do(presets.PermCreate).WithReq(ctx.R).IsAllowed() != nil || ctx.Param(presets.ParamOverlay) == actions.Dialog {
 			return nil
@@ -593,17 +597,40 @@ func (mb *ModelBuilder) configTemplate() {
 			Theme("light").Class("ml-2").
 			Attr("@click", web.Plaid().EventFunc(actions.New).Go())
 	})
-	listing.DataTableFunc(func(ctx *web.EventContext, nodes interface{}) h.HTMLComponent {
+	listing.DataTableFunc(func(ctx *web.EventContext, searchParam *presets.SearchParams, searchResult *presets.SearchResult) h.HTMLComponent {
 		var (
 			rows           = v.VRow()
 			inDialog       = ctx.Param(presets.ParamOverlay) == actions.Dialog
 			cols           = 3
 			changeTemplate = ctx.Param(ParamChangeTemplate)
+			cardClickEvent string
+			msgr           = i18n.MustGetModuleMessages(ctx.R, I18nEmailBuilderKey, Messages_en_US).(*Messages)
 		)
 		if inDialog {
 			cols = 4
+			cardHeight = dialogIframeCardHeight
+			if changeTemplate != "" {
+				cardClickEvent = web.Plaid().EventFunc(ReloadSelectedTemplateEvent).ThenScript("vars.presetsListingDialog=false").Go()
+			} else {
+				cardClickEvent = web.Plaid().EventFunc(actions.New).Query(presets.ParamOverlay, actions.Dialog).ThenScript("vars.presetsListingDialog=false").Go()
+			}
+			if searchParam.Page == 1 {
+				rows.AppendChildren(v.VCol(
+					v.VCard(
+						v.VCardItem(
+							v.VCard(
+								v.VCardText(
+									v.VIcon("mdi-plus").Class("mr-1"), h.Text(msgr.AddBlankPage),
+								).Class("pa-0", v.H100, "text-"+v.ColorPrimary, "text-body-2", "d-flex", "justify-center", "align-center"),
+							).Height(cardHeight).Elevation(0).Class("bg-"+v.ColorGreyLighten4),
+						).Class("pa-0", v.W100),
+						v.VCardText(h.Text(msgr.BlankPage)).Class("text-caption"),
+					).Attr("@click", cardClickEvent).Elevation(0),
+				).Cols(cols))
+			}
+
 		}
-		reflectutils.ForEach(nodes, func(obj interface{}) {
+		reflectutils.ForEach(searchResult.Nodes, func(obj interface{}) {
 			var (
 				p          = obj.(*MailTemplate)
 				menus      = mb.menusComp(ctx, obj)
@@ -654,6 +681,7 @@ func (mb *ModelBuilder) configTemplate() {
 							).Color(v.ColorGreyLighten5).Height(cardContentHeight),
 						).Class("pa-0"),
 					),
+					h.If(inDialog, v.VCardTitle(h.Text(p.Subject)).Class("text-caption")),
 				).Elevation(0).Attr("@click", clickEvent),
 			).Cols(cols))
 		})

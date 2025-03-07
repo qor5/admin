@@ -8,6 +8,7 @@ import (
 
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
+	"golang.org/x/text/language"
 	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/activity"
@@ -54,6 +55,10 @@ func (b *Builder) Template(v *presets.ModelBuilder) *Builder {
 }
 
 func (b *Builder) Install(pb *presets.Builder) (err error) {
+	pb.GetI18n().
+		RegisterForModule(language.English, I18nEmailBuilderKey, Messages_en_US).
+		RegisterForModule(language.SimplifiedChinese, I18nEmailBuilderKey, Messages_zh_CN).
+		RegisterForModule(language.Japanese, I18nEmailBuilderKey, Messages_ja_JP)
 	for _, model := range b.models {
 		if err = model.Install(pb); err != nil {
 			return

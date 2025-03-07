@@ -695,7 +695,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		}
 		dataBody = dataTable
 	} else {
-		dataBody = c.lb.dataTableFunc(evCtx, searchResult.Nodes)
+		dataBody = c.lb.dataTableFunc(evCtx, searchParams, searchResult)
 	}
 
 	return h.Components(
