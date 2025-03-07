@@ -9,9 +9,13 @@ import (
 	"github.com/qor5/admin/v3/presets"
 )
 
+var (
+	cardHeight        = 146
+	cardContentHeight = 56
+)
+
 func DefaultMailTemplate(pb *presets.Builder) *presets.ModelBuilder {
 	mb := pb.Model(&MailTemplate{})
-	mb.Listing("ID", "Subject")
 	dp := mb.Detailing(EmailEditorField)
 	mb.Editing("Subject", "JSONBody", "HTMLBody")
 

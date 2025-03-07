@@ -2,7 +2,7 @@
 
 set -e
 
-curl -L https://codeload.github.com/qor5/email-builder/zip/refs/heads/release -o email-builder-spa.zip
+curl -L https://codeload.github.com/qor5/email-builder/zip/refs/heads/release?token= -o email-builder-spa.zip
 
 rm -rf dist
 

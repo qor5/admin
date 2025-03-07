@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"regexp"
 
+	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
+	"golang.org/x/text/language"
 	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/activity"
@@ -36,21 +38,27 @@ func New(pb *presets.Builder, db *gorm.DB, tpl *presets.ModelBuilder) *Builder {
 	b.Sender(LoadSenderConfig())
 	return b
 }
+
 func (b *Builder) DB(v *gorm.DB) *Builder {
 	b.db = v
 	return b
 }
+
 func (b *Builder) Activity(v *activity.Builder) *Builder {
 	b.ab = v
 	return b
 }
+
 func (b *Builder) Template(v *presets.ModelBuilder) *Builder {
 	b.Model(v, true)
 	return b
-
 }
 
 func (b *Builder) Install(pb *presets.Builder) (err error) {
+	pb.GetI18n().
+		RegisterForModule(language.English, I18nEmailBuilderKey, Messages_en_US).
+		RegisterForModule(language.SimplifiedChinese, I18nEmailBuilderKey, Messages_zh_CN).
+		RegisterForModule(language.Japanese, I18nEmailBuilderKey, Messages_ja_JP)
 	for _, model := range b.models {
 		if err = model.Install(pb); err != nil {
 			return
@@ -58,15 +66,18 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 	}
 	return
 }
+
 func (b *Builder) ModelInstall(_ *presets.Builder, mb *presets.ModelBuilder) (err error) {
 	b.Model(mb, false)
 	return
 }
+
 func (b *Builder) Model(mb *presets.ModelBuilder, isTpl bool) (r *ModelBuilder) {
 	r = &ModelBuilder{
 		mb:    mb,
 		b:     b,
 		IsTpl: isTpl,
+		name:  mb.Info().URIName(),
 	}
 	b.models = append(b.models, r)
 	return
@@ -74,6 +85,10 @@ func (b *Builder) Model(mb *presets.ModelBuilder, isTpl bool) (r *ModelBuilder) 
 
 func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, mb := range b.models {
+		ctx := &web.EventContext{R: r, W: w}
+		if ctx.Param(paramModelName) != mb.name {
+			continue
+		}
 		if mb.mb.Info().Verifier().Do(presets.PermGet).WithReq(r).IsAllowed() != nil {
 			_, _ = w.Write([]byte(perm.PermissionDenied.Error()))
 			return
@@ -82,6 +97,7 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
 func (b *Builder) AutoMigrate() *Builder {
 	err := AutoMigrate(b.db)
 	if err != nil {
@@ -136,6 +152,7 @@ func GetContent(tmpl *template.Template, mailData MailData) (string, error) {
 	}
 	return b.String(), nil
 }
+
 func (b *Builder) getTemplateModelBuilder() (mb *ModelBuilder) {
 	for _, model := range b.models {
 		if model.IsTpl {
