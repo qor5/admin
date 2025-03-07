@@ -71,6 +71,7 @@ type (
 		LocaleCode        string
 		EditorCss         []h.HTMLComponent
 		IsPreview         bool
+		Obj               interface{}
 	}
 )
 
