@@ -85,7 +85,7 @@ func (b *Builder) Model(mb *presets.ModelBuilder, isTpl bool) (r *ModelBuilder) 
 
 func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, mb := range b.models {
-		ctx := web.MustGetEventContext(r.Context())
+		ctx := &web.EventContext{R: r, W: w}
 		if ctx.Param(paramModelName) != mb.name {
 			continue
 		}

@@ -41,8 +41,7 @@ const (
 	ParamChangeTemplate    = "mailbuilder_change_template"
 	TemplateSelectionFiled = "mailbuilder_template_selection"
 
-	paramPrimarySlug = "primarySlug"
-	paramModelName   = "modelName"
+	paramModelName = "modelName"
 
 	EmailEditorDialogPortalName = "mailbuilder_emailEditorDialog"
 
@@ -205,9 +204,9 @@ func (mb *ModelBuilder) getTemplate(w http.ResponseWriter, r *http.Request) {
 		models = mb.mb.NewModelSlice()
 		obj    = mb.mb.NewModel()
 		db     = mb.b.db
-		ctx    = web.MustGetEventContext(r.Context())
+		ctx    = &web.EventContext{R: r, W: w}
 	)
-	primarySlug := ctx.Param(paramPrimarySlug)
+	primarySlug := ctx.Param(presets.ParamID)
 	if primarySlug != "" {
 		if err := utils.PrimarySluggerWhere(db, obj, primarySlug).Find(models).Error; err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
