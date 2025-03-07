@@ -442,6 +442,8 @@ func (mb *ModelBuilder) emailBuilderBody(ctx *web.EventContext) h.HTMLComponent 
 	var (
 		primarySlug = ctx.Param(presets.ParamID)
 		exitHref    string
+		msgr        = i18n.MustGetModuleMessages(ctx.R, I18nEmailBuilderKey, Messages_en_US).(*Messages)
+		pMsgr       = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, presets.Messages_en_US).(*presets.Messages)
 	)
 	if mb.IsTpl {
 		exitHref = mb.mb.Info().ListingHref()
@@ -465,12 +467,12 @@ func (mb *ModelBuilder) emailBuilderBody(ctx *web.EventContext) h.HTMLComponent 
 				),
 				v.VToolbarTitle("Inbox"),
 				v.VSpacer(),
-				vx.VXBtn("Save").Variant("elevated").Attr("@click", web.Emit("save_mail")).Color("primary").Attr(":disabled", "vars.$EmailEditorLoading"),
-				vx.VXBtn("Send Email").
-					Variant("elevated").
-					Color("secondary").
+				vx.VXBtn(pMsgr.Save).Variant(v.VariantElevated).Attr("@click", web.Emit("save_mail")).Color("primary").Attr(":disabled", "vars.$EmailEditorLoading"),
+				vx.VXBtn(msgr.SendEmail).
+					Variant(v.VariantElevated).
+					Color(v.ColorSecondary).
 					Attr("@click", web.Emit("open_send_mail_dialog")).
-					Color("secondary").
+					Color(v.ColorSecondary).
 					Class("ml-2"),
 			).Class("d-flex align-center w-100"),
 		).Class("d-flex align-center pa-3  w-100"),
@@ -481,7 +483,7 @@ func (mb *ModelBuilder) emailBuilderBody(ctx *web.EventContext) h.HTMLComponent 
 					fmt.Sprintf(`() => { $refs.emailEditor.emit('getData').then(res=> {%s})}`,
 						web.Plaid().URL(mb.mb.Info().ListingHref()).EventFunc(actions.Update).Query(presets.ParamID, primarySlug).Form(web.Var("res")).Go())),
 				web.Listen("open_send_mail_dialog", ShowDialogScript(EmailEditorDialogPortalName, UtilDialogPayloadType{
-					Title: "Please Enter a Email Address",
+					Title: msgr.EnterEmialAddressPlaceholder,
 					ContentEl: vx.VXField().
 						Label("To").
 						Placeholder("Enter a email address").
@@ -586,7 +588,8 @@ func (mb *ModelBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponent 
 func (mb *ModelBuilder) configTemplate() {
 	listing := mb.mb.Listing().DialogWidth(dialogWidth).DialogHeight(dialogHeight).SearchColumns("Subject")
 	listing.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
-		if mb.mb.Info().Verifier().Do(presets.PermCreate).WithReq(ctx.R).IsAllowed() != nil || ctx.Param(presets.ParamOverlay) == actions.Dialog {
+		lc := presets.ListingCompoFromContext(ctx.R.Context())
+		if mb.mb.Info().Verifier().Do(presets.PermCreate).WithReq(ctx.R).IsAllowed() != nil || lc.Popup {
 			return nil
 		}
 		msgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, presets.Messages_en_US).(*presets.Messages)
@@ -598,8 +601,9 @@ func (mb *ModelBuilder) configTemplate() {
 	})
 	listing.DataTableFunc(func(ctx *web.EventContext, searchParam *presets.SearchParams, searchResult *presets.SearchResult) h.HTMLComponent {
 		var (
+			lc             = presets.ListingCompoFromContext(ctx.R.Context())
 			rows           = v.VRow()
-			inDialog       = ctx.Param(presets.ParamOverlay) == actions.Dialog
+			inDialog       = lc.Popup
 			cols           = 3
 			changeTemplate = ctx.Param(ParamChangeTemplate)
 			cardClickEvent string
