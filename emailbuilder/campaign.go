@@ -38,7 +38,7 @@ func DefaultMailCampaign(pb *presets.Builder) *presets.ModelBuilder {
 			return presets.SelectField(obj, field, ctx).Items([]string{"segmentationA", "segmentationB", "segmentationC", "segmentationD"})
 		}
 	})
-	mb.Editing("Subject").Creating("Subject", TemplateSelectionFiled)
+	mb.Editing("Subject", "JSONBody", "HTMLBody").Creating("Subject", TemplateSelectionFiled)
 	dp.Section(section)
 	return mb
 }
