@@ -2,7 +2,7 @@
 
 <html>
 <head>
-<title>Building Admin - presets, Instant CRUD - QOR5 Document</title>
+<title>Building Admin - Custom Pages - QOR5 Document</title>
 
 <meta name='description'>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -35,7 +35,7 @@
 <li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Building Admin</li>
 
 <li class='m-0'>
-<a href='basics/presets-instant-crud.html' id='basics/presets-instant-crud.html' onclick='window.storeMenuState("basics/presets-instant-crud.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-blue-500'>presets, Instant CRUD</a>
+<a href='basics/presets-instant-crud.html' id='basics/presets-instant-crud.html' onclick='window.storeMenuState("basics/presets-instant-crud.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>presets, Instant CRUD</a>
 </li>
 
 <li class='m-0'>
@@ -123,7 +123,7 @@
 </li>
 
 <li class='m-0'>
-<a href='basics/custom-page.html' id='basics/custom-page.html' onclick='window.storeMenuState("basics/custom-page.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Custom Pages</a>
+<a href='basics/custom-page.html' id='basics/custom-page.html' onclick='window.storeMenuState("basics/custom-page.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-blue-500'>Custom Pages</a>
 </li>
 
 <li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Web Application</li>
@@ -223,33 +223,33 @@
 </div>
 
 <div id='docMainBox' class='px-16 pb-12 pt-4 overflow-auto'>
-<h1 class='mb-8'>presets, Instant CRUD</h1>
+<h1 class='mb-8'>Custom Pages</h1>
 
-<div class='border-t'><p>Presets let you config generalized data management UI interface for database.
-It&#39;s not a scaffolding to generate source code. But provide more abstract and
-flexible API to enrich features along the way.</p>
+<div class='border-t'><p>Custom pages allow you to create standalone pages in your admin interface.</p>
+<h2><a name="basic-custom-page" class="anchor" href="#basic-custom-page" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Basic Custom Page</h2>
 
-<highlightjs :language='"go"' :code='"package examples_presets\n\nimport (\n\t\"fmt\"\n\t\"net/url\"\n\t\"time\"\n\n\t\"github.com/qor5/web/v3\"\n\th \"github.com/theplant/htmlgo\"\n\t\"github.com/theplant/relay/cursor\"\n\t\"golang.org/x/text/language\"\n\t\"gorm.io/gorm\"\n\n\t\"github.com/qor5/x/v3/i18n\"\n\tv \"github.com/qor5/x/v3/ui/vuetify\"\n\t\"github.com/qor5/x/v3/ui/vuetifyx\"\n\n\t\"github.com/qor5/admin/v3/media/media_library\"\n\t\"github.com/qor5/admin/v3/presets\"\n\t\"github.com/qor5/admin/v3/presets/actions\"\n\t\"github.com/qor5/admin/v3/presets/gorm2op\"\n)\n\ntype Customer struct {\n\tID              int\n\tName            string\n\tEmail           string\n\tDescription     string\n\tCompanyID       int\n\tCreatedAt       time.Time\n\tUpdatedAt       time.Time\n\tApprovedAt      *time.Time\n\tTermAgreedAt    *time.Time\n\tApprovalComment string\n\tAvatar          media_library.MediaBox\n\tCreditCards     []*CreditCard `gorm:\"-\"`\n\tNotes           []*Note       `gorm:\"-\"`\n}\n\ntype Address struct {\n\tID       int\n\tProvince string\n\tCity     string\n\tDistrict string\n}\n\nfunc PresetsHelloWorld(b *presets.Builder, db *gorm.DB) (\n\tmb *presets.ModelBuilder,\n\tcl *presets.ListingBuilder,\n\tce *presets.EditingBuilder,\n\tdp *presets.DetailingBuilder,\n) {\n\terr := db.AutoMigrate(\n\t\t\u0026Customer{},\n\t\t\u0026Company{},\n\t\t\u0026Address{},\n\t)\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\n\tb.DataOperator(gorm2op.DataOperator(db))\n\tmb = b.Model(\u0026Customer{})\n\tcl = mb.Listing()\n\tce = mb.Editing()\n\treturn\n}\n"'></highlightjs>
+<p>The simplest way to create a custom page is to use the <code>HandleCustomPage</code> method on the builder. This method takes a path and a <code>CustomPage</code> object that defines the page&#39;s content.</p>
 
-<div>
-<div class='demo'>
-<a href='/examples/presets-hello-world/customers' target='_blank'>Check the demo</a>
- | 
-<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/listing.go#L1-L70' target='_blank'>Source on GitHub</a>
-</div>
-</div>
-<p>And this <code>*presets.Builder</code> instance is actually also a <code>http.Handler</code>, So that we can mount it
-to the http serve mux directly</p>
-<p>With <code>b.Model(&amp;Customer{})</code>:</p>
+<p>Here&#39;s how to create a basic custom page:</p>
 
-<ul>
-<li>It setup the global layout with the left navigation menu</li>
-<li>It setup the listing page with a data table</li>
-<li>It add the new button to create a new record</li>
-<li>It setup the editing and creating form as a right side drawer</li>
-<li>It setup each row of data have a operation menu that you have edit and delete operations</li>
-<li>It setup the global search box, can search the model&#39;s all string columns</li>
-</ul>
+<highlightjs :language='"go"' :code='"b.HandleCustomPage(\"custom-menu\", presets.NewCustomPage(b).Body(func(ctx *web.EventContext) h.HTMLComponent {\n\treturn v.VCard(\n\t\tv.VCardItem().Title(\"New Custom Page Show Menu\"),\n\t)\n}))\ndp.Field(\"NewCustomPageShowMenu\").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {\n\treturn v.VBtn(\"NewCustomPageShowMenu\").Color(v.ColorPrimary).Attr(\"@click\", web.Plaid().PushState(true).URL(\n\t\tb.GetURIPrefix()+\"/custom-menu\",\n\t).Go()).Class(\"mt-2\")\n})"'></highlightjs>
+<h2><a name="custom-page-with-parameters" class="anchor" href="#custom-page-with-parameters" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Custom Page with Parameters</h2>
+
+<p>You can create custom pages that accept URL parameters. This is useful for creating detail pages or any page that needs to display specific data based on an identifier.</p>
+
+<p>The parameter is defined in the URL path using curly braces, and you can access it in your handler using <code>ctx.Param()</code>:</p>
+
+<highlightjs :language='"go"' :code='"b.HandleCustomPage(\"custom/{id}\", presets.NewCustomPage(b).Body(func(ctx *web.EventContext) h.HTMLComponent {\n\ttestId := ctx.Param(presets.ParamID)\n\tname := ctx.Param(\"name\")\n\treturn v.VCard(\n\t\tv.VCardItem().Title(\"New Custom Page Param\"),\n\t\tv.VCardText(\n\t\t\th.Text(testId),\n\t\t\th.Br(),\n\t\t\th.Text(name),\n\t\t),\n\t)\n}).\n\tWrapMenu(func(componentFunc presets.ComponentFunc) presets.ComponentFunc {\n\t\treturn func(ctx *web.EventContext) h.HTMLComponent {\n\t\t\treturn nil\n\t\t}\n\t}))\n\ndp.Field(\"NewCustomPageByParam\").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {\n\treturn v.VBtn(\"NewCustomPageByParam\").Color(v.ColorPrimary).Attr(\"@click\", web.Plaid().PushState(true).\n\t\tURL(fmt.Sprintf(b.GetURIPrefix()+\"/custom/%v?name=vuetify\", ctx.Param(presets.ParamID))).Go()).Class(\"mt-2\")\n})"'></highlightjs>
+<h2><a name="custom-page-with-menu" class="anchor" href="#custom-page-with-menu" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Custom Page with Menu</h2>
+
+<p>By default, custom pages don&#39;t appear in the navigation menu. You can control whether a custom page appears in the menu by using the <code>Menu</code> method or by not providing a menu function.</p>
+<h3><a name="hide-from-menu" class="anchor" href="#hide-from-menu" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>
+Hide from Menu</h3>
+
+<p>To hide a custom page from the menu, you can explicitly set the menu function to return nil:</p>
+
+<highlightjs :language='"go"' :code='"b.HandleCustomPage(\"custom\", presets.NewCustomPage(b).Body(func(ctx *web.EventContext) h.HTMLComponent {\n\treturn v.VCard(\n\t\tv.VCardItem().Title(\"New Custom Page\"),\n\t)\n}).\n\tMenu(func(ctx *web.EventContext) h.HTMLComponent {\n\t\treturn nil\n\t}))\ndp.Field(\"NewCustomPage\").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {\n\treturn v.VBtn(\"NewCustomPage\").Color(v.ColorPrimary).Attr(\"@click\", web.Plaid().PushState(true).URL(b.GetURIPrefix()+\"/custom\").Go()).Class(\"mt-2\")\n})"'></highlightjs>
 </div>
 </div>
 </div>

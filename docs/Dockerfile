@@ -6,7 +6,7 @@ COPY . .
 RUN set -x && go get -d -v ./docs/docsrc/...
 RUN GOOS=linux GOARCH=amd64 go build -o /app/entry ./docs/docsrc/server/
 
-FROM alpine:3.21.2
+FROM alpine:3.21.3
 RUN apk --update upgrade && \
     apk add ca-certificates && \
     apk add tzdata && \

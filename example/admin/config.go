@@ -522,8 +522,8 @@ func configProfile(db *gorm.DB, ab *activity.Builder, lsb *plogin.SessionBuilder
 				Roles:  u.GetRoles(),
 				Status: strcase.ToCamel(u.Status),
 				Fields: []*plogin.ProfileField{
-					{Name: "Email", Value: u.Account},
-					{Name: "Company", Value: u.Company},
+					{Name: "Email", Value: u.Account, Icon: "mdi-email-outline"},
+					{Name: "Company", Value: u.Company, Icon: "mdi-domain"},
 				},
 				NotifCounts: notifiCounts,
 			}
@@ -582,7 +582,7 @@ func configBrand(b *presets.Builder) {
 		return h.Div(
 			v.VRow(
 				v.VCol(h.A(h.Img(logo).Attr("width", "80")).Href("/")),
-				v.VCol(h.H1(msgr.Demo)).Class("pt-4"),
+				// v.VCol(h.H1(msgr.Demo)).Class("pt-4"),
 			),
 			// ).Density(DensityCompact),
 			h.If(dbReset != "",
