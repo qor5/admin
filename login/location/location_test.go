@@ -13,9 +13,10 @@ import (
 	"golang.org/x/text/language"
 )
 
+// Copyright Notice: We respect MaxMind's intellectual property rights and use these files for testing purposes only.
 const (
 	TestDataURL = "https://raw.githubusercontent.com/maxmind/MaxMind-DB/main/test-data/GeoIP2-City-Test.mmdb"
-	TestDataDir = "test-data/test-data"
+	TestDataDir = "test-data"
 )
 
 // ensureTestData ensures the GeoIP2 test database file exists and returns its path.
@@ -30,7 +31,7 @@ func ensureTestData() string {
 	}
 
 	// Create directory if it doesn't exist
-	if err := os.MkdirAll(TestDataDir, 0755); err != nil {
+	if err := os.MkdirAll(TestDataDir, 0o755); err != nil {
 		panic(fmt.Errorf("failed to create test data directory: %w", err))
 	}
 
