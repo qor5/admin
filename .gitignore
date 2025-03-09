@@ -8,4 +8,4 @@ _backup
 docs/docsrc/public
 .DS_Store
 .idea
-login/location/test-data/*
+login/location/test-data
