@@ -328,20 +328,33 @@ func ExampleSQLProcessor_Process() {
                     "tag": {
                         "builderID": "user_city",
                         "params": {
-                            "operator": "EQ",
-                            "value": "TOKYO"
+                            "operator": "IN",
+                            "values": ["TOKYO", "OSAKA"]
                         }
                     }
                 },
                 {
-                    "tag": {
-                        "builderID": "user_signup_source",
-                        "params": {
-                            "operator": "EQ",
-                            "value": "MOBILE_APP"
-                        }
-                    }
-                }
+					"union": [
+						{
+							"tag": {
+								"builderID": "user_signup_source",
+								"params": {
+									"operator": "EQ",
+									"value": "WEBSITE"
+								}
+							}
+						},
+						{
+							"tag": {
+								"builderID": "user_signup_source",
+								"params": {
+									"operator": "EQ",
+									"value": "MOBILE_APP"
+								}
+							}
+						}
+					]
+				}
             ]
         },
         {
@@ -356,7 +369,8 @@ func ExampleSQLProcessor_Process() {
             }
         }
     ]
-}`
+}
+`
 
 	var expr *tag.Expression
 	err := json.Unmarshal([]byte(exprJSON), &expr)
@@ -421,9 +435,11 @@ func ExampleSQLProcessor_Process() {
 	// INTERSECT DISTINCT
 	// (SELECT user_id FROM users WHERE age BETWEEN ? AND ?)
 	// INTERSECT DISTINCT
-	// (SELECT user_id FROM users WHERE city = ?)
+	// (SELECT user_id FROM users WHERE city IN (?, ?))
 	// INTERSECT DISTINCT
-	// (SELECT user_id FROM users WHERE signupSource = ?)
+	// ((SELECT user_id FROM users WHERE signupSource = ?)
+	// UNION DISTINCT
+	// (SELECT user_id FROM users WHERE signupSource = ?))
 	// INTERSECT DISTINCT
 	// (SELECT user_id FROM events
 	// WHERE event_name = 'PURCHASE'
@@ -435,8 +451,10 @@ func ExampleSQLProcessor_Process() {
 	//   [1] 25 (float64)
 	//   [2] 35 (float64)
 	//   [3] TOKYO (string)
-	//   [4] MOBILE_APP (string)
-	//   [5] 2 (float64)
+	//   [4] OSAKA (string)
+	//   [5] WEBSITE (string)
+	//   [6] MOBILE_APP (string)
+	//   [7] 2 (float64)
 	// Purchase specific event query:
 	//  (SELECT user_id FROM events
 	// WHERE event_name = 'PURCHASE'
