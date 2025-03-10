@@ -291,6 +291,7 @@ func (b *ModelBuilder) renderScrollIframe(comps []h.HTMLComponent, ctx *web.Even
 		IsEditor:   isEditor,
 		IsPreview:  !isEditor,
 		SeoTags:    seoTags,
+		Obj:        obj,
 	}
 
 	if isEditor {
@@ -841,7 +842,7 @@ func (b *ModelBuilder) configDuplicate(mb *presets.ModelBuilder) {
 							panic(inerr)
 						}
 					}
-					if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, fromVersion, fromLocale, pageID, version, localeCode); inerr != nil {
+					if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, fromVersion, fromLocale, fromIDInt, version, localeCode); inerr != nil {
 						panic(inerr)
 					}
 					return
