@@ -226,6 +226,7 @@ func NewConfig(db *gorm.DB, enableWork bool, opts ...ConfigOption) Config {
 
 	l10nBuilder := l10n.New(db)
 	l10nBuilder.
+		Activity(ab).
 		RegisterLocales("International", "international", "International", l10n.InternationalSvg).
 		RegisterLocales("China", "cn", "China", l10n.ChinaSvg).
 		RegisterLocales("Japan", "jp", "Japan", l10n.JapanSvg).
