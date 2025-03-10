@@ -260,6 +260,7 @@ var _ Fragment = &IconFragment{}
 
 type IconFragment struct {
 	FragmentMetadata
+	Icon string `json:"icon"`
 }
 
 // Type returns the fragment type
