@@ -40,7 +40,7 @@ func (this *MicroSite) PrimarySlug() string {
 	return fmt.Sprintf("%v_%v", this.ID, this.Version.Version)
 }
 
-func (this *MicroSite) PrimaryColumnValuesBySlug(slug string) map[string]string {
+func (*MicroSite) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 2 {
 		panic("wrong slug")
@@ -168,7 +168,7 @@ func (this *MicroSite) GetUnPublishActions(ctx context.Context, db *gorm.DB, sto
 	return
 }
 
-func (this *MicroSite) UnArchiveAndPublish(getPath func(string) string, fileName string, f io.Reader, storage oss.StorageInterface) (filesList []string, err error) {
+func (*MicroSite) UnArchiveAndPublish(getPath func(string) string, fileName string, f io.Reader, storage oss.StorageInterface) (filesList []string, err error) {
 	format, reader, err := archiver.Identify(fileName, f)
 	if err != nil {
 		if err == archiver.ErrNoMatch {

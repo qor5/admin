@@ -168,7 +168,7 @@ func (b *Base) GetFileHeader() FileHeader {
 }
 
 // GetURLTemplate get url template
-func (b *Base) GetURLTemplate(option *Option) (path string) {
+func (*Base) GetURLTemplate(option *Option) (path string) {
 	if path = option.Get("URL"); path == "" {
 		path = "/system/{{class}}/{{primary_key}}/{{column}}/{{filename_with_hash}}"
 	}
@@ -254,12 +254,12 @@ func (b *Base) GetFileSizes() map[string]int {
 }
 
 // Retrieve retrieve file content with url
-func (b *Base) Retrieve(url string) (*os.File, error) {
+func (*Base) Retrieve(url string) (*os.File, error) {
 	return nil, errors.New("not implemented")
 }
 
 // GetSizes get configured sizes, it will be used to crop images accordingly
-func (b *Base) GetSizes() map[string]*Size {
+func (*Base) GetSizes() map[string]*Size {
 	return map[string]*Size{}
 }
 
@@ -281,7 +281,7 @@ type MemoryFile struct {
 	name   string
 }
 
-func (m *MemoryFile) Close() error {
+func (*MemoryFile) Close() error {
 	return nil
 }
 

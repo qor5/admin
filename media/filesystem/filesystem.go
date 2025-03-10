@@ -16,7 +16,7 @@ type FileSystem struct {
 }
 
 // GetFullPath return full file path from a relative file path
-func (f FileSystem) GetFullPath(url string, option *base.Option) (path string, err error) {
+func (FileSystem) GetFullPath(url string, option *base.Option) (path string, err error) {
 	if option != nil && option.Get("path") != "" {
 		path = filepath.Join(option.Get("path"), url)
 	} else {

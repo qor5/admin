@@ -23,7 +23,7 @@ func (tv *TestVariant) PrimarySlug() string {
 	return fmt.Sprintf("%s_%s", tv.ProductCode, tv.ColorCode)
 }
 
-func (tv *TestVariant) PrimaryColumnValuesBySlug(slug string) map[string]string {
+func (*TestVariant) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 2 {
 		panic("wrong slug")
