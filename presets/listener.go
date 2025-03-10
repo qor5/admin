@@ -41,7 +41,7 @@ func NotifModelsDeleted(v any) string {
 	return fmt.Sprintf("presets_NotifModelsDeleted_%T", v)
 }
 
-func (mb *ModelBuilder) NotifRowUpdated() string {
+func (*ModelBuilder) NotifRowUpdated() string {
 	return fmt.Sprintf("presets_NotifRowUpdated")
 }
 

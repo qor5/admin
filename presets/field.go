@@ -245,7 +245,7 @@ type DisplayFieldInSorter struct {
 	Field string
 }
 
-func (i *DisplayFieldInSorter) nested() {}
+func (*DisplayFieldInSorter) nested() {}
 
 type AddListItemRowEvent struct {
 	Event string
@@ -474,7 +474,7 @@ func (b *FieldsBuilder) SetObjectFields(fromObj interface{}, toObj interface{}, 
 	return
 }
 
-func (b *FieldsBuilder) setToObjNilOrDelete(toObj interface{}, formKey string, f *FieldBuilder, modifiedIndexes *ModifiedIndexesBuilder, removeDeletedAndSort bool) {
+func (*FieldsBuilder) setToObjNilOrDelete(toObj interface{}, formKey string, f *FieldBuilder, modifiedIndexes *ModifiedIndexesBuilder, removeDeletedAndSort bool) {
 	if !removeDeletedAndSort {
 		if modifiedIndexes.deletedValues != nil && modifiedIndexes.deletedValues[formKey] != nil {
 			for _, idx := range modifiedIndexes.deletedValues[formKey] {
@@ -509,7 +509,7 @@ func (b *FieldsBuilder) setToObjNilOrDelete(toObj interface{}, formKey string, f
 	}
 }
 
-func (b *FieldsBuilder) setWithChildFromObjs(
+func (*FieldsBuilder) setWithChildFromObjs(
 	fromObj interface{},
 	formKey string,
 	f *FieldBuilder,

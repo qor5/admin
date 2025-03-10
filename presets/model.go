@@ -317,7 +317,7 @@ func (mb *ModelBuilder) getLabel(field NameLabel) (r string) {
 	return humanizeString(field.name)
 }
 
-func (mb *ModelBuilder) defaultMustGetMessages(r *http.Request) *Messages {
+func (*ModelBuilder) defaultMustGetMessages(r *http.Request) *Messages {
 	messages := &Messages{}
 	srcVal := reflect.ValueOf(MustGetMessages(r)).Elem()
 	dstVal := reflect.ValueOf(messages).Elem()

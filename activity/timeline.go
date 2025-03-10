@@ -46,7 +46,7 @@ func (c *TimelineCompo) VarCurrentActive() string {
 	return fmt.Sprintf("__current_active_of_%s__", stateful.MurmurHash3(c.CompoID()))
 }
 
-func (c *TimelineCompo) MustGetEventContext(ctx context.Context) (*web.EventContext, *Messages) {
+func (*TimelineCompo) MustGetEventContext(ctx context.Context) (*web.EventContext, *Messages) {
 	evCtx := web.MustGetEventContext(ctx)
 	return evCtx, i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
 }

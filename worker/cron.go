@@ -278,6 +278,6 @@ func (c *cron) doRunJob(ctx context.Context, job QueJobInterface) error {
 	return nil
 }
 
-func (c *cron) Shutdown(ctx context.Context) error {
+func (*cron) Shutdown(ctx context.Context) error {
 	return nil
 }
