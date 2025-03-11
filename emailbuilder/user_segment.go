@@ -9,9 +9,11 @@ import (
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 
-	"github.com/qor5/admin/v3/presets"
-	v "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
+
+	v "github.com/qor5/x/v3/ui/vuetify"
+
+	"github.com/qor5/admin/v3/presets"
 )
 
 type (
@@ -92,6 +94,10 @@ func ConfigUserSegment(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder {
 	var (
 		activeUsersDateArr []string
 		activeUsersDataArr []interface{}
+
+		// 添加14天数据的数组
+		activeUsers14DaysDateArr []string
+		activeUsers14DaysDataArr []interface{}
 	)
 	baseValue := 200
 	// 定义稳定的浮动模式
@@ -103,81 +109,112 @@ func ConfigUserSegment(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder {
 		now = now.AddDate(0, 0, 1) // Move to next day
 	}
 
+	// 重置日期以便生成14天的数据
+	now = time.Now()
+	now = now.AddDate(0, 0, -13) // 从14天前开始
+	baseValue14Days := 180       // 稍微低一点的基准值，以区分两条线
+	// 更长的波动数组，14天
+	fluctuations14Days := []int{15, 25, -10, -20, 30, 10, -15, 5, 40, -25, -5, 20, 30, -10}
+	for i := 0; i < 14; i++ {
+		activeUsers14DaysDateArr = append(activeUsers14DaysDateArr, now.Format("01-02"))
+		value := baseValue14Days + fluctuations14Days[i]
+		activeUsers14DaysDataArr = append(activeUsers14DaysDataArr, value)
+		now = now.AddDate(0, 0, 1) // Move to next day
+	}
+
 	cp := presets.NewCustomPage(pb).Body(func(ctx *web.EventContext) h.HTMLComponent {
-		return web.Scope(
-			vx.VXTabs().Attr("v-model", "xLocals.tab").Children(
-				v.VTab().Value(0).Text("Demographics Info"),
-				v.VTab().Value(1).Text("User Active"),
-			),
-			v.VTabsWindow().Attr("v-model", "xLocals.tab").Children(
-				v.VTabsWindowItem().Value(0).Children(
-					v.VRow(
-						v.VCol(
-							h.Div(
-								vx.VXChart().Presets("barChart").Options(vx.VXChartOption{
-									Title: &vx.VXChartOptionTitle{Text: "Age"},
-									XAxis: &vx.VXChartOptionXAxis{
-										Data: []string{"0-18", "18-25", "25-65", "65+"},
-									},
-									Series: &[]vx.VXChartOptionSeries{
-										{
-											Name: "Age",
-											Data: []interface{}{100, 300, 500, 200},
+		return v.VContainer(
+			v.VToolbarTitle("User Segments"),
+			v.VRow(
+				v.VCol(
+					h.Div(
+						vx.VXChart().Presets("barChart").Options(vx.VXChartOption{
+							Title: &vx.VXChartOptionTitle{Text: "Age"},
+							XAxis: &vx.VXChartOptionXAxis{
+								Data: []string{"0-18", "18-25", "25-65", "65+"},
+							},
+							Series: &[]vx.VXChartOptionSeries{
+								{
+									Name: "Age",
+									Data: []interface{}{100, 300, 500, 200},
+								},
+							},
+						}),
+					).Class("chart-container border border-gray-500 rounded-lg"),
+				).Cols(6),
+				v.VCol(
+					h.Div(
+						vx.VXChart().Presets("pieChart").Options(vx.VXChartOption{
+							Title: &vx.VXChartOptionTitle{Text: "Gender"},
+							Series: &[]vx.VXChartOptionSeries{
+								{
+									Name: "Gender",
+									Data: []interface{}{
+										map[string]interface{}{
+											"name":  "Male",
+											"value": 45,
+										},
+										map[string]interface{}{
+											"name":  "Female",
+											"value": 55,
 										},
 									},
-								}),
-							).Class("chart-container border border-gray-500 rounded-lg"),
-						).Cols(6),
-						v.VCol(
-							h.Div(
-								vx.VXChart().Presets("pieChart").Options(vx.VXChartOption{
-									Title: &vx.VXChartOptionTitle{Text: "Gender"},
-									Series: &[]vx.VXChartOptionSeries{
-										{
-											Name: "Gender",
-											Data: []interface{}{
-												map[string]interface{}{
-													"name":  "Male",
-													"value": 45,
-												},
-												map[string]interface{}{
-													"name":  "Female",
-													"value": 55,
-												},
-											},
-										},
+								},
+							},
+						}),
+					).Class("chart-container border border-gray-500 rounded-lg"),
+				).Cols(6),
+			).Class("mt-4"),
+			v.VRow(
+				v.VCol(
+					h.Div(
+						vx.VXChart().Children(
+							web.Slot(
+								h.Div(
+									h.Button("Past 7 Days").
+										Class("text-body-2 rounded text-no-wrap border-0 flex-grow-1 d-flex align-center justify-center rounded px-2").
+										Attr(":style", `
+                 currentIndex === 0
+                ? 'background-color: #fff; color: #4a4a4a;'
+                : 'background-color: transparent; color: rgb(117, 117, 117);'`).Attr("@click", "toggle(0)"),
+									h.Button("Past 14 Days").Attr(":style", `
+                 currentIndex === 1
+                ? 'background-color: #fff; color: #4a4a4a;'
+                : 'background-color: transparent; color: rgb(117, 117, 117);'`).
+										Class("text-body-2 rounded text-no-wrap border-0 flex-grow-1 d-flex align-center justify-center rounded px-2").
+										Attr("@click", "toggle(1)"),
+								).Class("d-flex align-center bg-grey-lighten-3 rounded pa-1 mr-4 mt-4").Style("height: 32px;"),
+							).Name("action").Scope("{ list, currentIndex, toggle }"),
+						).Presets("barChart").Options([]vx.VXChartOption{
+							{
+								Title: &vx.VXChartOptionTitle{Text: "Daily Active Users (7 Days)"},
+								XAxis: &vx.VXChartOptionXAxis{
+									Data: activeUsersDateArr,
+								},
+								Series: &[]vx.VXChartOptionSeries{
+									{
+										Name: "7 days",
+										Data: activeUsersDataArr,
 									},
-								}),
-							).Class("chart-container border border-gray-500 rounded-lg"),
-						).Cols(6),
-					).Class("mt-4"),
-					v.VRow(
-						v.VCol(
-							h.Div(
-								vx.VXChart().Presets("barChart").Options(vx.VXChartOption{
-									Title: &vx.VXChartOptionTitle{Text: "Daily Active Users"},
-									XAxis: &vx.VXChartOptionXAxis{
-										Data: activeUsersDateArr,
+								},
+							},
+							{
+								Title: &vx.VXChartOptionTitle{Text: "Daily Active Users (14 Days)"},
+								XAxis: &vx.VXChartOptionXAxis{
+									Data: activeUsers14DaysDateArr,
+								},
+								Series: &[]vx.VXChartOptionSeries{
+									{
+										Name: "14 days",
+										Data: activeUsers14DaysDataArr,
 									},
-									Series: &[]vx.VXChartOptionSeries{
-										{
-											Name: "7 days",
-											Data: activeUsersDataArr,
-										},
-									},
-								}),
-							).Class("chart-container border border-gray-500 rounded-lg")),
-					).Class("mt-4"),
-				),
-			),
-			v.VTabsWindowItem().Value(1).Children(
-				v.VCard().Elevation(0).Children(
-					v.VCardText(
-						h.Div().Class("border border-dashed text-primary font-weight-bold border-primary text-center border-opacity-100 pa-4").Text("Detailed user information will go here"),
-					),
-				),
-			),
-		).VSlot("{locals:xLocals}").Init(`{tab:0}`)
+								},
+							},
+						}),
+					).Class("chart-container border border-gray-500 rounded-lg"),
+				).Cols(12),
+			).Class("mt-4"),
+		).Class("ma-0").Fluid(true)
 	})
 	pb.HandleCustomPage("chart", cp)
 	return mb
