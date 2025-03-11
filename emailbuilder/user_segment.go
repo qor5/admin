@@ -55,13 +55,11 @@ func initRecords(db *gorm.DB) {
 }
 
 func ConfigUserSegment(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder {
-	var (
-		err error
-	)
+	var err error
 	if err = db.AutoMigrate(&UserSegment{}); err != nil {
 		panic(err)
 	}
-	//TODO:demo data
+	// TODO:demo data
 	initRecords(db)
 
 	mb := pb.Model(&UserSegment{})
