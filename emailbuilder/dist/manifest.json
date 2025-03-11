@@ -1,0 +1,131 @@
+{
+  "index.html": {
+    "file": "assets/index.aed93e4e.js",
+    "src": "index.html",
+    "isEntry": true,
+    "imports": [
+      "_lodash-39fc179f.js"
+    ],
+    "dynamicImports": [
+      "_mjml-browser.js",
+      "node_modules/.pnpm/html2canvas@1.4.1/node_modules/html2canvas/dist/html2canvas.esm.js",
+      "src/templates/Arturia - Newsletter.json",
+      "src/templates/DynamicData.json",
+      "src/templates/Food.json",
+      "src/templates/MJML Code - Newsletter.json",
+      "src/templates/Racoon - Ecommerce.json",
+      "src/templates/Real Estate.json",
+      "src/templates/Shop - Newsletter.json",
+      "src/templates/Sphero - Newsletter.json",
+      "src/templates/Star Wars.json",
+      "src/templates/Stay Updated On Our Shopping.json",
+      "src/templates/We Serve Healthy & Delicious Foods.json",
+      "src/templates/St. Patrick Day - Newsletter.json",
+      "_index-b5f1003e.js"
+    ],
+    "css": [
+      "assets/index.57e1656f.css"
+    ]
+  },
+  "node_modules/.pnpm/html2canvas@1.4.1/node_modules/html2canvas/dist/html2canvas.esm.js": {
+    "file": "html2canvas.js",
+    "src": "node_modules/.pnpm/html2canvas@1.4.1/node_modules/html2canvas/dist/html2canvas.esm.js",
+    "isDynamicEntry": true
+  },
+  "_lodash-39fc179f.js": {
+    "file": "lodash-39fc179f.js"
+  },
+  "_mjml-browser.js": {
+    "file": "mjml-browser.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_lodash-39fc179f.js"
+    ]
+  },
+  "_index-b5f1003e.js": {
+    "file": "index-b5f1003e.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "index.html",
+      "_lodash-39fc179f.js",
+      "_mjml-browser.js"
+    ],
+    "dynamicImports": [
+      "../packages/easy-email-extensions/lib/index3.js"
+    ],
+    "css": [
+      "assets/index.0825a070.css"
+    ]
+  },
+  "src/templates/Arturia - Newsletter.json": {
+    "file": "Arturia - Newsletter-487c46b2.js",
+    "src": "src/templates/Arturia - Newsletter.json",
+    "isDynamicEntry": true
+  },
+  "src/templates/DynamicData.json": {
+    "file": "DynamicData-c9bd8fcf.js",
+    "src": "src/templates/DynamicData.json",
+    "isDynamicEntry": true
+  },
+  "src/templates/Food.json": {
+    "file": "Food-49fb1008.js",
+    "src": "src/templates/Food.json",
+    "isDynamicEntry": true
+  },
+  "src/templates/MJML Code - Newsletter.json": {
+    "file": "MJML Code - Newsletter-ee83bfba.js",
+    "src": "src/templates/MJML Code - Newsletter.json",
+    "isDynamicEntry": true
+  },
+  "src/templates/Racoon - Ecommerce.json": {
+    "file": "Racoon - Ecommerce-6355677e.js",
+    "src": "src/templates/Racoon - Ecommerce.json",
+    "isDynamicEntry": true
+  },
+  "src/templates/Real Estate.json": {
+    "file": "Real Estate-9698f85a.js",
+    "src": "src/templates/Real Estate.json",
+    "isDynamicEntry": true
+  },
+  "src/templates/Shop - Newsletter.json": {
+    "file": "Shop - Newsletter-5a8f42e4.js",
+    "src": "src/templates/Shop - Newsletter.json",
+    "isDynamicEntry": true
+  },
+  "src/templates/Sphero - Newsletter.json": {
+    "file": "Sphero - Newsletter-138eff4c.js",
+    "src": "src/templates/Sphero - Newsletter.json",
+    "isDynamicEntry": true
+  },
+  "src/templates/Star Wars.json": {
+    "file": "Star Wars-5cb05a0e.js",
+    "src": "src/templates/Star Wars.json",
+    "isDynamicEntry": true
+  },
+  "src/templates/Stay Updated On Our Shopping.json": {
+    "file": "Stay Updated On Our Shopping-cb7d4c49.js",
+    "src": "src/templates/Stay Updated On Our Shopping.json",
+    "isDynamicEntry": true
+  },
+  "src/templates/We Serve Healthy & Delicious Foods.json": {
+    "file": "We Serve Healthy _ Delicious Foods-13bae624.js",
+    "src": "src/templates/We Serve Healthy & Delicious Foods.json",
+    "isDynamicEntry": true
+  },
+  "src/templates/St. Patrick Day - Newsletter.json": {
+    "file": "St. Patrick Day - Newsletter-38dab87a.js",
+    "src": "src/templates/St. Patrick Day - Newsletter.json",
+    "isDynamicEntry": true
+  },
+  "../packages/easy-email-extensions/lib/index3.js": {
+    "file": "index3-d329c68b.js",
+    "src": "../packages/easy-email-extensions/lib/index3.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "index.html",
+      "_index-b5f1003e.js",
+      "_mjml-browser.js",
+      "_lodash-39fc179f.js"
+    ]
+  }
+}
