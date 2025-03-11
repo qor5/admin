@@ -372,6 +372,7 @@ func NewConfig(db *gorm.DB, enableWork bool, opts ...ConfigOption) Config {
 	configureDemoCase(b, db)
 	eb := emailbuilder.New(b, db, emailbuilder.DefaultMailTemplate(b)).Activity(ab).AutoMigrate()
 	emailbuilder.DefaultMailCampaign(b).Use(eb)
+	emailbuilder.ConfigUserSegment(b, db)
 	configUser(b, ab, db, publisher, loginSessionBuilder)
 	b.Use(
 		eb,
@@ -506,9 +507,10 @@ func configMenuOrder(b *presets.Builder) {
 		).Icon("featured_play_list"),
 		"Worker",
 		"ActivityLogs",
-		b.MenuGroup("Email Builder").SubItems(
+		b.MenuGroup("Marketing").SubItems(
 			"Mail Templates",
 			"Mail Campaigns",
+			"User Segments",
 		).Icon("mdi-mail"),
 	)
 }
