@@ -1,6 +1,7 @@
 package pagebuilder
 
 import (
+	"embed"
 	"fmt"
 	"strings"
 
@@ -8,7 +9,29 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
+//go:embed assets/css
+var theme embed.FS
+
+func WrapDefaultPageLayoutFunc(css ...string) PageLayoutFunc {
+	return func(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent {
+		val, err := theme.ReadFile("assets/css/page-builder-default.css")
+		if err != nil {
+			panic(err)
+		}
+		input.FreeStyleCss = append(input.FreeStyleCss, append(css, string(val))...)
+		return pageLayoutFunc(body, input, ctx)
+	}
+}
+
 func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent {
+	css, err := theme.ReadFile("assets/css/page-builder-theme.css")
+	if err != nil {
+		panic(err)
+	}
+	return WrapDefaultPageLayoutFunc(string(css))(body, input, ctx)
+}
+
+func pageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *web.EventContext) h.HTMLComponent {
 	var freeStyleCss h.HTMLComponent
 	if len(input.FreeStyleCss) > 0 {
 		freeStyleCss = h.Style(strings.Join(input.FreeStyleCss, "\n"))
@@ -18,6 +41,38 @@ func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *we
 	css := "https://the-plant.com/assets/app/container.4f902c4.css"
 	domain := "https://example.qor5.theplant-dev.com"
 
+	// tailwind ecosystem resources
+	tailwindJs := "https://cdn.tailwindcss.com"
+	alpineJs := "https://unpkg.com/alpinejs"
+	InferCss := "https://rsms.me/inter/inter.css"
+
+	tailwindPluginJs := []string{
+		`tailwind.config = {
+		theme: {
+		extend: {
+					fontFamily: {
+						sans: ["InterVariable", "sans-serif"],
+					},
+		}
+		}
+	}`,
+	}
+	tailwindOverrides := []string{
+		`.tailwind-scope {
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        a,
+        p {
+          font-family: InterVariable, system-ui, sans-serif;
+        }
+      }
+		`,
+	}
+
 	head := h.Components(
 		input.SeoTags,
 		input.CanonicalLink,
@@ -26,13 +81,20 @@ func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *we
 		h.Meta().Content("yes").Name("apple-mobile-web-app-capable"),
 		h.Meta().Content("black").Name("apple-mobile-web-app-status-bar-style"),
 		h.Meta().Name("format-detection").Content("telephone=no"),
-
 		h.Link("").Rel("stylesheet").Type("text/css").Href(css),
+
+		// tailwind ecosystem resources
+		h.Link("").Rel("stylesheet").Type("text/css").Href(InferCss),
+		h.Script("").Src(tailwindJs),
+		h.Script("").Src(alpineJs).Attr("defer", "true"),
+
 		h.If(len(input.EditorCss) > 0, input.EditorCss...),
 		freeStyleCss,
 		// RawHTML(dataLayer),
 		input.StructuredData,
 		scriptWithCodes(input.FreeStyleTopJs),
+		scriptWithCodes(tailwindPluginJs),
+		styleWithCodes(tailwindOverrides),
 	)
 	ctx.Injector.HTMLLang(input.LocaleCode)
 	if input.WrapHead != nil {
@@ -68,4 +130,12 @@ try {
 `, strings.Join(jscodes, "\n")))
 	}
 	return js
+}
+
+func styleWithCodes(csscodes []string) h.HTMLComponent {
+	var css h.HTMLComponent
+	if len(csscodes) > 0 {
+		css = h.Style(strings.Join(csscodes, "\n"))
+	}
+	return css
 }

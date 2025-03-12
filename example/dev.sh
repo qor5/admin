@@ -1,3 +1,5 @@
+#!/bin/bash
+
 function exampleRestart() {
   echo "=================>"
   killall qor5example

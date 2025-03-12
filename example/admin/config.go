@@ -371,7 +371,7 @@ func NewConfig(db *gorm.DB, enableWork bool, opts ...ConfigOption) Config {
 	configECDashboard(b, db)
 	configureDemoCase(b, db)
 	eb := emailbuilder.New(b, db, emailbuilder.DefaultMailTemplate(b)).Activity(ab).AutoMigrate()
-	emailbuilder.DefaultMailCampaign(b).Use(eb)
+	emailbuilder.DefaultMailCampaign(b,db).Use(eb)
 	emailbuilder.ConfigUserSegment(b, db)
 	configUser(b, ab, db, publisher, loginSessionBuilder)
 	b.Use(
