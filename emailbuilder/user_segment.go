@@ -2,10 +2,10 @@ package emailbuilder
 
 import (
 	"fmt"
-	"path"
 	"time"
 
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 
@@ -14,6 +14,7 @@ import (
 	v "github.com/qor5/x/v3/ui/vuetify"
 
 	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
 )
 
 type (
@@ -64,13 +65,18 @@ func ConfigUserSegment(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder {
 	// TODO:demo data
 	initRecords(db)
 
-	mb := pb.Model(&UserSegment{})
+	mb := pb.Model(&UserSegment{}).Label("User Segments")
 	mb.Editing().Creating("Name")
-	listing := mb.Listing("ID", "Name", "TotalUsers", "Change", "CreatedAt", "UpdatedAt").WrapCell(func(in presets.CellProcessor) presets.CellProcessor {
-		return func(evCtx *web.EventContext, cell h.MutableAttrHTMLComponent, id string, obj any) (h.MutableAttrHTMLComponent, error) {
-			cell.SetAttr("@click", web.Plaid().PushState(true).URL(path.Join(pb.GetURIPrefix(), "chart")).Go())
-			return cell, nil
-		}
+	listing := mb.Listing("ID", "Name", "TotalUsers", "Change", "CreatedAt", "UpdatedAt")
+	listing.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
+		msgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, presets.Messages_en_US).(*presets.Messages)
+		return h.Components(
+			v.VBtn(msgr.New).
+				Color(v.ColorPrimary).
+				Variant(v.VariantElevated).
+				Theme("light").Class("ml-2").
+				Attr("@click", web.Plaid().URL(mb.Info().ListingHref()).EventFunc(actions.New).Query(presets.ParamOverlay, actions.Dialog).Go()),
+		)
 	})
 	listing.Field("Change").Label("% Change").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
 		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -90,7 +96,7 @@ func ConfigUserSegment(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder {
 	})
 
 	now := time.Now()
-	now = now.AddDate(0, 0, -now.Day()+1)
+	yesterday := now.AddDate(0, 0, -1) // 昨天
 	var (
 		activeUsersDateArr []string
 		activeUsersDataArr []interface{}
@@ -102,120 +108,134 @@ func ConfigUserSegment(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder {
 	baseValue := 200
 	// 定义稳定的浮动模式
 	fluctuations := []int{20, 35, -15, -30, 40, 10, -25}
-	for i := 0; i < 7; i++ {
-		activeUsersDateArr = append(activeUsersDateArr, now.Format("01-02"))
-		value := baseValue + fluctuations[i]
+
+	// 从昨天往前推7天，并且按照从最早到最近的顺序排列
+	for i := 6; i >= 0; i-- {
+		datePoint := yesterday.AddDate(0, 0, -i) // 从昨天往前推i天
+		activeUsersDateArr = append(activeUsersDateArr, datePoint.Format("01-02"))
+		value := baseValue + fluctuations[6-i] // 反向使用波动数组以保持相同的变化模式
 		activeUsersDataArr = append(activeUsersDataArr, value)
-		now = now.AddDate(0, 0, 1) // Move to next day
 	}
 
-	// 重置日期以便生成14天的数据
-	now = time.Now()
-	now = now.AddDate(0, 0, -13) // 从14天前开始
-	baseValue14Days := 180       // 稍微低一点的基准值，以区分两条线
+	// 从昨天往前推14天，并且按照从最早到最近的顺序排列
+	baseValue14Days := 180 // 稍微低一点的基准值，以区分两条线
 	// 更长的波动数组，14天
 	fluctuations14Days := []int{15, 25, -10, -20, 30, 10, -15, 5, 40, -25, -5, 20, 30, -10}
-	for i := 0; i < 14; i++ {
-		activeUsers14DaysDateArr = append(activeUsers14DaysDateArr, now.Format("01-02"))
-		value := baseValue14Days + fluctuations14Days[i]
+	for i := 13; i >= 0; i-- {
+		datePoint := yesterday.AddDate(0, 0, -i) // 从昨天往前推i天
+		activeUsers14DaysDateArr = append(activeUsers14DaysDateArr, datePoint.Format("01-02"))
+		value := baseValue14Days + fluctuations14Days[13-i] // 反向使用波动数组以保持相同的变化模式
 		activeUsers14DaysDataArr = append(activeUsers14DaysDataArr, value)
-		now = now.AddDate(0, 0, 1) // Move to next day
 	}
+	detailing := mb.Detailing("Charts")
 
-	cp := presets.NewCustomPage(pb).Body(func(ctx *web.EventContext) h.HTMLComponent {
-		return v.VContainer(
-			v.VToolbarTitle("User Segments"),
-			v.VRow(
-				v.VCol(
-					h.Div(
-						vx.VXChart().Presets("barChart").Options(vx.VXChartOption{
-							Title: &vx.VXChartOptionTitle{Text: "Age"},
-							XAxis: &vx.VXChartOptionXAxis{
-								Data: []string{"0-18", "18-25", "25-65", "65+"},
-							},
-							Series: &[]vx.VXChartOptionSeries{
-								{
-									Name: "Age",
-									Data: []interface{}{100, 300, 500, 200},
-								},
-							},
-						}),
-					).Class("chart-container border border-gray-500 rounded-lg"),
-				).Cols(6),
-				v.VCol(
-					h.Div(
-						vx.VXChart().Presets("pieChart").Options(vx.VXChartOption{
-							Title: &vx.VXChartOptionTitle{Text: "Gender"},
-							Series: &[]vx.VXChartOptionSeries{
-								{
-									Name: "Gender",
-									Data: []interface{}{
-										map[string]interface{}{
-											"name":  "Male",
-											"value": 45,
-										},
-										map[string]interface{}{
-											"name":  "Female",
-											"value": 55,
-										},
-									},
-								},
-							},
-						}),
-					).Class("chart-container border border-gray-500 rounded-lg"),
-				).Cols(6),
-			).Class("mt-4"),
-			v.VRow(
-				v.VCol(
-					h.Div(
-						vx.VXChart().Children(
-							web.Slot(
-								h.Div(
-									h.Button("Past 7 Days").
-										Class("text-body-2 rounded text-no-wrap border-0 flex-grow-1 d-flex align-center justify-center rounded px-2").
-										Attr(":style", `
-                 currentIndex === 0
-                ? 'background-color: #fff; color: #4a4a4a;'
-                : 'background-color: transparent; color: rgb(117, 117, 117);'`).Attr("@click", "toggle(0)"),
-									h.Button("Past 14 Days").Attr(":style", `
-                 currentIndex === 1
-                ? 'background-color: #fff; color: #4a4a4a;'
-                : 'background-color: transparent; color: rgb(117, 117, 117);'`).
-										Class("text-body-2 rounded text-no-wrap border-0 flex-grow-1 d-flex align-center justify-center rounded px-2").
-										Attr("@click", "toggle(1)"),
-								).Class("d-flex align-center bg-grey-lighten-3 rounded pa-1 mr-4 mt-4").Style("height: 32px;"),
-							).Name("action").Scope("{ list, currentIndex, toggle }"),
-						).Presets("barChart").Options([]vx.VXChartOption{
-							{
-								Title: &vx.VXChartOptionTitle{Text: "Daily Active Users (7 Days)"},
-								XAxis: &vx.VXChartOptionXAxis{
-									Data: activeUsersDateArr,
-								},
-								Series: &[]vx.VXChartOptionSeries{
-									{
-										Name: "7 days",
-										Data: activeUsersDataArr,
-									},
-								},
-							},
-							{
-								Title: &vx.VXChartOptionTitle{Text: "Daily Active Users (14 Days)"},
-								XAxis: &vx.VXChartOptionXAxis{
-									Data: activeUsers14DaysDateArr,
-								},
-								Series: &[]vx.VXChartOptionSeries{
-									{
-										Name: "14 days",
-										Data: activeUsers14DaysDataArr,
-									},
-								},
-							},
-						}),
-					).Class("chart-container border border-gray-500 rounded-lg"),
-				).Cols(12),
-			).Class("mt-4"),
-		).Class("ma-0").Fluid(true)
+	se := presets.NewSectionBuilder(mb, "Charts").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return web.Scope(
+			h.Div(
+				vx.VXTabs(
+					v.VTab(h.Text("Demographics Info")).Value(0),
+					v.VTab(h.Text("User Activity")).Value(1),
+				).Attr("v-model", "xLocals.tab"),
+
+				v.VTabsWindow(
+					v.VTabsWindowItem(
+						h.Div(
+							v.VRow(
+								v.VCol(
+									h.Div(
+										vx.VXChart().Presets("barChart").Options(vx.VXChartOption{
+											Title: &vx.VXChartOptionTitle{Text: "Age"},
+											XAxis: &vx.VXChartOptionXAxis{
+												Data: []string{"0-18", "18-25", "25-65", "65+"},
+											},
+											Series: &[]vx.VXChartOptionSeries{
+												{
+													Name: "Age",
+													Data: []interface{}{100, 300, 500, 200},
+												},
+											},
+										}),
+									).Class("chart-container border border-gray-500 rounded-lg"),
+								).Cols(6),
+								v.VCol(
+									h.Div(
+										vx.VXChart().Presets("pieChart").Options(vx.VXChartOption{
+											Title: &vx.VXChartOptionTitle{Text: "Gender"},
+											Series: &[]vx.VXChartOptionSeries{
+												{
+													Name: "Gender",
+													Data: []interface{}{
+														map[string]interface{}{
+															"name":  "Male",
+															"value": 45,
+														},
+														map[string]interface{}{
+															"name":  "Female",
+															"value": 55,
+														},
+													},
+												},
+											},
+										}),
+									).Class("chart-container border border-gray-500 rounded-lg"),
+								).Cols(6),
+							).Class("mt-4"),
+							v.VRow(
+								v.VCol(
+									h.Div(
+										vx.VXChart().Children(
+											web.Slot(
+												h.Div(
+													h.Button("Past 7 Days").
+														Class("text-body-2 rounded text-no-wrap border-0 flex-grow-1 d-flex align-center justify-center rounded px-2").
+														Attr(":style", `
+														 currentIndex === 0
+														? 'background-color: #fff; color: #4a4a4a;'
+														: 'background-color: transparent; color: rgb(117, 117, 117);'`).Attr("@click", "toggle(0)"),
+													h.Button("Past 14 Days").Attr(":style", `
+														 currentIndex === 1
+														? 'background-color: #fff; color: #4a4a4a;'
+														: 'background-color: transparent; color: rgb(117, 117, 117);'`).
+														Class("text-body-2 rounded text-no-wrap border-0 flex-grow-1 d-flex align-center justify-center rounded px-2").
+														Attr("@click", "toggle(1)"),
+												).Class("d-flex align-center bg-grey-lighten-3 rounded pa-1 mr-4 mt-4").Style("height: 32px;"),
+											).Name("action").Scope("{ list, currentIndex, toggle }"),
+										).Presets("barChart").Options([]vx.VXChartOption{
+											{
+												Title: &vx.VXChartOptionTitle{Text: "Daily Active Users (7 Days)"},
+												XAxis: &vx.VXChartOptionXAxis{
+													Data: activeUsersDateArr,
+												},
+												Series: &[]vx.VXChartOptionSeries{
+													{
+														Name: "7 days",
+														Data: activeUsersDataArr,
+													},
+												},
+											},
+											{
+												Title: &vx.VXChartOptionTitle{Text: "Daily Active Users (14 Days)"},
+												XAxis: &vx.VXChartOptionXAxis{
+													Data: activeUsers14DaysDateArr,
+												},
+												Series: &[]vx.VXChartOptionSeries{
+													{
+														Name: "14 days",
+														Data: activeUsers14DaysDataArr,
+													},
+												},
+											},
+										}),
+									).Class("chart-container border border-gray-500 rounded-lg"),
+								).Cols(12),
+							).Class("mt-4"),
+						),
+					).Value(0),
+					v.VTabsWindowItem().Value(1),
+				).Attr("v-model", "xLocals.tab"),
+			).Class("px-2"),
+		).VSlot("{locals:xLocals}").Init("{tab:0}")
 	})
-	pb.HandleCustomPage("chart", cp)
+	detailing.Section(se)
 	return mb
 }

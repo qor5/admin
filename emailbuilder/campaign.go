@@ -11,25 +11,25 @@ import (
 )
 
 type (
-	MailCampaign struct {
+	EmailCampaign struct {
 		gorm.Model
 		Segmentation string
 		EmailDetail
 	}
 )
 
-func (c *MailCampaign) PrimarySlug() string {
+func (c *EmailCampaign) PrimarySlug() string {
 	return fmt.Sprintf("%d", c.ID)
 }
 
-func (c *MailCampaign) PrimaryColumnValuesBySlug(slug string) map[string]string {
+func (c *EmailCampaign) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	return map[string]string{
 		"id": slug,
 	}
 }
 
 func DefaultMailCampaign(pb *presets.Builder) *presets.ModelBuilder {
-	mb := pb.Model(&MailCampaign{})
+	mb := pb.Model(&EmailCampaign{}).Label("Email Campaigns")
 	mb.Listing("ID", "Subject")
 	dp := mb.Detailing(EmailDetailField, "Segmentations")
 	section := presets.NewSectionBuilder(mb, "Segmentations").Editing("Segmentation")

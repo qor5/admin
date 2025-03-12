@@ -508,10 +508,10 @@ func configMenuOrder(b *presets.Builder) {
 		"Worker",
 		"ActivityLogs",
 		b.MenuGroup("Marketing").SubItems(
-			"Mail Templates",
-			"Mail Campaigns",
-			"User Segments",
-		).Icon("mdi-mail"),
+			"EmailTemplates",
+			"EmailCampaigns",
+			"UserSegments",
+		).Icon("mdi-email-mark-as-unread"),
 	)
 }
 

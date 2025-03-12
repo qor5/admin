@@ -635,7 +635,7 @@ func (mb *ModelBuilder) configTemplate() {
 		}
 		reflectutils.ForEach(searchResult.Nodes, func(obj interface{}) {
 			var (
-				p          = obj.(*MailTemplate)
+				p          = obj.(*EmailTemplate)
 				menus      = mb.menusComp(ctx, obj)
 				clickEvent = web.Plaid().PushState(true).URL(mb.editorUri(fmt.Sprint(p.ID))).Go()
 			)

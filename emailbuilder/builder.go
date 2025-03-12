@@ -107,7 +107,7 @@ func (b *Builder) AutoMigrate() *Builder {
 }
 
 func AutoMigrate(db *gorm.DB) (err error) {
-	return db.AutoMigrate(&MailTemplate{}, &MailCampaign{})
+	return db.AutoMigrate(&EmailTemplate{}, &EmailCampaign{})
 }
 
 func (b *Builder) Sender(config SESDriverConfig) *Builder {
