@@ -102,7 +102,7 @@ func DefaultMailCampaign(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder
 
 func configureListing(mb *presets.ModelBuilder) {
 	// Configure listing page
-	listing := mb.Listing("Name", "Status", "CreatedAt", "UpdatedAt")
+	listing := mb.Listing("ID", "Name", "Status", "CreatedAt", "UpdatedAt")
 
 	// Customize the listing display
 	listing.Field("Name").Label("Name")
