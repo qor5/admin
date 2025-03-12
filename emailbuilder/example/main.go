@@ -27,7 +27,7 @@ func main() {
 	}
 
 	db := emailbuilder.ConnectDB()
-	err := db.AutoMigrate(&emailbuilder.MailTemplate{})
+	err := db.AutoMigrate(&emailbuilder.EmailTemplate{})
 	if err != nil {
 		panic(err)
 	}

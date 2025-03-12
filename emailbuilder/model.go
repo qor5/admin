@@ -7,21 +7,21 @@ import (
 )
 
 type (
-	MailTemplate struct {
+	EmailTemplate struct {
 		gorm.Model
 		EmailDetail
 	}
 )
 
-func (m *MailTemplate) TableName() string {
-	return "mail_templates"
+func (m *EmailTemplate) TableName() string {
+	return "email_templates"
 }
 
-func (m *MailTemplate) PrimarySlug() string {
+func (m *EmailTemplate) PrimarySlug() string {
 	return fmt.Sprintf("%d", m.ID)
 }
 
-func (m *MailTemplate) PrimaryColumnValuesBySlug(slug string) map[string]string {
+func (m *EmailTemplate) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	return map[string]string{
 		"id": slug,
 	}

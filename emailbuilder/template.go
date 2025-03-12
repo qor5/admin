@@ -15,7 +15,7 @@ var (
 )
 
 func DefaultMailTemplate(pb *presets.Builder) *presets.ModelBuilder {
-	mb := pb.Model(&MailTemplate{})
+	mb := pb.Model(&EmailTemplate{}).Label("Email Templates")
 	dp := mb.Detailing(EmailEditorField)
 	mb.Editing("Subject", "JSONBody", "HTMLBody")
 
