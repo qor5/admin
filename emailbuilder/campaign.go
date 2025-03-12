@@ -29,17 +29,6 @@ const (
 	FrequencyMonthly = "monthly"
 )
 
-// Days of week constants
-const (
-	Sunday    = "sunday"
-	Monday    = "monday"
-	Tuesday   = "tuesday"
-	Wednesday = "wednesday"
-	Thursday  = "thursday"
-	Friday    = "friday"
-	Saturday  = "saturday"
-)
-
 type (
 	EmailCampaign struct {
 		gorm.Model
@@ -54,7 +43,6 @@ type (
 	Schedule struct {
 		Enabled    bool
 		Frequency  string // FrequencyNone, FrequencyDaily, FrequencyWeekly, FrequencyMonthly
-		DayOfWeek  string // Only used for weekly frequency
 		StartTime  time.Time
 		EndTime    time.Time
 		RetryCount int   // Number of retries on failure
@@ -87,10 +75,10 @@ func DefaultMailCampaign(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder
 	configureListing(mb)
 
 	// Configure detail page
-	dp := mb.Detailing(EmailDetailField, "Recipient", "UTM", "Schedule")
+	dp := mb.Detailing(EmailDetailField, "To", "UTM", "Schedule")
 	// dp := mb.Detailing(EmailDetailField, "Recipient", "Schedule")
 	// Add sections to detail page in the desired order (UTM section above Schedule section)
-	dp.Section(configureRecipientSection(mb, db))
+	dp.Section(configureSegmentSection(mb, db))
 	dp.Section(configureUTMParametersSection(mb, db))
 	dp.Section(configureScheduleSection(mb, db))
 
@@ -123,7 +111,7 @@ func configureListing(mb *presets.ModelBuilder) {
 			text = "Draft"
 		}
 
-		return h.Td(v.VChip().Color(color).Size("small").Class("text-capitalize").Children(h.Text(text)))
+		return h.Td(v.VChip().Color(color).Size(v.SizeSmall).Class("text-capitalize").Children(h.Text(text)))
 	})
 
 	listing.Field("CreatedAt").Label("Create On").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -136,7 +124,6 @@ func configureListing(mb *presets.ModelBuilder) {
 
 	// Configure row menu actions
 	rowMenu := listing.RowMenu()
-
 	// Edit action
 	rowMenu.RowMenuItem("Edit").Icon("mdi-pencil").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
 		return v.VListItem().Attr("@click", web.Plaid().
@@ -176,21 +163,6 @@ func configureListing(mb *presets.ModelBuilder) {
 		)
 	})
 
-	// Add title and create button
-	listing.Title(func(ctx *web.EventContext, style presets.ListingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error) {
-		titleCompo = h.Div(
-			h.H4("Email Campaigns").Class("text-h4"),
-			v.VSpacer(),
-			v.VBtn("Add New").
-				Color("primary").
-				Attr("@click", web.Plaid().
-					EventFunc(actions.New).
-					Go()),
-		).Class("d-flex align-center mb-4")
-
-		return defaultTitle, titleCompo, nil
-	})
-
 	// Configure filter using the correct SearchFunc signature
 	listing.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
 		return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
@@ -222,15 +194,14 @@ func configureEditing(mb *presets.ModelBuilder) {
 	mb.Editing("Subject", "JSONBody", "HTMLBody").Creating("Subject", TemplateSelectionFiled)
 }
 
-func configureRecipientSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.SectionBuilder {
+func configureSegmentSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.SectionBuilder {
 	// Create recipient section
-	section := presets.NewSectionBuilder(mb, "To").
-		Editing("To")
+	section := presets.NewSectionBuilder(mb, "To").Editing("To")
 	section.ViewingField("To")
 
 	// Portal name for the recipient info
 	const (
-		recipientInfoPortal   = "recipientInfoPortal"
+		segmentInfoPortal     = "recipientInfoPortal"
 		eventFetchSegmentInfo = "fetchSegmentInfo"
 	)
 
@@ -243,8 +214,8 @@ func configureRecipientSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.S
 		}
 		// Update the portal with the info banner
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-			Name: recipientInfoPortal,
-			Body: createRecipientInfoBanner(to),
+			Name: segmentInfoPortal,
+			Body: createSegmentInfoBanner(to),
 		})
 		return
 	})
@@ -271,7 +242,7 @@ func configureRecipientSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.S
 			// For the initial state, we'll directly include the banner in the portal
 			var portalContent h.HTMLComponent
 			if campaign.To != "" {
-				portalContent = createRecipientInfoBanner(campaign.To)
+				portalContent = createSegmentInfoBanner(campaign.To)
 			} else {
 				// Empty div if no recipient selected
 				portalContent = h.Div()
@@ -279,13 +250,12 @@ func configureRecipientSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.S
 
 			// Add portal with initial content
 			infoContainer := h.Div().
-				Class("recipient-info-container mt-3").
+				Class("segment-info-container mt-3").
 				Children(
-					web.Portal(portalContent).Name(recipientInfoPortal),
+					web.Portal(portalContent).Name(segmentInfoPortal),
 				)
 
 			components = append(components, infoContainer)
-
 			return h.Div(components...)
 		}
 	}).HideLabel()
@@ -293,10 +263,10 @@ func configureRecipientSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.S
 	return section
 }
 
-// createRecipientInfoBanner creates an info banner showing user count and estimated time
-func createRecipientInfoBanner(recipient string) h.HTMLComponent {
+// createSegmentInfoBanner creates an info banner showing user count and estimated time
+func createSegmentInfoBanner(segment string) h.HTMLComponent {
 	// Get user count
-	userCount := getUserCountForRecipient(recipient)
+	userCount := getUserCountForSegment(segment)
 
 	// Calculate estimated time (approx 1 minute per 400 emails)
 	minutes := (userCount + 399) / 400
@@ -398,15 +368,18 @@ func configureScheduleSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.Se
 	// Create schedule section
 	section := presets.NewSectionBuilder(mb, "Schedule").
 		Label("Schedule").
-		Editing("Schedule.Enabled", "Schedule.StartTime", "Schedule.Frequency", "Schedule.DayOfWeek", "Schedule.EndTime")
+		Editing("Schedule.Enabled", "TimeRange", "Schedule.Frequency")
 	section.ViewingField("Schedule.Enabled").Label("Enabled")
-	section.ViewingField("Schedule.StartTime").Label("Start Time")
+	section.ViewingField("TimeRange").Label("Time Range").ComponentFunc(
+		func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			c := obj.(*EmailCampaign)
+			return vx.VXRangePicker().Label("Time Range").Disabled(true).ModelValue([]time.Time{c.StartTime, c.EndTime})
+		},
+	)
 	section.ViewingField("Schedule.Frequency").Label("Frequency")
-	section.ViewingField("Schedule.DayOfWeek").Label("Day of Week")
-	section.ViewingField("Schedule.EndTime").Label("End Time")
 
 	// Toggle for enabling scheduling
-	section.EditingField("Enabled").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
+	section.EditingField("Schedule.Enabled").Label("Enabled").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
 		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return v.VSwitch().Label(field.Label).Color("primary").
 				Attr(presets.VFieldError(field.Name, field.Value(obj), field.Errors)...)
@@ -414,7 +387,7 @@ func configureScheduleSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.Se
 	})
 
 	// Frequency selector (daily, weekly, monthly)
-	section.EditingField("Frequency").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	section.EditingField("Schedule.Frequency").Label("Frequency").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return presets.SelectField(obj, field, ctx).
 			Attr(presets.VFieldError(field.Name, field.Value(obj), field.Errors)...).
 			Items([]string{
@@ -425,63 +398,26 @@ func configureScheduleSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.Se
 			})
 	})
 
-	// Day of week selector (only shown when frequency is weekly)
-	section.EditingField("DayOfWeek").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		c, ok := obj.(*EmailCampaign)
-		if !ok || !c.Enabled || c.Frequency != FrequencyWeekly {
-			return h.Div()
-		}
-		return presets.SelectField(obj, field, ctx).
-			Items([]string{
-				"Monday",
-				"Tuesday",
-				"Wednesday",
-				"Thursday",
-				"Friday",
-				"Saturday",
-				"Sunday",
-			})
-	})
-
 	// Start time date picker
-	section.EditingField("StartTime").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	section.EditingField("TimeRange").Label("Time Range").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		c, ok := obj.(*EmailCampaign)
 		if !ok || !c.Enabled {
 			return h.Div()
 		}
-		var dateStr string
-		if !c.StartTime.IsZero() {
-			dateStr = c.StartTime.Local().Format("2006-01-02 15:04")
-		}
-		return vx.VXDateTimePicker().
-			Label("Start Time").
-			Attr(presets.VFieldError(field.Name, dateStr, field.Errors)...).
-			TimePickerProps(vx.TimePickerProps{
-				Format:     "24hr",
-				Scrollable: true,
-			})
+		var fieldBinds []any
+		fieldBinds = append(fieldBinds, web.VField("Schedule.StartTime", c.StartTime)...)
+		fieldBinds = append(fieldBinds, web.VField("Schedule.EndTime", c.EndTime)...)
+
+		return vx.VXRangePicker().Clearable(true).Label("Time Range").
+			Type("datetimepicker").
+			Placeholder([]string{"Start Time", "End Time"}).
+			Attr(fieldBinds...)
 	})
 
-	// End time date picker
-	section.EditingField("EndTime").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		c, ok := obj.(*EmailCampaign)
-		if !ok || !c.Enabled {
-			return h.Div()
+	section.WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
+		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			return in(obj, ctx)
 		}
-
-		// Use native date picker with Vuetify styling
-		dateStr := ""
-		if !c.EndTime.IsZero() {
-			dateStr = c.EndTime.Format("2006-01-02 15:04")
-		}
-
-		return vx.VXDateTimePicker().
-			Label("End Time").
-			Attr(presets.VFieldError(field.Name, dateStr, field.Errors)...).
-			TimePickerProps(vx.TimePickerProps{
-				Format:     "24hr",
-				Scrollable: true,
-			})
 	})
 
 	section.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
@@ -490,34 +426,7 @@ func configureScheduleSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.Se
 		if err := db.First(&campaign, id).Error; err != nil {
 			return errors.Wrap(err, "failed to fetch campaign")
 		}
-		// Parse retry count
-		// retryCount := ctx.R.FormValue("RetryCount")
-		// if retryCount != "" {
-		// 	fmt.Sscanf(retryCount, "%d", &campaign.RetryCount)
-		// 	if campaign.RetryCount > MaxRetryCount {
-		// 		campaign.RetryCount = MaxRetryCount
-		// 	}
-		// }
-
-		// // Parse start time
-		// if startTime != "" {
-		// 	// Try standard date format first (YYYY-MM-DD)
-		// 	if t, err := time.Parse("2006-01-02 15:04", startTime); err == nil {
-		// 		campaign.StartTime = t
-		// 	}
-		// }
-		//
-		// // Parse end time
-		// endTime := ctx.R.FormValue(formKeyEndTime)
-		// if endTime != "" {
-		// 	// Try standard date format first (YYYY-MM-DD)
-		// 	if t, err := time.Parse("2006-01-02 15:04:05", endTime); err == nil {
-		// 		campaign.EndTime = t
-		// 	}
-		// }
-
 		ctx.MustUnmarshalForm(&campaign)
-
 		// Create scheduler if scheduling is enabled
 		if campaign.Enabled {
 			// Update the status to scheduled
@@ -553,8 +462,8 @@ func buildCronExpression(campaign *EmailCampaign) string {
 	case FrequencyWeekly:
 		// Run weekly on the specified day at the specified time
 		t := campaign.StartTime
-		dayNum := getDayOfWeekNumber(campaign.DayOfWeek)
-		return fmt.Sprintf("0 %d %d * * %d", t.Minute(), t.Hour(), dayNum)
+		// TODO: calculate week according to start time.
+		return fmt.Sprintf("0 %d %d * * %d", t.Minute(), t.Hour(), 1)
 	case FrequencyMonthly:
 		// Run monthly on the same day of month at the specified time
 		t := campaign.StartTime
@@ -564,33 +473,11 @@ func buildCronExpression(campaign *EmailCampaign) string {
 	}
 }
 
-// getDayOfWeekNumber converts day name to cron day number (0-6, Sunday-Saturday)
-func getDayOfWeekNumber(day string) int {
-	switch day {
-	case Sunday:
-		return 0
-	case Monday:
-		return 1
-	case Tuesday:
-		return 2
-	case Wednesday:
-		return 3
-	case Thursday:
-		return 4
-	case Friday:
-		return 5
-	case Saturday:
-		return 6
-	default:
-		return 0 // Default to Sunday
-	}
-}
-
-// getUserCountForRecipient returns the user count for a specific recipient
+// getUserCountForSegment returns the user count for a specific recipient
 // In a real implementation, this would query the database
-func getUserCountForRecipient(recipient string) int {
+func getUserCountForSegment(segment string) int {
 	// Mock data based on the segment
-	switch recipient {
+	switch segment {
 	case "segmentationA":
 		return 1200
 	case "segmentationB":
