@@ -47,10 +47,8 @@ type (
 		UTM
 		Schedule
 
-		Recipient string
-		Name      string
-		Status    string // StatusDraft, StatusSent, StatusScheduled
-
+		To     string
+		Status string // StatusDraft, StatusSent, StatusScheduled
 	}
 
 	Schedule struct {
@@ -84,7 +82,7 @@ func (c *EmailCampaign) PrimaryColumnValuesBySlug(slug string) map[string]string
 }
 
 func DefaultMailCampaign(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder {
-	mb := pb.Model(&EmailCampaign{})
+	mb := pb.Model(&EmailCampaign{}).Label("Email Campaigns")
 
 	configureListing(mb)
 
@@ -102,11 +100,10 @@ func DefaultMailCampaign(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder
 
 func configureListing(mb *presets.ModelBuilder) {
 	// Configure listing page
-	listing := mb.Listing("ID", "Name", "Status", "CreatedAt", "UpdatedAt")
+	listing := mb.Listing("ID", "Status", "CreatedAt", "UpdatedAt")
 
 	// Customize the listing display
-	listing.Field("Name").Label("Name")
-	listing.Field("Status").Label("Status").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	listing.Field("Status").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		campaign := obj.(*EmailCampaign)
 		var color string
 		var text string
@@ -222,34 +219,37 @@ func configureListing(mb *presets.ModelBuilder) {
 
 func configureEditing(mb *presets.ModelBuilder) {
 	// Configure editing page for both creation and editing
-	mb.Editing("Name", "Subject", "JSONBody", "HTMLBody").Creating("Subject", TemplateSelectionFiled)
+	mb.Editing("Subject", "JSONBody", "HTMLBody").Creating("Subject", TemplateSelectionFiled)
 }
 
 func configureRecipientSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.SectionBuilder {
 	// Create recipient section
-	section := presets.NewSectionBuilder(mb, "Recipient").
-		Editing("Recipient")
-	section.ViewingField("Recipient")
+	section := presets.NewSectionBuilder(mb, "To").
+		Editing("To")
+	section.ViewingField("To")
 
 	// Portal name for the recipient info
-	const recipientInfoPortal = "recipientInfoPortal"
+	const (
+		recipientInfoPortal   = "recipientInfoPortal"
+		eventFetchSegmentInfo = "fetchSegmentInfo"
+	)
 
 	// Register fetch recipient info event handler
-	mb.RegisterEventFunc("fetchRecipientInfo", func(ctx *web.EventContext) (r web.EventResponse, err error) {
+	mb.RegisterEventFunc(eventFetchSegmentInfo, func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		// Get recipient value from form
-		recipient := ctx.R.FormValue("Recipient")
-		if recipient == "" {
+		to := ctx.R.FormValue("To")
+		if to == "" {
 			return
 		}
 		// Update the portal with the info banner
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: recipientInfoPortal,
-			Body: createRecipientInfoBanner(recipient),
+			Body: createRecipientInfoBanner(to),
 		})
 		return
 	})
 
-	section.EditingField("Recipient").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
+	section.EditingField("To").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
 		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			// Get the current selected value
 			campaign, ok := obj.(*EmailCampaign)
@@ -263,15 +263,15 @@ func configureRecipientSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.S
 			// Add select field
 			selectField := presets.SelectField(obj, field, ctx).
 				Items([]string{"segmentationA", "segmentationB", "segmentationC", "segmentationD"}).
-				Attr("@update:model-value", web.Plaid().EventFunc("fetchRecipientInfo").Go())
+				Attr("@update:model-value", web.Plaid().EventFunc(eventFetchSegmentInfo).Go())
 
 			components = append(components, selectField)
 
 			// Create portal for recipient info
 			// For the initial state, we'll directly include the banner in the portal
 			var portalContent h.HTMLComponent
-			if campaign.Recipient != "" {
-				portalContent = createRecipientInfoBanner(campaign.Recipient)
+			if campaign.To != "" {
+				portalContent = createRecipientInfoBanner(campaign.To)
 			} else {
 				// Empty div if no recipient selected
 				portalContent = h.Div()
