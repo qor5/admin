@@ -24,7 +24,7 @@ type CampaignJobArgs struct {
 }
 
 // ScheduleCampaign schedules a campaign based on its configuration
-func (cs *CampaignScheduler) ScheduleCampaign(ctx context.Context, campaign *MailCampaign) (int64, error) {
+func (cs *CampaignScheduler) ScheduleCampaign(ctx context.Context, campaign *EmailCampaign) (int64, error) {
 	if !campaign.Enabled {
 		return 0, nil // Nothing to schedule
 	}
@@ -80,7 +80,7 @@ func (cs *CampaignScheduler) ScheduleCampaign(ctx context.Context, campaign *Mai
 }
 
 // CancelSchedule cancels a scheduled campaign
-func (cs *CampaignScheduler) CancelSchedule(ctx context.Context, campaign *MailCampaign) error {
+func (cs *CampaignScheduler) CancelSchedule(ctx context.Context, campaign *EmailCampaign) error {
 	// Implementation would depend on go-que's API for cancelling jobs
 	// This might involve updating the job status in the database
 	return nil
@@ -98,7 +98,7 @@ func ProcessEmailCampaignJob(ctx context.Context, job que.Job, db *gorm.DB) erro
 	log.Printf("Processing email campaign job for campaign ID: %d", args.CampaignID)
 
 	// Fetch the campaign
-	var campaign MailCampaign
+	var campaign EmailCampaign
 	if err := db.First(&campaign, args.CampaignID).Error; err != nil {
 		return fmt.Errorf("failed to fetch campaign: %w", err)
 	}

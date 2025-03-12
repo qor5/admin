@@ -41,7 +41,7 @@ const (
 )
 
 type (
-	MailCampaign struct {
+	EmailCampaign struct {
 		gorm.Model
 		EmailDetail
 		UTM
@@ -73,18 +73,18 @@ type (
 	}
 )
 
-func (c *MailCampaign) PrimarySlug() string {
+func (c *EmailCampaign) PrimarySlug() string {
 	return fmt.Sprintf("%d", c.ID)
 }
 
-func (c *MailCampaign) PrimaryColumnValuesBySlug(slug string) map[string]string {
+func (c *EmailCampaign) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	return map[string]string{
 		"id": slug,
 	}
 }
 
 func DefaultMailCampaign(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder {
-	mb := pb.Model(&MailCampaign{})
+	mb := pb.Model(&EmailCampaign{})
 
 	configureListing(mb)
 
@@ -107,7 +107,7 @@ func configureListing(mb *presets.ModelBuilder) {
 	// Customize the listing display
 	listing.Field("Name").Label("Name")
 	listing.Field("Status").Label("Status").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		campaign := obj.(*MailCampaign)
+		campaign := obj.(*EmailCampaign)
 		var color string
 		var text string
 
@@ -214,7 +214,7 @@ func configureEditing(mb *presets.ModelBuilder) {
 
 	// Set up creation form to set default status to "draft"
 	mb.Editing().SetterFunc(func(obj interface{}, ctx *web.EventContext) {
-		if campaign, ok := obj.(*MailCampaign); ok && campaign.ID == 0 {
+		if campaign, ok := obj.(*EmailCampaign); ok && campaign.ID == 0 {
 			// Set default status to "draft" for new campaigns only
 			campaign.Status = StatusDraft
 			// Default schedule values
@@ -285,9 +285,9 @@ func configureRecipientSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.S
 	section.EditingField("Recipient").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
 		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			// Get the current selected value
-			campaign, ok := obj.(*MailCampaign)
+			campaign, ok := obj.(*EmailCampaign)
 			if !ok {
-				campaign = &MailCampaign{}
+				campaign = &EmailCampaign{}
 			}
 
 			// Build components
@@ -409,7 +409,7 @@ func configureUTMParametersSection(mb *presets.ModelBuilder, db *gorm.DB) *prese
 	// Configure Save function for UTM parameters
 	section.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		// Fetch the campaign
-		var campaign MailCampaign
+		var campaign EmailCampaign
 		if err := db.First(&campaign, "id = ?", id).Error; err != nil {
 			return errors.Wrap(err, "failed to fetch campaign")
 		}
@@ -460,7 +460,7 @@ func configureScheduleSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.Se
 
 	// Day of week selector (only shown when frequency is weekly)
 	section.EditingField("DayOfWeek").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		c, ok := obj.(*MailCampaign)
+		c, ok := obj.(*EmailCampaign)
 		if !ok || !c.Enabled || c.Frequency != FrequencyWeekly {
 			return h.Div()
 		}
@@ -478,7 +478,7 @@ func configureScheduleSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.Se
 
 	// Start time date picker
 	section.EditingField("StartTime").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		c, ok := obj.(*MailCampaign)
+		c, ok := obj.(*EmailCampaign)
 		if !ok || !c.Enabled {
 			return h.Div()
 		}
@@ -497,7 +497,7 @@ func configureScheduleSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.Se
 
 	// End time date picker
 	section.EditingField("EndTime").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		c, ok := obj.(*MailCampaign)
+		c, ok := obj.(*EmailCampaign)
 		if !ok || !c.Enabled {
 			return h.Div()
 		}
@@ -519,7 +519,7 @@ func configureScheduleSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.Se
 
 	section.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 		// Fetch the campaign
-		var campaign MailCampaign
+		var campaign EmailCampaign
 		if err := db.First(&campaign, id).Error; err != nil {
 			return errors.Wrap(err, "failed to fetch campaign")
 		}
@@ -568,7 +568,7 @@ func configureScheduleSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.Se
 }
 
 // buildCronExpression converts campaign schedule settings to a cron expression
-func buildCronExpression(campaign *MailCampaign) string {
+func buildCronExpression(campaign *EmailCampaign) string {
 	// Default to empty string (invalid cron) if scheduling is disabled
 	if !campaign.Enabled {
 		return ""
