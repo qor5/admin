@@ -75,10 +75,12 @@ func DefaultMailCampaign(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder
 	configureListing(mb)
 
 	// Configure detail page
-	dp := mb.Detailing(EmailDetailField, "To", "UTM", "Schedule")
+	dp := mb.Detailing(EmailDetailField, "From", "To", "Subject", "UTM", "Schedule")
 	// dp := mb.Detailing(EmailDetailField, "Recipient", "Schedule")
 	// Add sections to detail page in the desired order (UTM section above Schedule section)
+	dp.Section(configureFromSection(mb, db))
 	dp.Section(configureSegmentSection(mb, db))
+	dp.Section(configureSubjectSection(mb, db))
 	dp.Section(configureUTMParametersSection(mb, db))
 	dp.Section(configureScheduleSection(mb, db))
 
@@ -111,7 +113,7 @@ func configureListing(mb *presets.ModelBuilder) {
 			text = "Draft"
 		}
 
-		return h.Td(v.VChip().Color(color).Size(v.SizeSmall).Class("text-capitalize").Children(h.Text(text)))
+		return h.Td(vx.VXChip(text).Color(color).Size(v.SizeSmall).Class("text-capitalize"))
 	})
 
 	listing.Field("CreatedAt").Label("Create On").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -194,10 +196,32 @@ func configureEditing(mb *presets.ModelBuilder) {
 	mb.Editing("Subject", "JSONBody", "HTMLBody").Creating("Subject", TemplateSelectionFiled)
 }
 
+func configureFromSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.SectionBuilder {
+	section := presets.NewSectionBuilder(mb, "From").Editing("From")
+	section.ViewingField("From").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
+		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return vx.VXTextField().ReadOnly(true).Text(GetFromAddress())
+		}
+	})
+	section.ComponentEditBtnFunc(func(_ interface{}, _ *web.EventContext) bool {
+		return false // return false to disable edit button.
+	})
+	return section
+}
+
 func configureSegmentSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.SectionBuilder {
 	// Create recipient section
 	section := presets.NewSectionBuilder(mb, "To").Editing("To")
-	section.ViewingField("To")
+	section.ViewingField("To").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
+		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			c := obj.(*EmailCampaign)
+			if c.To != "" {
+				return vx.VXTextField().ReadOnly(true).Text(c.To)
+			} else {
+				return vx.VXTextField().ReadOnly(true).Text("Please select a segment")
+			}
+		}
+	})
 
 	// Portal name for the recipient info
 	const (
@@ -234,7 +258,8 @@ func configureSegmentSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.Sec
 			// Add select field
 			selectField := presets.SelectField(obj, field, ctx).
 				Items([]string{"segmentationA", "segmentationB", "segmentationC", "segmentationD"}).
-				Attr("@update:model-value", web.Plaid().EventFunc(eventFetchSegmentInfo).Go())
+				Attr("@update:model-value", web.Plaid().EventFunc(eventFetchSegmentInfo).Go()).
+				Label("") // explicitly set label to empty string
 
 			components = append(components, selectField)
 
@@ -258,7 +283,7 @@ func configureSegmentSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.Sec
 			components = append(components, infoContainer)
 			return h.Div(components...)
 		}
-	}).HideLabel()
+	})
 
 	return section
 }
@@ -291,6 +316,28 @@ func createSegmentInfoBanner(segment string) h.HTMLComponent {
 		)
 }
 
+func configureSubjectSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.SectionBuilder {
+	// Create subject section
+	section := presets.NewSectionBuilder(mb, "Subject").Editing("Subject")
+
+	// Configure viewing mode
+	section.ViewingField("Subject").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
+		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			c := obj.(*EmailCampaign)
+			return vx.VXTextField().ReadOnly(true).Text(c.Subject)
+		}
+	})
+
+	// Configure editing mode with placeholder support
+	section.EditingField("Subject").ComponentFunc(
+		func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return vx.VXTextField().VField(field.Name, field.Value(obj))
+		},
+	)
+
+	return section
+}
+
 func configureUTMParametersSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.SectionBuilder {
 	// Create UTM Parameters section
 	section := presets.NewSectionBuilder(mb, "UTM").
@@ -305,60 +352,37 @@ func configureUTMParametersSection(mb *presets.ModelBuilder, db *gorm.DB) *prese
 
 	// UTM Source field
 	section.EditingField("UTM.Source").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return v.VTextField().
-			Label("Source").
-			Attr(web.VField(field.Name, field.Value(obj))...).
+		return vx.VXField().Label("Source").
+			Attr(presets.VFieldError(field.Name, field.Value(obj), field.Errors)...).
 			Placeholder("e.g., newsletter, google, twitter")
 	})
 
 	// UTM Medium field
 	section.EditingField("UTM.Medium").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return v.VTextField().
-			Label("Medium").
-			Attr(web.VField(field.Name, field.Value(obj))...).
+		return vx.VXField().Label("Medium").
+			Attr(presets.VFieldError(field.Name, field.Value(obj), field.Errors)...).
 			Placeholder("e.g., email, cpc, banner")
 	})
 
 	// UTM Campaign field
 	section.EditingField("UTM.Campaign").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return v.VTextField().
-			Label("Campaign").
-			Attr(web.VField(field.Name, field.Value(obj))...).
+		return vx.VXField().Label("Campaign").
+			Attr(presets.VFieldError(field.Name, field.Value(obj), field.Errors)...).
 			Placeholder("e.g., spring_sale, product_launch")
 	})
 
 	// UTM Term field
 	section.EditingField("UTM.Term").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return v.VTextField().
-			Label("Term").
-			Attr(web.VField(field.Name, field.Value(obj))...).
+		return vx.VXField().Label("Term").
+			Attr(presets.VFieldError(field.Name, field.Value(obj), field.Errors)...).
 			Placeholder("e.g., running_shoes, marketing")
 	})
 
 	// UTM Content field
 	section.EditingField("UTM.Content").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return v.VTextField().
-			Label("Content").
-			Attr(web.VField(field.Name, field.Value(obj))...).
+		return vx.VXField().Label("Content").
+			Attr(presets.VFieldError(field.Name, field.Value(obj), field.Errors)...).
 			Placeholder("e.g., top_banner, email_footer")
-	})
-
-	// Configure Save function for UTM parameters
-	section.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		// Fetch the campaign
-		var campaign EmailCampaign
-		if err := db.First(&campaign, "id = ?", id).Error; err != nil {
-			return errors.Wrap(err, "failed to fetch campaign")
-		}
-		// Extract form values
-		ctx.MustUnmarshalForm(&campaign)
-
-		// Save the updated campaign
-		if err := db.Save(&campaign).Error; err != nil {
-			return errors.Wrap(err, "failed to save campaign")
-		}
-
-		return nil
 	})
 
 	return section
@@ -396,9 +420,8 @@ func configureScheduleSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.Se
 				FrequencyWeekly,
 				FrequencyMonthly,
 			})
-	})
+	}) // Start time date picker
 
-	// Start time date picker
 	section.EditingField("TimeRange").Label("Time Range").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		c, ok := obj.(*EmailCampaign)
 		if !ok || !c.Enabled {
