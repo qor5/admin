@@ -206,44 +206,6 @@ func configureListing(mb *presets.ModelBuilder) {
 			return in(ctx, params)
 		}
 	})
-}
-
-func configureEditing(mb *presets.ModelBuilder) {
-	// Configure editing page for both creation and editing
-	mb.Editing("Name", "Subject", "JSONBody", "HTMLBody")
-
-	// Set up creation form to set default status to "draft"
-	mb.Editing().SetterFunc(func(obj interface{}, ctx *web.EventContext) {
-		if campaign, ok := obj.(*EmailCampaign); ok && campaign.ID == 0 {
-			// Set default status to "draft" for new campaigns only
-			campaign.Status = StatusDraft
-			// Default schedule values
-			campaign.Frequency = FrequencyNone
-			campaign.RetryCount = 3
-			campaign.Enabled = true
-		}
-	})
-
-	// Make JSON Body and HTML Body input fields wider
-	mb.Editing().Field("JSONBody").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return v.VTextarea().
-			Label(field.Label).
-			ModelValue(field.Value(obj)).
-			Attr("name", field.Name).
-			Variant("outlined").
-			Rows(8).
-			Class("w-100")
-	})
-
-	mb.Editing().Field("HTMLBody").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return v.VTextarea().
-			Label(field.Label).
-			ModelValue(field.Value(obj)).
-			Attr("name", field.Name).
-			Variant("outlined").
-			Rows(8).
-			Class("w-100")
-	})
 
 	mb.RegisterEventFunc("report", func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		id := ctx.Param(presets.ParamID)
@@ -256,6 +218,11 @@ func configureEditing(mb *presets.ModelBuilder) {
 
 		return
 	})
+}
+
+func configureEditing(mb *presets.ModelBuilder) {
+	// Configure editing page for both creation and editing
+	mb.Editing("Name", "Subject", "JSONBody", "HTMLBody").Creating("Subject", TemplateSelectionFiled)
 }
 
 func configureRecipientSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.SectionBuilder {
