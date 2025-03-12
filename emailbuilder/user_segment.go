@@ -6,12 +6,10 @@ import (
 
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
+	v "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
-
-	vx "github.com/qor5/x/v3/ui/vuetifyx"
-
-	v "github.com/qor5/x/v3/ui/vuetify"
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
@@ -155,7 +153,7 @@ func ConfigUserSegment(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder {
 												},
 											},
 										}),
-									).Class("chart-container border border-gray-500 rounded-lg"),
+									).Class("border border-gray-500 rounded-lg"),
 								).Cols(6),
 								v.VCol(
 									h.Div(
@@ -177,7 +175,7 @@ func ConfigUserSegment(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder {
 												},
 											},
 										}),
-									).Class("chart-container border border-gray-500 rounded-lg"),
+									).Class("border border-gray-500 rounded-lg"),
 								).Cols(6),
 							).Class("mt-4"),
 							v.VRow(
@@ -226,16 +224,90 @@ func ConfigUserSegment(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder {
 												},
 											},
 										}),
-									).Class("chart-container border border-gray-500 rounded-lg"),
+									).Class("border border-gray-500 rounded-lg"),
 								).Cols(12),
 							).Class("mt-4"),
 						),
 					).Value(0),
-					v.VTabsWindowItem().Value(1),
+					v.VTabsWindowItem(
+
+						v.VRow(
+							v.VCol(
+								h.Div(
+									vx.VXChart().Presets("funnelChart").Children(
+										web.Slot(
+											h.Div(
+												h.Button("Past 7 Days").
+													Class("text-body-2 rounded text-no-wrap border-0 flex-grow-1 d-flex align-center justify-center rounded px-2").
+													Attr(":style", `
+														 currentIndex === 0
+														? 'background-color: #fff; color: #4a4a4a;'
+														: 'background-color: transparent; color: rgb(117, 117, 117);'`).Attr("@click", "toggle(0)"),
+												h.Button("Past 14 Days").Attr(":style", `
+														 currentIndex === 1
+														? 'background-color: #fff; color: #4a4a4a;'
+														: 'background-color: transparent; color: rgb(117, 117, 117);'`).
+													Class("text-body-2 rounded text-no-wrap border-0 flex-grow-1 d-flex align-center justify-center rounded px-2").
+													Attr("@click", "toggle(1)"),
+												h.Button("Past 30 Days").Attr(":style", `
+														 currentIndex === 2
+														? 'background-color: #fff; color: #4a4a4a;'
+														: 'background-color: transparent; color: rgb(117, 117, 117);'`).
+													Class("text-body-2 rounded text-no-wrap border-0 flex-grow-1 d-flex align-center justify-center rounded px-2").
+													Attr("@click", "toggle(2)"),
+											).Class("d-flex align-center bg-gre"+
+												"y-lighten-3 rounded pa-1 mr-4 mt-4").Style("height: 32px;"),
+										).Name("action").Scope("{ list, currentIndex, toggle }"),
+									).Options([]vx.VXChartOption{
+										{
+											Title: &vx.VXChartOptionTitle{Text: "User Activity (7 Days)"},
+											Series: &[]vx.VXChartOptionSeries{
+												{
+													Name: "7 days",
+													Data: []interface{}{
+														map[string]interface{}{"value": 1840863, "name": "View Products"},
+														map[string]interface{}{"value": 588604, "name": "Add Products To Cart"},
+														map[string]interface{}{"value": 202022, "name": "Purchase Products"},
+													},
+												},
+											},
+										},
+										{
+											Title: &vx.VXChartOptionTitle{Text: "User Activity (14 Days)"},
+											Series: &[]vx.VXChartOptionSeries{
+												{
+													Name: "14 days",
+													Data: []interface{}{
+														map[string]interface{}{"value": 1840863 * 1.2, "name": "View Products"},
+														map[string]interface{}{"value": 588604 * 1.2, "name": "Add Products To Cart"},
+														map[string]interface{}{"value": 202022 * 1.2, "name": "Purchase Products"},
+													},
+												},
+											},
+										},
+										{
+											Title: &vx.VXChartOptionTitle{Text: "User Activity (30 Days)"},
+											Series: &[]vx.VXChartOptionSeries{
+												{
+													Name: "30 days",
+													Data: []interface{}{
+														map[string]interface{}{"value": 1840863 * 1.4, "name": "View Products"},
+														map[string]interface{}{"value": 588604 * 1.4, "name": "Add Products To Cart"},
+														map[string]interface{}{"value": 202022 * 1.4, "name": "Purchase Products"},
+													},
+												},
+											},
+										},
+									}),
+								).Class("border border-gray-500 rounded-lg"),
+							).Cols(12),
+						).Class("mt-4"),
+					).Value(1),
 				).Attr("v-model", "xLocals.tab"),
 			).Class("px-2"),
 		).VSlot("{locals:xLocals}").Init("{tab:0}")
 	})
+
 	detailing.Section(se)
 	return mb
 }
