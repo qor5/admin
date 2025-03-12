@@ -1,7 +1,7 @@
 package emailbuilder
 
 func (b *Builder) PresetData() error {
-	upsertSql := `INSERT INTO public.mail_templates (id, created_at, updated_at, deleted_at, subject, json_body, html_body)
+	upsertSql := `INSERT INTO public.email_templates (id, created_at, updated_at, deleted_at, subject, json_body, html_body)
 VALUES (1, '2024-12-26 15:01:13.985362 +00:00', '2024-12-26 15:01:13.985362 +00:00', null, 'Sphero - Newsletter', e'{
   "subject": "Sphero - Newsletter",
   "subTitle": "Nice to meet you!",
