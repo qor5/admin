@@ -59,6 +59,7 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 		RegisterForModule(language.English, I18nEmailBuilderKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nEmailBuilderKey, Messages_zh_CN).
 		RegisterForModule(language.Japanese, I18nEmailBuilderKey, Messages_ja_JP)
+	_ = b.PresetData()
 	for _, model := range b.models {
 		if err = model.Install(pb); err != nil {
 			return
