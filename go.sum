@@ -422,14 +422,12 @@ github.com/pquerna/otp v1.4.0/go.mod h1:dkJfzwRKNiegxyNb54X/3fLwhCynbMspSyWKnvi1
 github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=
 github.com/qor5/imaging v1.6.4 h1:6VNy1EnFKAns8e73uzsZa6UQDw0oekvUHui1oeydy78=
 github.com/qor5/imaging v1.6.4/go.mod h1:i1E3GRDbTFbXuzZtm1/8zWu+lDbDw6O1hCmjtyQFnR4=
+github.com/qor5/ui/v3 v3.0.3 h1:SitBrJcLNt3us24GUFE8VX+d3MOs8nHR1DiJRD0+8Wo=
+github.com/qor5/ui/v3 v3.0.3/go.mod h1:nvXevlqhwmQsBipnoljJBep4/xSqCVqrbe51uS2AW7c=
 github.com/qor5/web v1.3.2 h1:zw796YJeDLe8vRwGR1cM+uS1ZuSkPutchBEXv2GgOhI=
 github.com/qor5/web v1.3.2/go.mod h1:LszskQJbFQDJwOeZC6j6afOiHxxyjrzz8B3zuBwfgKQ=
 github.com/qor5/web/v3 v3.0.12-0.20250225073451-8e876be98c21 h1:Ho7ZJ04vT96lqe6g7PJhc9eFEUsEgDGpHyPhqzwGF3E=
 github.com/qor5/web/v3 v3.0.12-0.20250225073451-8e876be98c21/go.mod h1:32vdHHcZb2JimlcaclW9hLUyimdXjrllZDHTh3rl6d0=
-github.com/qor5/x/v3 v3.0.14-0.20250312024430-e90894a03157 h1:wwepLV9yq25SljZ6d0jXEywp1850Eb4fFq0gpMTR7hw=
-github.com/qor5/x/v3 v3.0.14-0.20250312024430-e90894a03157/go.mod h1:NAQjgqZYgY167V8AgRkJw1XKwp06xN58SK8UNTEXXkI=
-github.com/qor5/x/v3 v3.0.14-0.20250312103534-c2adee307f89 h1:Sfp+9RR1FjIuthS/Ka2yBNveSxYqO04ZyJZWL+aAnHw=
-github.com/qor5/x/v3 v3.0.14-0.20250312103534-c2adee307f89/go.mod h1:NAQjgqZYgY167V8AgRkJw1XKwp06xN58SK8UNTEXXkI=
 github.com/qor5/x/v3 v3.0.14-0.20250313083429-5b8405714fef h1:3s1LjlMCDIK7JqVLT7gALJPkvKfB5Bptkwni7lGbN88=
 github.com/qor5/x/v3 v3.0.14-0.20250313083429-5b8405714fef/go.mod h1:NAQjgqZYgY167V8AgRkJw1XKwp06xN58SK8UNTEXXkI=
 github.com/robfig/cron/v3 v3.0.1/go.mod h1:eQICP3HwyT7UooqI/z+Ov+PtYAWygg1TEWWzGIFLtro=
