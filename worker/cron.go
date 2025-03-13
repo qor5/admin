@@ -237,6 +237,12 @@ func (c *cron) Listen(_ []*QorJobDefinition, getJob func(qorJobID uint) (QueJobI
 			os.Exit(1)
 		}
 
+		// Check if id exceeds the maximum value of uint (important for 32-bit systems)
+		if id > uint64(^uint(0)) {
+			fmt.Printf("Error: Job ID %d exceeds maximum value for uint (%d) on this system\n", id, uint64(^uint(0)))
+			os.Exit(1)
+		}
+
 		job, err := getJob(uint(id))
 		if err != nil {
 			fmt.Println(err)
