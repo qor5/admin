@@ -18,7 +18,7 @@ import (
 type (
 	UserSegment struct {
 		gorm.Model
-		Name       string
+		Name       string `gorm:"uniqueIndex"`
 		TotalUsers int
 		Change     float64
 	}
@@ -39,12 +39,12 @@ func initRecords(db *gorm.DB) {
 		ms    = []UserSegment{
 			{
 				Name:       "Purchases Up",
-				TotalUsers: 200,
+				TotalUsers: 3000,
 				Change:     0.51,
 			},
 			{
 				Name:       "Purchases down",
-				TotalUsers: 120,
+				TotalUsers: 200,
 				Change:     -0.21,
 			},
 		}

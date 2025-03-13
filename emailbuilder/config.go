@@ -33,9 +33,8 @@ func LoadToEmailAddress() string {
 }
 
 func LoadSenderConfig() (config SESDriverConfig) {
-	from := os.Getenv("FROM_ADDRESS")
 	return SESDriverConfig{
-		FromEmailAddress:               from,
+		FromEmailAddress:               GetFromAddress(),
 		FromName:                       "",
 		SubjectCharset:                 "UTF-8",
 		HTMLBodyCharset:                "UTF-8",
@@ -47,4 +46,12 @@ func LoadSenderConfig() (config SESDriverConfig) {
 		ContactListName:                           "",
 		TopicName:                                 "",
 	}
+}
+
+func GetFromAddress() string {
+	address := os.Getenv("FROM_ADDRESS")
+	if address == "" {
+		address = "empty@example.com"
+	}
+	return address
 }
