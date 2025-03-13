@@ -43,7 +43,7 @@ func main() {
 		})
 
 	eb := emailbuilder.New(b, db, emailbuilder.DefaultMailTemplate(b)).AutoMigrate()
-	emailbuilder.DefaultMailCampaign(b).Use(eb)
+	emailbuilder.DefaultMailCampaign(b, db).Use(eb)
 	b.Use(eb)
 	mux := http.NewServeMux()
 	mux.Handle("/", b)

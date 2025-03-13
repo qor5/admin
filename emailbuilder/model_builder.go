@@ -401,15 +401,6 @@ func (mb *ModelBuilder) mailDetailFieldCompoFunc() presets.FieldComponentFunc {
 		return h.Div(
 			h.Div(
 				h.Div(
-					v.VSpacer(),
-					v.VBtn("Publish").
-						Variant(v.VariantElevated).Color(v.ColorPrimary).Height(36),
-					v.VBtn("").Size(v.SizeSmall).Children(v.VIcon("mdi-alarm").Size(v.SizeXLarge)).Rounded("0").Class("rounded-e ml-abs-1").
-						Variant(v.VariantElevated).Color(v.ColorPrimary).Width(36).Height(36),
-				).Class("tagList-bar-warp pb-4"),
-			),
-			h.Div(
-				h.Div(
 					h.Iframe().Attr(":srcdoc", h.JSONString(p.HTMLBody)).
 						Attr("scrolling", "no", "frameborder", "0").
 						Style(`pointer-events: none; 
