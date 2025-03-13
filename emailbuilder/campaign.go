@@ -75,7 +75,7 @@ func DefaultMailCampaign(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder
 	configureListing(mb)
 
 	// Configure detail page
-	dp := mb.Detailing(EmailDetailField, "From", "To", "Subject", "UTM", "Schedule")
+	dp := mb.Detailing("From", "To", "Subject", EmailDetailField, "UTM", "Schedule")
 	// dp := mb.Detailing(EmailDetailField, "Recipient", "Schedule")
 	// Add sections to detail page in the desired order (UTM section above Schedule section)
 	dp.Section(configureFromSection(mb, db))
@@ -429,19 +429,15 @@ func configureScheduleSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.Se
 				if !ok || !c.Enabled {
 					return h.Div()
 				}
-				var fieldBinds []any
-				fieldBinds = append(fieldBinds, web.VField("Schedule.StartTime", c.StartTime)...)
-				fieldBinds = append(fieldBinds, web.VField("Schedule.EndTime", c.EndTime)...)
-
 				return vx.VXRangePicker().Clearable(true).Label("Time Range").
 					Type("datetimepicker").
 					Placeholder([]string{"Start Time", "End Time"}).
-					Attr(fieldBinds...)
+					Attr(web.VField("TimeRange", []int64{c.StartTime.Unix(), c.EndTime.Unix()})...)
 			},
 		).
 		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 			c := obj.(*EmailCampaign)
-			strStartTime := ctx.R.FormValue("Schedule.StartTime")
+			strStartTime := ctx.R.FormValue("TimeRange")
 			if strStartTime != "" {
 				startTime, err := time.Parse(time.DateTime, strStartTime)
 				if err != nil {
