@@ -420,22 +420,46 @@ func configureScheduleSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.Se
 				FrequencyWeekly,
 				FrequencyMonthly,
 			})
-	}) // Start time date picker
-
-	section.EditingField("TimeRange").Label("Time Range").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		c, ok := obj.(*EmailCampaign)
-		if !ok || !c.Enabled {
-			return h.Div()
-		}
-		var fieldBinds []any
-		fieldBinds = append(fieldBinds, web.VField("Schedule.StartTime", c.StartTime)...)
-		fieldBinds = append(fieldBinds, web.VField("Schedule.EndTime", c.EndTime)...)
-
-		return vx.VXRangePicker().Clearable(true).Label("Time Range").
-			Type("datetimepicker").
-			Placeholder([]string{"Start Time", "End Time"}).
-			Attr(fieldBinds...)
 	})
+
+	section.EditingField("TimeRange").Label("Time Range").
+		ComponentFunc(
+			func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+				c, ok := obj.(*EmailCampaign)
+				if !ok || !c.Enabled {
+					return h.Div()
+				}
+				var fieldBinds []any
+				fieldBinds = append(fieldBinds, web.VField("Schedule.StartTime", c.StartTime)...)
+				fieldBinds = append(fieldBinds, web.VField("Schedule.EndTime", c.EndTime)...)
+
+				return vx.VXRangePicker().Clearable(true).Label("Time Range").
+					Type("datetimepicker").
+					Placeholder([]string{"Start Time", "End Time"}).
+					Attr(fieldBinds...)
+			},
+		).
+		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
+			c := obj.(*EmailCampaign)
+			strStartTime := ctx.R.FormValue("Schedule.StartTime")
+			if strStartTime != "" {
+				startTime, err := time.Parse(time.DateTime, strStartTime)
+				if err != nil {
+					return errors.Wrap(err, "failed to parse start time")
+				}
+				c.StartTime = startTime
+			}
+			strEndTime := ctx.R.FormValue("Schedule.EndTime")
+			if strEndTime != "" {
+				endTime, err := time.Parse(time.DateTime, strEndTime)
+				if err != nil {
+					return errors.Wrap(err, "failed to parse end time")
+				}
+
+				c.EndTime = endTime
+			}
+			return nil
+		})
 
 	section.WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
 		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
@@ -443,26 +467,6 @@ func configureScheduleSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.Se
 		}
 	})
 
-	section.SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		// Fetch the campaign
-		var campaign EmailCampaign
-		if err := db.First(&campaign, id).Error; err != nil {
-			return errors.Wrap(err, "failed to fetch campaign")
-		}
-		ctx.MustUnmarshalForm(&campaign)
-		// Create scheduler if scheduling is enabled
-		if campaign.Enabled {
-			// Update the status to scheduled
-			campaign.Status = StatusScheduled
-		}
-
-		// Save the updated campaign
-		if err := db.Save(&campaign).Error; err != nil {
-			return errors.Wrap(err, "failed to save campaign")
-		}
-
-		return
-	})
 	return section
 }
 
