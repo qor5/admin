@@ -299,7 +299,7 @@ func ConfigUserSegment(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder {
 											},
 										},
 									}),
-								).Class("border border-gray-500 rounded-lg"),
+								).Class("border border-gray-500 rounded-lg").Style("height: 600px;"),
 							).Cols(12),
 						).Class("mt-4"),
 					).Value(1),
