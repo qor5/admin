@@ -97,22 +97,26 @@ func NumberTagBuilder(id, name, description, categoryID, fieldKey string, min, m
 						Key:      "min",
 						Required: true,
 						SkipUnless: map[string]any{
-							"$operator": map[string]any{
-								string(tag.SkipOperatorIN): []string{string(NumberOperatorBetween)},
-							},
+							"operator": string(NumberOperatorBetween),
 						},
 					},
 					Min: min,
 					Max: max,
+				},
+				&tag.TextFragment{
+					FragmentMetadata: tag.FragmentMetadata{
+						SkipUnless: map[string]any{
+							"operator": string(NumberOperatorBetween),
+						},
+					},
+					Text: "and",
 				},
 				&tag.NumberInputFragment{
 					FragmentMetadata: tag.FragmentMetadata{
 						Key:      "max",
 						Required: true,
 						SkipUnless: map[string]any{
-							"$operator": map[string]any{
-								string(tag.SkipOperatorIN): []string{string(NumberOperatorBetween)},
-							},
+							"operator": string(NumberOperatorBetween),
 						},
 					},
 					Min: min,
@@ -303,7 +307,7 @@ func EventTagBuilder(eventName string, displayLabel string, categoryID string) t
 		View: &tag.View{
 			Fragments: []tag.Fragment{
 				&tag.TextFragment{
-					Text: "Users who",
+					Text: "with",
 				},
 				&tag.SelectFragment{
 					FragmentMetadata: tag.FragmentMetadata{
@@ -315,9 +319,6 @@ func EventTagBuilder(eventName string, displayLabel string, categoryID string) t
 						{Value: string(Accumulation(AccumulationCount)), Label: "total occurrences"},
 						{Value: string(Accumulation(AccumulationDays)), Label: "unique days"},
 					},
-				},
-				&tag.TextFragment{
-					Text: displayLabel,
 				},
 				&tag.SelectFragment{
 					FragmentMetadata: tag.FragmentMetadata{
@@ -352,29 +353,33 @@ func EventTagBuilder(eventName string, displayLabel string, categoryID string) t
 						Key:      "countMin",
 						Required: true,
 						SkipUnless: map[string]any{
-							"$countOperator": map[string]any{
-								string(tag.SkipOperatorIN): []string{string(NumberOperatorBetween)},
-							},
-						},
-					},
-					Min: 1,
-					Max: 1000,
-				},
-				&tag.NumberInputFragment{
-					FragmentMetadata: tag.FragmentMetadata{
-						Key:      "countMax",
-						Required: true,
-						SkipUnless: map[string]any{
-							"$countOperator": map[string]any{
-								string(tag.SkipOperatorIN): []string{string(NumberOperatorBetween)},
-							},
+							"countOperator": string(NumberOperatorBetween),
 						},
 					},
 					Min: 1,
 					Max: 1000,
 				},
 				&tag.TextFragment{
-					Text: "times in the last",
+					FragmentMetadata: tag.FragmentMetadata{
+						SkipUnless: map[string]any{
+							"countOperator": string(NumberOperatorBetween),
+						},
+					},
+					Text: "and",
+				},
+				&tag.NumberInputFragment{
+					FragmentMetadata: tag.FragmentMetadata{
+						Key:      "countMax",
+						Required: true,
+						SkipUnless: map[string]any{
+							"countOperator": string(NumberOperatorBetween),
+						},
+					},
+					Min: 1,
+					Max: 1000,
+				},
+				&tag.TextFragment{
+					Text: "times in",
 				},
 				&tag.SelectFragment{
 					FragmentMetadata: tag.FragmentMetadata{
@@ -383,10 +388,10 @@ func EventTagBuilder(eventName string, displayLabel string, categoryID string) t
 						DefaultValue: string(TimeRange30Days),
 					},
 					Options: []*tag.Option{
-						{Value: string(TimeRange7Days), Label: "past 7 days"},
-						{Value: string(TimeRange10Days), Label: "past 10 days"},
-						{Value: string(TimeRange30Days), Label: "past 30 days"},
-						{Value: string(TimeRange90Days), Label: "past 90 days"},
+						{Value: string(TimeRange7Days), Label: "last 7 days"},
+						{Value: string(TimeRange10Days), Label: "last 10 days"},
+						{Value: string(TimeRange30Days), Label: "last 30 days"},
+						{Value: string(TimeRange90Days), Label: "last 90 days"},
 					},
 				},
 			},
