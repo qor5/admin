@@ -13,7 +13,7 @@ type Messages struct {
 	AddBlankPage                 string
 	BlankPage                    string
 	SendEmail                    string
-	EnterEmialAddressPlaceholder string
+	EnterEmailAddressPlaceholder string
 }
 
 var Messages_en_US = &Messages{
@@ -23,7 +23,7 @@ var Messages_en_US = &Messages{
 	AddBlankPage:                 "Add Blank Page",
 	BlankPage:                    "Blank Page",
 	SendEmail:                    "Send Email",
-	EnterEmialAddressPlaceholder: "Please Enter a Email Address",
+	EnterEmailAddressPlaceholder: "Please Enter a Email Address",
 }
 
 var Messages_zh_CN = &Messages{
@@ -33,7 +33,7 @@ var Messages_zh_CN = &Messages{
 	AddBlankPage:                 "新增空白页",
 	BlankPage:                    "空白页",
 	SendEmail:                    "发送邮件",
-	EnterEmialAddressPlaceholder: "请输入邮箱地址",
+	EnterEmailAddressPlaceholder: "请输入邮箱地址",
 }
 
 var Messages_ja_JP = &Messages{
@@ -43,5 +43,5 @@ var Messages_ja_JP = &Messages{
 	AddBlankPage:                 "空白ページを追加",
 	BlankPage:                    "空白ページ",
 	SendEmail:                    "メール送信",
-	EnterEmialAddressPlaceholder: "メールアドレスを入力してください",
+	EnterEmailAddressPlaceholder: "メールアドレスを入力してください",
 }
