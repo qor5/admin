@@ -481,7 +481,7 @@ func (mb *ModelBuilder) emailBuilderBody(ctx *web.EventContext) h.HTMLComponent 
 					fmt.Sprintf(`() => { $refs.emailEditor.emit('getData').then(res=> {%s})}`,
 						web.Plaid().URL(mb.mb.Info().ListingHref()).EventFunc(actions.Update).Query(presets.ParamID, primarySlug).Form(web.Var("res")).Go())),
 				web.Listen("open_send_mail_dialog", ShowDialogScript(EmailEditorDialogPortalName, UtilDialogPayloadType{
-					Title: msgr.EnterEmialAddressPlaceholder,
+					Title: msgr.EnterEmailAddressPlaceholder,
 					ContentEl: vx.VXField().
 						Label("To").
 						Placeholder("Enter a email address").
@@ -548,18 +548,18 @@ func (mb *ModelBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponent 
 		return nil
 	}
 	var (
-		template          = tm.mb.NewModel()
-		selectID          = ctx.Param(ParamTemplateID)
-		err               error
-		subject, htmlBody string
-		msgr              = i18n.MustGetModuleMessages(ctx.R, I18nEmailBuilderKey, Messages_en_US).(*Messages)
+		template       = tm.mb.NewModel()
+		selectID       = ctx.Param(ParamTemplateID)
+		err            error
+		name, htmlBody string
+		msgr           = i18n.MustGetModuleMessages(ctx.R, I18nEmailBuilderKey, Messages_en_US).(*Messages)
 	)
 	if selectID != "" {
 		if err = utils.PrimarySluggerWhere(mb.b.db, template, selectID).First(template).Error; err != nil {
 			panic(err)
 		}
-		p := template.(EmailDetailInterface).EmbedEmailDetail()
-		subject = p.Subject
+		p := template.(*EmailTemplate)
+		name = p.Name
 		htmlBody = p.HTMLBody
 	}
 	return h.Div(
@@ -578,7 +578,7 @@ func (mb *ModelBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponent 
 			).Class("pa-0", v.H100, "border-xl"),
 		).Height(106).Width(224).Elevation(0).Class("mt-2"),
 		h.Div(
-			h.Span(subject).Class("text-caption"),
+			h.Span(name).Class("text-caption"),
 		).Class("mt-2"),
 	).Class("mb-6").Attr(web.VAssign("form", fmt.Sprintf(`{%s:%q}`, ParamTemplateID, selectID))...)
 }
@@ -692,7 +692,7 @@ func (mb *ModelBuilder) configTemplate() {
 							).Color(v.ColorGreyLighten5).Height(cardContentHeight),
 						).Class("pa-0"),
 					),
-					h.If(inDialog, v.VCardTitle(h.Text(p.Subject)).Class("text-caption")),
+					h.If(inDialog, v.VCardTitle(h.Text(p.Name)).Class("text-caption")),
 				).Elevation(0).Attr("@click", clickEvent),
 			).Cols(cols))
 		})
