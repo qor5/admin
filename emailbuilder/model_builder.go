@@ -59,10 +59,32 @@ func (mb *ModelBuilder) Install(b *presets.Builder) (err error) {
 	}
 	var (
 		dp       = mb.mb.Detailing()
+		editing  = mb.mb.Editing()
 		creating = mb.mb.Editing().Creating()
 		listing  = mb.mb.Listing()
 		tm       = mb.b.getTemplateModelBuilder()
 	)
+	editing.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			var (
+				et = obj.(EmailDetailInterface).EmbedEmailDetail()
+			)
+			if !mb.IsTpl {
+				// Parse the existing JsonBody as a JSON object
+				var jsonBody map[string]interface{}
+				if err := json.Unmarshal([]byte(et.JSONBody), &jsonBody); err == nil {
+					// Add the Subject field to the JsonBody
+					jsonBody["subject"] = et.Subject
+					// Convert back to string
+					if jsonData, err := json.Marshal(jsonBody); err == nil {
+						et.JSONBody = string(jsonData)
+					}
+				}
+			}
+			return in(obj, id, ctx)
+		}
+	})
+
 	creating.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		// JSON_Body
 		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
@@ -80,7 +102,9 @@ func (mb *ModelBuilder) Install(b *presets.Builder) (err error) {
 				} else if errors.Is(err, gorm.ErrRecordNotFound) {
 					mb.setEmailDefaultValue(et)
 				} else {
-					*et = *template.(EmailDetailInterface).EmbedEmailDetail()
+					te := template.(EmailDetailInterface).EmbedEmailDetail()
+					et.HTMLBody = te.HTMLBody
+					et.JSONBody = te.JSONBody
 				}
 			} else {
 				mb.setEmailDefaultValue(et)
@@ -115,23 +139,6 @@ func (mb *ModelBuilder) Install(b *presets.Builder) (err error) {
 				)
 			})
 
-			creating.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
-				return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-					var (
-						selectID = ctx.Param(ParamTemplateID)
-						template = tm.mb.NewModel()
-					)
-					if selectID != "" && tm != nil {
-						utils.PrimarySluggerWhere(mb.b.db, obj, selectID).First(template)
-						et := obj.(EmailDetailInterface).EmbedEmailDetail()
-						*et = *template.(EmailDetailInterface).EmbedEmailDetail()
-					}
-					if err = in(obj, id, ctx); err != nil {
-						return
-					}
-					return
-				}
-			})
 			filed.ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 				return h.Components(
 					web.Portal(mb.selectedTemplate(ctx)).Name(TemplateSelectedPortalName))
@@ -577,6 +584,19 @@ func (mb *ModelBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponent 
 }
 
 func (mb *ModelBuilder) configTemplate() {
+	mb.mb.Editing("Name").Creating("Name").WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
+		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			if err = in(obj, ctx); err.HaveErrors() {
+				return
+			}
+			p := obj.(*EmailTemplate)
+			if p.Name == "" {
+				err.FieldError("Name", "Name Is Required")
+				return
+			}
+			return
+		}
+	})
 	listing := mb.mb.Listing().DialogWidth(dialogWidth).DialogHeight(dialogHeight).SearchColumns("Subject")
 	listing.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
 		lc := presets.ListingCompoFromContext(ctx.R.Context())
@@ -653,11 +673,8 @@ func (mb *ModelBuilder) configTemplate() {
 						v.VCardItem(
 							v.VCard(
 								v.VCardItem(
-									h.Components(
-										h.Text(p.Subject),
-									),
 									h.Div(
-										h.Div(),
+										h.Text(p.Name),
 										h.If(!inDialog && len(menus) > 0,
 											v.VMenu(
 												web.Slot(
