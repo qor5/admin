@@ -82,7 +82,18 @@ func (mb *ModelBuilder) Install(b *presets.Builder) (err error) {
 			return in(obj, id, ctx)
 		}
 	})
-
+	editing.WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
+		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			if in != nil {
+				err = in(obj, ctx)
+			}
+			p := obj.(EmailDetailInterface).EmbedEmailDetail()
+			if p.Name == "" {
+				err.FieldError("Name", "Name Is Required")
+			}
+			return
+		}
+	})
 	creating.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		// JSON_Body
 		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
@@ -448,6 +459,7 @@ func (mb *ModelBuilder) emailBuilderBody(ctx *web.EventContext) h.HTMLComponent 
 		exitHref = mb.mb.Info().DetailingHref(primarySlug)
 	}
 	utils.PrimarySluggerWhere(mb.b.db, obj, primarySlug).First(obj)
+	p := obj.(EmailDetailInterface).EmbedEmailDetail()
 	return v.VContainer().Children(
 
 		h.Div(
@@ -462,7 +474,7 @@ func (mb *ModelBuilder) emailBuilderBody(ctx *web.EventContext) h.HTMLComponent 
 						%s`, exitHref, web.GET().URL(exitHref).PushState(true).Go(),
 					)),
 				),
-				v.VToolbarTitle("Inbox"),
+				v.VToolbarTitle(p.Name),
 				v.VSpacer(),
 				vx.VXBtn(pMsgr.Save).Variant(v.VariantElevated).Attr("@click", web.Emit("save_mail")).Color("primary").Attr(":disabled", "vars.$EmailEditorLoading"),
 				vx.VXBtn(msgr.SendEmail).
@@ -560,7 +572,7 @@ func (mb *ModelBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponent 
 		if err = utils.PrimarySluggerWhere(mb.b.db, template, selectID).First(template).Error; err != nil {
 			panic(err)
 		}
-		p := template.(*EmailTemplate)
+		p := template.(EmailDetailInterface).EmbedEmailDetail()
 		name = p.Name
 		htmlBody = p.HTMLBody
 	}
@@ -586,26 +598,6 @@ func (mb *ModelBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponent 
 }
 
 func (mb *ModelBuilder) configTemplate() {
-	editing := mb.mb.Editing()
-	editing.Field("JsonBody").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return nil
-	})
-	editing.Field("HtmlBody").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return nil
-	})
-	editing.Creating("Name").WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
-		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-			if err = in(obj, ctx); err.HaveErrors() {
-				return
-			}
-			p := obj.(*EmailTemplate)
-			if p.Name == "" {
-				err.FieldError("Name", "Name Is Required")
-				return
-			}
-			return
-		}
-	})
 	listing := mb.mb.Listing().DialogWidth(dialogWidth).DialogHeight(dialogHeight).SearchColumns("Subject")
 	listing.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
 		lc := presets.ListingCompoFromContext(ctx.R.Context())
@@ -655,15 +647,17 @@ func (mb *ModelBuilder) configTemplate() {
 		}
 		reflectutils.ForEach(searchResult.Nodes, func(obj interface{}) {
 			var (
-				p          = obj.(*EmailTemplate)
-				menus      = mb.menusComp(ctx, obj)
-				clickEvent = web.Plaid().PushState(true).URL(mb.editorUri(fmt.Sprint(p.ID))).Go()
+				slug        = obj.(presets.SlugEncoder)
+				p           = obj.(EmailDetailInterface).EmbedEmailDetail()
+				menus       = mb.menusComp(ctx, obj)
+				primarySlug = slug.PrimarySlug()
+				clickEvent  = web.Plaid().PushState(true).URL(mb.editorUri(primarySlug)).Go()
 			)
 			if inDialog {
 				if changeTemplate != "" {
-					clickEvent = web.Plaid().EventFunc(ReloadSelectedTemplateEvent).ThenScript("vars.presetsListingDialog=false").Query(ParamTemplateID, p.ID).Go()
+					clickEvent = web.Plaid().EventFunc(ReloadSelectedTemplateEvent).ThenScript("vars.presetsListingDialog=false").Query(ParamTemplateID, primarySlug).Go()
 				} else {
-					clickEvent = web.Plaid().EventFunc(actions.New).Query(presets.ParamOverlay, actions.Dialog).ThenScript("vars.presetsListingDialog=false").Query(ParamTemplateID, p.ID).Go()
+					clickEvent = web.Plaid().EventFunc(actions.New).Query(presets.ParamOverlay, actions.Dialog).ThenScript("vars.presetsListingDialog=false").Query(ParamTemplateID, primarySlug).Go()
 				}
 			}
 
@@ -707,6 +701,6 @@ func (mb *ModelBuilder) configTemplate() {
 		})
 		return v.VContainer(
 			rows,
-		).Fluid(true)
+		).Fluid(true).Class("pa-0")
 	})
 }
