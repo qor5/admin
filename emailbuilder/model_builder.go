@@ -440,6 +440,7 @@ func (mb *ModelBuilder) emailBuilderBody(ctx *web.EventContext) h.HTMLComponent 
 	var (
 		primarySlug = ctx.Param(presets.ParamID)
 		exitHref    string
+		obj         = mb.mb.NewModel()
 		msgr        = i18n.MustGetModuleMessages(ctx.R, I18nEmailBuilderKey, Messages_en_US).(*Messages)
 		pMsgr       = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, presets.Messages_en_US).(*presets.Messages)
 	)
@@ -448,7 +449,7 @@ func (mb *ModelBuilder) emailBuilderBody(ctx *web.EventContext) h.HTMLComponent 
 	} else {
 		exitHref = mb.mb.Info().DetailingHref(primarySlug)
 	}
-
+	utils.PrimarySluggerWhere(mb.b.db, obj, primarySlug).First(obj)
 	return v.VContainer().Children(
 
 		h.Div(
@@ -477,9 +478,12 @@ func (mb *ModelBuilder) emailBuilderBody(ctx *web.EventContext) h.HTMLComponent 
 
 		h.Div().Class("d-flex flex-column").Children(
 			h.Div(
-				web.Listen("save_mail",
-					fmt.Sprintf(`() => { $refs.emailEditor.emit('getData').then(res=> {%s})}`,
-						web.Plaid().URL(mb.mb.Info().ListingHref()).EventFunc(actions.Update).Query(presets.ParamID, primarySlug).Form(web.Var("res")).Go())),
+				web.Scope(
+					web.Listen("save_mail",
+						fmt.Sprintf(`() => { $refs.emailEditor.emit('getData').then(res=> {%s})}`,
+							web.Plaid().URL(mb.mb.Info().ListingHref()).EventFunc(actions.Update).Query(presets.ParamID, primarySlug).
+								Form(web.Var(" { ...xLocals.obj, ...res }")).Go())),
+				).VSlot("{locals:xLocals}").Init(fmt.Sprintf("{obj:%v}", h.JSONString(obj))),
 				web.Listen("open_send_mail_dialog", ShowDialogScript(EmailEditorDialogPortalName, UtilDialogPayloadType{
 					Title: msgr.EnterEmailAddressPlaceholder,
 					ContentEl: vx.VXField().
@@ -584,7 +588,14 @@ func (mb *ModelBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponent 
 }
 
 func (mb *ModelBuilder) configTemplate() {
-	mb.mb.Editing("Name").Creating("Name").WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
+	editing := mb.mb.Editing()
+	editing.Field("JsonBody").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return nil
+	})
+	editing.Field("HtmlBody").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return nil
+	})
+	editing.Creating("Name").WrapValidateFunc(func(in presets.ValidateFunc) presets.ValidateFunc {
 		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 			if err = in(obj, ctx); err.HaveErrors() {
 				return
