@@ -9,6 +9,7 @@ import (
 type (
 	EmailTemplate struct {
 		gorm.Model
+		Name string
 		EmailDetail
 	}
 )
