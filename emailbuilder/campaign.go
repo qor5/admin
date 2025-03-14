@@ -422,7 +422,10 @@ func configureScheduleSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.Se
 		func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			c := obj.(*EmailCampaign)
 			return vx.VXRangePicker().Label("Time Range").Disabled(true).Type("datetimepicker").
-				Attr(web.VField("TimeRange", []time.Time{c.StartTime, c.EndTime})...)
+				Attr(web.VField("TimeRange", []string{
+					c.StartTime.Format(time.DateTime),
+					c.EndTime.Format(time.DateTime)})...,
+				)
 		},
 	)
 	section.ViewingField("Schedule.Frequency").Label("Frequency")
@@ -434,7 +437,10 @@ func configureScheduleSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.Se
 				return vx.VXRangePicker().Clearable(true).Label("Time Range").
 					Type("datetimepicker").
 					Placeholder([]string{"Start Time", "End Time"}).
-					Attr(web.VField("TimeRange", []time.Time{c.StartTime, c.EndTime})...)
+					Attr(web.VField("TimeRange", []string{
+						c.StartTime.Format(time.DateTime),
+						c.EndTime.Format(time.DateTime)})...,
+					)
 			},
 		).
 		SetterFunc(
