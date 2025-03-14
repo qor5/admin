@@ -66,9 +66,7 @@ func (mb *ModelBuilder) Install(b *presets.Builder) (err error) {
 	)
 	editing.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-			var (
-				et = obj.(EmailDetailInterface).EmbedEmailDetail()
-			)
+			et := obj.(EmailDetailInterface).EmbedEmailDetail()
 			if !mb.IsTpl {
 				// Parse the existing JsonBody as a JSON object
 				var jsonBody map[string]interface{}
