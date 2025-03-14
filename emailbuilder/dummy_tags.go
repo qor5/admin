@@ -132,14 +132,14 @@ func dummyTags(ctx context.Context) []*tag.CategoryWithBuilders {
 		},
 	))
 
-	registry.MustRegisterBuilder(bg.DateRangeTagBuilder(
-		"user_last_active",
-		"User Last Active",
-		"Filter users by last active time range",
-		"activities",
-		"lastActive",
-		true,
-	))
+	// registry.MustRegisterBuilder(bg.DateRangeTagBuilder(
+	// 	"user_last_active",
+	// 	"User Last Active",
+	// 	"Filter users by last active time range",
+	// 	"activities",
+	// 	"lastActive",
+	// 	true,
+	// ))
 
 	// Register event tags
 	// Event tags now belong to the Activities category
