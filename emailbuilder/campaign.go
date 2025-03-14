@@ -348,7 +348,11 @@ func configureSubjectSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.Sec
 	section.ViewingField("Subject").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
 		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			c := obj.(*EmailCampaign)
-			return vx.VXTextField().ReadOnly(true).Text(c.Subject)
+			if c.Subject != "" {
+				return vx.VXTextField().ReadOnly(true).Text(c.Subject)
+			} else {
+				return vx.VXTextField().ReadOnly(true).Text("Please enter a subject")
+			}
 		}
 	})
 
@@ -417,7 +421,6 @@ func configureScheduleSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.Se
 	section := presets.NewSectionBuilder(mb, "Schedule").
 		Label("Schedule").
 		Editing("TimeRange", "Schedule.Frequency")
-	// Editing("Schedule.Frequency")
 	section.ViewingField("TimeRange").Label("Time Range").ComponentFunc(
 		func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			c := obj.(*EmailCampaign)
@@ -488,6 +491,13 @@ func configureScheduleSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.Se
 					FrequencyMonthly,
 				})
 		})
+
+	section.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			fmt.Println("Hello")
+			return in(obj, id, ctx)
+		}
+	})
 
 	section.WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
 		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {

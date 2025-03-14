@@ -1,0 +1,59 @@
+x-service-template: &service-template
+  image: go-debug
+  build:
+    context: .
+    dockerfile: Dockerfile
+  environment: &common-env
+    SRC_DIR: ${SRC_DIR}
+    MAIN_FILE_PATH: ${MAIN_FILE_PATH}
+
+  volumes:
+    - type: bind
+      source: ${SRC_DIR}
+      target: ${SRC_DIR}
+    - type: volume
+      source: qor5-dev-cache
+      target: /root/.cache
+    - type: volume
+      source: qor5-mod-cache
+      target: /go/pkg/mod
+  working_dir: ${SRC_DIR}
+  restart: no
+
+services:
+  postgres:
+    image: postgres
+    environment:
+      - "POSTGRES_USER=example"
+      - "POSTGRES_PASSWORD=123"
+      - "POSTGRES_DB=example_dev"
+    ports:
+      - "6432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ciam" ]
+      interval: 1s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    volumes:
+      - type: volume
+        source: qor5-postgres
+        target: /var/lib/postgresql/data
+
+  example:
+    <<: *service-template
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      <<: *common-env
+    ports:
+      - "${SERVER_DEBUG_PORT}:40000"
+      - "9500:9500"
+    env_file:
+      - config.env
+
+volumes:
+  qor5-dev-cache:
+  qor5-mod-cache:
+  qor5-postgres:

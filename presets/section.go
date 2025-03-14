@@ -139,13 +139,13 @@ type SectionBuilder struct {
 
 type ObjectBoolFunc func(obj interface{}, ctx *web.EventContext) bool
 
-func (s *SectionBuilder) Clone() *SectionBuilder {
-	newSection := *s
+func (b *SectionBuilder) Clone() *SectionBuilder {
+	newSection := *b
 	newSection.isUsed = false
 
-	if s.hiddenFuncs != nil {
-		newSection.hiddenFuncs = make([]ObjectComponentFunc, len(s.hiddenFuncs))
-		copy(newSection.hiddenFuncs, s.hiddenFuncs)
+	if b.hiddenFuncs != nil {
+		newSection.hiddenFuncs = make([]ObjectComponentFunc, len(b.hiddenFuncs))
+		copy(newSection.hiddenFuncs, b.hiddenFuncs)
 	}
 
 	return &newSection
@@ -303,6 +303,11 @@ func (b *SectionBuilder) SaveFunc(v SaveFunc) (r *SectionBuilder) {
 		panic("value required")
 	}
 	b.saver = v
+	return b
+}
+
+func (b *SectionBuilder) WrapSaveFunc(w func(in SaveFunc) SaveFunc) (r *SectionBuilder) {
+	b.saver = w(b.saver)
 	return b
 }
 
