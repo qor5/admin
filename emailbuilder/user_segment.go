@@ -136,7 +136,10 @@ func ConfigUserSegment(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder {
 		activeUsers14DaysDataArr = append(activeUsers14DaysDataArr, value)
 	}
 	detailing := mb.Detailing("Charts")
-
+	detailing.Title(func(evCtx *web.EventContext, obj any, style presets.DetailingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error) {
+		title = obj.(*UserSegment).Name
+		return
+	})
 	se := presets.NewSectionBuilder(mb, "Charts").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return web.Scope(
 			h.Div(
