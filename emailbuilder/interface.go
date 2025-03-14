@@ -5,6 +5,7 @@ type (
 		EmbedEmailDetail() *EmailDetail
 	}
 	EmailDetail struct {
+		Name     string
 		Subject  string `json:"subject"`
 		JSONBody string `json:"json_body"`
 		HTMLBody string `json:"html_body"`

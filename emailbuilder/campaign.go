@@ -37,7 +37,6 @@ type (
 		UTM
 		Schedule
 
-		Name   string
 		To     string
 		Status string // StatusDraft, StatusSent, StatusScheduled
 	}
@@ -198,12 +197,22 @@ func configureListing(mb *presets.ModelBuilder) {
 
 func configureEditing(mb *presets.ModelBuilder) {
 	// Configure editing page for both creation and editing
-	mb.Editing("Name").
+	editing := mb.Editing("Name", "JSONBody", "HTMLBody")
+	editing.Field("JSONBody").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
+		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return h.Div(in(obj, field, ctx)).Style("display:none")
+		}
+	})
+	editing.Field("HTMLBody").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
+		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return h.Div(in(obj, field, ctx)).Style("display:none")
+		}
+	})
+	editing.
 		ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 			c := obj.(*EmailCampaign)
 			if c.Name == "" {
 				err.FieldError("Name", "Name Is Required")
-				return
 			}
 			return
 		}).
@@ -438,7 +447,8 @@ func configureScheduleSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.Se
 			return vx.VXRangePicker().Label("Time Range").Disabled(true).Type("datetimepicker").
 				Attr(web.VField("TimeRange", []string{
 					c.StartTime.Format(time.DateTime),
-					c.EndTime.Format(time.DateTime)})...,
+					c.EndTime.Format(time.DateTime),
+				})...,
 				)
 		},
 	)
@@ -453,7 +463,8 @@ func configureScheduleSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.Se
 					Placeholder([]string{"Start Time", "End Time"}).
 					Attr(web.VField("TimeRange", []string{
 						c.StartTime.Format(time.DateTime),
-						c.EndTime.Format(time.DateTime)})...,
+						c.EndTime.Format(time.DateTime),
+					})...,
 					)
 			},
 		).
