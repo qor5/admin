@@ -284,12 +284,12 @@ func ExampleSQLProcessor_Process() {
 
 	// Register event tags
 	// Event tags now belong to the Activities category
-	registry.MustRegisterBuilder(bg.EventTagBuilder(string(EventLogin), "logged in", "activities"))
-	registry.MustRegisterBuilder(bg.EventTagBuilder(string(EventViewPDP), "viewed products", "activities"))
-	registry.MustRegisterBuilder(bg.EventTagBuilder(string(EventAddToCart), "added to cart", "activities"))
-	registry.MustRegisterBuilder(bg.EventTagBuilder(string(EventBeginCheckout), "began checkout", "activities"))
-	registry.MustRegisterBuilder(bg.EventTagBuilder(string(EventConfirm), "confirmed orders", "activities"))
-	registry.MustRegisterBuilder(bg.EventTagBuilder(string(EventPurchase), "made purchases", "activities"))
+	registry.MustRegisterBuilder(bg.EventTagBuilder(string(EventLogin), "Logged In", "activities"))
+	registry.MustRegisterBuilder(bg.EventTagBuilder(string(EventViewPDP), "Viewed Products", "activities"))
+	registry.MustRegisterBuilder(bg.EventTagBuilder(string(EventAddToCart), "Added to Cart", "activities"))
+	registry.MustRegisterBuilder(bg.EventTagBuilder(string(EventBeginCheckout), "Began Checkout", "activities"))
+	registry.MustRegisterBuilder(bg.EventTagBuilder(string(EventConfirm), "Confirmed Orders", "activities"))
+	registry.MustRegisterBuilder(bg.EventTagBuilder(string(EventPurchase), "Made Purchases", "activities"))
 
 	// Get all registered categories with builders
 	// categoriesWithBuilders := registry.GetCategoriesWithBuilders(context.Background())
