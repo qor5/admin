@@ -5,13 +5,14 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/actions"
 	v "github.com/qor5/ui/v3/vuetify"
 	"github.com/qor5/web/v3"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
 )
 
 // Campaign status constants
@@ -36,6 +37,7 @@ type (
 		UTM
 		Schedule
 
+		Name   string
 		To     string
 		Status string // StatusDraft, StatusSent, StatusScheduled
 	}
@@ -75,6 +77,10 @@ func DefaultMailCampaign(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder
 
 	// Configure detail page
 	dp := mb.Detailing("From", "To", "Subject", EmailDetailField, "UTM", "Schedule")
+	dp.Title(func(evCtx *web.EventContext, obj any, style presets.DetailingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error) {
+		title = obj.(*EmailCampaign).Name
+		return
+	})
 	// dp := mb.Detailing(EmailDetailField, "Recipient", "Schedule")
 	// Add sections to detail page in the desired order (UTM section above Schedule section)
 	dp.Section(configureFromSection(mb, db))
@@ -89,7 +95,7 @@ func DefaultMailCampaign(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder
 
 func configureListing(mb *presets.ModelBuilder) {
 	// Configure listing page
-	listing := mb.Listing("ID", "Status", "CreatedAt", "UpdatedAt")
+	listing := mb.Listing("ID", "Name", "Status", "CreatedAt", "UpdatedAt")
 
 	// Customize the listing display
 	listing.Field("Status").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -192,8 +198,16 @@ func configureListing(mb *presets.ModelBuilder) {
 
 func configureEditing(mb *presets.ModelBuilder) {
 	// Configure editing page for both creation and editing
-	mb.Editing("Subject", "JSONBody", "HTMLBody").
-		Creating("Subject", TemplateSelectionFiled).
+	mb.Editing("Name").
+		ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			c := obj.(*EmailCampaign)
+			if c.Name == "" {
+				err.FieldError("Name", "Name Is Required")
+				return
+			}
+			return
+		}).
+		Creating(TemplateSelectionFiled, "Name").
 		WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 			return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 				c := obj.(*EmailCampaign)
