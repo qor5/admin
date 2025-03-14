@@ -477,7 +477,7 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 			hiddenComp.AppendChildren(f(obj, ctx))
 		}
 	}
-	content := h.Div().Class("section-wrap with-border-b").ClassIf("can-edit", b.componentEditBtnFunc(obj, ctx) && !disableEditBtn)
+	content := h.Div().Class("section-wrap mb-10 with-border-b").ClassIf("can-edit", b.componentEditBtnFunc(obj, ctx) && !disableEditBtn)
 	if b.label != "" {
 		lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.mb.label, b.label)
 		content.AppendChildren(
@@ -546,7 +546,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 		}
 	}
 
-	content := h.Div().Class("section-wrap edit-view with-border-b")
+	content := h.Div().Class("section-wrap mb-10 edit-view with-border-b")
 
 	if b.label != "" && !b.disableLabel {
 		lb := i18n.PT(ctx.R, ModelsI18nModuleKey, b.mb.label, b.label)
@@ -886,7 +886,7 @@ func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, ctx *we
 	).Variant(VariantOutlined).Class("mb-4 section-body")
 
 	return web.Portal(
-		h.Div(card).Class("section-wrap edit-view"),
+		h.Div(card).Class("section-wrap mb-10 edit-view"),
 	).Name(b.ListElementPortalName(index))
 }
 

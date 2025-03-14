@@ -1,6 +1,7 @@
 package emailbuilder
 
 import (
+	_ "embed"
 	"fmt"
 	"time"
 
@@ -63,8 +64,17 @@ func ConfigUserSegment(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder {
 	// TODO:demo data
 	initRecords(db)
 
-	mb := pb.Model(&UserSegment{}).Label("User Segments")
-	mb.Editing().Creating("Name")
+	mb := pb.Model(&UserSegment{}).Label("User Segments").RightDrawerWidth("840")
+
+	cb := mb.Editing().Creating("Name", "Conditions")
+	cb.Field("Name").Label("Title")
+	cb.Field("Conditions").Label("Conditions").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return h.Div().Class("d-flex flex-column ga-2").Children(
+			h.Text("Conditions"),
+			vx.VXSegmentForm("Conditions").Options(dummyTags(ctx.R.Context())),
+		)
+	})
+
 	listing := mb.Listing("ID", "Name", "TotalUsers", "Change", "CreatedAt", "UpdatedAt")
 	listing.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
 		msgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, presets.Messages_en_US).(*presets.Messages)

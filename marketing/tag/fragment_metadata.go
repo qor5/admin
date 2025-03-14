@@ -92,7 +92,14 @@ func (f *FragmentMetadata) skipIf(values map[string]any, condition map[string]an
 
 // matchExpression evaluates expression conditions
 func (f *FragmentMetadata) matchExpression(fieldValue any, expr map[string]any) (bool, error) {
+	// Return error when no operators exist
+	if len(expr) == 0 {
+		return false, errors.New("no valid operators found in expression")
+	}
+
 	for op, operands := range expr {
+		// Ensure all operators must evaluate to true (AND logic)
+		// Short-circuit return on first false condition for efficiency
 		switch SkipOperatorType(strings.ToUpper(op)) {
 		case SkipOperatorIN:
 			operandsValue := reflect.ValueOf(operands)
@@ -108,17 +115,24 @@ func (f *FragmentMetadata) matchExpression(fieldValue any, expr map[string]any) 
 					break
 				}
 			}
-			return found, nil
+			// Short-circuit on first false condition
+			if !found {
+				return false, nil
+			}
 
 		case SkipOperatorEQ:
-			return reflect.DeepEqual(fieldValue, operands), nil
+			// Short-circuit on first false condition
+			if !reflect.DeepEqual(fieldValue, operands) {
+				return false, nil
+			}
 
 		default:
 			return false, errors.Errorf("unsupported operator %q", op)
 		}
 	}
 
-	return false, errors.New("no valid operators found in expression")
+	// Only return true when all conditions are satisfied
+	return true, nil
 }
 
 // Validate validates this metadata against the provided parameters
