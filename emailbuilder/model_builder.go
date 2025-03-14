@@ -137,7 +137,7 @@ func (mb *ModelBuilder) Install(b *presets.Builder) (err error) {
 		mb.configTemplate()
 	} else {
 		mb.registerFunctions()
-		dp.GetField(EmailDetailField).ComponentFunc(mb.mailDetailFieldCompoFunc())
+		dp.Section(mb.mailDetailFieldSection())
 		if mb.b.ab != nil {
 			dp.SidePanelFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 				return mb.b.ab.MustGetModelBuilder(mb.mb).NewTimelineCompo(ctx, obj, "_side")
@@ -418,12 +418,13 @@ func (mb *ModelBuilder) setEmailDefaultValue(et *EmailDetail) {
 }`, strconv.Quote(et.Subject))
 }
 
-func (mb *ModelBuilder) mailDetailFieldCompoFunc() presets.FieldComponentFunc {
-	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		primarySlug := obj.(presets.SlugEncoder).PrimarySlug()
-		p := obj.(EmailDetailInterface).EmbedEmailDetail()
-		return h.Div(
-			h.Div(
+func (mb *ModelBuilder) mailDetailFieldSection() *presets.SectionBuilder {
+	section := presets.NewSectionBuilder(mb.mb, EmailDetailField).Editing("Body")
+	section.ViewingField("Body").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
+		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			primarySlug := obj.(presets.SlugEncoder).PrimarySlug()
+			p := obj.(EmailDetailInterface).EmbedEmailDetail()
+			return h.Div(
 				h.Div(
 					h.Iframe().Attr(":srcdoc", h.JSONString(p.HTMLBody)).
 						Attr("scrolling", "no", "frameborder", "0").
@@ -437,12 +438,16 @@ transform-origin: 0 0; transform:scale(0.5);width:200%;height:200%`),
 					v.VBtn("Editor").AppendIcon("mdi-pencil").Color(v.ColorBlack).
 						Class("rounded").Height(36).Variant(v.VariantElevated),
 				).Class("pa-6 w-100 d-flex justify-space-between align-center").Style(`position:absolute;bottom:0;left:0`),
-			).Style(`position:relative;height:320px;width:100%`).Class("border-thin rounded-lg").
+			).Style(`position:relative;height:320px;width:100%`).
 				Attr("@click",
 					web.Plaid().URL(mb.editorUri(primarySlug)).PushState(true).Go(),
-				),
-		).Class("my-10")
-	}
+				)
+		}
+	})
+	section.ComponentEditBtnFunc(func(obj interface{}, ctx *web.EventContext) bool {
+		return false
+	})
+	return section
 }
 
 func (mb *ModelBuilder) editorPattern() string {

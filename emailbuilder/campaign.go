@@ -80,8 +80,6 @@ func DefaultMailCampaign(pb *presets.Builder, db *gorm.DB) *presets.ModelBuilder
 		title = obj.(*EmailCampaign).Name
 		return
 	})
-	// dp := mb.Detailing(EmailDetailField, "Recipient", "Schedule")
-	// Add sections to detail page in the desired order (UTM section above Schedule section)
 	dp.Section(configureFromSection(mb, db))
 	dp.Section(configureSegmentSection(mb, db))
 	dp.Section(configureSubjectSection(mb, db))
@@ -451,8 +449,7 @@ func configureScheduleSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.Se
 				Attr(web.VField("TimeRange", []string{
 					c.StartTime.Format(time.DateTime),
 					c.EndTime.Format(time.DateTime),
-				})...,
-				)
+				})...)
 		},
 	)
 	section.ViewingField("Schedule.Frequency").Label("Frequency")

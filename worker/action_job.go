@@ -28,8 +28,8 @@ var (
 )
 
 type ActionJobBuilder struct {
-	fullname            string
-	shortname           string
+	fullName            string
+	shortName           string
 	description         string // optional
 	hasParams           bool
 	displayLog          bool // optional
@@ -55,8 +55,8 @@ func (b *Builder) ActionJob(jobName string, model *presets.ModelBuilder, hander 
 	}
 
 	action := &ActionJobBuilder{
-		fullname:            fullname,
-		shortname:           jobName,
+		fullName:            fullname,
+		shortName:           jobName,
 		progressingInterval: 2000,
 		jb:                  b.NewJob(fullname).Handler(hander),
 		b:                   b,
@@ -102,7 +102,7 @@ func (action ActionJobBuilder) GetParamsModelBuilder() *presets.ModelBuilder {
 }
 
 func (action ActionJobBuilder) URL() string {
-	return web.Plaid().URL(action.b.mb.Info().ListingHref()).EventFunc(ActionJobInputParams).Query("jobName", action.fullname).Go()
+	return web.Plaid().URL(action.b.mb.Info().ListingHref()).EventFunc(ActionJobInputParams).Query("jobName", action.fullName).Go()
 }
 
 func (b *Builder) eventActionJobCreate(ctx *web.EventContext) (r web.EventResponse, err error) {
@@ -151,7 +151,7 @@ func (b *Builder) eventActionJobInputParams(ctx *web.EventContext) (r web.EventR
 			VDialog(
 				VCard(
 					VCardTitle(
-						h.Text(config.shortname),
+						h.Text(config.shortName),
 						VSpacer(),
 						VBtn("").Icon("mdi-close").Attr("@click.stop", "vars.presetsDialog=false"),
 					),
@@ -199,7 +199,7 @@ func (b *Builder) eventActionJobResponse(ctx *web.EventContext) (r web.EventResp
 		Body: web.Scope(
 			VDialog(
 				VAppBar(
-					VToolbarTitle(config.shortname).Class("pl-2"),
+					VToolbarTitle(config.shortName).Class("pl-2"),
 					VSpacer(),
 					VBtn("").Icon("mdi-close").Attr("@click.stop", web.Plaid().
 						URL(b.mb.Info().ListingHref()).
