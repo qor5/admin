@@ -121,7 +121,15 @@ func (mb *ModelBuilder) Install(b *presets.Builder) (err error) {
 			return in(obj, id, ctx)
 		}
 	})
-	b.HandleCustomPage(mb.editorPattern(), presets.NewCustomPage(b).Body(mb.emailBuilderBody).Menu(func(*web.EventContext) h.HTMLComponent {
+	b.HandleCustomPage(mb.editorPattern(), presets.NewCustomPage(b).Body(mb.emailBuilderBody).PageTitleFunc(func(ctx *web.EventContext) string {
+		var (
+			primarySlug = ctx.Param(presets.ParamID)
+			obj         = mb.mb.NewModel()
+		)
+		utils.PrimarySluggerWhere(mb.b.db, obj, primarySlug).First(obj)
+		p := obj.(EmailDetailInterface).EmbedEmailDetail()
+		return p.Name
+	}).Menu(func(*web.EventContext) h.HTMLComponent {
 		return nil
 	}))
 
@@ -412,7 +420,7 @@ func (mb *ModelBuilder) setEmailDefaultValue(et *EmailDetail) {
 
 func (mb *ModelBuilder) mailDetailFieldCompoFunc() presets.FieldComponentFunc {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		primaySlug := fmt.Sprint(reflectutils.MustGet(obj, "ID"))
+		primarySlug := obj.(presets.SlugEncoder).PrimarySlug()
 		p := obj.(EmailDetailInterface).EmbedEmailDetail()
 		return h.Div(
 			h.Div(
@@ -431,7 +439,7 @@ transform-origin: 0 0; transform:scale(0.5);width:200%;height:200%`),
 				).Class("pa-6 w-100 d-flex justify-space-between align-center").Style(`position:absolute;bottom:0;left:0`),
 			).Style(`position:relative;height:320px;width:100%`).Class("border-thin rounded-lg").
 				Attr("@click",
-					web.Plaid().URL(mb.editorUri(primaySlug)).PushState(true).Go(),
+					web.Plaid().URL(mb.editorUri(primarySlug)).PushState(true).Go(),
 				),
 		).Class("my-10")
 	}
@@ -460,6 +468,7 @@ func (mb *ModelBuilder) emailBuilderBody(ctx *web.EventContext) h.HTMLComponent 
 	}
 	utils.PrimarySluggerWhere(mb.b.db, obj, primarySlug).First(obj)
 	p := obj.(EmailDetailInterface).EmbedEmailDetail()
+
 	return v.VContainer().Children(
 
 		h.Div(
