@@ -438,7 +438,8 @@ func configureScheduleSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.Se
 			return vx.VXRangePicker().Label("Time Range").Disabled(true).Type("datetimepicker").
 				Attr(web.VField("TimeRange", []string{
 					c.StartTime.Format(time.DateTime),
-					c.EndTime.Format(time.DateTime)})...,
+					c.EndTime.Format(time.DateTime),
+				})...,
 				)
 		},
 	)
@@ -453,7 +454,8 @@ func configureScheduleSection(mb *presets.ModelBuilder, db *gorm.DB) *presets.Se
 					Placeholder([]string{"Start Time", "End Time"}).
 					Attr(web.VField("TimeRange", []string{
 						c.StartTime.Format(time.DateTime),
-						c.EndTime.Format(time.DateTime)})...,
+						c.EndTime.Format(time.DateTime),
+					})...,
 					)
 			},
 		).
