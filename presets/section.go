@@ -581,7 +581,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 		)
 	}
 	operateID := fmt.Sprint(time.Now().UnixNano())
-	onChangeEvent += checkFormChangeScript + setValidateKeysScript +
+	onChangeEvent += CheckFormChangeScript + SetValidateKeysScript +
 		web.Plaid().URL(ctx.R.URL.Path).
 			BeforeScript(fmt.Sprintf(`dash.__ValidateOperateID=%q`, operateID)).
 			EventFunc(b.EventValidate()).
@@ -591,7 +591,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 
 	comps := h.Components(
 		web.Listen(b.mb.NotifModelsSectionValidate(b.name),
-			setFieldErrorsScript))
+			SetFieldErrorsScript))
 	if b.isEdit {
 		return h.Div(
 			web.Scope(
