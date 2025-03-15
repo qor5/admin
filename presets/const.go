@@ -47,12 +47,10 @@ const (
 	SetFieldErrorsScript = `	
 let keys = Object.keys(dash.errorMessages);
 if (dash.__currentValidateKeys) {
-console.log('dash.__currentValidateKeys', dash.__currentValidateKeys)
     for (const key of dash.__currentValidateKeys) {
         dash.errorMessages[key] = payload.field_errors ? payload.field_errors[key] : null;
     }
 } else {
- console.log('payload.field_errors', payload.field_errors)
     for (const key in payload.field_errors) {
         dash.errorMessages[key] = payload.field_errors ? payload.field_errors[key] : null;
     }
@@ -60,18 +58,16 @@ console.log('dash.__currentValidateKeys', dash.__currentValidateKeys)
         dash.errorMessages[key] = payload.field_errors ? payload.field_errors[key] : null;
     })
 }
-		console.log('dash.errorMessages', dash.errorMessages);
 dash.__currentValidateKeys = [];
 `
 	SetValidateKeysScript = `
 dash.__currentValidateKeys = dash.__currentValidateKeys ?? [];
 for (let key in form) {
     if (form[key] !== oldForm[key]) {
-		console.log('changed key', key)
         dash.__currentValidateKeys.push(key)
         typeof dash.__findLinkageFields === "function" && dash.__findLinkageFields(key);
     }
 }
 `
-	CheckFormChangeScript = `if(JSON.stringify(form)==JSON.stringify(oldForm)){return}`
+	checkFormChangeScript = `if(JSON.stringify(form)==JSON.stringify(oldForm)){return}`
 )

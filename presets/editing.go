@@ -397,7 +397,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		),
 	).VSlot("{ form}")
 	operateID := fmt.Sprint(time.Now().UnixNano())
-	onChangeEvent += CheckFormChangeScript
+	onChangeEvent += checkFormChangeScript
 	if autosave {
 		onChangeEvent += web.Plaid().URL(ctx.R.URL.Path).
 			BeforeScript(fmt.Sprintf(`dash.__currentValidateKeys=null;dash.__ValidateOperateID=%q`, operateID)).
