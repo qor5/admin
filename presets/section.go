@@ -581,7 +581,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 		)
 	}
 	operateID := fmt.Sprint(time.Now().UnixNano())
-	onChangeEvent += checkFormChangeScript + SetValidateKeysScript +
+	onChangeEvent += CheckFormChangeScript + SetValidateKeysScript +
 		web.Plaid().URL(ctx.R.URL.Path).
 			BeforeScript(fmt.Sprintf(`dash.__ValidateOperateID=%q`, operateID)).
 			EventFunc(b.EventValidate()).

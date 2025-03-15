@@ -69,5 +69,5 @@ for (let key in form) {
     }
 }
 `
-	checkFormChangeScript = `if(JSON.stringify(form)==JSON.stringify(oldForm)){return}`
+	CheckFormChangeScript = `if(JSON.stringify(form)==JSON.stringify(oldForm)){return}`
 )
