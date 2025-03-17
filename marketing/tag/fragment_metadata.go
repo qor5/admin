@@ -150,7 +150,7 @@ func (f *FragmentMetadata) Validate(ctx context.Context, params map[string]any) 
 	}
 
 	value, exists := params[f.Key]
-	if f.Required && !exists {
+	if f.Required && (!exists || value == nil) {
 		return errors.Errorf("required parameter missing: %s", f.Key)
 	}
 
