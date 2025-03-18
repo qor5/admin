@@ -12,11 +12,12 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime/debug"
-	"strconv"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/spf13/cast"
 )
 
 type cronJob struct {
@@ -231,19 +232,12 @@ func (c *cron) Listen(_ []*QorJobDefinition, getJob func(qorJobID uint) (QueJobI
 	cmdLine.Parse(os.Args[1:])
 
 	if *qorJobID != "" {
-		id, err := strconv.ParseUint(*qorJobID, 10, 64)
+		id, err := cast.ToUintE(*qorJobID)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-
-		// Check if id exceeds the maximum value of uint (important for 32-bit systems)
-		if id > uint64(^uint(0)) {
-			fmt.Printf("Error: Job ID %d exceeds maximum value for uint (%d) on this system\n", id, uint64(^uint(0)))
-			os.Exit(1)
-		}
-
-		job, err := getJob(uint(id))
+		job, err := getJob(id)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
