@@ -49,7 +49,7 @@ func RegisterHeadingContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	ed := vb.Model(&Heading{}).Editing("AddTopSpace", "AddBottomSpace", "AnchorID", "Heading", "FontColor", "BackgroundColor", "Link", "LinkText", "LinkDisplayOption", "Text")
 	ed.Field("Text").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		extensions := tiptap.TiptapExtensions()
-		return tiptap.TiptapEditor(db, field.Name).
+		return tiptap.TiptapEditor(db, field.FormKey).
 			Extensions(extensions).
 			MarkdownTheme("github"). // Match tiptap.ThemeGithubCSSComponentsPack
 			Attr(presets.VFieldError(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)), field.Errors)...).
