@@ -28,7 +28,7 @@ type ParameterSetting struct {
 	FormSetting ParameterFieldSettingArray `gorm:"type:text;" sql:"type:text"`
 }
 
-func (p *ParameterSetting) TableName() string {
+func (*ParameterSetting) TableName() string {
 	return "parameter_setting"
 }
 

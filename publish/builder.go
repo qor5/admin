@@ -370,7 +370,7 @@ func (b *Builder) WithContextValues(ctx context.Context) context.Context {
 	return ctx
 }
 
-func (b *Builder) getPublishContent(ctx context.Context, obj interface{}) (r string, err error) {
+func (*Builder) getPublishContent(ctx context.Context, obj interface{}) (r string, err error) {
 	var (
 		mb PreviewBuilderInterface
 		ok bool
@@ -384,7 +384,7 @@ func (b *Builder) getPublishContent(ctx context.Context, obj interface{}) (r str
 	return
 }
 
-func (b *Builder) getObjectLiveUrl(ctx context.Context, db *gorm.DB, obj interface{}) (url string) {
+func (*Builder) getObjectLiveUrl(ctx context.Context, db *gorm.DB, obj interface{}) (url string) {
 	builder := ctx.Value(utils.GetObjectName(obj))
 	mb, ok := builder.(PreviewBuilderInterface)
 	if !ok {

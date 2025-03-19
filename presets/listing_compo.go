@@ -164,7 +164,7 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 			).Class("px-2"),
 			h.Div(
 				c.toolbarSearch(ctx),
-			),
+			).Class("mb-n2"),
 			VCardText().Class("list-table-wrap").Children(
 				c.dataTable(ctx),
 			),
@@ -927,7 +927,7 @@ func (c *ListingCompo) actionDialogContentPortalName() string {
 	return fmt.Sprintf("%s_action_dialog_content", c.CompoID())
 }
 
-func (c *ListingCompo) closeActionDialog() string {
+func (*ListingCompo) closeActionDialog() string {
 	return "locals.dialog = false;"
 }
 
