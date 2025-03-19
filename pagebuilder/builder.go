@@ -942,9 +942,11 @@ func sharedContainerSearcher(db *gorm.DB, b *ModelBuilder) presets.SearchFunc {
 		if err = wh.Select("MIN(id) AS id, display_name, model_name, model_id, locale_code").Find(rtNodes.Addr().Interface()).Error; err != nil {
 			return nil, err
 		}
-
+		dummy := presets.DummyCursor
 		return &presets.SearchResult{
-			PageInfo:   relay.PageInfo{},
+			PageInfo: relay.PageInfo{
+				StartCursor: &dummy,
+			},
 			TotalCount: &totalCount,
 			Nodes:      rtNodes.Interface(),
 		}, nil
