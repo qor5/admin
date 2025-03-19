@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/qor5/admin/v3/marketing/tag"
-	"github.com/qor5/admin/v3/marketing/tag/bg"
+	"github.com/qor5/admin/v3/marketing/tag/bq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -101,7 +101,7 @@ func TestExpressionToSQL(t *testing.T) {
 	})
 
 	// Register a string select tag for gender
-	registry.MustRegisterBuilder(bg.StringTagBuilder(
+	registry.MustRegisterBuilder(bq.StringTagBuilder(
 		"user_gender",
 		"User Gender",
 		"Filter users by gender",
@@ -114,7 +114,7 @@ func TestExpressionToSQL(t *testing.T) {
 	))
 
 	// Register string tag for user name
-	registry.MustRegisterBuilder(bg.StringTagBuilder(
+	registry.MustRegisterBuilder(bq.StringTagBuilder(
 		"user_name",
 		"User Name",
 		"Search by user name",
@@ -124,7 +124,7 @@ func TestExpressionToSQL(t *testing.T) {
 	))
 
 	// Register event tag for purchase event
-	registry.MustRegisterBuilder(bg.EventTagBuilder(string(EventPurchase), "made purchases", "activities"))
+	registry.MustRegisterBuilder(bq.EventTagBuilder(string(EventPurchase), "made purchases", "activities"))
 
 	// Create a composite expression: male users with username starting with "john"
 	// who made a purchase in the last 7 days
@@ -134,7 +134,7 @@ func TestExpressionToSQL(t *testing.T) {
 				Tag: &tag.Tag{
 					BuilderID: "user_gender",
 					Params: map[string]any{
-						"operator": string(bg.StringOperatorEQ),
+						"operator": string(bq.StringOperatorEQ),
 						"value":    string(GenderMale),
 					},
 				},
@@ -143,7 +143,7 @@ func TestExpressionToSQL(t *testing.T) {
 				Tag: &tag.Tag{
 					BuilderID: "user_name",
 					Params: map[string]any{
-						"operator": string(bg.StringOperatorStartsWith),
+						"operator": string(bq.StringOperatorStartsWith),
 						"value":    "john",
 					},
 				},
@@ -152,10 +152,10 @@ func TestExpressionToSQL(t *testing.T) {
 				Tag: &tag.Tag{
 					BuilderID: "event_purchase",
 					Params: map[string]any{
-						"accumulation":  string(bg.Accumulation(bg.AccumulationCount)),
-						"countOperator": string(bg.NumberOperatorGTE),
+						"accumulation":  string(bq.Accumulation(bq.AccumulationCount)),
+						"countOperator": string(bq.NumberOperatorGTE),
 						"countValue":    float64(1),
-						"timeRange":     string(bg.TimeRange7Days),
+						"timeRange":     string(bq.TimeRange7Days),
 					},
 				},
 			},
@@ -166,7 +166,7 @@ func TestExpressionToSQL(t *testing.T) {
 	assert.Equal(t, 3, len(expr.Intersect))
 
 	// Create a SQL processor with BigQuery dialect
-	processor := tag.NewSQLProcessor(registry, bg.NewSQLDialect())
+	processor := tag.NewSQLProcessor(registry, bq.NewSQLDialect())
 
 	// Process the expression with the processor
 	simplifiedExpr := expr.Simplify()
@@ -215,7 +215,7 @@ func ExampleSQLProcessor_Process() {
 	})
 
 	// Register gender tag builder
-	registry.MustRegisterBuilder(bg.StringTagBuilder(
+	registry.MustRegisterBuilder(bq.StringTagBuilder(
 		"user_gender",
 		"User Gender",
 		"Filter users by gender",
@@ -229,7 +229,7 @@ func ExampleSQLProcessor_Process() {
 	))
 
 	// Register age tag builder
-	registry.MustRegisterBuilder(bg.NumberTagBuilder(
+	registry.MustRegisterBuilder(bq.NumberTagBuilder(
 		"user_age",
 		"User Age",
 		"Filter users by age range",
@@ -240,7 +240,7 @@ func ExampleSQLProcessor_Process() {
 	))
 
 	// Register city tag builder
-	registry.MustRegisterBuilder(bg.StringTagBuilder(
+	registry.MustRegisterBuilder(bq.StringTagBuilder(
 		"user_city",
 		"User City",
 		"Filter users by city",
@@ -259,7 +259,7 @@ func ExampleSQLProcessor_Process() {
 	))
 
 	// Register signup source tag builder
-	registry.MustRegisterBuilder(bg.StringTagBuilder(
+	registry.MustRegisterBuilder(bq.StringTagBuilder(
 		"user_signup_source",
 		"User Signup Source",
 		"Filter users by signup source",
@@ -273,7 +273,7 @@ func ExampleSQLProcessor_Process() {
 		},
 	))
 
-	registry.MustRegisterBuilder(bg.DateRangeTagBuilder(
+	registry.MustRegisterBuilder(bq.DateRangeTagBuilder(
 		"user_last_active",
 		"User Last Active",
 		"Filter users by last active time range",
@@ -284,12 +284,12 @@ func ExampleSQLProcessor_Process() {
 
 	// Register event tags
 	// Event tags now belong to the Activities category
-	registry.MustRegisterBuilder(bg.EventTagBuilder(string(EventLogin), "Logged In", "activities"))
-	registry.MustRegisterBuilder(bg.EventTagBuilder(string(EventViewPDP), "Viewed Products", "activities"))
-	registry.MustRegisterBuilder(bg.EventTagBuilder(string(EventAddToCart), "Added to Cart", "activities"))
-	registry.MustRegisterBuilder(bg.EventTagBuilder(string(EventBeginCheckout), "Began Checkout", "activities"))
-	registry.MustRegisterBuilder(bg.EventTagBuilder(string(EventConfirm), "Confirmed Orders", "activities"))
-	registry.MustRegisterBuilder(bg.EventTagBuilder(string(EventPurchase), "Made Purchases", "activities"))
+	registry.MustRegisterBuilder(bq.EventTagBuilder(string(EventLogin), "Logged In", "activities"))
+	registry.MustRegisterBuilder(bq.EventTagBuilder(string(EventViewPDP), "Viewed Products", "activities"))
+	registry.MustRegisterBuilder(bq.EventTagBuilder(string(EventAddToCart), "Added to Cart", "activities"))
+	registry.MustRegisterBuilder(bq.EventTagBuilder(string(EventBeginCheckout), "Began Checkout", "activities"))
+	registry.MustRegisterBuilder(bq.EventTagBuilder(string(EventConfirm), "Confirmed Orders", "activities"))
+	registry.MustRegisterBuilder(bq.EventTagBuilder(string(EventPurchase), "Made Purchases", "activities"))
 
 	// Get all registered categories with builders
 	// categoriesWithBuilders := registry.GetCategoriesWithBuilders(context.Background())
@@ -297,7 +297,7 @@ func ExampleSQLProcessor_Process() {
 	// fmt.Println("All registered categories with builders:", string(jsonData))
 
 	// Create a SQL processor for processing expressions
-	processor := tag.NewSQLProcessor(registry, bg.NewSQLDialect())
+	processor := tag.NewSQLProcessor(registry, bq.NewSQLDialect())
 
 	// Create a complex expression:
 	exprJSON := `
@@ -409,11 +409,11 @@ func ExampleSQLProcessor_Process() {
 				Tag: &tag.Tag{
 					BuilderID: "event_purchase", // PurchaseEventTagBuilder returns this ID
 					Params: map[string]any{
-						"accumulation":  string(bg.Accumulation(bg.AccumulationDays)),
-						"countOperator": string(bg.NumberOperatorBetween),
+						"accumulation":  string(bq.Accumulation(bq.AccumulationDays)),
+						"countOperator": string(bq.NumberOperatorBetween),
 						"countMin":      float64(1),
 						"countMax":      float64(10),
-						"timeRange":     string(bg.TimeRange30Days),
+						"timeRange":     string(bq.TimeRange30Days),
 					},
 				},
 			},

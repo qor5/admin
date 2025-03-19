@@ -1,17 +1,17 @@
-package bg_test
+package bq_test
 
 import (
 	"testing"
 
 	"github.com/qor5/admin/v3/marketing/tag"
-	"github.com/qor5/admin/v3/marketing/tag/bg"
+	"github.com/qor5/admin/v3/marketing/tag/bq"
 	"github.com/stretchr/testify/assert"
 )
 
 // TestBigQuerySQLDialect verifies the BigQuery SQL dialect implementation
 // to ensure proper query construction across different set operations
 func TestBigQuerySQLDialect(t *testing.T) {
-	dialect := bg.NewSQLDialect()
+	dialect := bq.NewSQLDialect()
 
 	t.Run("Intersect", func(t *testing.T) {
 		t.Run("SingleQuery", func(t *testing.T) {

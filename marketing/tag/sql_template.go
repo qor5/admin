@@ -114,10 +114,7 @@ func (p *SQLTemplate) BuildSQL(ctx context.Context, params map[string]any) (*SQL
 // WithArgPlaceholder sets the parameter placeholder formatter function
 func (p *SQLTemplate) WithArgPlaceholder(formatter SQLArgPlaceholder) *SQLTemplate {
 	if formatter == nil {
-		// Use default formatter if nil provided
-		formatter = func(index int) string {
-			return "?"
-		}
+		panic("formatter is required")
 	}
 	p.argPlaceholder = formatter
 	return p

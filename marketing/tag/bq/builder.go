@@ -1,4 +1,4 @@
-package bg
+package bq
 
 import (
 	"context"
@@ -246,8 +246,7 @@ func StringTagBuilder(id, name, description, categoryID, fieldKey string, option
 						})
 					}
 				}
-				sql, err := next(ctx, params)
-				return sql, err
+				return next(ctx, params)
 			}
 		},
 	)

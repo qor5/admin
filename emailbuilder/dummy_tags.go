@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/qor5/admin/v3/marketing/tag"
-	"github.com/qor5/admin/v3/marketing/tag/bg"
+	"github.com/qor5/admin/v3/marketing/tag/bq"
 )
 
 // EventName defines the type for event name constants
@@ -74,7 +74,7 @@ func dummyTags(ctx context.Context) []*tag.CategoryWithBuilders {
 	})
 
 	// Register gender tag builder
-	registry.MustRegisterBuilder(bg.StringTagBuilder(
+	registry.MustRegisterBuilder(bq.StringTagBuilder(
 		"user_gender",
 		"User Gender",
 		"Filter users by gender",
@@ -88,7 +88,7 @@ func dummyTags(ctx context.Context) []*tag.CategoryWithBuilders {
 	))
 
 	// Register age tag builder
-	registry.MustRegisterBuilder(bg.NumberTagBuilder(
+	registry.MustRegisterBuilder(bq.NumberTagBuilder(
 		"user_age",
 		"User Age",
 		"Filter users by age range",
@@ -99,7 +99,7 @@ func dummyTags(ctx context.Context) []*tag.CategoryWithBuilders {
 	))
 
 	// Register city tag builder
-	registry.MustRegisterBuilder(bg.StringTagBuilder(
+	registry.MustRegisterBuilder(bq.StringTagBuilder(
 		"user_city",
 		"User City",
 		"Filter users by city",
@@ -118,7 +118,7 @@ func dummyTags(ctx context.Context) []*tag.CategoryWithBuilders {
 	))
 
 	// Register signup source tag builder
-	registry.MustRegisterBuilder(bg.StringTagBuilder(
+	registry.MustRegisterBuilder(bq.StringTagBuilder(
 		"user_signup_source",
 		"User Signup Source",
 		"Filter users by signup source",
@@ -143,12 +143,12 @@ func dummyTags(ctx context.Context) []*tag.CategoryWithBuilders {
 
 	// Register event tags
 	// Event tags now belong to the Activities category
-	registry.MustRegisterBuilder(bg.EventTagBuilder(string(EventLogin), "Logged In", "activities"))
-	registry.MustRegisterBuilder(bg.EventTagBuilder(string(EventViewPDP), "Viewed Products", "activities"))
-	registry.MustRegisterBuilder(bg.EventTagBuilder(string(EventAddToCart), "Added to Cart", "activities"))
-	registry.MustRegisterBuilder(bg.EventTagBuilder(string(EventBeginCheckout), "Began Checkout", "activities"))
-	registry.MustRegisterBuilder(bg.EventTagBuilder(string(EventConfirm), "Confirmed Orders", "activities"))
-	registry.MustRegisterBuilder(bg.EventTagBuilder(string(EventPurchase), "Made Purchases", "activities"))
+	registry.MustRegisterBuilder(bq.EventTagBuilder(string(EventLogin), "Logged In", "activities"))
+	registry.MustRegisterBuilder(bq.EventTagBuilder(string(EventViewPDP), "Viewed Products", "activities"))
+	registry.MustRegisterBuilder(bq.EventTagBuilder(string(EventAddToCart), "Added to Cart", "activities"))
+	registry.MustRegisterBuilder(bq.EventTagBuilder(string(EventBeginCheckout), "Began Checkout", "activities"))
+	registry.MustRegisterBuilder(bq.EventTagBuilder(string(EventConfirm), "Confirmed Orders", "activities"))
+	registry.MustRegisterBuilder(bq.EventTagBuilder(string(EventPurchase), "Made Purchases", "activities"))
 
 	return registry.GetCategoriesWithBuilders(ctx)
 }

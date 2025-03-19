@@ -12,10 +12,10 @@ type MetadataFunc func(ctx context.Context) *Metadata
 
 // WrapSQLBuilder creates a new SQLBuilder that wraps the original SQLBuilder
 // and applies hooks to its BuildSQL method
-func WrapSQLBuilder(original SQLBuilder, hooks ...Hook[BuildSQLFunc]) *SQLBuilderWrapper {
+func WrapSQLBuilder(original SQLBuilder, buildSQLHooks ...Hook[BuildSQLFunc]) *SQLBuilderWrapper {
 	return &SQLBuilderWrapper{
 		original:     original,
-		buildSQLHook: ChainHook(hooks...),
+		buildSQLHook: ChainHook(buildSQLHooks...),
 	}
 }
 

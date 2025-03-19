@@ -107,3 +107,5 @@ func (v *View) Validate(ctx context.Context, params map[string]any) error {
 	}
 	return nil
 }
+
+// TODO: 需要 WithValidateHook ? 以及 bq package 里的一些也需要自定义 Validate 逻辑
