@@ -95,6 +95,9 @@ type Messages struct {
 
 	CategoryDeleteConfirmationText string
 	TheResourceCanNotBeModified    string
+	MarkAsShared                   string
+	Copy                           string
+	SharedContainerHasBeenUpdated  string
 }
 
 var Messages_en_US = &Messages{
@@ -185,6 +188,9 @@ var Messages_en_US = &Messages{
 	Description:                    "Description",
 	CategoryDeleteConfirmationText: "this will remove all the records in all localized languages",
 	TheResourceCanNotBeModified:    "The resource can not be modified",
+	MarkAsShared:                   "Mark As Shared",
+	Copy:                           "Copy",
+	SharedContainerHasBeenUpdated:  "Shared container has been updated",
 }
 
 var Messages_zh_CN = &Messages{
@@ -276,6 +282,9 @@ var Messages_zh_CN = &Messages{
 
 	CategoryDeleteConfirmationText: "这将删除所有本地化语言中的所有记录",
 	TheResourceCanNotBeModified:    "该资源无法被修改",
+	MarkAsShared:                   "标记为已共享",
+	Copy:                           "复制",
+	SharedContainerHasBeenUpdated:  "共享容器已更新",
 }
 
 var Messages_ja_JP = &Messages{
@@ -366,6 +375,9 @@ var Messages_ja_JP = &Messages{
 	Description:                    "説明",
 	CategoryDeleteConfirmationText: "これは、すべてのローカライズされた言語のすべてのレコードを削除します",
 	TheResourceCanNotBeModified:    "このリソースは変更できません",
+	MarkAsShared:                   "共有済みとしてマーク",
+	Copy:                           "コピー",
+	SharedContainerHasBeenUpdated:  "共有コンテナが更新されました",
 }
 
 type ModelsI18nModulePage struct {
