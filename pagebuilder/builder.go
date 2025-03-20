@@ -1017,6 +1017,7 @@ func (b *ContainerBuilder) Install() {
 	editing.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 			return b.builder.db.Transaction(func(tx *gorm.DB) (dbErr error) {
+
 				ctx.WithContextValue(gorm2op.CtxKeyDB{}, tx)
 				defer ctx.WithContextValue(gorm2op.CtxKeyDB{}, nil)
 				if dbErr = in(obj, id, ctx); dbErr != nil {
