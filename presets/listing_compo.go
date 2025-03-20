@@ -922,7 +922,7 @@ func (c *ListingCompo) actionDialogContentPortalName() string {
 	return fmt.Sprintf("%s_action_dialog_content", c.CompoID())
 }
 
-func (c *ListingCompo) closeActionDialog() string {
+func (*ListingCompo) closeActionDialog() string {
 	return "locals.dialog = false;"
 }
 

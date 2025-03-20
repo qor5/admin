@@ -28,6 +28,7 @@ const (
 	MarkAsSharedContainerEvent          = "page_builder_MarkAsSharedContainerEvent"
 	RenameContainerDialogEvent          = "page_builder_RenameContainerDialogEvent"
 	RenameContainerEvent                = "page_builder_RenameContainerEvent"
+	RenameContainerFromDialogEvent      = "page_builder_RenameContainerFromDialogEvent"
 	ShowSortedContainerDrawerEvent      = "page_builder_ShowSortedContainerDrawerEvent"
 	ReloadRenderPageOrTemplateEvent     = "page_builder_ReloadRenderPageOrTemplateEvent"
 	ReloadRenderPageOrTemplateBodyEvent = "page_builder_ReloadRenderPageOrTemplateBodyEvent"

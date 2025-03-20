@@ -238,7 +238,7 @@ func (amb *ModelBuilder) NewHasUnreadNotesFilterItem(ctx context.Context, column
 	}, nil
 }
 
-func (amb *ModelBuilder) NewHasUnreadNotesFilterTab(ctx context.Context) (*presets.FilterTab, error) {
+func (*ModelBuilder) NewHasUnreadNotesFilterTab(ctx context.Context) (*presets.FilterTab, error) {
 	evCtx := web.MustGetEventContext(ctx)
 	msgr := i18n.MustGetModuleMessages(evCtx.R, I18nActivityKey, Messages_en_US).(*Messages)
 	return &presets.FilterTab{

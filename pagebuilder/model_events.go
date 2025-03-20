@@ -31,6 +31,8 @@ type pageBuilderModelKey struct{}
 
 func (b *ModelBuilder) registerFuncs() {
 	b.eventMiddleware = b.defaultWrapEvent
+	b.mb.RegisterEventFunc(RenameContainerDialogEvent, b.renameContainerDialog)
+	b.mb.RegisterEventFunc(RenameContainerFromDialogEvent, b.renameContainerFromDialog)
 	b.editor.RegisterEventFunc(ShowSortedContainerDrawerEvent, b.eventMiddleware(b.showSortedContainerDrawer))
 	b.editor.RegisterEventFunc(AddContainerEvent, b.eventMiddleware(b.addContainer))
 	b.editor.RegisterEventFunc(DeleteContainerConfirmationEvent, b.eventMiddleware(b.deleteContainerConfirmation))
@@ -38,7 +40,6 @@ func (b *ModelBuilder) registerFuncs() {
 	b.editor.RegisterEventFunc(MoveContainerEvent, b.eventMiddleware(b.moveContainer))
 	b.editor.RegisterEventFunc(MoveUpDownContainerEvent, b.eventMiddleware(b.moveUpDownContainer))
 	b.editor.RegisterEventFunc(ToggleContainerVisibilityEvent, b.eventMiddleware(b.toggleContainerVisibility))
-	b.editor.RegisterEventFunc(RenameContainerDialogEvent, b.eventMiddleware(b.renameContainerDialog))
 	b.editor.RegisterEventFunc(RenameContainerEvent, b.eventMiddleware(b.renameContainer))
 	b.editor.RegisterEventFunc(ReloadRenderPageOrTemplateEvent, b.reloadRenderPageOrTemplate)
 	b.editor.RegisterEventFunc(ReloadRenderPageOrTemplateBodyEvent, b.reloadRenderPageOrTemplateBody)
@@ -151,7 +152,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 				ParamID:         c.PrimarySlug(),
 				Locale:          locale,
 				Hidden:          c.Hidden,
-				ContainerDataID: fmt.Sprintf(`%s_%s`, inflection.Plural(strcase.ToKebab(c.ModelName)), strconv.Itoa(int(c.ModelID))),
+				ContainerDataID: fmt.Sprintf(`%s_%s_%s`, inflection.Plural(strcase.ToKebab(c.ModelName)), strconv.Itoa(int(c.ModelID)), c.PrimarySlug()),
 			},
 		)
 	}
@@ -168,21 +169,14 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 				Query(presets.ParamOverlay, actions.Content).
 				Query(presets.ParamPortalName, pageBuilderRightContentPortal).
 				Go() + ";" + pushState.RunPushState() +
-			";" + scrollToContainer(fmt.Sprintf(`element.label+"_"+element.model_id`))
+			";" + scrollToContainer(fmt.Sprintf(`element.container_data_id`))
 	}
 	renameEvent := web.Plaid().
 		EventFunc(RenameContainerEvent).Query(paramStatus, status).Query(paramContainerID, web.Var("element.param_id")).Go()
 
 	// container functions
 	containerOperations := h.Div(
-		VBtn("").Variant(VariantText).Icon("mdi-content-copy").Size(SizeSmall).Attr("@click",
-			"$event.stopPropagation();"+
-				web.Plaid().
-					EventFunc(ReplicateContainerEvent).
-					Query(paramContainerID, web.Var("element.param_id")).
-					Query(paramStatus, ctx.Param(paramStatus)).
-					Go(),
-		).Attr("v-show", "isHovering"),
+		VChip().Text(msgr.Shared).Color(ColorPrimary).Size(SizeXSmall).Attr("v-if", "element.shared"),
 		VMenu(
 			web.Slot(
 				VBtn("").Children(
@@ -200,15 +194,28 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 						Query(paramStatus, status).
 						Go(),
 				),
+				VListItem(h.Text(msgr.Copy)).PrependIcon("mdi-content-copy").Attr("@click",
+					web.Plaid().
+						EventFunc(ReplicateContainerEvent).
+						Query(paramContainerID, web.Var("element.param_id")).
+						Query(paramStatus, ctx.Param(paramStatus)).
+						Go(),
+				),
 				VListItem(h.Text(pMsgr.Delete)).PrependIcon("mdi-delete").Attr("@click",
 					web.Plaid().
-						URL(ctx.R.URL.Path).
 						EventFunc(DeleteContainerConfirmationEvent).
 						Query(paramContainerID, web.Var("element.param_id")).
 						Query(paramContainerName, web.Var("element.display_name")).
 						Query(paramStatus, status).
 						Go(),
-				)),
+				),
+				VListItem(h.Text(msgr.MarkAsShared)).PrependIcon("mdi-share").Attr("@click",
+					web.Plaid().
+						EventFunc(MarkAsSharedContainerEvent).
+						Query(paramContainerID, web.Var("element.param_id")).
+						Go(),
+				).Attr("v-if", "!element.shared"),
+			),
 		),
 	).Attr("v-show", "!element.editShow")
 	r = web.Scope(
@@ -240,7 +247,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 														Attr("v-if", "element.editShow").
 														Attr("@blur", "element.editShow=false;"+renameEvent).
 														Attr("@keyup.enter", renameEvent),
-													VListItemTitle(h.Text("{{element.display_name}}")).Attr(":style", "[element.shared ? {'color':'green'}:{}]").Attr("v-if", "!element.editShow"),
+													VListItemTitle(h.Text("{{element.display_name}}")).Attr("v-if", "!element.editShow"),
 												).VSlot("{form}").FormInit("{ DisplayName:element.display_name }"),
 											),
 										),
@@ -261,7 +268,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 					).Attr("#item", " { element } "),
 				),
 			),
-		).Class("px-4 overflow-y-auto").Attr("id", "test001").MaxHeight("86vh").Attr("v-on-mounted", fmt.Sprintf(`({ el, window }) => {
+		).Class("px-4 overflow-y-auto").MaxHeight("86vh").Attr("v-on-mounted", fmt.Sprintf(`({ el, window }) => {
       locals.__pageBuilderLeftContentKeepScroll = (container_data_id) => {
 			if (container_data_id){
 				const container = el.querySelector("div[data-container-id='" + container_data_id + "']")
@@ -319,7 +326,7 @@ func (b *ModelBuilder) addContainer(ctx *web.EventContext) (r web.EventResponse,
 		modelID = int(newModelId)
 	}
 	cb := b.builder.ContainerByName(modelName)
-	containerDataId := cb.getContainerDataID(modelID)
+	containerDataId := cb.getContainerDataID(modelID, newContainerID)
 	web.AppendRunScripts(&r,
 		web.Plaid().PushState(true).MergeQuery(true).
 			Query(paramContainerDataID, containerDataId).
@@ -493,7 +500,9 @@ func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.Event
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr    = presets.MustGetMessages(ctx.R)
 		okAction = web.Plaid().
-				EventFunc(RenameContainerEvent).Query(paramContainerID, paramID).Go()
+			URL(b.mb.Info().ListingHref()).
+			ThenScript("locals.renameDialog=false").
+			EventFunc(RenameContainerFromDialogEvent).Query(paramContainerID, paramID).Go()
 		portalName = dialogPortalName
 	)
 
@@ -560,6 +569,36 @@ func (b *ModelBuilder) renderContainerHover(cb *ContainerBuilder, ctx *web.Event
 			Go(),
 	))
 }
+func (b *ModelBuilder) renderSharedContainerHover(displayName, modelName string, modelID uint, ctx *web.EventContext, msgr *Messages) h.HTMLComponent {
+	addContainerEvent := web.Plaid().EventFunc(AddContainerEvent).
+		MergeQuery(true).
+		BeforeScript("pLocals.creating=true").
+		Query(paramModelName, modelName).
+		Query(paramModelID, modelID).
+		Query(paramSharedContainer, "true").
+		Query(paramStatus, ctx.Param(paramStatus)).
+		ThenScript("vars.overlay=false;xLocals.add=true").
+		Go()
+	return VHover(
+		web.Slot(
+			web.Scope(
+				VListItem(
+					VListItemTitle(h.Text(displayName)),
+					web.Slot(VBtn(msgr.Add).Color(ColorPrimary).Size(SizeSmall).Attr("v-if", "isHovering")).Name(VSlotAppend),
+				).Attr("v-bind", "props", ":active", "isHovering").
+					Class("cursor-pointer").
+					Attr("@click", fmt.Sprintf(`if (isHovering &&!pLocals.creating){%s}`, addContainerEvent)).
+					ActiveColor(ColorPrimary),
+			).VSlot("{ locals: pLocals }").Init(`{ creating : false }`),
+		).Name("default").Scope(`{isHovering, props }`),
+	).Attr("@update:model-value", fmt.Sprintf(`(val)=>{if (val){%s} }`,
+		web.Plaid().EventFunc(ContainerPreviewEvent).
+			Query(paramModelName, modelName).
+			Query(paramModelID, modelID).
+			Query(paramSharedContainer, "true").
+			Go(),
+	))
+}
 
 func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.HTMLComponent) {
 	var (
@@ -619,52 +658,57 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 		}
 	}
 
-	var cons []*Container
+	var (
+		cons      []*Container
+		listItems []h.HTMLComponent
+	)
 
 	b.db.Select("display_name,model_name,model_id").Where("shared = true AND locale_code = ? and page_model_name = ? ", locale, b.name).Group("display_name,model_name,model_id").Find(&cons)
-	sort.Slice(cons, func(i, j int) bool {
-		return b.builder.ContainerByName(cons[i].ModelName).group != "" && b.builder.ContainerByName(cons[j].ModelName).group == ""
-	})
-	for _, group := range utils.GroupBySlice[*Container, string](cons, func(builder *Container) string {
-		return b.builder.ContainerByName(builder.ModelName).group
-	}) {
-		if len(group) == 0 {
-			break
+
+	for _, con := range cons {
+		listItems = append(listItems, b.renderSharedContainerHover(con.DisplayName, con.ModelName, con.ModelID, ctx, msgr))
+	}
+	containers = append(containers, VListGroup(
+		web.Slot(
+			VListItem(
+				VListItemTitle(h.Text(msgr.Shared)),
+			).Attr("v-bind", "props"),
+		).Name("activator").Scope(" {  props }"),
+		h.Components(listItems...),
+	).Value(msgr.Shared))
+
+	component = VList(containers...).Opened(groupsNames)
+	return
+}
+
+func (b *ModelBuilder) renameContainerFromDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
+	var container Container
+	var (
+		paramID     = ctx.R.FormValue(paramContainerID)
+		cs          = container.PrimaryColumnValuesBySlug(paramID)
+		containerID = cs[presets.ParamID]
+		locale      = cs[l10n.SlugLocaleCode]
+		name        = ctx.R.FormValue(paramDisplayName)
+		pMsgr       = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+	)
+	err = b.db.First(&container, "id = ? AND locale_code = ?  ", containerID, locale).Error
+	if err != nil {
+		return
+	}
+	if container.Shared {
+		err = b.db.Model(&Container{}).Where("model_name = ? AND model_id = ? AND locale_code = ?", container.ModelName, container.ModelID, locale).Update("display_name", name).Error
+		if err != nil {
+			return
 		}
-		groupName := msgr.Shared
-		if b.builder.expendContainers {
-			groupsNames = append(groupsNames, groupName)
-		}
-		var listItems []h.HTMLComponent
-		for _, builder := range group {
-			c := b.builder.ContainerByName(builder.ModelName)
-			containerName := c.name
-			if b.builder.ps.GetI18n() != nil {
-				containerName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, c.name)
-			}
-			listItems = append(listItems,
-				VListItem(
-					VListItemTitle(h.Text(containerName)).Attr("@click", web.Plaid().
-						EventFunc(AddContainerEvent).
-						MergeQuery(true).
-						Query(paramContainerName, builder.ModelName).
-						Query(paramModelName, builder.ModelName).
-						Query(paramModelID, builder.ModelID).
-						Query(paramSharedContainer, "true").
-						Go()),
-				).Value(containerName))
+	} else {
+		err = b.db.Model(&Container{}).Where("id = ? AND locale_code = ?", containerID, locale).Update("display_name", name).Error
+		if err != nil {
+			return
 		}
 
-		containers = append(containers, VListGroup(
-			web.Slot(
-				VListItem(
-					VListItemTitle(h.Text(groupName)),
-				).Attr("v-bind", "props"),
-			).Name("activator").Scope(" {  props }"),
-			h.Components(listItems...),
-		).Value(groupName))
 	}
-	component = VList(containers...).Opened(groupsNames)
+	web.AppendRunScripts(&r, web.Plaid().MergeQuery(true).Go(), fmt.Sprintf(` setTimeout(function(){ %s }, 200)`,
+		presets.ShowSnackbarScript(pMsgr.SuccessfullyUpdated, ColorSuccess)))
 	return
 }
 
@@ -803,7 +847,7 @@ func (b *ModelBuilder) replicateContainer(ctx *web.EventContext) (r web.EventRes
 		return
 	}
 	cb := b.builder.ContainerByName(container.ModelName)
-	containerDataId := cb.getContainerDataID(modelID)
+	containerDataId := cb.getContainerDataID(modelID, newContainerID)
 	web.AppendRunScripts(&r,
 		web.Plaid().PushState(true).MergeQuery(true).
 			Query(paramContainerDataID, containerDataId).
@@ -818,7 +862,7 @@ func (b *ModelBuilder) replicateContainer(ctx *web.EventContext) (r web.EventRes
 
 func (b *ModelBuilder) editContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	data := strings.Split(ctx.Param(paramContainerDataID), "_")
-	if len(data) != 2 {
+	if len(data) != 4 {
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: pageBuilderRightContentPortal,
 			Body: b.builder.emptyEdit(ctx),

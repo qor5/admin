@@ -557,7 +557,7 @@ func (b *ModelBuilder) renderContainers(ctx *web.EventContext, obj interface{}, 
 		pure := ec.builder.renderFunc(containerObj, &input, ctx)
 
 		r = append(r, b.builder.containerWrapper(pure.(*h.HTMLTagBuilder), ctx, isEditor, isReadonly, i == 0, i == len(cbs)-1,
-			ec.builder.getContainerDataID(int(ec.container.ModelID)), ec.container.ModelName, &input))
+			ec.builder.getContainerDataID(int(ec.container.ModelID), ec.container.PrimarySlug()), ec.container.ModelName, &input))
 	}
 
 	return
@@ -565,13 +565,12 @@ func (b *ModelBuilder) renderContainers(ctx *web.EventContext, obj interface{}, 
 
 func (b *ModelBuilder) renderPreviewContainer(ctx *web.EventContext, obj interface{}, locale string, isEditor, IsReadonly bool) (r h.HTMLComponent, err error) {
 	var (
-		modelName       = ctx.Param(paramModelName)
-		sharedContainer = ctx.Param(paramSharedContainer)
-		modelID         = ctx.ParamAsInt(paramModelID)
+		modelName = ctx.Param(paramModelName)
+		modelID   = ctx.ParamAsInt(paramModelID)
 	)
 	containerBuilder := b.builder.ContainerByName(modelName)
 
-	if sharedContainer != "true" || modelID == 0 {
+	if modelID == 0 {
 		var con *DemoContainer
 		err = withLocale(
 			b.builder,
@@ -613,7 +612,7 @@ func (b *ModelBuilder) renderPreviewContainer(ctx *web.EventContext, obj interfa
 	}
 	pure := containerBuilder.renderFunc(containerObj, &input, ctx)
 	r = b.builder.containerWrapper(pure.(*h.HTMLTagBuilder), ctx, isEditor, IsReadonly, false, false,
-		containerBuilder.getContainerDataID(modelID), modelName, &input)
+		containerBuilder.getContainerDataID(modelID, ""), modelName, &input)
 	return
 }
 
@@ -637,12 +636,13 @@ func (b *ModelBuilder) previewContent(ctx *web.EventContext) (r web.PageResponse
 }
 
 func (b *ModelBuilder) markAsSharedContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
-	var container Container
-	paramID := ctx.R.FormValue(paramContainerID)
-	cs := container.PrimaryColumnValuesBySlug(paramID)
-	containerID := cs["id"]
-	locale := cs["locale_code"]
-
+	var (
+		container   Container
+		paramID     = ctx.Param(paramContainerID)
+		cs          = container.PrimaryColumnValuesBySlug(paramID)
+		containerID = cs[presets.ParamID]
+		locale      = cs[l10n.SlugLocaleCode]
+	)
 	err = b.db.Model(&Container{}).Where("id = ? AND locale_code = ?", containerID, locale).Update("shared", true).Error
 	if err != nil {
 		return

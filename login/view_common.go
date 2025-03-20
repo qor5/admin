@@ -45,7 +45,7 @@ func (vc *ViewCommon) Notice(vh *login.ViewHelper, msgr *login.Messages, w http.
 	)
 }
 
-func (vc *ViewCommon) ErrNotice(msg string) HTMLComponent {
+func (*ViewCommon) ErrNotice(msg string) HTMLComponent {
 	if msg == "" {
 		return nil
 	}
@@ -57,7 +57,7 @@ func (vc *ViewCommon) ErrNotice(msg string) HTMLComponent {
 		Type("error")
 }
 
-func (vc *ViewCommon) WarnNotice(msg string) HTMLComponent {
+func (*ViewCommon) WarnNotice(msg string) HTMLComponent {
 	if msg == "" {
 		return nil
 	}
@@ -69,7 +69,7 @@ func (vc *ViewCommon) WarnNotice(msg string) HTMLComponent {
 		Type("warning")
 }
 
-func (vc *ViewCommon) InfoNotice(msg string) HTMLComponent {
+func (*ViewCommon) InfoNotice(msg string) HTMLComponent {
 	if msg == "" {
 		return nil
 	}
@@ -81,13 +81,13 @@ func (vc *ViewCommon) InfoNotice(msg string) HTMLComponent {
 		Type("info")
 }
 
-func (vc *ViewCommon) ErrorBody(msg string) HTMLComponent {
+func (*ViewCommon) ErrorBody(msg string) HTMLComponent {
 	return Div(
 		Text(msg),
 	)
 }
 
-func (vc *ViewCommon) Input(
+func (*ViewCommon) Input(
 	id string,
 	placeholder string,
 	val string,
@@ -114,7 +114,7 @@ func (vc *ViewCommon) PasswordInput(
 }
 
 // need to import zxcvbn.js
-func (vc *ViewCommon) PasswordInputWithStrengthMeter(in *vx.VXFieldBuilder, id string, val string) HTMLComponent {
+func (*ViewCommon) PasswordInputWithStrengthMeter(in *vx.VXFieldBuilder, id string, val string) HTMLComponent {
 	in.Attr("v-model", fmt.Sprintf(`form.%s`, id))
 	return Components(
 		in,
@@ -131,7 +131,7 @@ func (vc *ViewCommon) PasswordInputWithStrengthMeter(in *vx.VXFieldBuilder, id s
 	)
 }
 
-func (vc *ViewCommon) FormSubmitBtn(
+func (*ViewCommon) FormSubmitBtn(
 	label string,
 ) *VBtnBuilder {
 	return VBtn(label).
@@ -149,7 +149,7 @@ func (vc *ViewCommon) FormSubmitBtn(
 //   - add attr `data-callback=onSubmit`
 //
 // - add token field like `Input("token").Id("token").Type("hidden")`
-func (vc *ViewCommon) InjectRecaptchaAssets(ctx *web.EventContext, formID string, tokenFieldID string) {
+func (*ViewCommon) InjectRecaptchaAssets(ctx *web.EventContext, formID string, tokenFieldID string) {
 	ctx.Injector.HeadHTML(`
 <style>
 .grecaptcha-badge { visibility: hidden; }
@@ -168,7 +168,7 @@ function onSubmit(token) {
     `)
 }
 
-func (vc *ViewCommon) InjectZxcvbn(ctx *web.EventContext) {
+func (*ViewCommon) InjectZxcvbn(ctx *web.EventContext) {
 	ctx.Injector.HeadHTML(fmt.Sprintf(`
 <script src="%s"></script>
     `, login.ZxcvbnJSURL))

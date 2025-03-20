@@ -12,7 +12,7 @@ type (
 	}
 )
 
-func (b *Redirection) TableName() string {
+func (*Redirection) TableName() string {
 	return "redirections"
 }
 

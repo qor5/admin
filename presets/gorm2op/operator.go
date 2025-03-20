@@ -120,7 +120,7 @@ func (op *DataOperatorBuilder) Search(evCtx *web.EventContext, params *presets.S
 	}, nil
 }
 
-func (op *DataOperatorBuilder) primarySluggerWhere(db *gorm.DB, obj interface{}, id string) *gorm.DB {
+func (*DataOperatorBuilder) primarySluggerWhere(db *gorm.DB, obj interface{}, id string) *gorm.DB {
 	wh := db.Model(obj)
 
 	if id == "" {

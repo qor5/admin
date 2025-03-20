@@ -57,7 +57,7 @@ func (b *Builder) uploadFile(ctx *web.EventContext) (r web.EventResponse, err er
 	return
 }
 
-func (b *Builder) checkRecords(r *web.EventResponse, msgr *Messages, records []Redirection) (passed bool) {
+func (*Builder) checkRecords(r *web.EventResponse, msgr *Messages, records []Redirection) (passed bool) {
 	var (
 		existedSource = make(map[string][]string)
 		invalidFormat = make(map[string]string)

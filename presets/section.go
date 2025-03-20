@@ -1473,7 +1473,7 @@ func (b *SectionBuilder) ReloadDetailListField(ctx *web.EventContext) (r web.Eve
 	return
 }
 
-func (b *SectionBuilder) getObjectID(ctx *web.EventContext, obj interface{}) string {
+func (*SectionBuilder) getObjectID(ctx *web.EventContext, obj interface{}) string {
 	id := ctx.Param(ParamID)
 	if id == "" {
 		if slugIf, ok := obj.(SlugEncoder); ok {
