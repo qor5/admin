@@ -80,7 +80,6 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 					VAlert(
 						h.Text(msgr.OnlineHit)).
 						Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("my-2"),
-
 				)
 				var err error
 				previewDevelopUrl, err = b.publisher.FullUrl(ctx.R.Context(), p.EmbedStatus().OnlineUrl)
