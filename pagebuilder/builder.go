@@ -716,7 +716,9 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
 
 	pm.RegisterEventFunc(republishRelatedOnlinePagesEvent, republishRelatedOnlinePages(r.mb.Info().ListingHref()))
 
-	listing := pm.Listing("DisplayName").SearchColumns("display_name")
+	listing := pm.Listing("DisplayName").SearchColumns("display_name").NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
+		return nil
+	})
 	pm.LabelName(func(evCtx *web.EventContext, singular bool) string {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		if singular {
@@ -744,11 +746,6 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
 				Go(),
 		)
 	})
-	if permB := pb.GetPermission(); permB != nil {
-		permB.CreatePolicies(
-			perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermCreate).On("*:shared_containers:*"),
-		)
-	}
 	listing.Field("DisplayName").Label("Name")
 	listing.SearchFunc(sharedContainerSearcher(db, r))
 	listing.WrapCell(func(in presets.CellProcessor) presets.CellProcessor {
