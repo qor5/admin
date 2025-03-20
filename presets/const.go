@@ -44,7 +44,7 @@ const (
 var PhraseHasPresetsDataChanged = fmt.Sprintf("Object.values(vars.%s).some(value => value === true)", VarsPresetsDataChanged)
 
 const (
-	setFieldErrorsScript = `	
+	SetFieldErrorsScript = `	
 let keys = Object.keys(dash.errorMessages);
 if (dash.__currentValidateKeys) {
     for (const key of dash.__currentValidateKeys) {
@@ -60,7 +60,7 @@ if (dash.__currentValidateKeys) {
 }
 dash.__currentValidateKeys = [];
 `
-	setValidateKeysScript = `
+	SetValidateKeysScript = `
 dash.__currentValidateKeys = dash.__currentValidateKeys ?? [];
 for (let key in form) {
     if (form[key] !== oldForm[key]) {
@@ -69,5 +69,5 @@ for (let key in form) {
     }
 }
 `
-	checkFormChangeScript = `if(JSON.stringify(form)==JSON.stringify(oldForm)){return}`
+	CheckFormChangeScript = `if(JSON.stringify(form)==JSON.stringify(oldForm)){return}`
 )

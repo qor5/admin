@@ -361,7 +361,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 	formContent := web.Scope(h.Components(
 		VCardText(
 			h.Components(hiddenComps...),
-			web.Listen(b.mb.NotifModelsValidate(), setFieldErrorsScript),
+			web.Listen(b.mb.NotifModelsValidate(), SetFieldErrorsScript),
 			b.ToComponent(b.mb.Info(), obj, ctx),
 		),
 		h.If(!autosave, VCardActions(actionButtons)),
@@ -397,7 +397,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		),
 	).VSlot("{ form}")
 	operateID := fmt.Sprint(time.Now().UnixNano())
-	onChangeEvent += checkFormChangeScript
+	onChangeEvent += CheckFormChangeScript
 	if autosave {
 		onChangeEvent += web.Plaid().URL(ctx.R.URL.Path).
 			BeforeScript(fmt.Sprintf(`dash.__currentValidateKeys=null;dash.__ValidateOperateID=%q`, operateID)).
@@ -407,7 +407,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 			Query(ParamOverlay, ctx.Param(ParamOverlay)).
 			Go()
 	} else {
-		onChangeEvent += setValidateKeysScript +
+		onChangeEvent += SetValidateKeysScript +
 			web.Plaid().URL(ctx.R.URL.Path).
 				BeforeScript(fmt.Sprintf(`dash.__ValidateOperateID=%q;`, operateID)).
 				EventFunc(actions.Validate).
