@@ -164,6 +164,43 @@ func TestPageBuilderShareContainer(t *testing.T) {
 				}
 			},
 		},
+		{
+			Name:  "Rename Container Dialog",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerShareTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages").
+					EventFunc(pagebuilder.RenameContainerDialogEvent).
+					Query("containerID", "9_International").
+					Query("containerName", "BrandGrid").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Rename", "DisplayName", "Cancel", "OK"},
+		},
+		{
+			Name:  "Rename Container From Dialog",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerShareTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages").
+					EventFunc(pagebuilder.RenameContainerFromDialogEvent).
+					Query("containerID", "9_International").
+					AddField("DisplayName", "Renamed BrandGrid").
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var container pagebuilder.Container
+				TestDB.First(&container, 9)
+				if container.DisplayName != "Renamed BrandGrid" {
+					t.Fatalf("Rename Container did not work. Expected 'Renamed BrandGrid' but got '%s'", container.DisplayName)
+					return
+				}
+			},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
