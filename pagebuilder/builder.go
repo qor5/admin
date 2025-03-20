@@ -479,7 +479,6 @@ func (b *Builder) useAllPlugin(pm *presets.ModelBuilder, pageModelName string) {
 					}
 					return
 				})
-
 			}
 		})
 	}
@@ -717,7 +716,9 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
 
 	pm.RegisterEventFunc(republishRelatedOnlinePagesEvent, republishRelatedOnlinePages(r.mb.Info().ListingHref()))
 
-	listing := pm.Listing("DisplayName").SearchColumns("display_name")
+	listing := pm.Listing("DisplayName").SearchColumns("display_name").NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
+		return nil
+	})
 	pm.LabelName(func(evCtx *web.EventContext, singular bool) string {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		if singular {
@@ -745,11 +746,6 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
 				Go(),
 		)
 	})
-	if permB := pb.GetPermission(); permB != nil {
-		permB.CreatePolicies(
-			perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermCreate).On("*:shared_containers:*"),
-		)
-	}
 	listing.Field("DisplayName").Label("Name")
 	listing.SearchFunc(sharedContainerSearcher(db, r))
 	listing.WrapCell(func(in presets.CellProcessor) presets.CellProcessor {
@@ -1560,7 +1556,6 @@ func (b *Builder) expectField(name string) bool {
 }
 
 func (b *Builder) updateAllContainersUpdatedTime(tx *gorm.DB, modelName string, record interface{}) (err error) {
-
 	val, err := reflectutils.Get(record, "UpdatedAt")
 	if err != nil {
 		return
@@ -1583,6 +1578,7 @@ func (b *Builder) updateAllContainersUpdatedTime(tx *gorm.DB, modelName string, 
 	localeCode := ps[l10n.SlugLocaleCode]
 	return tx.Model(&Container{}).Where("page_id = ? AND page_version = ? AND locale_code = ? and page_model_name = ? and shared = true", pageID, pageVersion, localeCode, modelName).Update("updated_at", updatedAt).Error
 }
+
 func (b *Builder) updateAllContainersUpdatedTimeFromModel(tx *gorm.DB, modelID string) (err error) {
 	if modelID == "" {
 		return
