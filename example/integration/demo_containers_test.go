@@ -2,12 +2,14 @@ package integration_test
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	. "github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
 
 	"github.com/qor5/admin/v3/example/admin"
+	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
 )
@@ -267,6 +269,31 @@ func TestDemoContainer(t *testing.T) {
 				return req
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Color", "vx-select"},
+		},
+		{
+			Name:  "Index Demo Container Listing",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				demoContainerData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/demo_containers").
+					BuildEventFuncRequest()
+				return req
+			},
+			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var (
+					dm pagebuilder.DemoContainer
+				)
+				TestDB.Where("id=? and locale_code = ?", 1, "China").First(&dm)
+				if dm.ModelName != "Header" {
+					t.Fatalf("Localize Failed")
+					return
+				}
+				if dm.ModelID == 1 {
+					t.Fatalf("Diffrent locale_code DemoContainer Use Same MoldeID")
+					return
+				}
+			},
 		},
 	}
 

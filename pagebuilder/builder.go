@@ -719,6 +719,18 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
 	listing := pm.Listing("DisplayName").SearchColumns("display_name").NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
 		return nil
 	})
+	pm.Editing().WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			if b.l10n != nil && ctx.Param(web.EventFuncIDName) == l10n.DoLocalize {
+				fromID := ctx.R.Context().Value(l10n.FromID).(string)
+				fromLocale := ctx.R.Context().Value(l10n.FromLocale).(string)
+				if err = b.localizeModel(b.db, obj, fromID, fromLocale); err != nil {
+					return
+				}
+			}
+			return in(obj, id, ctx)
+		}
+	})
 	pm.LabelName(func(evCtx *web.EventContext, singular bool) string {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		if singular {
@@ -1005,6 +1017,7 @@ func (b *ContainerBuilder) Install() {
 	editing.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 			return b.builder.db.Transaction(func(tx *gorm.DB) (dbErr error) {
+
 				ctx.WithContextValue(gorm2op.CtxKeyDB{}, tx)
 				defer ctx.WithContextValue(gorm2op.CtxKeyDB{}, nil)
 				if dbErr = in(obj, id, ctx); dbErr != nil {
@@ -1287,10 +1300,15 @@ func (b *ContainerBuilder) firstOrCreate(localeCodes []string) (err error) {
 			if localeCode == "" {
 				continue
 			}
+			obj = b.mb.NewModel()
+			if vErr = tx.Create(obj).Error; vErr != nil {
+				return
+			}
+			modelID := reflectutils.MustGet(obj, "ID").(uint)
 			if vErr = tx.Create(&DemoContainer{
 				Model:     gorm.Model{ID: m.ID},
 				ModelName: b.name,
-				ModelID:   m.ModelID,
+				ModelID:   modelID,
 				Filled:    false,
 				Locale:    l10n.Locale{LocaleCode: localeCode},
 			}).Error; vErr != nil {
@@ -1584,4 +1602,28 @@ func (b *Builder) updateAllContainersUpdatedTimeFromModel(tx *gorm.DB, modelID s
 		return
 	}
 	return tx.Model(&Container{}).Where("model_id = ? and shared = true ", modelID).Update("updated_at", time.Now()).Error
+}
+
+func (b *Builder) localizeModel(db *gorm.DB, obj interface{}, fromID, fromLocale string) (err error) {
+	var sharedCon Container
+	if err = db.Where("id = ? AND locale_code = ? AND shared = ?  ",
+		fromID, fromLocale, true).
+		First(&sharedCon).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return
+	}
+
+	model := b.ContainerByName(sharedCon.ModelName).NewModel()
+	if err = db.First(model, "id = ?", sharedCon.ModelID).Error; err != nil {
+		return
+	}
+	if err = reflectutils.Set(model, "ID", uint(0)); err != nil {
+		return
+	}
+	if err = db.Create(model).Error; err != nil {
+		return
+	}
+	if err = reflectutils.Set(obj, "ModelID", reflectutils.MustGet(model, "ID")); err != nil {
+		return
+	}
+	return
 }

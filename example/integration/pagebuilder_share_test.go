@@ -9,6 +9,7 @@ import (
 	"github.com/theplant/gofixtures"
 
 	"github.com/qor5/admin/v3/example/admin"
+	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/pagebuilder/example/containers"
 	"github.com/qor5/admin/v3/presets"
@@ -197,6 +198,35 @@ func TestPageBuilderShareContainer(t *testing.T) {
 				TestDB.First(&container, 9)
 				if container.DisplayName != "Renamed BrandGrid" {
 					t.Fatalf("Rename Container did not work. Expected 'Renamed BrandGrid' but got '%s'", container.DisplayName)
+					return
+				}
+			},
+		},
+		{
+			Name:  "Shared Container DoLocalize",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerShareTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/shared_containers").
+					EventFunc(l10n.DoLocalize).
+					Query(presets.ParamID, "10_International").
+					AddField("localize_from", "International").
+					AddField("localize_to", "China").
+					BuildEventFuncRequest()
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var (
+					dm pagebuilder.Container
+				)
+				TestDB.Where("id= ? and locale_code = ? ", 10, "China").First(&dm)
+				if dm.ModelName != "ListContent" || !dm.Shared {
+					t.Fatalf("Localize Failed modelName got %v ; Shared got %v", dm.ModelName, dm.Shared)
+					return
+				}
+				if dm.ModelID == 10 {
+					t.Fatalf("Diffrent locale_code DemoContainer Use Same MoldeID")
 					return
 				}
 			},
