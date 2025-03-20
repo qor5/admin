@@ -479,7 +479,6 @@ func (b *Builder) useAllPlugin(pm *presets.ModelBuilder, pageModelName string) {
 					}
 					return
 				})
-
 			}
 		})
 	}
@@ -1560,7 +1559,6 @@ func (b *Builder) expectField(name string) bool {
 }
 
 func (b *Builder) updateAllContainersUpdatedTime(tx *gorm.DB, modelName string, record interface{}) (err error) {
-
 	val, err := reflectutils.Get(record, "UpdatedAt")
 	if err != nil {
 		return
@@ -1583,6 +1581,7 @@ func (b *Builder) updateAllContainersUpdatedTime(tx *gorm.DB, modelName string, 
 	localeCode := ps[l10n.SlugLocaleCode]
 	return tx.Model(&Container{}).Where("page_id = ? AND page_version = ? AND locale_code = ? and page_model_name = ? and shared = true", pageID, pageVersion, localeCode, modelName).Update("updated_at", updatedAt).Error
 }
+
 func (b *Builder) updateAllContainersUpdatedTimeFromModel(tx *gorm.DB, modelID string) (err error) {
 	if modelID == "" {
 		return

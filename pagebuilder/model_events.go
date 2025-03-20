@@ -500,9 +500,9 @@ func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.Event
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr    = presets.MustGetMessages(ctx.R)
 		okAction = web.Plaid().
-			URL(b.mb.Info().ListingHref()).
-			ThenScript("locals.renameDialog=false").
-			EventFunc(RenameContainerFromDialogEvent).Query(paramContainerID, paramID).Go()
+				URL(b.mb.Info().ListingHref()).
+				ThenScript("locals.renameDialog=false").
+				EventFunc(RenameContainerFromDialogEvent).Query(paramContainerID, paramID).Go()
 		portalName = dialogPortalName
 	)
 
@@ -569,6 +569,7 @@ func (b *ModelBuilder) renderContainerHover(cb *ContainerBuilder, ctx *web.Event
 			Go(),
 	))
 }
+
 func (b *ModelBuilder) renderSharedContainerHover(displayName, modelName string, modelID uint, ctx *web.EventContext, msgr *Messages) h.HTMLComponent {
 	addContainerEvent := web.Plaid().EventFunc(AddContainerEvent).
 		MergeQuery(true).
