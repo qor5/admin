@@ -22,7 +22,7 @@ type imageWithTextContent struct {
 	Title       string
 	Content     string
 	Button      string
-	ButtonStyle string
+	ButtonHref  string
 	ImgInitial  bool
 	ImageUpload media_library.MediaBox `sql:"type:text;"`
 }
@@ -43,7 +43,7 @@ func (this *imageWithTextContent) Scan(value interface{}) error {
 }
 
 func SetHeroContentComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder, db *gorm.DB) {
-	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&imageWithTextContent{}).Only("Title", "Content", "Button", "ButtonStyle", "ImageUpload")
+	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&imageWithTextContent{}).Only("Title", "Content", "Button", "ButtonHref", "ImageUpload")
 
 	fb.Field("Title").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return Div(
@@ -59,9 +59,9 @@ func SetHeroContentComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder
 		).Class("mb-5")
 	})
 
-	fb.Field("ButtonStyle").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return presets.SelectField(obj, field, ctx).Items(utils.ButtonPresets)
-	})
+	// fb.Field("ButtonStyle").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+	// 	return presets.SelectField(obj, field, ctx).Items(utils.ButtonPresets)
+	// })
 
 	fb.Field("Content").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return Div(

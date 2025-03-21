@@ -128,7 +128,7 @@
   color: rgba(var(--color-surface), var(--color-opacity));
 }
 
-.btn-primary {
+/* .btn-primary {
   color: #fff;
   background-color: var(--pb-primary);
 }
@@ -156,7 +156,7 @@
 .btn-warning {
   color: #fff;
   background-color: var(--pb-warning);
-}
+} */
 
 /* .heroImageHorizontal h1{
   color: red;
@@ -167,10 +167,10 @@
 } */
 
 .tw-theme-filter-container {
-  border-radius: 8px;
+  /* border-radius: 8px; */
   overflow: hidden;
 }
 
-.container-tailwind-example-header header ul {
+/* .container-tailwind-example-header header ul {
   font-size: 20px;
-}
+} */
