@@ -49,7 +49,7 @@ func SetHeroContentComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder
 		return Div(
 			tiptap.TiptapEditor(db, field.Name).
 				Extensions(utils.TiptapExtensions(
-					"Bold", "Italic",
+					"Bold", "Italic", "Color", "FontFamily", "Clear",
 					"Link",
 				)).
 				MarkdownTheme("github"). // Match tiptap.ThemeGithubCSSComponentsPack
@@ -67,7 +67,7 @@ func SetHeroContentComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder
 		return Div(
 			tiptap.TiptapEditor(db, field.Name).
 				Extensions(utils.TiptapExtensions(
-					"Bold", "Italic",
+					"Bold", "Italic", "Heading", "Color", "FontFamily", "Clear",
 					"Heading", "BulletList", "OrderedList",
 					"Link",
 				)).

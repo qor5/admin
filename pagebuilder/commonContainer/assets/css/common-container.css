@@ -67,6 +67,10 @@
   text-decoration: var(--cc-richEditor-base-text-decoration-link, underline);
 }
 
+.richEditor-content {
+  word-break: break-word;
+}
+
 .tw-theme-h1 {
   font-family: var(--font-family-h1), var(--font-family-fallback);
 }

@@ -7,7 +7,6 @@ import (
 
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/pagebuilder"
-	"github.com/qor5/admin/v3/pagebuilder/commonContainer/utils"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	v "github.com/qor5/x/v3/ui/vuetify"
@@ -96,13 +95,13 @@ func SetHeroStyleComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder) 
 		).Class("mb-4")
 	})
 
-	fb.Field("TopSpace").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return presets.SelectField(obj, field, ctx).Items(utils.SpaceOptions)
-	})
+	// fb.Field("TopSpace").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+	// 	return presets.SelectField(obj, field, ctx).Items(utils.SpaceOptions)
+	// })
 
-	fb.Field("BottomSpace").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return presets.SelectField(obj, field, ctx).Items(utils.SpaceOptions)
-	})
+	// fb.Field("BottomSpace").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+	// 	return presets.SelectField(obj, field, ctx).Items(utils.SpaceOptions)
+	// })
 	// SetCommonStyleComponent(pb, fb.Field("Style"))
 
 	eb.Field("Style").Nested(fb).PlainFieldBody().HideLabel()
