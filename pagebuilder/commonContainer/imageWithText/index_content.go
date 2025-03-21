@@ -59,10 +59,6 @@ func SetHeroContentComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder
 		).Class("mb-5")
 	})
 
-	// fb.Field("ButtonStyle").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-	// 	return presets.SelectField(obj, field, ctx).Items(utils.ButtonPresets)
-	// })
-
 	fb.Field("Content").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return Div(
 			tiptap.TiptapEditor(db, field.Name).

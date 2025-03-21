@@ -67,6 +67,10 @@
   text-decoration: var(--cc-richEditor-base-text-decoration-link, underline);
 }
 
+.richEditor-content p {
+  margin-bottom: 16px;
+}
+
 .richEditor-content {
   word-break: break-word;
 }

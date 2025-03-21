@@ -10,6 +10,35 @@ var ButtonPresets = []string{"unset", "primary", "secondary", "success", "info",
 
 var SpaceOptions = []string{"0", "10", "20", "30", "40", "50", "60", "70", "80", "90", "100"}
 
+var VerticalAlign = []struct {
+	Label string
+	Value string
+}{
+	{Label: "top", Value: "justify-start"},
+	{Label: "center", Value: "justify-center"},
+	{Label: "bottom", Value: "justify-end"},
+	{Label: "space-between", Value: "justify-between"},
+}
+
+var HorizontalAlign = []struct {
+	Label string
+	Value string
+}{
+	{Label: "left", Value: "items-start"},
+	{Label: "center", Value: "items-center"},
+	{Label: "right", Value: "items-end"},
+}
+
+var ImageWithTextVisibilityOptions = []struct {
+	Label string
+	Value string
+}{
+	{Label: "title", Value: "title"},
+	{Label: "content", Value: "content"},
+	{Label: "button", Value: "button"},
+	{Label: "image", Value: "image"},
+}
+
 func TailwindContainerWrapper(classes string, comp ...HTMLComponent) HTMLComponent {
 	return Div(comp...).
 		Class("container-instance").ClassIf(classes, classes != "")
