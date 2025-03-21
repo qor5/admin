@@ -130,7 +130,7 @@ func ImageWithTextBody(data *ImageWithText, input *pagebuilder.RenderInput) (bod
 						Class(fmt.Sprintf("order-1 flex flex-col items-center %s", data.Style.VerticalAlign)).
 						ClassIf("justify-center", data.Style.VerticalAlign == "justify-between"),
 				).Attr("x-if", "hasHeroImage"),
-			).Class(fmt.Sprintf("flex justify-between xl:max-w-[1280px] mx-auto xl:pl-[%dpx] xl:pr-[%dpx]  md:pl-[%dpx] md:pr-[%dpx] pl-[%dpx] pr-[%dpx] xl:pt-[%dpx] xl:pb-[%dpx] md:pt-[%dpx] md:pb-[%dpx]  pt-[%dpx] pb-[%dpx]",
+			).Class(fmt.Sprintf("flex justify-between xl:max-w-[1280px] md:max-w-[768px] max-w-[414px] mx-auto xl:pl-[%dpx] xl:pr-[%dpx]  md:pl-[%dpx] md:pr-[%dpx] pl-[%dpx] pr-[%dpx] xl:pt-[%dpx] xl:pb-[%dpx] md:pt-[%dpx] md:pb-[%dpx]  pt-[%dpx] pb-[%dpx]",
 				data.Style.LeftSpace,
 				data.Style.RightSpace,
 				int(float64(data.Style.LeftSpace)*0.5),
