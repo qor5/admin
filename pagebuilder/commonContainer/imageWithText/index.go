@@ -1,4 +1,4 @@
-package heroImageHorizontal
+package imageWithText
 
 import (
 	"fmt"
@@ -14,25 +14,26 @@ import (
 	"github.com/qor5/admin/v3/presets"
 )
 
-type HeroImageHorizontal struct {
+type ImageWithText struct {
 	ID uint
 
-	Content heroContent
-	Style   heroStyle
+	Content imageWithTextContent
+	Style   imageWithTextStyle
 }
 
-func (*HeroImageHorizontal) TableName() string {
-	return "container_tailwind_hero_horizontal"
+func (*ImageWithText) TableName() string {
+	return "container_image_with_text"
 }
 
 func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {
-	vb := pb.RegisterContainer("HeroImageHorizontal").Group("Navigation").
+	vb := pb.RegisterContainer("ImageWithText").Group("Content").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
-			p := obj.(*HeroImageHorizontal)
-			return HeroBody(p, input)
+			v := obj.(*ImageWithText)
+
+			return ImageWithTextBody(v, input)
 		})
 
-	ed := vb.Model(&HeroImageHorizontal{}).Editing("Tabs", "Content", "Style")
+	ed := vb.Model(&ImageWithText{}).Editing("Tabs", "Content", "Style")
 
 	ed.Field("Tabs").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		option := presets.TabsControllerOption{
@@ -46,9 +47,9 @@ func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 
 	ed.Creating().WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-			p := obj.(*HeroImageHorizontal)
+			p := obj.(*ImageWithText)
 			p.Content.Title = "This is a title"
-			p.Content.Body = "From end-to-end solutions to consulting, we draw on decades of expertise to solve new challenges in e-commerce, content management, and digital innovation."
+			p.Content.Content = "From end-to-end solutions to consulting, we draw on decades of expertise to solve new challenges in e-commerce, content management, and digital innovation."
 			p.Content.Button = "Get Start"
 			p.Content.ButtonStyle = "unset"
 			p.Style.Layout = "left"
@@ -65,7 +66,7 @@ func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 
 	ed.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-			p := obj.(*HeroImageHorizontal)
+			p := obj.(*ImageWithText)
 
 			if p.Content.ImageUpload.URL() != "" && !p.Content.ImgInitial {
 				p.Content.ImgInitial = true
@@ -87,7 +88,7 @@ func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	SetHeroStyleComponent(pb, ed)
 }
 
-func HeroBody(data *HeroImageHorizontal, input *pagebuilder.RenderInput) (body HTMLComponent) {
+func ImageWithTextBody(data *ImageWithText, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	heroImgUrl := data.Content.ImageUpload.URL()
 	backgroundImgUrl := data.Style.ImageBackground.URL()
 
@@ -102,8 +103,8 @@ func HeroBody(data *HeroImageHorizontal, input *pagebuilder.RenderInput) (body H
 			Div(
 				Div(
 					Div(
-						H1(data.Content.Title).Class("tw-theme-text tw-theme-h1 font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px]"),
-						P(Text(data.Content.Body)).Class("tw-theme-text tw-theme-p xl:text-[24px] md:text-[22px] text-[12px] xl:py-10 md:py-6 py-3 font-medium xl:leading-[32px] leading-normal"),
+						H1("").Children(RawHTML(data.Content.Title)).Class("richEditor-content tw-theme-text tw-theme-h1 font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px]"),
+						Div().Children(RawHTML(data.Content.Content)).Class("richEditor-content tw-theme-text tw-theme-p xl:text-[24px] md:text-[22px] text-[12px] xl:py-10 md:py-6 py-3 font-medium xl:leading-[32px] leading-normal"),
 						Div(
 							Button(data.Content.Button).Class("tw-theme-bg-brand tw-theme-text-base tw-theme-p xl:text-[16px] md:text-[14px] xl:px-6 px-4 xl:py-3 md:py-2 py-[6px] rounded-[4px]", fmt.Sprintf("btn-%s", data.Content.ButtonStyle)),
 						).Class("mt-auto").ClassIf("text-right", data.Style.Layout == "right"),
@@ -162,7 +163,7 @@ func HeroBody(data *HeroImageHorizontal, input *pagebuilder.RenderInput) (body H
 
 	body = utils.TailwindContainerWrapper(
 		"container-hero",
-		Tag("twind-scope").Attr("data-props", fmt.Sprintf(`{"type":"heroImageHorizontal", "id": %q}`, input.ContainerId)).Children(Div(heroBody).Class("bg-gray-100")),
+		Tag("twind-scope").Attr("data-props", fmt.Sprintf(`{"type":"imageWithText", "id": %q}`, input.ContainerId)).Children(Div(heroBody).Class("bg-gray-100")),
 	)
 	return
 }

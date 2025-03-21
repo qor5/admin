@@ -1,4 +1,4 @@
-package heroImageHorizontal
+package imageWithText
 
 import (
 	"database/sql/driver"
@@ -16,7 +16,7 @@ import (
 	. "github.com/theplant/htmlgo"
 )
 
-type heroStyle struct {
+type imageWithTextStyle struct {
 	Layout          string
 	TopSpace        int
 	BottomSpace     int
@@ -24,11 +24,11 @@ type heroStyle struct {
 	ImageBackground media_library.MediaBox `sql:"type:text;"`
 }
 
-func (this heroStyle) Value() (driver.Value, error) {
+func (this imageWithTextStyle) Value() (driver.Value, error) {
 	return json.Marshal(this)
 }
 
-func (this *heroStyle) Scan(value interface{}) error {
+func (this *imageWithTextStyle) Scan(value interface{}) error {
 	switch v := value.(type) {
 	case string:
 		return json.Unmarshal([]byte(v), this)
@@ -40,7 +40,7 @@ func (this *heroStyle) Scan(value interface{}) error {
 }
 
 func SetHeroStyleComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder) {
-	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&heroStyle{}).Only("Layout", "TopSpace", "BottomSpace", "ImageBackground")
+	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&imageWithTextStyle{}).Only("Layout", "TopSpace", "BottomSpace", "ImageBackground")
 
 	fb.Field("Layout").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		// return presets.SelectField(obj, field, ctx).Items([]string{"left", "right"})

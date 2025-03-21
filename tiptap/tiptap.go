@@ -152,7 +152,7 @@ func (b *TiptapEditorBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
 	}
 
 	r := h.Div().Class("d-flex flex-column ga-1").Children(
-		h.Label(b.label).Class("v-label theme--light"),
+		vx.VXLabel(h.Text(b.label)).Class("mb-2"),
 		b.editor,
 		mediaBox,
 		h.Iff(len(b.errorMessages) > 0, func() h.HTMLComponent {

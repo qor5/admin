@@ -6,9 +6,9 @@ import (
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/pagebuilder/commonContainer/footer"
 	"github.com/qor5/admin/v3/pagebuilder/commonContainer/header"
-	"github.com/qor5/admin/v3/pagebuilder/commonContainer/heroImageHorizontal"
 	"github.com/qor5/admin/v3/pagebuilder/commonContainer/heroImageList"
 	"github.com/qor5/admin/v3/pagebuilder/commonContainer/heroImageVertical"
+	"github.com/qor5/admin/v3/pagebuilder/commonContainer/imageWithText"
 	"github.com/qor5/admin/v3/tiptap"
 )
 
@@ -18,6 +18,7 @@ const (
 	TailWindHeroVertical  ContainerType = "tailWindHeroVertical"
 	TailWindExampleHeader ContainerType = "tailWindExampleHeader"
 	TailWindExampleFooter ContainerType = "tailWindExampleFooter"
+	ImageWithText         ContainerType = "imageWithText"
 )
 
 type (
@@ -33,11 +34,6 @@ var (
 	allContainerType = []ContainerType{HeroImageHorizontal, TailWindHeroList, TailWindHeroVertical, TailWindExampleHeader, TailWindExampleFooter}
 
 	register = []containerRegister{
-		{
-			ContainerType: HeroImageHorizontal,
-			Register:      heroImageHorizontal.RegisterContainer,
-			Model:         &heroImageHorizontal.HeroImageHorizontal{},
-		},
 		{
 			ContainerType: TailWindHeroList,
 			Register:      heroImageList.RegisterContainer,
@@ -57,6 +53,11 @@ var (
 			ContainerType: TailWindExampleFooter,
 			Register:      footer.RegisterContainer,
 			Model:         &footer.TailWindExampleFooter{},
+		},
+		{
+			ContainerType: ImageWithText,
+			Register:      imageWithText.RegisterContainer,
+			Model:         &imageWithText.ImageWithText{},
 		},
 	}
 )

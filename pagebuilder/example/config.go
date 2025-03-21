@@ -56,11 +56,12 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, b *presets.Builder) *p
 	pb := pagebuilder.New(prefix, db, b).AutoMigrate()
 
 	commonContainer.Setup(pb, db, nil,
-		commonContainer.HeroImageHorizontal,
 		commonContainer.TailWindHeroList,
 		commonContainer.TailWindHeroVertical,
 		commonContainer.TailWindExampleHeader,
-		commonContainer.TailWindExampleFooter)
+		commonContainer.TailWindExampleFooter,
+		commonContainer.ImageWithText,
+	)
 
 	if style != "" {
 		pb.PageStyle(h.RawHTML(style))
