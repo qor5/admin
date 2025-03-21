@@ -111,10 +111,11 @@ func ImageWithTextBody(data *ImageWithText, input *pagebuilder.RenderInput) (bod
 					).Attr("x-ref", "leftContent").Class("flex flex-col h-full"),
 				).ClassIf("order-2 xl:ml-10 md:ml-[20px] ml-3", data.Style.Layout == "right"),
 				Template(
-					Div().
-						Class("tw-theme-filter-container order-1  xl:w-[500px] md:w-[314px] w-[169px] bg-center bg-no-repeat flex-shrink-0 xl:ml-10 md:ml-[20px] ml-3 max-h-[770px]").
-						ClassIf("xl:ml-10 md:ml-[20px] ml-3", data.Style.Layout == "left").
-						Attr(":style", fmt.Sprintf("`background-image: url(%s); aspect-ratio: ${imageAspectRatio};`", heroImgUrl)),
+					Div(
+						Div().
+							Class("tw-theme-filter-container bg-cover  xl:w-[500px] md:w-[314px] w-[169px] bg-center bg-no-repeat flex-shrink-0 xl:ml-10 md:ml-[20px] ml-3 max-h-[770px]").
+							Attr(":style", fmt.Sprintf("`background-image: url(%s); aspect-ratio: ${imageAspectRatio};`", heroImgUrl)),
+					).ClassIf("xl:ml-10 md:ml-[20px] ml-3", data.Style.Layout == "left").Class("order-1 flex justify-center items-center"),
 				).Attr("x-if", "hasHeroImage"),
 			).Class(fmt.Sprintf("flex justify-between xl:max-w-[1280px] mx-auto xl:px-[120px] xl:pt-[%dpx] xl:pb-[%dpx] md:px-[60px] md:pt-[%dpx] md:pb-[%dpx] px-8 pt-[%dpx] pb-[%dpx]",
 				data.Style.TopSpace, data.Style.BottomSpace, int(float64(data.Style.TopSpace)*0.5), int(float64(data.Style.BottomSpace)*0.5), int(float64(data.Style.TopSpace)*0.26), int(float64(data.Style.BottomSpace)*0.26))).Attr("x-data", fmt.Sprintf(`{
