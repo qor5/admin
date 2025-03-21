@@ -106,7 +106,7 @@ func ImageWithTextBody(data *ImageWithText, input *pagebuilder.RenderInput) (bod
 						H1("").Children(RawHTML(data.Content.Title)).Class("richEditor-content tw-theme-text tw-theme-h1 font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px]"),
 						Div().Children(RawHTML(data.Content.Content)).Class("richEditor-content tw-theme-text tw-theme-p xl:text-[24px] md:text-[22px] text-[12px] xl:my-10 md:my-6 my-3 font-medium xl:leading-[32px] leading-normal"),
 						Div(
-							A().Attr("href", data.Content.ButtonHref).Attr("target", "_blank").Attr("rel", "noopener noreferrer").Children(Button(data.Content.Button).Class("tw-theme-bg-brand tw-theme-text-base tw-theme-p xl:text-[16px] md:text-[14px] xl:px-6 px-4 xl:py-3 md:py-2 py-[6px] rounded-[4px]")),
+							A().Attr("href", data.Content.ButtonHref).Attr("target", "_blank").Attr("rel", "noopener noreferrer").Children(Button(data.Content.Button).Class("tw-theme-bg-brand tw-theme-text-base tw-theme-p xl:text-[16px] md:text-[14px] text-[12px] xl:px-6  xl:py-3 md:px-4 md:py-2 px-3 py-[6px] rounded-[4px]")),
 						).ClassIf("text-right", data.Style.Layout == "right"),
 					).Attr("x-ref", "leftContent").Class("flex flex-col h-full"),
 				).ClassIf("order-2 xl:ml-10 md:ml-[20px] ml-3", data.Style.Layout == "right"),
