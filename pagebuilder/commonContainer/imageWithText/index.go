@@ -58,6 +58,8 @@ func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 			p.Style.HorizontalAlign = "left"
 			p.Style.TopSpace = 120
 			p.Style.BottomSpace = 120
+			p.Style.LeftSpace = 120
+			p.Style.RightSpace = 120
 			p.Style.Visibility = []string{"title", "content", "button", "image"}
 
 			if err = in(obj, id, ctx); err != nil {
@@ -70,11 +72,11 @@ func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 
 	ed.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-			p := obj.(*ImageWithText)
+			// p := obj.(*ImageWithText)
 
-			if p.Content.ImageUpload.URL() != "" && !p.Content.ImgInitial {
-				p.Content.ImgInitial = true
-			}
+			// if p.Content.ImageUpload.URL() != "" && !p.Content.ImgInitial {
+			// 	p.Content.ImgInitial = true
+			// }
 
 			// if p.Style.ImageBackground.URL() != "" && !p.Style.ImgInitial {
 			// 	p.Style.ImgInitial = true
@@ -96,7 +98,7 @@ func ImageWithTextBody(data *ImageWithText, input *pagebuilder.RenderInput) (bod
 	heroImgUrl := data.Content.ImageUpload.URL()
 	// backgroundImgUrl := data.Style.ImageBackground.URL()
 
-	if heroImgUrl == "" && !data.Content.ImgInitial {
+	if heroImgUrl == "" {
 		heroImgUrl = "https://placehold.co/500x400"
 	}
 
@@ -116,7 +118,7 @@ func ImageWithTextBody(data *ImageWithText, input *pagebuilder.RenderInput) (bod
 						If(lo.Contains(data.Style.Visibility, "button"), Div(
 							A().Attr("href", data.Content.ButtonHref).Attr("target", "_blank").Attr("rel", "noopener noreferrer").Children(Button(data.Content.Button).
 								Class("tw-theme-bg-brand tw-theme-text-base tw-theme-p xl:text-[16px] md:text-[14px] text-[12px] xl:mt-10 md:mt-6 mt-3 xl:px-6 xl:py-3 md:px-4 md:py-2 px-3 py-[6px] rounded-[4px]")),
-						).ClassIf("text-right", data.Style.Layout == "right")),
+						)),
 					).Attr("x-ref", "leftContent").Class(fmt.Sprintf("flex flex-col h-full %s %s", data.Style.VerticalAlign, data.Style.HorizontalAlign)),
 				).ClassIf("order-2 xl:ml-10 md:ml-[20px] ml-6", data.Style.Layout == "right"),
 				Template(
@@ -128,8 +130,20 @@ func ImageWithTextBody(data *ImageWithText, input *pagebuilder.RenderInput) (bod
 						Class(fmt.Sprintf("order-1 flex flex-col items-center %s", data.Style.VerticalAlign)).
 						ClassIf("justify-center", data.Style.VerticalAlign == "justify-between"),
 				).Attr("x-if", "hasHeroImage"),
-			).Class(fmt.Sprintf("flex justify-between xl:max-w-[1280px] mx-auto xl:px-[120px] xl:pt-[%dpx] xl:pb-[%dpx] md:px-[60px] md:pt-[%dpx] md:pb-[%dpx] px-8 pt-[%dpx] pb-[%dpx]",
-				data.Style.TopSpace, data.Style.BottomSpace, int(float64(data.Style.TopSpace)*0.5), int(float64(data.Style.BottomSpace)*0.5), int(float64(data.Style.TopSpace)*0.26), int(float64(data.Style.BottomSpace)*0.26))).Attr("x-data", fmt.Sprintf(`{
+			).Class(fmt.Sprintf("flex justify-between xl:max-w-[1280px] mx-auto xl:pl-[%dpx] xl:pr-[%dpx]  md:pl-[%dpx] md:pr-[%dpx] pl-[%dpx] pr-[%dpx] xl:pt-[%dpx] xl:pb-[%dpx] md:pt-[%dpx] md:pb-[%dpx]  pt-[%dpx] pb-[%dpx]",
+				data.Style.LeftSpace,
+				data.Style.RightSpace,
+				int(float64(data.Style.LeftSpace)*0.5),
+				int(float64(data.Style.RightSpace)*0.5),
+				int(float64(data.Style.LeftSpace)*0.26),
+				int(float64(data.Style.RightSpace)*0.26),
+				data.Style.TopSpace,
+				data.Style.BottomSpace,
+				int(float64(data.Style.TopSpace)*0.5),
+				int(float64(data.Style.BottomSpace)*0.5),
+				int(float64(data.Style.TopSpace)*0.26),
+				int(float64(data.Style.BottomSpace)*0.26),
+			)).Attr("x-data", fmt.Sprintf(`{
 			imageAspectRatio: '5 / 4',
 			hasHeroImage: %t,
 		}`, hasHeroImage)),

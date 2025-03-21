@@ -23,7 +23,6 @@ type imageWithTextContent struct {
 	Content     string
 	Button      string
 	ButtonHref  string
-	ImgInitial  bool
 	ImageUpload media_library.MediaBox `sql:"type:text;"`
 }
 
