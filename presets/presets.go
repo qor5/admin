@@ -290,9 +290,8 @@ func (b *Builder) AssetFunc(v AssetFunc) (r *Builder) {
 }
 
 func (b *Builder) ExtraAsset(path string, contentType string, body web.ComponentsPack, refTag ...string) (r *Builder) {
-	if !strings.HasPrefix(path, "/") {
-		path = "/" + path
-	}
+	path = strings.TrimLeft(path, "/")
+	path = "/" + path
 
 	var theOne *extraAsset
 	for _, ea := range b.extraAssets {
