@@ -511,7 +511,7 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 			).VSlot("{ form }"),
 		).VSlot("{ dash }").DashInit("{errorMessages:{}}"),
 		hiddenComp,
-	).Attr("v-on-mounted", fmt.Sprintf(`()=>{%s}`, initDataChanged))
+	).Attr("v-on-mounted", fmt.Sprintf(`()=>{%s}`, initDataChanged)).Class("mb-10")
 }
 
 func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -609,7 +609,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 				hiddenComp,
 			).VSlot("{ form}").OnChange(onChangeEvent).UseDebounce(500),
 		).VSlot("{ dash }").DashInit("{errorMessages:{}}"),
-	)
+	).Class("mb-10")
 }
 
 func (b *SectionBuilder) defaultUnmarshalFunc(obj interface{}, ctx *web.EventContext) (err error) {
