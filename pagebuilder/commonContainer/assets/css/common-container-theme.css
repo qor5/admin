@@ -17,21 +17,18 @@
   --font-family-h2: 'Times New Roman';
   --font-family-p: 'Times New Roman'; */
 
-  --color-base: 253, 244, 246;
-  --color-surface: 51, 51, 51;
-  --color-brand: 220, 66, 106;
-  --font-family-h1: '';
-  --font-family-h2: '';
-  --font-family-p: '';
+  /** global theme color **/
+  --cc-color-base: 253, 244, 246;
+  --cc-color-surface: 51, 51, 51;
+  --cc-color-brand: 220, 66, 106;
 
-  --font-family-fallback: InterVariable, system-ui, sans-serif;
+  /** global font family **/
+  --cc-font-family-h1: '';
+  --cc-font-family-h2: '';
+  --cc-font-family-content: '';
+  --cc-font-family-fallback: InterVariable, system-ui, sans-serif;
 
-  --pb-primary: #3e63dd;
-  --pb-secondary: #5b6471;
-  --pb-success: #30a46c;
-  --pb-info: #0091ff;
-  --pb-warning: #f76808;
-  --pb-error: #e5484d;
+  /* --cc-container-background: ''; */
 
   /* richEditor h1~h6 */
   --cc-richEditor-base-text-weight-semibold: 600;
@@ -62,7 +59,3 @@
   --cc-richEditor-list-text-margin-bottom: 1em;
   --cc-richEditor-list-text-margin-top: 1em;
 }
-
-/* a {
-  color: red;
-} */
