@@ -124,14 +124,14 @@ func ImageWithTextBody(data *ImageWithText, input *pagebuilder.RenderInput) (bod
 			Div(
 				Div(
 					If(lo.Contains(data.Style.Visibility, "title"), H1("").Children(RawHTML(data.Content.Title)).
-						Class("richEditor-content tw-theme-text tw-theme-h1 font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px]")),
-					If(lo.Contains(data.Style.Visibility, "content"), Div().Children(RawHTML(data.Content.Content)).Class("richEditor-content tw-theme-text tw-theme-p xl:text-[24px] md:text-[22px] text-[12px] font-medium xl:leading-[32px] leading-normal").
+						Class("richEditor-content tw-theme-text cc-h1 font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px]")),
+					If(lo.Contains(data.Style.Visibility, "content"), Div().Children(RawHTML(data.Content.Content)).Class("richEditor-content tw-theme-text cc-content xl:text-[24px] md:text-[22px] text-[12px] font-medium xl:leading-[32px] leading-normal").
 						ClassIf("text-left", data.Style.HorizontalAlign == "item-start").
 						ClassIf("text-center", data.Style.HorizontalAlign == "items-center").
 						ClassIf("text-right", data.Style.HorizontalAlign == "items-end")),
 					If(lo.Contains(data.Style.Visibility, "button"), Div(
 						A().Attr("href", data.Content.ButtonHref).Attr("target", "_blank").Attr("rel", "noopener noreferrer").Children(Button(data.Content.Button).
-							Class("tw-theme-bg-brand tw-theme-text-base tw-theme-p xl:text-[16px] md:text-[14px] text-[12px] xl:px-6 xl:py-3 md:px-4 md:py-2 px-3 py-[6px] rounded-[4px]")),
+							Class("cc-btn tw-theme-text-base xl:text-[16px] md:text-[14px] text-[12px] xl:px-6 xl:py-3 md:px-4 md:py-2 px-3 py-[6px]")),
 					)),
 				).Attr("x-ref", "leftContent").Class(fmt.Sprintf("flex flex-col xl:gap-10 md:gap-6 gap-3 h-full %s %s", data.Style.VerticalAlign, data.Style.HorizontalAlign)),
 			).ClassIf("order-2 xl:ml-10 md:ml-[20px] ml-6", data.Style.Layout == "right"),
@@ -139,7 +139,7 @@ func ImageWithTextBody(data *ImageWithText, input *pagebuilder.RenderInput) (bod
 				Div(
 					Img(heroImgUrl).Class("position-absolute w-full object-cover object-center h-full max-w-full left-0 top-0 flex-shrink-0"),
 				).
-					Class(fmt.Sprintf("tw-theme-filter-container flex-shrink-0 overflow-hidden xl:h-[%s] xl:w-[%s] md:h-[%s] md:w-[%s] h-[%s] w-[%s]",
+					Class(fmt.Sprintf("tw-theme-filter-container cc-image flex-shrink-0 overflow-hidden xl:h-[%s] xl:w-[%s] md:h-[%s] md:w-[%s] h-[%s] w-[%s]",
 						imageHeight,
 						imageWidth,
 						getScaledImageDimension(imageHeight, 314.0/500.0),

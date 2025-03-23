@@ -99,12 +99,12 @@ func HeroBody(data *TailWindHeroVertical, input *pagebuilder.RenderInput) (body 
 	heroBody := Div(
 		Div(
 			Div(
-				H1(data.Content.Title).Class("tw-theme-text tw-theme-h1 text-center font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px]"),
+				H1(data.Content.Title).Class("tw-theme-text cc-h1 text-center font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px]"),
 
 				P(Text(data.Content.Body)).
-					Class("tw-theme-text tw-theme-p text-2xl text-center break-all"),
+					Class("tw-theme-text cc-content text-2xl text-center break-all"),
 
-				Button(data.Content.Button).Class("tw-theme-bg-brand  tw-theme-p tw-theme-text-base mx-auto py-3 px-6 rounded-[4px] text-[16px] leading-6", fmt.Sprintf("btn-%s", data.Content.ButtonStyle)),
+				Button(data.Content.Button).Class("tw-theme-bg-brand  cc-content tw-theme-text-base mx-auto py-3 px-6 rounded-[4px] text-[16px] leading-6", fmt.Sprintf("btn-%s", data.Content.ButtonStyle)),
 
 				Div().Class("tw-theme-filter-container w-[1024px] m-auto h-[585px] bg-cover bg-no-repeat bg-center").
 					Style(fmt.Sprintf("background-image: url(%s)", heroImgUrl)).

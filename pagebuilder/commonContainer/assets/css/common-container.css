@@ -1,14 +1,25 @@
 /** preset theme **/
-.tw-theme-h1 {
-  font-family: var(--cc-font-family-h1), var(--cc-font-family-fallback);
+.cc-h1 {
+  font-family: var(--cc-font-family-h1), var(--cc-font-family);
 }
 
-.tw-theme-h2 {
-  font-family: var(--cc-font-family-h2), var(--cc-font-family-fallback);
+.cc-h2 {
+  font-family: var(--cc-font-family-h2), var(--cc-font-family);
 }
 
-.tw-theme-p {
-  font-family: var(--cc-font-family-content), var(--cc-font-family-fallback);
+.cc-content {
+  font-family: var(--cc-font-family-content), var(--cc-font-family);
+}
+
+.cc-btn {
+  font-family: var(--cc-font-family-btn), var(--cc-font-family);
+  background: var(--cc-btn-background, rgb(var(--cc-color-brand)));
+  color: var(--cc-btn-color, rgb(var(--cc-color-base)));
+  border-radius: var(--cc-btn-border-radius, 4px);
+}
+
+.cc-image {
+  border-radius: var(--cc-image-border-radius, 0);
 }
 
 .tw-theme-filter-container {
@@ -117,11 +128,10 @@
 }
 
 .richEditor-content a {
-  --cc_rgba-current80: rgba(
-    currentColor,
-    0.8
-  ); /* currentColor with 80% opacity */
-  color: var(--cc-richEditor-base-text-color-link, var(--cc_rgba-current80));
+  color: var(
+    --cc-richEditor-base-text-color-link,
+    var(rgba(currentColor, 0.8))
+  );
   text-decoration: var(--cc-richEditor-base-text-decoration-link, underline);
 }
 
@@ -141,7 +151,7 @@
   ); /* brand color transparent 20% */
   --cc_rgba-base100: rgba(var(--cc-color-base), 1); /* base color pure color */
 
-  font-family: var(--cc-font-family-fallback);
+  font-family: var(--cc-font-family);
 
   /* alternative solution to color-mix for better browser compatibility: base color + brand color transparent layer */
   background: var(
