@@ -1,12 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+/* @import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Monoton&family=Pacifico&display=swap');
-@import url('https://rsms.me/inter/inter.css');
+@import url('https://rsms.me/inter/inter.css'); */
 
 :root {
-  /* --color-base: 47, 45, 39;
-  --color-surface: 255, 255, 255;
-  --color-brand: 137, 255, 176;
-  --font-family-h1: 'Monoton';
+  --cc-color-base: 47, 45, 39;
+  --cc-color-surface: 255, 255, 255;
+  --cc-color-brand: 137, 255, 176;
+  /* --font-family-h1: 'Monoton';
   --font-family-h2: '';
   --font-family-p: ''; */
 
@@ -17,10 +17,10 @@
   --font-family-h2: 'Times New Roman';
   --font-family-p: 'Times New Roman'; */
 
-  /** global theme color **/
-  --cc-color-base: 253, 244, 246;
+  /** global theme color kak bak **/
+  /* --cc-color-base: 253, 244, 246;
   --cc-color-surface: 51, 51, 51;
-  --cc-color-brand: 220, 66, 106;
+  --cc-color-brand: 220, 66, 106; */
 
   /** global font family **/
   --cc-font-family-h1: '';

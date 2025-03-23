@@ -117,10 +117,11 @@
 }
 
 .richEditor-content a {
-  color: var(
-    --cc-richEditor-base-text-color-link,
-    color-mix(in srgb, currentColor 80%, transparent)
-  );
+  --cc_rgba-current80: rgba(
+    currentColor,
+    0.8
+  ); /* currentColor with 80% opacity */
+  color: var(--cc-richEditor-base-text-color-link, var(--cc_rgba-current80));
   text-decoration: var(--cc-richEditor-base-text-decoration-link, underline);
 }
 
@@ -134,10 +135,18 @@
 
 /** common-container **/
 .common-container-inner {
-  --cc-opacity-brand20: rgba(var(--cc-color-brand), 0.2);
+  --cc_rgba-brand20: rgba(
+    var(--cc-color-brand),
+    0.2
+  ); /* brand color transparent 20% */
+  --cc_rgba-base100: rgba(var(--cc-color-base), 1); /* base color pure color */
+
   font-family: var(--cc-font-family-fallback);
+
+  /* alternative solution to color-mix for better browser compatibility: base color + brand color transparent layer */
   background: var(
     --cc-container-background,
-    var(--cc-opacity-brand20, rgba(62, 99, 221, 0.2))
+    linear-gradient(var(--cc_rgba-brand20), var(--cc_rgba-brand20)),
+    linear-gradient(var(--cc_rgba-base100), var(--cc_rgba-base100))
   );
 }

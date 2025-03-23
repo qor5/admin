@@ -168,7 +168,7 @@ func ImageWithTextBody(data *ImageWithText, input *pagebuilder.RenderInput) (bod
 		}`, hasHeroImage)),
 	).Class("text-[#212121] bg-no-repeat bg-cover bg-center"),
 	// Style(fmt.Sprintf("background-image: url(%s)", backgroundImgUrl)),
-	).Class("tw-theme-bg-base common-container-inner bg-no-repeat bg-cover bg-center")
+	).Class("common-container-inner bg-no-repeat bg-cover bg-center")
 
 	body = utils.TailwindContainerWrapper(
 		"common-container",
