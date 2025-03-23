@@ -24,6 +24,8 @@ type imageWithTextStyle struct {
 	LeftSpace       int
 	RightSpace      int
 	Visibility      []string
+	ImageHeight     []string
+	ImageWidth      []string
 }
 
 func (this imageWithTextStyle) Value() (driver.Value, error) {
@@ -42,7 +44,7 @@ func (this *imageWithTextStyle) Scan(value interface{}) error {
 }
 
 func SetHeroStyleComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder) {
-	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&imageWithTextStyle{}).Only("Layout", "HorizontalAlign", "VerticalAlign", "Visibility", "TopSpace", "BottomSpace", "LeftSpace", "RightSpace")
+	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&imageWithTextStyle{}).Only("Layout", "ImageHeight", "ImageWidth", "HorizontalAlign", "VerticalAlign", "Visibility", "TopSpace", "BottomSpace", "LeftSpace", "RightSpace")
 
 	fb.Field("Layout").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		// return presets.SelectField(obj, field, ctx).Items([]string{"left", "right"})
@@ -98,6 +100,14 @@ func SetHeroStyleComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder) 
 		).Class("mb-4")
 	})
 
+	fb.Field("ImageHeight").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		return presets.SelectField(obj, field, ctx).Items(utils.ImageWithTextImageHeightOptions).ItemTitle("Label").ItemValue("Value")
+	})
+
+	fb.Field("ImageWidth").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		return presets.SelectField(obj, field, ctx).Items(utils.ImageWithTextImageWidthOptions).ItemTitle("Label").ItemValue("Value")
+	})
+
 	fb.Field("VerticalAlign").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return presets.SelectField(obj, field, ctx).Items(utils.VerticalAlign).ItemTitle("Label").ItemValue("Value")
 	})
@@ -107,7 +117,7 @@ func SetHeroStyleComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder) 
 	})
 
 	fb.Field("Visibility").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return presets.SelectField(obj, field, ctx).Items(utils.ImageWithTextVisibilityOptions).ItemTitle("Label").ItemValue("Value").Multiple(true)
+		return presets.SelectField(obj, field, ctx).Chips(true).Items(utils.ImageWithTextVisibilityOptions).ItemTitle("Label").ItemValue("Value").Multiple(true)
 	})
 
 	eb.Field("Style").Nested(fb).PlainFieldBody().HideLabel()
