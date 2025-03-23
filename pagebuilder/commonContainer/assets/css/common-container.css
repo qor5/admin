@@ -1,24 +1,26 @@
 /** preset theme **/
-.cc-h1 {
+.container-image-with-text .cc-h1 {
   font-family: var(--cc-font-family-h1), var(--cc-font-family);
+  color: rgb(var(--cc-color-surface));
 }
 
-.cc-h2 {
+.container-image-with-text .cc-h2 {
   font-family: var(--cc-font-family-h2), var(--cc-font-family);
 }
 
-.cc-content {
+.container-image-with-text .cc-content {
   font-family: var(--cc-font-family-content), var(--cc-font-family);
+  color: rgb(var(--cc-color-surface));
 }
 
-.cc-btn {
+.container-image-with-text .cc-btn {
   font-family: var(--cc-font-family-btn), var(--cc-font-family);
   background: var(--cc-btn-background, rgb(var(--cc-color-brand)));
   color: var(--cc-btn-color, rgb(var(--cc-color-base)));
   border-radius: var(--cc-btn-border-radius, 4px);
 }
 
-.cc-image {
+.container-image-with-text .cc-image {
   border-radius: var(--cc-image-border-radius, 0);
 }
 

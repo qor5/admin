@@ -124,8 +124,8 @@ func ImageWithTextBody(data *ImageWithText, input *pagebuilder.RenderInput) (bod
 			Div(
 				Div(
 					If(lo.Contains(data.Style.Visibility, "title"), H1("").Children(RawHTML(data.Content.Title)).
-						Class("richEditor-content tw-theme-text cc-h1 font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px]")),
-					If(lo.Contains(data.Style.Visibility, "content"), Div().Children(RawHTML(data.Content.Content)).Class("richEditor-content tw-theme-text cc-content xl:text-[24px] md:text-[22px] text-[12px] font-medium xl:leading-[32px] leading-normal").
+						Class("richEditor-content cc-h1 font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px]")),
+					If(lo.Contains(data.Style.Visibility, "content"), Div().Children(RawHTML(data.Content.Content)).Class("richEditor-content cc-content xl:text-[24px] md:text-[22px] text-[12px] font-medium xl:leading-[32px] leading-normal").
 						ClassIf("text-left", data.Style.HorizontalAlign == "item-start").
 						ClassIf("text-center", data.Style.HorizontalAlign == "items-center").
 						ClassIf("text-right", data.Style.HorizontalAlign == "items-end")),
