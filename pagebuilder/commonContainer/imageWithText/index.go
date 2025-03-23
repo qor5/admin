@@ -2,6 +2,7 @@ package imageWithText
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/qor5/web/v3"
 	. "github.com/theplant/htmlgo"
@@ -104,6 +105,18 @@ func ImageWithTextBody(data *ImageWithText, input *pagebuilder.RenderInput) (bod
 		heroImgUrl = "https://placehold.co/500x400"
 	}
 
+	// Set default values for ImageHeight and ImageWidth if they're empty
+	if len(data.Style.ImageHeight) == 0 {
+		data.Style.ImageHeight = []string{"auto"}
+	}
+	if len(data.Style.ImageWidth) == 0 {
+		data.Style.ImageWidth = []string{"500px"}
+	}
+
+	// For easier access and to avoid repeated indexing
+	imageHeight := data.Style.ImageHeight[0]
+	imageWidth := data.Style.ImageWidth[0]
+
 	hasHeroImage := lo.Contains(data.Style.Visibility, "image")
 
 	heroBody := Div(
@@ -127,7 +140,14 @@ func ImageWithTextBody(data *ImageWithText, input *pagebuilder.RenderInput) (bod
 					Div(
 						Img(heroImgUrl).Class("position-absolute w-full object-cover object-center h-full max-w-full left-0 top-0 flex-shrink-0"),
 					).
-						Class(fmt.Sprintf("tw-theme-filter-container  flex-shrink-0 overflow-hidden h-%s w-%s", data.Style.ImageHeight, data.Style.ImageWidth)),
+						Class(fmt.Sprintf("tw-theme-filter-container flex-shrink-0 overflow-hidden xl:h-[%s] xl:w-[%s] md:h-[%s] md:w-[%s] h-[%s] w-[%s]",
+							imageHeight,
+							imageWidth,
+							getScaledImageDimension(imageHeight, 314.0/500.0),
+							getScaledImageDimension(imageWidth, 314.0/500.0),
+							getScaledImageDimension(imageHeight, 169.0/500.0),
+							getScaledImageDimension(imageWidth, 169.0/500.0),
+						)),
 				).Class(fmt.Sprintf("order-1 flex flex-col items-center %s", data.Style.VerticalAlign)).
 					ClassIf("xl:ml-10 md:ml-[20px] ml-6", data.Style.Layout == "left").
 					ClassIf("justify-center", data.Style.VerticalAlign == "justify-between")),
@@ -157,4 +177,37 @@ func ImageWithTextBody(data *ImageWithText, input *pagebuilder.RenderInput) (bod
 		Tag("twind-scope").Attr("data-props", fmt.Sprintf(`{"type":"imageWithText", "id": %q}`, input.ContainerId)).Children(Div(heroBody).Class("bg-gray-100")),
 	)
 	return
+}
+
+func getScaledImageDimension(value string, scale float64) string {
+	if value == "auto" {
+		return "auto"
+	}
+
+	// More robust parsing of CSS dimension values
+	var size float64
+	// Using strconv.ParseFloat with string manipulation
+	numPart := ""
+	for _, c := range value {
+		if (c >= '0' && c <= '9') || c == '.' {
+			numPart += string(c)
+		} else {
+			// We found the first non-numeric character
+			// Try to parse what we have so far
+			if size, err := strconv.ParseFloat(numPart, 64); err == nil {
+				// Successfully parsed the number, apply scaling
+				return fmt.Sprintf("%dpx", int(size*scale))
+			}
+			break
+		}
+	}
+
+	// Fallback to original Sscanf approach
+	n, err := fmt.Sscanf(value, "%fpx", &size)
+	if err != nil || n != 1 {
+		return value // Return original if parsing fails
+	}
+
+	// Scale and return the result with px units
+	return fmt.Sprintf("%dpx", int(size*scale))
 }
