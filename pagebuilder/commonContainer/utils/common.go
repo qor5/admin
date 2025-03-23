@@ -39,6 +39,25 @@ var ImageWithTextVisibilityOptions = []struct {
 	{Label: "image", Value: "image"},
 }
 
+var ImageWithTextImageWidthOptions = []struct {
+	Label string
+	Value string
+}{
+	{Label: "small", Value: "350px"},
+	{Label: "medium", Value: "500px"},
+	{Label: "large", Value: "700px"},
+}
+
+var ImageWithTextImageHeightOptions = []struct {
+	Label string
+	Value string
+}{
+	{Label: "adapt to image", Value: "auto"},
+	{Label: "small", Value: "350px"},
+	{Label: "medium", Value: "500px"},
+	{Label: "large", Value: "700px"},
+}
+
 func TailwindContainerWrapper(classes string, comp ...HTMLComponent) HTMLComponent {
 	return Div(comp...).
 		Class("container-instance").ClassIf(classes, classes != "")
