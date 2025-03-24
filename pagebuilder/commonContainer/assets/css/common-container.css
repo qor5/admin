@@ -130,11 +130,15 @@
 }
 
 .richEditor-content a {
-  color: var(
-    --cc-richEditor-base-text-color-link,
-    var(rgba(currentColor, 0.8))
-  );
+  color: var(--cc-richEditor-base-text-color-link, currentColor);
+  opacity: var(--cc-richEditor-base-text-opacity-link, 0.8);
   text-decoration: var(--cc-richEditor-base-text-decoration-link, underline);
+}
+
+.richEditor-content a > span {
+  color: var(--cc-richEditor-base-text-color-link, currentColor);
+  text-decoration: var(--cc-richEditor-base-text-decoration-link, underline);
+  /** fix when richeditor a wraped span with color but underline's color is not correct **/
 }
 
 .richEditor-content p {

@@ -40,8 +40,8 @@
   /* --cc-container-background: #fff; */
 
   --cc-btn-border-radius: 4px;
-  --cc-btn-background: var(rgb(var(--cc-color-brand));
-  --cc-btn-color: var(rgb(var(--cc-color-base)));
+  --cc-btn-background: rgb(var(--cc-color-brand));
+  --cc-btn-color: rgb(var(--cc-color-base));
   --cc-btn-border-radius: 4px;
   --cc-image-border-radius: 0;
 
@@ -67,6 +67,8 @@
   --cc-richEditor-base-text-color-link: var(rgba(currentColor, 0.8));
   /* richEditor link */
   --cc-richEditor-base-text-decoration-link: underline;
+  --cc-richEditor-base-text-opacity-link: 0.8;
+  --cc-richEditor-base-text-color-link: currentColor;
   /* richEditor list */
   --cc-richEditor-list-text-padding-left: 2em;
   --cc-richEditor-list-text-margin-bottom: 1em;
