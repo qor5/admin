@@ -100,45 +100,45 @@ func footerBody(data *TailWindExampleFooter, input *pagebuilder.RenderInput) (bo
 				Div(
 					Ul(
 						Li(
-							H2(data.Content.Group1).Class("tw-theme-text tw-theme-h2 text-2xl mb-6"),
+							H2(data.Content.Group1).Class("tw-theme-text cc-h2 text-2xl mb-6"),
 							Ul(
 								Li(Text(data.Content.Group1Item1)),
 								Li(Text(data.Content.Group1Item2)),
 								Li(Text(data.Content.Group1Item3)),
 								Li(Text(data.Content.Group1Item4)),
-							).Class("tw-theme-text tw-theme-p flex flex-col gap-4").Attr("data-list-unset", "true"),
+							).Class("tw-theme-text cc-content flex flex-col gap-4").Attr("data-list-unset", "true"),
 						),
 						Li(
-							H2(data.Content.Group2).Class("tw-theme-text tw-theme-h2 text-2xl mb-6"),
+							H2(data.Content.Group2).Class("tw-theme-text cc-h2 text-2xl mb-6"),
 							Ul(
 								Li(Text(data.Content.Group2Item1)),
 								Li(Text(data.Content.Group2Item2)),
 								Li(Text(data.Content.Group2Item3)),
 								Li(Text(data.Content.Group2Item4)),
-							).Class("tw-theme-text tw-theme-p flex flex-col gap-4").Attr("data-list-unset", "true"),
+							).Class("tw-theme-text cc-content flex flex-col gap-4").Attr("data-list-unset", "true"),
 						),
 						Li(
-							H2(data.Content.Group3).Class("tw-theme-text tw-theme-h2 text-2xl mb-6"),
+							H2(data.Content.Group3).Class("tw-theme-text cc-h2 text-2xl mb-6"),
 							Ul(
 								Li(Text(data.Content.Group3Item1)),
 								Li(Text(data.Content.Group3Item2)),
 								Li(Text(data.Content.Group3Item3)),
 								Li(Text(data.Content.Group3Item4)),
-							).Class("tw-theme-text tw-theme-p flex flex-col gap-4").Attr("data-list-unset", "true"),
+							).Class("tw-theme-text cc-content flex flex-col gap-4").Attr("data-list-unset", "true"),
 						),
 						Li(
-							H2(data.Content.Group5).Class("tw-theme-text tw-theme-h2 text-2xl mb-6"),
+							H2(data.Content.Group5).Class("tw-theme-text cc-h2 text-2xl mb-6"),
 							Ul(
 								Li(Text(data.Content.Group5Item1)),
 								Li(Text(data.Content.Group5Item2)),
 								Li(Text(data.Content.Group5Item3)),
 								Li(Text(data.Content.Group5Item4)),
-							).Class("tw-theme-text tw-theme-p flex flex-col gap-4").Attr("data-list-unset", "true"),
+							).Class("tw-theme-text cc-content flex flex-col gap-4").Attr("data-list-unset", "true"),
 						),
 					).Class("grid grid-cols-[repeat(auto-fill,_minmax(235px,_1fr))] gap-8").Attr("data-list-unset", "true"),
 				).Class("flex-1"),
 				Div(
-					H2(data.Content.Group4).Class("tw-theme-text tw-theme-h2 text-2xl"),
+					H2(data.Content.Group4).Class("tw-theme-text cc-h2 text-2xl"),
 				),
 			).Class("py-[120px] px-[82px] flex justify-between gap-8 w-[1280px] m-auto"),
 		).Class(" tw-theme-bg-base"),

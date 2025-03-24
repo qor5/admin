@@ -109,29 +109,29 @@ func HeroBody(data *TailWindHeroList, input *pagebuilder.RenderInput) (body HTML
 	heroBody := Div(
 		Div(
 			Div(
-				H1(data.Content.Title).Class("tw-theme-text tw-theme-h1 text-center font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px]"),
+				H1(data.Content.Title).Class("tw-theme-text cc-h1 text-center font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px]"),
 
 				Ul(
 					Li(
 						Div().Class("w-[320px] h-[288px] tw-theme-filter-container bg-center bg-no-repeat bg-cover").
 							Style(fmt.Sprintf("background-image: url(%s)", image1)),
-						H2(data.Content.ProductTitle1).Class("tw-theme-text tw-theme-h2 text-[35px] leading-10 mt-6"),
+						H2(data.Content.ProductTitle1).Class("tw-theme-text cc-h2 text-[35px] leading-10 mt-6"),
 						P(Text(data.Content.ProductDescription1)).
-							Class("mt-4 tw-theme-text tw-theme-p text-[16px] leading-6"),
+							Class("mt-4 tw-theme-text cc-content text-[16px] leading-6"),
 					).Class("w-[320px]"),
 					Li(
 						Div().Class("w-[320px] h-[288px] tw-theme-filter-container bg-center bg-no-repeat bg-cover").
 							Style(fmt.Sprintf("background-image: url(%s)", image2)),
-						H2(data.Content.ProductTitle2).Class("tw-theme-text tw-theme-h2 text-[35px] leading-10 mt-6"),
+						H2(data.Content.ProductTitle2).Class("tw-theme-text cc-h2 text-[35px] leading-10 mt-6"),
 						P(Text(data.Content.ProductDescription2)).
-							Class("mt-4 tw-theme-text tw-theme-p text-[16px] leading-6"),
+							Class("mt-4 tw-theme-text cc-content text-[16px] leading-6"),
 					).Class("w-[320px]"),
 					Li(
 						Div().Class("w-[320px] h-[288px] tw-theme-filter-container bg-center bg-no-repeat bg-cover").
 							Style(fmt.Sprintf("background-image: url(%s)", image3)),
-						H2(data.Content.ProductTitle3).Class("tw-theme-text tw-theme-h2 text-[35px] leading-10 mt-6"),
+						H2(data.Content.ProductTitle3).Class("tw-theme-text cc-h2 text-[35px] leading-10 mt-6"),
 						P(Text(data.Content.ProductDescription3)).
-							Class("mt-4 tw-theme-text tw-theme-p text-[16px] leading-6"),
+							Class("mt-4 tw-theme-text cc-content text-[16px] leading-6"),
 					).Class("w-[320px]"),
 				).Class("flex justify-between mt-10").Attr("data-list-unset", "true"),
 			).Class("p-[120px] w-[1280px] m-auto"),

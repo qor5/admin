@@ -6,10 +6,9 @@ import (
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/pagebuilder/commonContainer/footer"
 	"github.com/qor5/admin/v3/pagebuilder/commonContainer/header"
-	"github.com/qor5/admin/v3/pagebuilder/commonContainer/heroImageHorizontal"
 	"github.com/qor5/admin/v3/pagebuilder/commonContainer/heroImageList"
 	"github.com/qor5/admin/v3/pagebuilder/commonContainer/heroImageVertical"
-	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/pagebuilder/commonContainer/imageWithText"
 	"github.com/qor5/admin/v3/tiptap"
 )
 
@@ -19,6 +18,7 @@ const (
 	TailWindHeroVertical  ContainerType = "tailWindHeroVertical"
 	TailWindExampleHeader ContainerType = "tailWindExampleHeader"
 	TailWindExampleFooter ContainerType = "tailWindExampleFooter"
+	ImageWithText         ContainerType = "imageWithText"
 )
 
 type (
@@ -34,11 +34,6 @@ var (
 	allContainerType = []ContainerType{HeroImageHorizontal, TailWindHeroList, TailWindHeroVertical, TailWindExampleHeader, TailWindExampleFooter}
 
 	register = []containerRegister{
-		{
-			ContainerType: HeroImageHorizontal,
-			Register:      heroImageHorizontal.RegisterContainer,
-			Model:         &heroImageHorizontal.HeroImageHorizontal{},
-		},
 		{
 			ContainerType: TailWindHeroList,
 			Register:      heroImageList.RegisterContainer,
@@ -59,14 +54,15 @@ var (
 			Register:      footer.RegisterContainer,
 			Model:         &footer.TailWindExampleFooter{},
 		},
+		{
+			ContainerType: ImageWithText,
+			Register:      imageWithText.RegisterContainer,
+			Model:         &imageWithText.ImageWithText{},
+		},
 	}
 )
 
-func AutoMigrate(db *gorm.DB, ct ...ContainerType) error {
-	if len(ct) == 0 {
-		ct = allContainerType
-	}
-
+func autoMigrate(db *gorm.DB, ct ...ContainerType) error {
 	var models []interface{}
 	for _, containerType := range ct {
 		for _, r := range register {
@@ -80,18 +76,14 @@ func AutoMigrate(db *gorm.DB, ct ...ContainerType) error {
 	return db.AutoMigrate(models...)
 }
 
-func New(db *gorm.DB, b *presets.Builder, prefix string, layout pagebuilder.PageLayoutFunc, ct ...ContainerType) *pagebuilder.Builder {
-	pb := pagebuilder.New(prefix, db, b)
+func Setup(pb *pagebuilder.Builder, db *gorm.DB, layout pagebuilder.PageLayoutFunc, ct ...ContainerType) *pagebuilder.Builder {
 	if layout != nil {
 		pb.PageLayout(pagebuilder.WrapDefaultPageLayout(layout))
 	}
 	pb.GetPresetsBuilder().ExtraAsset("/tiptap.css", "text/css", tiptap.ThemeGithubCSSComponentsPack())
-
-	// Register containers
-	if len(ct) == 0 {
-		ct = allContainerType
+	if err := autoMigrate(db, ct...); err != nil {
+		panic(err)
 	}
-
 	for _, containerType := range ct {
 		for _, r := range register {
 			if r.ContainerType == containerType {

@@ -1,11 +1,10 @@
-package heroImageHorizontal
+package imageWithText
 
 import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
 
-	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/pagebuilder/commonContainer/utils"
 	"github.com/qor5/admin/v3/presets"
@@ -16,19 +15,24 @@ import (
 	. "github.com/theplant/htmlgo"
 )
 
-type heroStyle struct {
+type imageWithTextStyle struct {
 	Layout          string
+	HorizontalAlign string
+	VerticalAlign   string
 	TopSpace        int
 	BottomSpace     int
-	ImgInitial      bool
-	ImageBackground media_library.MediaBox `sql:"type:text;"`
+	LeftSpace       int
+	RightSpace      int
+	Visibility      []string
+	ImageHeight     []string
+	ImageWidth      []string
 }
 
-func (this heroStyle) Value() (driver.Value, error) {
+func (this imageWithTextStyle) Value() (driver.Value, error) {
 	return json.Marshal(this)
 }
 
-func (this *heroStyle) Scan(value interface{}) error {
+func (this *imageWithTextStyle) Scan(value interface{}) error {
 	switch v := value.(type) {
 	case string:
 		return json.Unmarshal([]byte(v), this)
@@ -40,7 +44,7 @@ func (this *heroStyle) Scan(value interface{}) error {
 }
 
 func SetHeroStyleComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder) {
-	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&heroStyle{}).Only("Layout", "TopSpace", "BottomSpace", "ImageBackground")
+	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&imageWithTextStyle{}).Only("Layout", "ImageHeight", "ImageWidth", "HorizontalAlign", "VerticalAlign", "Visibility", "TopSpace", "BottomSpace", "LeftSpace", "RightSpace")
 
 	fb.Field("Layout").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		// return presets.SelectField(obj, field, ctx).Items([]string{"left", "right"})
@@ -96,14 +100,25 @@ func SetHeroStyleComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder) 
 		).Class("mb-4")
 	})
 
-	fb.Field("TopSpace").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return presets.SelectField(obj, field, ctx).Items(utils.SpaceOptions)
+	fb.Field("ImageHeight").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		return presets.SelectField(obj, field, ctx).Items(utils.ImageWithTextImageHeightOptions).ItemTitle("Label").ItemValue("Value")
 	})
 
-	fb.Field("BottomSpace").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return presets.SelectField(obj, field, ctx).Items(utils.SpaceOptions)
+	fb.Field("ImageWidth").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		return presets.SelectField(obj, field, ctx).Items(utils.ImageWithTextImageWidthOptions).ItemTitle("Label").ItemValue("Value")
 	})
-	// SetCommonStyleComponent(pb, fb.Field("Style"))
+
+	fb.Field("VerticalAlign").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		return presets.SelectField(obj, field, ctx).Items(utils.VerticalAlign).ItemTitle("Label").ItemValue("Value")
+	})
+
+	fb.Field("HorizontalAlign").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		return presets.SelectField(obj, field, ctx).Items(utils.HorizontalAlign).ItemTitle("Label").ItemValue("Value")
+	})
+
+	fb.Field("Visibility").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		return presets.SelectField(obj, field, ctx).Chips(true).Items(utils.ImageWithTextVisibilityOptions).ItemTitle("Label").ItemValue("Value").Multiple(true)
+	})
 
 	eb.Field("Style").Nested(fb).PlainFieldBody().HideLabel()
 }

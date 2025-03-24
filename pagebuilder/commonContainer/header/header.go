@@ -71,13 +71,13 @@ func headerBody(data *TailWindExampleHeader, input *pagebuilder.RenderInput) (bo
 	html := Div(
 		Header(
 			Div(
-				// Span("Logo").Class("logo text-3xl tw-theme-p font-bold tw-theme-text"),
+				// Span("Logo").Class("logo text-3xl cc-content font-bold tw-theme-text"),
 				Img("").Src(logoUrl).Class("logo-image logo mr-3 shrink-0").Attr("width", "200"),
 				Ul(
-					Li(A(Text(data.Content.Href1)).Href("#").Class("tw-theme-p")),
-					Li(A(Text(data.Content.Href2)).Href("#").Class("tw-theme-p")),
-					Li(A(Text(data.Content.Href3)).Href("#").Class("tw-theme-p")),
-					Li(A(Text(data.Content.Href4)).Href("#").Class("tw-theme-p")),
+					Li(A(Text(data.Content.Href1)).Href("#").Class("cc-content")),
+					Li(A(Text(data.Content.Href2)).Href("#").Class("cc-content")),
+					Li(A(Text(data.Content.Href3)).Href("#").Class("cc-content")),
+					Li(A(Text(data.Content.Href4)).Href("#").Class("cc-content")),
 				).Class("list-none flex tw-theme-text text-[28px] gap-[62px] font-[500]").
 					Attr("data-list-unset", "true"),
 			).Class("w-[1152px] m-0 mx-auto leading-9 flex justify-between items-center"),
