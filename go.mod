@@ -214,4 +214,4 @@ exclude github.com/envoyproxy/go-control-plane/envoy v1.32.4
 
 // replace github.com/qor5/web/v3 => ../web
 
-replace github.com/qor5/x/v3 => ../x
+// replace github.com/qor5/x/v3 => ../x
