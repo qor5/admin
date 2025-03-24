@@ -754,7 +754,7 @@ func configPost(
 			&media_library.MediaBoxConfig{})
 	detailSection.EditingField("Body").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		extensions := tiptap.TiptapExtensions()
-		return tiptap.TiptapEditor(db, field.Name).
+		return tiptap.TiptapEditor(db, field.FormKey).
 			Extensions(extensions).
 			MarkdownTheme("github"). // Match tiptap.ThemeGithubCSSComponentsPack
 			Attr(presets.VFieldError(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)), field.Errors)...).
