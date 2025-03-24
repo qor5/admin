@@ -2,6 +2,8 @@ module github.com/qor5/admin/v3/utils/testflow/gentool
 
 go 1.23.0
 
+toolchain go1.23.4
+
 require (
 	github.com/gobuffalo/flect v1.0.2
 	github.com/pkg/errors v0.9.1
