@@ -136,8 +136,7 @@
       var(--cc_rgba-brand20)
     ),
     linear-gradient(var(--cc_rgba-base100), var(--cc_rgba-base100));
-
-  /* background: url('https://placehold.co/600x400'); */
+  background-blend-mode: color;
 }
 
 .container-image-with-text .cc-title {
