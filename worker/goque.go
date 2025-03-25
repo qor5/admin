@@ -68,18 +68,18 @@ func (q *goque) Add(ctx context.Context, job QueJobInterface) error {
 	return nil
 }
 
-func (q *goque) run(ctx context.Context, job QueJobInterface) error {
+func (*goque) run(ctx context.Context, job QueJobInterface) error {
 	job.StartRefresh()
 	defer job.StopRefresh()
 
 	return job.GetHandler()(ctx, job)
 }
 
-func (q *goque) Kill(ctx context.Context, job QueJobInterface) error {
+func (*goque) Kill(ctx context.Context, job QueJobInterface) error {
 	return job.SetStatus(JobStatusKilled)
 }
 
-func (q *goque) Remove(ctx context.Context, job QueJobInterface) error {
+func (*goque) Remove(ctx context.Context, job QueJobInterface) error {
 	return job.SetStatus(JobStatusCancelled)
 }
 
@@ -201,7 +201,7 @@ func (q *goque) Shutdown(ctx context.Context) error {
 	return errs
 }
 
-func (q *goque) parseArgs(data []byte, args ...interface{}) error {
+func (*goque) parseArgs(data []byte, args ...interface{}) error {
 	d := json.NewDecoder(bytes.NewReader(data))
 	if _, err := d.Token(); err != nil {
 		return err

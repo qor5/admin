@@ -51,6 +51,7 @@ var DocTree = []interface{}{
 			basics.I18n,
 			basics.L10n,
 			basics.Redirection,
+			basics.CustomPage,
 		},
 	},
 

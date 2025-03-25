@@ -122,6 +122,10 @@
 <a href='basics/redirection.html' id='basics/redirection.html' onclick='window.storeMenuState("basics/redirection.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-blue-500'>Redirection</a>
 </li>
 
+<li class='m-0'>
+<a href='basics/custom-page.html' id='basics/custom-page.html' onclick='window.storeMenuState("basics/custom-page.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Custom Pages</a>
+</li>
+
 <li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Web Application</li>
 
 <li class='m-0'>
@@ -221,15 +225,26 @@
 <div id='docMainBox' class='px-16 pb-12 pt-4 overflow-auto'>
 <h1 class='mb-8'>Redirection</h1>
 
-<div class='border-t'><p>Redirection is  S3 Object Level Redirection implement</p>
+<div class='border-t'><p>Redirection is an S3 Object Level Redirection implementation</p>
 
 <ul>
-<li>can control URL redirection via QOR5 Admin</li>
-<li>only for static pages that hosted on s3</li>
-<li>only supports CSV files with the format:</li>
+<li>Can control URL redirection via QOR5 Admin</li>
+<li>Only for static pages hosted on S3</li>
+<li>If it is an internal resource, the prefix must be &#34;/&#34;, for example, &#34;/international/index.html&#34;, otherwise it will be considered a format error</li>
+<li>Can redirect internal resource A to internal resource B, but the target internal resource B must exist, otherwise the redirection will fail</li>
+<li>Can redirect internal resource A to external resource B, but the target external resource B must be accessible, otherwise the redirection will fail</li>
+<li>Only supports CSV files with the format:</li>
 </ul>
 
-<highlightjs :language='"go"' :code='"```csv\nsource,target\n/international/index.html,https://www.xxx.com"'></highlightjs>
+<highlightjs :language='"go"' :code='" - Correct Example 1, redirect to external resource\n```csv\nsource,target\n/international/index.html,https://demo.qor5.com/"'></highlightjs>
+
+<highlightjs :language='"go"' :code='" - Correct Example 2, redirect to internal resource\n```csv\nsource,target\n/international/index.html,/international/index2.html"'></highlightjs>
+
+<highlightjs :language='"go"' :code='" - Incorrect Example 1, format error\n```csv\nsource,target\n/international/index.html,international/index2.html"'></highlightjs>
+
+<highlightjs :language='"go"' :code='" - Incorrect Example 2, duplicate source name\n```csv\nsource,target\n/international/index3.html,/international/index1.html\n/international/index3.html,/international/index2.html"'></highlightjs>
+
+<highlightjs :language='"go"' :code='" - Incorrect Example 3, pointing to external resource, external resource is inaccessible\n```csv\nsource,target\n/international/index3.html,https://wwwwwwww/"'></highlightjs>
 
 <highlightjs :language='"go"' :code='"b.DataOperator(gorm2op.DataOperator(db))\n\ns3Client := s3.New(\u0026s3.Config{\n\tBucket:   s3PublishBucket,\n\tRegion:   s3PublishRegion,\n\tACL:      string(types.ObjectCannedACLBucketOwnerFullControl),\n\tEndpoint: publishURL,\n})\npublisher := publish.New(db, microsite_utils.NewClient(s3Client))\nrb := redirection.New(s3Client, db, publisher).AutoMigrate()"'></highlightjs>
 </div>

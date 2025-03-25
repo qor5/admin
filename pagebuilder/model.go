@@ -238,8 +238,7 @@ func (b *ModelBuilder) primaryColumnValuesBySlug(slug string) (pageID int, pageV
 	}
 	pageVersion = ps[publish.SlugVersion]
 	locale = ps[l10n.SlugLocaleCode]
-	pageIDi, _ := strconv.ParseInt(ps["id"], 10, 64)
-	pageID = int(pageIDi)
+	pageID, _ = strconv.Atoi(ps["id"])
 	return
 }
 
@@ -292,6 +291,7 @@ func (b *ModelBuilder) renderScrollIframe(comps []h.HTMLComponent, ctx *web.Even
 		IsEditor:   isEditor,
 		IsPreview:  !isEditor,
 		SeoTags:    seoTags,
+		Obj:        obj,
 	}
 
 	if isEditor {
@@ -842,7 +842,7 @@ func (b *ModelBuilder) configDuplicate(mb *presets.ModelBuilder) {
 							panic(inerr)
 						}
 					}
-					if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, fromVersion, fromLocale, pageID, version, localeCode); inerr != nil {
+					if inerr = b.localizeContainersToAnotherPage(tx, fromIDInt, fromVersion, fromLocale, fromIDInt, version, localeCode); inerr != nil {
 						panic(inerr)
 					}
 					return

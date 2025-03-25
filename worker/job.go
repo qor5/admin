@@ -11,12 +11,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/presets"
 )
 
 //go:generate moq -pkg mock -out mock/qor_job.go . QorJobInterface
@@ -71,12 +72,8 @@ func (jb *JobBuilder) Resource(r interface{}) *JobBuilder {
 			if t != nil {
 				v = t.Local().Format("2006-01-02 15:04")
 			}
-			return vx.VXDateTimePicker().Attr(web.VField(field.Name, v)...).Label(msgr.ScheduleTime).
-				TimePickerProps(vx.TimePickerProps{
-					Format:     "24hr",
-					Scrollable: true,
-				}).
-				ClearText(msgr.DateTimePickerClearText).OkText(msgr.DateTimePickerOkText)
+			return vx.VXDatepicker().Attr(web.VField(field.Name, v)...).Label(msgr.ScheduleTime).Type("datetimepicker").
+				Format("YYYY-MM-DD HH:mm")
 		}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 			v := ctx.R.Form.Get(field.Name)
 			if v == "" {

@@ -72,7 +72,7 @@ func RegisterListContentLiteContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&ListItemLite{}).Only("Heading", "Text")
 	fb.Field("Text").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		extensions := tiptap.TiptapExtensions()
-		return tiptap.TiptapEditor(db, field.Name).
+		return tiptap.TiptapEditor(db, field.FormKey).
 			Extensions(extensions).
 			MarkdownTheme("github"). // Match tiptap.ThemeGithubCSSComponentsPack
 			Attr(presets.VFieldError(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)), field.Errors)...).

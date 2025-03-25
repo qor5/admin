@@ -226,6 +226,7 @@ func NewConfig(db *gorm.DB, enableWork bool, opts ...ConfigOption) Config {
 
 	l10nBuilder := l10n.New(db)
 	l10nBuilder.
+		Activity(ab).
 		RegisterLocales("International", "international", "International", l10n.InternationalSvg).
 		RegisterLocales("China", "cn", "China", l10n.ChinaSvg).
 		RegisterLocales("Japan", "jp", "Japan", l10n.JapanSvg).
@@ -522,8 +523,8 @@ func configProfile(db *gorm.DB, ab *activity.Builder, lsb *plogin.SessionBuilder
 				Roles:  u.GetRoles(),
 				Status: strcase.ToCamel(u.Status),
 				Fields: []*plogin.ProfileField{
-					{Name: "Email", Value: u.Account},
-					{Name: "Company", Value: u.Company},
+					{Name: "Email", Value: u.Account, Icon: "mdi-email-outline"},
+					{Name: "Company", Value: u.Company, Icon: "mdi-domain"},
 				},
 				NotifCounts: notifiCounts,
 			}
@@ -582,7 +583,7 @@ func configBrand(b *presets.Builder) {
 		return h.Div(
 			v.VRow(
 				v.VCol(h.A(h.Img(logo).Attr("width", "80")).Href("/")),
-				v.VCol(h.H1(msgr.Demo)).Class("pt-4"),
+				// v.VCol(h.H1(msgr.Demo)).Class("pt-4"),
 			),
 			// ).Density(DensityCompact),
 			h.If(dbReset != "",
@@ -741,7 +742,7 @@ func configPost(
 			&media_library.MediaBoxConfig{})
 	detailSection.EditingField("Body").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		extensions := tiptap.TiptapExtensions()
-		return tiptap.TiptapEditor(db, field.Name).
+		return tiptap.TiptapEditor(db, field.FormKey).
 			Extensions(extensions).
 			MarkdownTheme("github"). // Match tiptap.ThemeGithubCSSComponentsPack
 			Attr(presets.VFieldError(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)), field.Errors)...).
