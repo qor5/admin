@@ -441,9 +441,7 @@ func PresetsListingDatatableFunc(b *presets.Builder, db *gorm.DB) (
 	b.DataOperator(gorm2op.DataOperator(db))
 	mb = b.Model(&Customer{})
 	mb.Listing().DataTableFunc(func(context *web.EventContext, params *presets.SearchParams, result *presets.SearchResult) h.HTMLComponent {
-		var (
-			rows = v.VRow()
-		)
+		rows := v.VRow()
 		reflectutils.ForEach(result.Nodes, func(obj interface{}) {
 			p := obj.(*Customer)
 			rows.AppendChildren(v.VCol(
