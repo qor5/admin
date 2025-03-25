@@ -32,18 +32,12 @@
 
   /** global font family **/
   --cc-font-family-h1: '';
-  --cc-font-family-h2: '';
-  --cc-font-family-content: '';
-  --cc-font-family-btn: '';
   --cc-font-family: InterVariable, system-ui, sans-serif;
-  /** enable it by uncomment ⬇️*/
-  /* --cc-container-background: #fff; */
 
   --cc-btn-border-radius: 4px;
-  --cc-btn-background: rgb(var(--cc-color-brand));
-  --cc-btn-color: rgb(var(--cc-color-base));
-  --cc-btn-border-radius: 4px;
   --cc-image-border-radius: 0;
+  --cc-cardItem-horizon-gap: ;
+  --cc-cardItem-vertical-gap: ;
 
   /********************* <rich text editor variables> START *********************/
 

@@ -1,32 +1,6 @@
-/** preset theme **/
-.container-image-with-text .cc-h1 {
-  font-family: var(--cc-font-family-h1), var(--cc-font-family);
-  color: rgb(var(--cc-color-surface));
-}
-
-.container-image-with-text .cc-h2 {
-  font-family: var(--cc-font-family-h2), var(--cc-font-family);
-}
-
-.container-image-with-text .cc-content {
-  font-family: var(--cc-font-family-content), var(--cc-font-family);
-  color: rgb(var(--cc-color-surface));
-}
-
-.container-image-with-text .cc-btn {
-  font-family: var(--cc-font-family-btn), var(--cc-font-family);
-  background: var(--cc-btn-background, rgb(var(--cc-color-brand)));
-  color: var(--cc-btn-color, rgb(var(--cc-color-base)));
-  border-radius: var(--cc-btn-border-radius, 4px);
-}
-
-.container-image-with-text .cc-image {
-  border-radius: var(--cc-image-border-radius, 0);
-}
-
-.tw-theme-filter-container {
-  position: relative;
-  overflow: hidden;
+/** global style **/
+* {
+  font-family: var(--cc-font-family);
 }
 
 .tw-theme-filter-container::before {
@@ -149,20 +123,39 @@
   word-break: break-word;
 }
 
-/** common-container **/
-.common-container-inner {
+/** image with text component style **/
+.container-image-with-text.cc-wrapper {
   --cc_rgba-brand20: rgba(
     var(--cc-color-brand),
     0.2
   ); /* brand color transparent 20% */
   --cc_rgba-base100: rgba(var(--cc-color-base), 1); /* base color pure color */
 
-  font-family: var(--cc-font-family);
+  background-image: linear-gradient(
+      var(--cc_rgba-brand20),
+      var(--cc_rgba-brand20)
+    ),
+    linear-gradient(var(--cc_rgba-base100), var(--cc_rgba-base100));
 
-  /* alternative solution to color-mix for better browser compatibility: base color + brand color transparent layer */
-  background: var(
-    --cc-container-background,
-    linear-gradient(var(--cc_rgba-brand20), var(--cc_rgba-brand20)),
-    linear-gradient(var(--cc_rgba-base100), var(--cc_rgba-base100))
-  );
+  /* background: url('https://placehold.co/600x400'); */
+}
+
+.container-image-with-text .cc-title {
+  /* font-family: var(--cc-font-family); */
+  color: rgb(var(--cc-color-surface));
+}
+
+.container-image-with-text .cc-content {
+  /* font-family: var(--cc-font-family); */
+  color: rgb(var(--cc-color-surface));
+}
+
+.container-image-with-text .cc-btn {
+  background: rgb(var(--cc-color-brand));
+  color: rgb(var(--cc-color-base));
+  border-radius: var(--cc-btn-border-radius, 4px);
+}
+
+.container-image-with-text .cc-image {
+  border-radius: var(--cc-image-border-radius, 0);
 }
