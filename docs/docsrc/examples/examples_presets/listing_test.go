@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/qor5/web/v3/multipartestutils"
+	"github.com/theplant/gofixtures"
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
@@ -130,6 +131,37 @@ func TestPresetsListingCustomizationFilters(t *testing.T) {
 				return httptest.NewRequest("GET", "/customers?f_created.gte=2024-09-13%2000%3A00&f_created.lt=2024-09-12%2000%3A00", nil)
 			},
 			ExpectPageBodyContainsInOrder: []string{`CreatedAt Error`},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}
+
+var listingDatatableData = gofixtures.Data(gofixtures.Sql(`
+INSERT INTO public.customers (id, name, email, description, company_id, created_at, updated_at, approved_at, 
+term_agreed_at, approval_comment) VALUES (12, 'Felix 1', 'abc@example.com', '', 0, '2024-03-28 05:52:28.497536 +00:00', 
+'2024-03-28 05:52:28.497536 +00:00', null, null, '');
+`, []string{"customers"}))
+
+func TestPresetsListingDatatableFunc(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsCustomPage(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "custom page basic",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				listingDatatableData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers").
+					BuildEventFuncRequest()
+			},
+			ExpectPageBodyContainsInOrder: []string{`v-card`, `Felix 1`, `abc@example.com`},
 		},
 	}
 

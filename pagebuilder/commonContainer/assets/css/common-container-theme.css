@@ -32,18 +32,12 @@
 
   /** global font family **/
   --cc-font-family-h1: '';
-  --cc-font-family-h2: '';
-  --cc-font-family-content: '';
-  --cc-font-family-btn: '';
   --cc-font-family: InterVariable, system-ui, sans-serif;
-  /** enable it by uncomment ⬇️*/
-  /* --cc-container-background: #fff; */
 
   --cc-btn-border-radius: 4px;
-  --cc-btn-background: var(rgb(var(--cc-color-brand));
-  --cc-btn-color: var(rgb(var(--cc-color-base)));
-  --cc-btn-border-radius: 4px;
   --cc-image-border-radius: 0;
+  --cc-cardItem-horizon-gap: ;
+  --cc-cardItem-vertical-gap: ;
 
   /********************* <rich text editor variables> START *********************/
 
@@ -67,6 +61,8 @@
   --cc-richEditor-base-text-color-link: var(rgba(currentColor, 0.8));
   /* richEditor link */
   --cc-richEditor-base-text-decoration-link: underline;
+  --cc-richEditor-base-text-opacity-link: 0.8;
+  --cc-richEditor-base-text-color-link: currentColor;
   /* richEditor list */
   --cc-richEditor-list-text-padding-left: 2em;
   --cc-richEditor-list-text-margin-bottom: 1em;
