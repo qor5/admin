@@ -1,5 +1,5 @@
 FROM golang:1.22.5-alpine as builder
-RUN apk update && apk add git gcc libc-dev && rm -rf /var/cache/apk/*
+RUN apk update && apk add gcc git libc-dev && rm -rf /var/cache/apk/*
 WORKDIR /qor5
 COPY . .
 RUN set -x && go get -d -v ./...

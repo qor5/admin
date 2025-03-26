@@ -17,18 +17,18 @@ import (
 type TiptapEditorBuilder struct {
 	editor          *vx.VXTiptapEditorBuilder
 	db              *gorm.DB
-	name            string
+	uniqueKey       string
 	imageGlueExists bool
 	label           string
 	disabled        bool
 	errorMessages   []string
 }
 
-func TiptapEditor(db *gorm.DB, name string) (r *TiptapEditorBuilder) {
+func TiptapEditor(db *gorm.DB, uniqueKey string) (r *TiptapEditorBuilder) {
 	r = &TiptapEditorBuilder{
-		editor: vx.VXTiptapEditor(),
-		db:     db,
-		name:   name,
+		editor:    vx.VXTiptapEditor(),
+		db:        db,
+		uniqueKey: uniqueKey,
 	}
 	return
 }
@@ -84,7 +84,7 @@ func (b *TiptapEditorBuilder) Extensions(extensions []*vx.VXTiptapEditorExtensio
 				imageGlue.Options = map[string]any{}
 			}
 
-			fieldName := fmt.Sprintf("%s_tiptapeditor_medialibrary", b.name)
+			fieldName := fmt.Sprintf("%s_tiptapeditor_medialibrary", b.uniqueKey)
 			imageGlue.Options["onClick"] = fmt.Sprintf(`({editor, value, window})=> {
 				const el = window.document.getElementById(%q);
 				if (!el) {
@@ -118,7 +118,7 @@ func (b *TiptapEditorBuilder) Extensions(extensions []*vx.VXTiptapEditorExtensio
 func (b *TiptapEditorBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
 	var mediaBox h.HTMLComponent
 	if b.imageGlueExists {
-		fieldName := fmt.Sprintf("%s_tiptapeditor_medialibrary", b.name)
+		fieldName := fmt.Sprintf("%s_tiptapeditor_medialibrary", b.uniqueKey)
 		// Body_tiptapeditor_medialibrary.Description: ""
 		// Body_tiptapeditor_medialibrary.Values: "{"ID":1,"Url":"/system/media_libraries/1/file.jpeg","VideoLink":"","FileName":"main-qimg-d2290767bcbc9eb9748ca82934e6855c-lq.jpeg","Description":"","FileSizes":{"@qor_preview":20659,"default":73467,"original":73467},"Width":602,"Height":602}"
 		mediaBox = h.Div().Class("hidden-screen-only").Children(

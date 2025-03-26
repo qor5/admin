@@ -47,6 +47,7 @@ func SamplesHandler(mux examples.Muxer) {
 	addExample(mux, db, PresetsEditingSetter)
 	addExample(mux, db, PresetsEditingSection)
 	addExample(mux, db, PresetsListingCustomizationSearcher)
+	addExample(mux, db, PresetsListingDatatableFunc)
 	addExample(mux, db, PresetsDetailInlineEditDetails)
 	addExample(mux, db, PresetsDetailSectionView)
 	addExample(mux, db, PresetsDetailTabsSection)

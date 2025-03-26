@@ -51,7 +51,7 @@ func PresetsEditingCustomizationDescription(b *presets.Builder, db *gorm.DB) (
 
 	ce.Field("Description").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		extensions := vx.TiptapSlackLikeExtensions()
-		return tiptap.TiptapEditor(db, field.Name).
+		return tiptap.TiptapEditor(db, field.FormKey).
 			Extensions(extensions).
 			Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
 			Label(field.Label).
@@ -94,7 +94,7 @@ func PresetsEditingTiptap(b *presets.Builder, db *gorm.DB) (
 		// 	&vx.VXTiptapEditorExtension{Name: "Video"},
 		// )
 		extensions := tiptap.TiptapExtensions()
-		return tiptap.TiptapEditor(db, field.Name).
+		return tiptap.TiptapEditor(db, field.FormKey).
 			Extensions(extensions).
 			MarkdownTheme("github"). // Match tiptap.ThemeGithubCSSComponentsPack
 			Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
