@@ -95,9 +95,9 @@ func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 }
 
 func CardListBody(data *CardList, input *pagebuilder.RenderInput) (body HTMLComponent) {
-	image1 := data.Content.ImageUpload1.URL()
-	image2 := data.Content.ImageUpload2.URL()
-	image3 := data.Content.ImageUpload3.URL()
+	image1 := "https://placehold.co/500x500"
+	image2 := "https://placehold.co/500x500"
+	image3 := "https://placehold.co/500x500"
 
 	// heroImgUrl := data.Content.ImageUpload.URL()
 	// backgroundImgUrl := data.Style.ImageBackground.URL()
@@ -108,39 +108,37 @@ func CardListBody(data *CardList, input *pagebuilder.RenderInput) (body HTMLComp
 
 	heroBody := Div(
 		Div(
-			Div(
-				H1(data.Content.Title).Class("tw-theme-text cc-h1 text-center font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px]"),
+			H1(data.Content.Title).Class("tw-theme-text cc-h1 text-center font-medium text-5xl leading-none"),
 
-				Ul(
-					Li(
-						Div().Class("w-[320px] h-[288px] tw-theme-filter-container bg-center bg-no-repeat bg-cover").
-							Style(fmt.Sprintf("background-image: url(%s)", image1)),
-						H2(data.Content.ProductTitle1).Class("tw-theme-text cc-h2 text-[35px] leading-10 mt-6"),
-						P(Text(data.Content.ProductDescription1)).
-							Class("mt-4 tw-theme-text cc-content text-[16px] leading-6"),
-					).Class("w-[320px]"),
-					Li(
-						Div().Class("w-[320px] h-[288px] tw-theme-filter-container bg-center bg-no-repeat bg-cover").
-							Style(fmt.Sprintf("background-image: url(%s)", image2)),
-						H2(data.Content.ProductTitle2).Class("tw-theme-text cc-h2 text-[35px] leading-10 mt-6"),
-						P(Text(data.Content.ProductDescription2)).
-							Class("mt-4 tw-theme-text cc-content text-[16px] leading-6"),
-					).Class("w-[320px]"),
-					Li(
-						Div().Class("w-[320px] h-[288px] tw-theme-filter-container bg-center bg-no-repeat bg-cover").
-							Style(fmt.Sprintf("background-image: url(%s)", image3)),
-						H2(data.Content.ProductTitle3).Class("tw-theme-text cc-h2 text-[35px] leading-10 mt-6"),
-						P(Text(data.Content.ProductDescription3)).
-							Class("mt-4 tw-theme-text cc-content text-[16px] leading-6"),
-					).Class("w-[320px]"),
-				).Class("flex justify-between mt-10").Attr("data-list-unset", "true"),
-			).Class("p-[120px] w-[1280px] m-auto"),
-		).Class("tw-theme-bg-base"),
-	).Class("container-hero-inner")
+			Ul(
+				Li(
+					Div().Class("aspect-square bg-center bg-cover").
+						Style(fmt.Sprintf("background-image: url(%s)", image1)),
+					H2(data.Content.ProductTitle1).Class("tw-theme-text cc-h2 text-bold xl:text-xl xl:leading-6 md:text-xl md:leading-7 mt-4"),
+					P(Text(data.Content.ProductDescription1)).
+						Class("mt-2 tw-theme-text cc-content xl:text-base xl:leading-6 text-[14px] leading-[20px]"),
+				),
+				Li(
+					Div().Class("aspect-square bg-center bg-cover").
+						Style(fmt.Sprintf("background-image: url(%s)", image2)),
+					H2(data.Content.ProductTitle2).Class("tw-theme-text cc-h2 text-bold xl:text-xl xl:leading-6 md:text-xl md:leading-7 mt-4"),
+					P(Text(data.Content.ProductDescription2)).
+						Class("mt-2 tw-theme-text cc-content xl:text-base xl:leading-6 text-[14px] leading-[20px]"),
+				),
+				Li(
+					Div().Class("aspect-square bg-center bg-cover").
+						Style(fmt.Sprintf("background-image: url(%s)", image3)),
+					H2(data.Content.ProductTitle3).Class("tw-theme-text cc-h2 text-bold xl:text-xl xl:leading-6 md:text-xl md:leading-7 mt-4"),
+					P(Text(data.Content.ProductDescription3)).
+						Class("mt-2 tw-theme-text cc-content xl:text-base xl:leading-6 text-[14px] leading-[20px]"),
+				),
+			).Class("grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-[60px]"),
+		).Class("px-5 py-10 xl:w-[1280px] m-auto"),
+	).Class("bg-no-repeat bg-cover bg-center cc-wrapper")
 
 	body = utils.TailwindContainerWrapper(
 		"container-hero",
-		Tag("twind-scope").Attr("data-props", fmt.Sprintf(`{"type":"heroImageList", "id": %q}`, input.ContainerId)).Children(Div(heroBody).Class("bg-gray-100")),
+		Tag("twind-scope").Attr("data-props", fmt.Sprintf(`{"type":"card-list", "id": %q}`, input.ContainerId)).Children(Div(heroBody)),
 	)
 	return
 }

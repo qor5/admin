@@ -18,15 +18,15 @@
 } */
 
 .tw-theme-bg-base {
-  background-color: rgb(var(--cc-color-base));
+  background-color: rgba(var(--cc-color-base), 1);
 }
 
 .tw-theme-text-base {
-  color: rgb(var(--cc-color-base));
+  color: rgba(var(--cc-color-base), 1);
 }
 
 .tw-theme-bg-brand {
-  background-color: rgb(var(--cc-color-brand));
+  background-color: rgba(var(--cc-color-brand), 1);
 }
 
 .tw-theme-bg-brand-20 {
@@ -34,7 +34,7 @@
 }
 
 .tw-theme-text {
-  color: rgb(var(--cc-color-surface));
+  color: rgba(var(--cc-color-surface), 1);
 }
 
 /** rich text editor **/
@@ -131,7 +131,7 @@
       var(--cc_rgba-brand20)
     ),
     linear-gradient(var(--cc_rgba-base100), var(--cc_rgba-base100));
-  background-blend-mode: color;
+  background-blend-mode: normal;
 }
 
 .container-image-with-text .cc-title {

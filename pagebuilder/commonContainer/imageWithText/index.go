@@ -163,10 +163,8 @@ func ImageWithTextBody(data *ImageWithText, input *pagebuilder.RenderInput) (bod
 			int(float64(data.Style.BottomSpace)*0.5),
 			int(float64(data.Style.TopSpace)*0.26),
 			int(float64(data.Style.BottomSpace)*0.26),
-		)).Attr("x-data", fmt.Sprintf(`{
-			hasHeroImage: %t,
-		}`, hasHeroImage)),
-	).Class("text-[#212121] bg-no-repeat bg-cover bg-center"),
+		)).Attr("x-data", "{}"),
+	).Class("text-[#212121]"),
 	).Class("bg-no-repeat bg-cover bg-center cc-wrapper")
 
 	body = utils.TailwindContainerWrapper(

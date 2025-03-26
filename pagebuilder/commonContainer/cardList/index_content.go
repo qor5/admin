@@ -4,11 +4,15 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/pagebuilder/commonContainer/utils"
 	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/tiptap"
 	"github.com/qor5/web/v3"
+	"github.com/sunfmin/reflectutils"
 
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
@@ -48,6 +52,20 @@ func (this *cardListContent) Scan(value interface{}) error {
 
 func SetContentComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder, db *gorm.DB) {
 	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&cardListContent{}).Only("Title", "ImageUpload1", "ImageUpload2", "ImageUpload3")
+
+	fb.Field("Title").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		return Div(
+			tiptap.TiptapEditor(db, field.Name).
+				Extensions(utils.TiptapExtensions(
+					"Bold", "Italic", "Color", "FontFamily", "Clear",
+					"Link",
+				)).
+				MarkdownTheme("github"). // Match tiptap.ThemeGithubCSSComponentsPack
+				Attr(presets.VFieldError(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)), field.Errors)...).
+				Label(field.Label).
+				Disabled(field.Disabled),
+		).Class("mb-5")
+	})
 
 	fb.Field("ProductTitle1").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return presets.TextField(obj, field, ctx).Type("input")
