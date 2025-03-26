@@ -41,7 +41,7 @@ func (this *imageWithTextContent) Scan(value interface{}) error {
 	}
 }
 
-func SetHeroContentComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder, db *gorm.DB) {
+func SetContentComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder, db *gorm.DB) {
 	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&imageWithTextContent{}).Only("Title", "Content", "Button", "ButtonHref", "ImageUpload")
 
 	fb.Field("Title").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {

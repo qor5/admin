@@ -43,7 +43,7 @@ func (this *imageWithTextStyle) Scan(value interface{}) error {
 	}
 }
 
-func SetHeroStyleComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder) {
+func SetStyleComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder) {
 	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&imageWithTextStyle{}).Only("Layout", "ImageHeight", "ImageWidth", "HorizontalAlign", "VerticalAlign", "Visibility", "TopSpace", "BottomSpace", "LeftSpace", "RightSpace")
 
 	fb.Field("Layout").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {

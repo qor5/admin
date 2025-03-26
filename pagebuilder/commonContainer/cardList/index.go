@@ -1,4 +1,4 @@
-package heroImageList
+package CardList
 
 import (
 	"fmt"
@@ -14,26 +14,26 @@ import (
 	"github.com/qor5/admin/v3/presets"
 )
 
-type TailWindHeroList struct {
+type CardList struct {
 	ID uint
 
-	Content heroContent
-	Style   heroStyle
+	Content cardListContent
+	Style   cardListStyle
 }
 
-func (*TailWindHeroList) TableName() string {
-	return "container_tailwind_hero_list"
+func (*CardList) TableName() string {
+	return "container_card_list"
 }
 
 func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {
-	vb := pb.RegisterContainer("TailWindHeroList").Group("Navigation").
+	vb := pb.RegisterContainer("CardList").Group("Content").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
-			v := obj.(*TailWindHeroList)
+			v := obj.(*CardList)
 
-			return HeroBody(v, input)
+			return CardListBody(v, input)
 		})
 
-	ed := vb.Model(&TailWindHeroList{}).Editing("Tabs", "Content", "Style")
+	ed := vb.Model(&CardList{}).Editing("Tabs", "Content", "Style")
 
 	ed.Field("Tabs").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		option := presets.TabsControllerOption{
@@ -47,7 +47,7 @@ func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 
 	ed.Creating().WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-			p := obj.(*TailWindHeroList)
+			p := obj.(*CardList)
 			p.Content.Title = "This is a title"
 			p.Content.ProductTitle1 = "Commerce"
 			p.Content.ProductDescription1 = "Ultra-reliable Omni-channel software tuned to the needs of any market.Ultra-reliable Ultra-reliable"
@@ -90,11 +90,11 @@ func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 		}
 	})
 
-	SetHeroContentComponent(pb, ed, db)
-	SetHeroStyleComponent(pb, ed)
+	SetContentComponent(pb, ed, db)
+	SetStyleComponent(pb, ed)
 }
 
-func HeroBody(data *TailWindHeroList, input *pagebuilder.RenderInput) (body HTMLComponent) {
+func CardListBody(data *CardList, input *pagebuilder.RenderInput) (body HTMLComponent) {
 	image1 := data.Content.ImageUpload1.URL()
 	image2 := data.Content.ImageUpload2.URL()
 	image3 := data.Content.ImageUpload3.URL()

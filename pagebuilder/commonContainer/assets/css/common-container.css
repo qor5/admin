@@ -3,7 +3,7 @@
   font-family: var(--cc-font-family);
 }
 
-.tw-theme-filter-container::before {
+/* .tw-theme-filter-container::before {
   --cc-color-opacity: 0.2;
   content: '';
   position: absolute;
@@ -15,31 +15,26 @@
   z-index: 1;
   mix-blend-mode: multiply;
   pointer-events: none;
-}
+} */
 
 .tw-theme-bg-base {
-  --cc-color-opacity: 1;
-  background-color: rgba(var(--cc-color-base), var(--cc-color-opacity));
+  background-color: rgb(var(--cc-color-base));
 }
 
 .tw-theme-text-base {
-  --cc-color-opacity: 1;
-  color: rgba(var(--cc-color-base), var(--cc-color-opacity));
+  color: rgb(var(--cc-color-base));
 }
 
 .tw-theme-bg-brand {
-  --cc-color-opacity: 1;
-  background-color: rgba(var(--cc-color-brand), var(--cc-color-opacity));
+  background-color: rgb(var(--cc-color-brand));
 }
 
 .tw-theme-bg-brand-20 {
-  --cc-color-opacity: 0.2;
-  background-color: rgba(var(--cc-color-brand), var(--cc-color-opacity));
+  background-color: rgba(var(--cc-color-brand), 0.2);
 }
 
 .tw-theme-text {
-  --cc-color-opacity: 1;
-  color: rgba(var(--cc-color-surface), var(--cc-color-opacity));
+  color: rgb(var(--cc-color-surface));
 }
 
 /** rich text editor **/

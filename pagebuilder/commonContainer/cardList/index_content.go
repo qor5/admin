@@ -1,4 +1,4 @@
-package heroImageList
+package CardList
 
 import (
 	"database/sql/driver"
@@ -14,7 +14,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type heroContent struct {
+type cardListContent struct {
 	Title string
 	// Body        string
 	// Button      string
@@ -31,11 +31,11 @@ type heroContent struct {
 	ProductDescription3 string
 }
 
-func (this heroContent) Value() (driver.Value, error) {
+func (this cardListContent) Value() (driver.Value, error) {
 	return json.Marshal(this)
 }
 
-func (this *heroContent) Scan(value interface{}) error {
+func (this *cardListContent) Scan(value interface{}) error {
 	switch v := value.(type) {
 	case string:
 		return json.Unmarshal([]byte(v), this)
@@ -46,8 +46,8 @@ func (this *heroContent) Scan(value interface{}) error {
 	}
 }
 
-func SetHeroContentComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder, db *gorm.DB) {
-	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&heroContent{}).Only("Title", "ImageUpload1", "ImageUpload2", "ImageUpload3")
+func SetContentComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder, db *gorm.DB) {
+	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&cardListContent{}).Only("Title", "ImageUpload1", "ImageUpload2", "ImageUpload3")
 
 	fb.Field("ProductTitle1").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return presets.TextField(obj, field, ctx).Type("input")

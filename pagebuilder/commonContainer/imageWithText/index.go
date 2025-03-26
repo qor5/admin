@@ -93,8 +93,8 @@ func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 		}
 	})
 
-	SetHeroContentComponent(pb, ed, db)
-	SetHeroStyleComponent(pb, ed)
+	SetContentComponent(pb, ed, db)
+	SetStyleComponent(pb, ed)
 }
 
 func ImageWithTextBody(data *ImageWithText, input *pagebuilder.RenderInput) (body HTMLComponent) {

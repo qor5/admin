@@ -1,4 +1,4 @@
-package heroImageList
+package CardList
 
 import (
 	"database/sql/driver"
@@ -12,7 +12,7 @@ import (
 	. "github.com/theplant/htmlgo"
 )
 
-type heroStyle struct {
+type cardListStyle struct {
 	// Layout          string
 	TopSpace    int
 	BottomSpace int
@@ -20,11 +20,11 @@ type heroStyle struct {
 	// ImageBackground media_library.MediaBox `sql:"type:text;"`
 }
 
-func (this heroStyle) Value() (driver.Value, error) {
+func (this cardListStyle) Value() (driver.Value, error) {
 	return json.Marshal(this)
 }
 
-func (this *heroStyle) Scan(value interface{}) error {
+func (this *cardListStyle) Scan(value interface{}) error {
 	switch v := value.(type) {
 	case string:
 		return json.Unmarshal([]byte(v), this)
@@ -35,8 +35,8 @@ func (this *heroStyle) Scan(value interface{}) error {
 	}
 }
 
-func SetHeroStyleComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder) {
-	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&heroStyle{}).Only("TopSpace", "BottomSpace")
+func SetStyleComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder) {
+	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&cardListStyle{}).Only("TopSpace", "BottomSpace")
 
 	// fb.Field("Layout").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 	// 	// return presets.SelectField(obj, field, ctx).Items([]string{"left", "right"})
