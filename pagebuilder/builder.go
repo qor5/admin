@@ -1,6 +1,7 @@
 package pagebuilder
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
@@ -346,7 +348,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, mb *presets.ModelBuilder) (e
 	defer b.ps.Build()
 
 	r := b.Model(mb)
-	b.useAllPlugin(mb)
+	b.useAllPlugin(mb, r.name)
 	// register model editors page
 	b.installAsset(pb)
 	b.configEditor(r)
@@ -415,7 +417,7 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 }
 
 func (b *Builder) configEditor(m *ModelBuilder) {
-	b.useAllPlugin(m.editor)
+	b.useAllPlugin(m.editor, m.name)
 	md := m.editor.Detailing().Drawer(false)
 	md.PageFunc(b.Editor(m))
 }
@@ -458,14 +460,27 @@ func (b *Builder) configTemplateAndPage(pb *presets.Builder, r *ModelBuilder) {
 		}
 	}
 	b.configPublish(r)
-	b.useAllPlugin(pm)
+	b.useAllPlugin(pm, r.name)
 	b.seoDisableEditOnline(pm)
 	// dp.TabsPanels()
 }
 
-func (b *Builder) useAllPlugin(pm *presets.ModelBuilder) {
+func (b *Builder) useAllPlugin(pm *presets.ModelBuilder, pageModelName string) {
 	if b.publisher != nil {
 		pm.Use(b.publisher)
+		b.publisher.WrapPublish(func(in publish.PublishFunc) publish.PublishFunc {
+			return func(ctx context.Context, record any) (err error) {
+				return b.db.Transaction(func(tx *gorm.DB) (innerErr error) {
+					if innerErr = in(ctx, record); innerErr != nil {
+						return
+					}
+					if innerErr = b.updateAllContainersUpdatedTime(tx, pageModelName, record); innerErr != nil {
+						return
+					}
+					return
+				})
+			}
+		})
 	}
 
 	if b.ab != nil {
@@ -701,7 +716,21 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
 
 	pm.RegisterEventFunc(republishRelatedOnlinePagesEvent, republishRelatedOnlinePages(r.mb.Info().ListingHref()))
 
-	listing := pm.Listing("DisplayName").SearchColumns("display_name")
+	listing := pm.Listing("DisplayName").SearchColumns("display_name").NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
+		return nil
+	})
+	pm.Editing().WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			if b.l10n != nil && ctx.Param(web.EventFuncIDName) == l10n.DoLocalize {
+				fromID := ctx.R.Context().Value(l10n.FromID).(string)
+				fromLocale := ctx.R.Context().Value(l10n.FromLocale).(string)
+				if err = b.localizeModel(b.db, obj, fromID, fromLocale); err != nil {
+					return
+				}
+			}
+			return in(obj, id, ctx)
+		}
+	})
 	pm.LabelName(func(evCtx *web.EventContext, singular bool) string {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		if singular {
@@ -717,10 +746,11 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
 	}))
 	listing.RowMenu("Rename").RowMenuItem("Rename").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
 		c := obj.(*Container)
+
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		return VListItem().PrependIcon("mdi-pencil-outline").Title(msgr.Rename).Attr("@click",
 			web.Plaid().
-				URL(b.ContainerByName(c.ModelName).mb.Info().ListingHref()).
+				URL(r.mb.Info().ListingHref()).
 				EventFunc(RenameContainerDialogEvent).
 				Query(paramContainerID, c.PrimarySlug()).
 				Query(paramContainerName, c.DisplayName).
@@ -728,11 +758,6 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
 				Go(),
 		)
 	})
-	if permB := pb.GetPermission(); permB != nil {
-		permB.CreatePolicies(
-			perm.PolicyFor(perm.Anybody).WhoAre(perm.Denied).ToDo(presets.PermCreate).On("*:shared_containers:*"),
-		)
-	}
 	listing.Field("DisplayName").Label("Name")
 	listing.SearchFunc(sharedContainerSearcher(db, r))
 	listing.WrapCell(func(in presets.CellProcessor) presets.CellProcessor {
@@ -925,9 +950,11 @@ func sharedContainerSearcher(db *gorm.DB, b *ModelBuilder) presets.SearchFunc {
 		if err = wh.Select("MIN(id) AS id, display_name, model_name, model_id, locale_code").Find(rtNodes.Addr().Interface()).Error; err != nil {
 			return nil, err
 		}
-
+		dummy := presets.DummyCursor
 		return &presets.SearchResult{
-			PageInfo:   relay.PageInfo{},
+			PageInfo: relay.PageInfo{
+				StartCursor: &dummy,
+			},
 			TotalCount: &totalCount,
 			Nodes:      rtNodes.Interface(),
 		}, nil
@@ -985,6 +1012,21 @@ func (b *ContainerBuilder) Install() {
 			}
 			s = b.name
 			return
+		}
+	})
+	editing.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			return b.builder.db.Transaction(func(tx *gorm.DB) (dbErr error) {
+				ctx.WithContextValue(gorm2op.CtxKeyDB{}, tx)
+				defer ctx.WithContextValue(gorm2op.CtxKeyDB{}, nil)
+				if dbErr = in(obj, id, ctx); dbErr != nil {
+					return
+				}
+				if dbErr = b.builder.updateAllContainersUpdatedTimeFromModel(tx, id); dbErr != nil {
+					return
+				}
+				return
+			})
 		}
 	})
 	editing.AppendHiddenFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
@@ -1210,8 +1252,8 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 	})
 }
 
-func (b *ContainerBuilder) getContainerDataID(id int) string {
-	return fmt.Sprintf(inflection.Plural(strcase.ToKebab(b.name))+"_%v", id)
+func (b *ContainerBuilder) getContainerDataID(modelID int, primarySlug string) string {
+	return fmt.Sprintf(inflection.Plural(strcase.ToKebab(b.name))+"_%v_%v", modelID, primarySlug)
 }
 
 func (b *ContainerBuilder) firstOrCreate(localeCodes []string) (err error) {
@@ -1257,10 +1299,15 @@ func (b *ContainerBuilder) firstOrCreate(localeCodes []string) (err error) {
 			if localeCode == "" {
 				continue
 			}
+			obj = b.mb.NewModel()
+			if vErr = tx.Create(obj).Error; vErr != nil {
+				return
+			}
+			modelID := reflectutils.MustGet(obj, "ID").(uint)
 			if vErr = tx.Create(&DemoContainer{
 				Model:     gorm.Model{ID: m.ID},
 				ModelName: b.name,
-				ModelID:   m.ModelID,
+				ModelID:   modelID,
 				Filled:    false,
 				Locale:    l10n.Locale{LocaleCode: localeCode},
 			}).Error; vErr != nil {
@@ -1362,7 +1409,7 @@ function(e){
 		return
 	} 
 	let arr = container_data_id.split("_");
-	if (arr.length != 2) {
+	if (arr.length != 4) {
 		console.log(arr);
 		return
 	}
@@ -1523,4 +1570,59 @@ func (b *Builder) expectField(name string) bool {
 		return true
 	}
 	return slices.Contains(b.fields, name)
+}
+
+func (b *Builder) updateAllContainersUpdatedTime(tx *gorm.DB, modelName string, record interface{}) (err error) {
+	val, err := reflectutils.Get(record, "UpdatedAt")
+	if err != nil {
+		return
+	}
+	updatedAt, ok := val.(time.Time)
+	if !ok {
+		return fmt.Errorf("UpdatedAt: nottime.Time expected")
+	}
+	p, ok := record.(presets.SlugEncoder)
+	if !ok {
+		return fmt.Errorf("no SlugEncoder expected")
+	}
+	j, ok := record.(presets.SlugDecoder)
+	if !ok {
+		return fmt.Errorf("no SlugDecoder expected")
+	}
+	ps := j.PrimaryColumnValuesBySlug(p.PrimarySlug())
+	pageID := ps[presets.ParamID]
+	pageVersion := ps[publish.SlugVersion]
+	localeCode := ps[l10n.SlugLocaleCode]
+	return tx.Model(&Container{}).Where("page_id = ? AND page_version = ? AND locale_code = ? and page_model_name = ? and shared = true", pageID, pageVersion, localeCode, modelName).Update("updated_at", updatedAt).Error
+}
+
+func (b *Builder) updateAllContainersUpdatedTimeFromModel(tx *gorm.DB, modelID string) (err error) {
+	if modelID == "" {
+		return
+	}
+	return tx.Model(&Container{}).Where("model_id = ? and shared = true ", modelID).Update("updated_at", time.Now()).Error
+}
+
+func (b *Builder) localizeModel(db *gorm.DB, obj interface{}, fromID, fromLocale string) (err error) {
+	var sharedCon Container
+	if err = db.Where("id = ? AND locale_code = ? AND shared = ?  ",
+		fromID, fromLocale, true).
+		First(&sharedCon).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return
+	}
+
+	model := b.ContainerByName(sharedCon.ModelName).NewModel()
+	if err = db.First(model, "id = ?", sharedCon.ModelID).Error; err != nil {
+		return
+	}
+	if err = reflectutils.Set(model, "ID", uint(0)); err != nil {
+		return
+	}
+	if err = db.Create(model).Error; err != nil {
+		return
+	}
+	if err = reflectutils.Set(obj, "ModelID", reflectutils.MustGet(model, "ID")); err != nil {
+		return
+	}
+	return
 }
