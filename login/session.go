@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -462,7 +463,7 @@ func (b *SessionBuilder) OpenSessionsDialog() string {
 	if b.pb == nil {
 		panic("presets.Builder is nil")
 	}
-	return web.Plaid().URL("/" + uriNameLoginSessionsDialog).EventFunc(eventLoginSessionsDialog).Go()
+	return web.Plaid().URL(path.Join(b.pb.GetURIPrefix(), uriNameLoginSessionsDialog)).EventFunc(eventLoginSessionsDialog).Go()
 }
 
 type dataTableHeader struct {
