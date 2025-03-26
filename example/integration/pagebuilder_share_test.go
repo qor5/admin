@@ -22,7 +22,7 @@ INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, t
 SELECT setval('page_builder_pages_id_seq', 10, true);
 
 INSERT INTO public.page_builder_containers (id,created_at, updated_at, deleted_at, page_id, page_version, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id,page_model_name) VALUES 
-										   (9,'2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', null, 10, '2024-05-21-v01', 'BrandGrid', 10, 1, false, false, 'BrandGrid', 'International', 0,'pages'),
+										   (9,'2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', null, 10, '2024-05-21-v01', 'BrandGrid', 10, 1, false, false, 'BrandGrid1', 'International', 0,'pages'),
 										   (10,'2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', null, 10, '2024-05-21-v01', 'ListContent', 10, 1, true, false, 'ListContent', 'International', 0,'pages'),
 										   (11,'2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', null, 10, '2024-05-21-v01', 'Header', 10, 2, true, false, 'Header', 'International', 0,'pages')  ;
 SELECT setval('page_builder_containers_id_seq', 11, true);
@@ -228,6 +228,19 @@ func TestPageBuilderShareContainer(t *testing.T) {
 					return
 				}
 			},
+		},
+		{
+			Name:  "Page Builder Shared Container Editor ",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerShareTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"Shared", "BrandGrid1"},
 		},
 	}
 	for _, c := range cases {
