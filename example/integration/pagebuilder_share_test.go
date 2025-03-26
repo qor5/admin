@@ -217,9 +217,7 @@ func TestPageBuilderShareContainer(t *testing.T) {
 				return req
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
-				var (
-					dm pagebuilder.Container
-				)
+				var dm pagebuilder.Container
 				TestDB.Where("id= ? and locale_code = ? ", 10, "China").First(&dm)
 				if dm.ModelName != "ListContent" || !dm.Shared {
 					t.Fatalf("Localize Failed modelName got %v ; Shared got %v", dm.ModelName, dm.Shared)

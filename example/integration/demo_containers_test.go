@@ -281,9 +281,7 @@ func TestDemoContainer(t *testing.T) {
 				return req
 			},
 			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {
-				var (
-					dm pagebuilder.DemoContainer
-				)
+				var dm pagebuilder.DemoContainer
 				TestDB.Where("id=? and locale_code = ?", 1, "China").First(&dm)
 				if dm.ModelName != "Header" {
 					t.Fatalf("Localize Failed")
