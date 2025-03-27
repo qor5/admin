@@ -109,10 +109,10 @@ func imgList(data *CardList) HTMLComponent {
 						}
 						return product.Image.URL()
 					}()).Class("position-absolute w-full object-cover object-center h-full max-w-full left-0 top-0"),
-				).Class(fmt.Sprintf("position-relative aspect-[%s] tw-theme-image-radius overflow-hidden mb-4 cc-image", data.Style.ImageRatio)),
+				).Class(fmt.Sprintf("position-relative aspect-[%s] tw-theme-image-radius overflow-hidden cc-image", data.Style.ImageRatio)),
 			),
 			If(lo.Contains(data.Style.Visibility, "productTitle"),
-				H2("").Children(RawHTML(product.Title)).Class("tw-theme-text mb-2 cc-subTitle text-bold xl:text-xl xl:leading-6 md:text-xl md:leading-7")),
+				H2("").Children(RawHTML(product.Title)).Class("tw-theme-text mt-4 mb-2 cc-subTitle text-bold xl:text-xl xl:leading-6 md:text-xl md:leading-7")),
 			If(lo.Contains(data.Style.Visibility, "description"),
 				Div(RawHTML(product.Description)).
 					Class("tw-theme-text xl:text-base xl:leading-6 text-[14px] leading-[20px] cc-content")),
