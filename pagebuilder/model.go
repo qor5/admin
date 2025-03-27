@@ -319,7 +319,7 @@ func (b *ModelBuilder) renderScrollIframe(comps []h.HTMLComponent, ctx *web.Even
 }
 
 .inner-container {
-   /** pointer-events: none; */
+   pointer-events: none;
 }
 
 .editor-add {
