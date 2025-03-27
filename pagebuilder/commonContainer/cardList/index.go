@@ -82,16 +82,7 @@ func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 
 	ed.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-			// p := obj.(*TailWindHeroList)
-
-			// if p.Content.ImageUpload.URL() != "" && !p.Content.ImgInitial {
-			// 	p.Content.ImgInitial = true
-			// }
-
-			// if p.Style.ImageBackground.URL() != "" && !p.Style.ImgInitial {
-			// 	p.Style.ImgInitial = true
-			// }
-
+			// Check all products and set default values if needed
 			if err = in(obj, id, ctx); err != nil {
 				return
 			}
@@ -121,10 +112,10 @@ func imgList(data *CardList) HTMLComponent {
 				).Class(fmt.Sprintf("position-relative aspect-[%s] tw-theme-image-radius overflow-hidden mb-4 cc-image", data.Style.ImageRatio)),
 			),
 			If(lo.Contains(data.Style.Visibility, "productTitle"),
-				H2("").Children(RawHTML(product.Title)).Class("tw-theme-text mb-2 cc-h2 text-bold xl:text-xl xl:leading-6 md:text-xl md:leading-7")),
+				H2("").Children(RawHTML(product.Title)).Class("tw-theme-text mb-2 cc-subTitle text-bold xl:text-xl xl:leading-6 md:text-xl md:leading-7")),
 			If(lo.Contains(data.Style.Visibility, "description"),
 				Div(RawHTML(product.Description)).
-					Class("tw-theme-text cc-content xl:text-base xl:leading-6 text-[14px] leading-[20px]")),
+					Class("tw-theme-text xl:text-base xl:leading-6 text-[14px] leading-[20px] cc-content")),
 		).Href(product.Href),
 		)
 	}
@@ -135,7 +126,7 @@ func CardListBody(data *CardList, input *pagebuilder.RenderInput) (body HTMLComp
 	heroBody := Div(
 		Div(
 			If(lo.Contains(data.Style.Visibility, "title"), H1("").Children(RawHTML(data.Content.Title)).
-				Class("tw-theme-text cc-h1 text-center font-medium text-5xl leading-none mb-[60px]")),
+				Class("tw-theme-text cc-title text-center font-medium text-5xl leading-none mb-[60px]")),
 			imgList(data),
 		).Class(fmt.Sprintf("pl-[%dpx] pr-[%dpx] pt-[%dpx] pb-[%dpx] xl:w-[1280px] m-auto", data.Style.LeftSpace, data.Style.RightSpace, data.Style.TopSpace, data.Style.BottomSpace)),
 	).Class("bg-no-repeat bg-cover bg-center cc-wrapper")

@@ -55,7 +55,7 @@ func SetContentComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder, db
 		return Div(
 			tiptap.TiptapEditor(db, field.Name).
 				Extensions(utils.TiptapExtensions(
-					"Bold", "Italic", "Color", "FontFamily", "Clear", "TextAlign", "Paragraph",
+					"Bold", "Italic", "Color", "FontFamily", "Clear", "TextAlign",
 					"Link",
 				)).
 				MarkdownTheme("github"). // Match tiptap.ThemeGithubCSSComponentsPack
@@ -67,7 +67,11 @@ func SetContentComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder, db
 
 	fb1 := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&Product{}).Only("Image", "Title", "Description", "Href")
 
-	fb1.Field("Description").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+	fb1.Field("Title").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		product := obj.(*Product)
+		if product.Title == "" {
+			product.Title = "Commerce"
+		}
 		return Div(
 			tiptap.TiptapEditor(db, field.Name).
 				Extensions(utils.TiptapExtensions(
@@ -81,11 +85,15 @@ func SetContentComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder, db
 		).Class("mb-5")
 	})
 
-	fb1.Field("Title").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+	fb1.Field("Description").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		product := obj.(*Product)
+		if product.Description == "" {
+			product.Description = "Ultra-reliable Omni-channel software tuned to the needs of any market.Ultra-reliable Ultra-reliable"
+		}
 		return Div(
 			tiptap.TiptapEditor(db, field.Name).
 				Extensions(utils.TiptapExtensions(
-					"Bold", "Italic", "Color", "FontFamily", "Clear", "TextAlign", "Paragraph",
+					"Bold", "Italic", "Color", "FontFamily", "Clear", "TextAlign",
 					"Link",
 				)).
 				MarkdownTheme("github"). // Match tiptap.ThemeGithubCSSComponentsPack
