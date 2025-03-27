@@ -50,13 +50,13 @@ func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 	ed.Creating().WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
 			p := obj.(*ImageWithText)
-			p.Content.Title = "This is a title"
-			p.Content.Content = "From end-to-end solutions to consulting, we draw on decades of expertise to solve new challenges in e-commerce, content management, and digital innovation."
+			p.Content.Title = "<p>This is a title</p>"
+			p.Content.Content = "<p>From end-to-end solutions to consulting, we draw on decades of expertise to solve new challenges in e-commerce, content management, and digital innovation.</p>"
 			p.Content.Button = "Get Start"
 			p.Content.ButtonHref = ""
 			p.Style.Layout = "left"
 			p.Style.VerticalAlign = "justify-between"
-			p.Style.HorizontalAlign = "left"
+			p.Style.ButtonAlign = "left"
 			p.Style.ImageHeight = []string{"auto"}
 			p.Style.ImageWidth = []string{"500px"}
 			p.Style.TopSpace = 120
@@ -124,16 +124,13 @@ func ImageWithTextBody(data *ImageWithText, input *pagebuilder.RenderInput) (bod
 			Div(
 				Div(
 					If(lo.Contains(data.Style.Visibility, "title"), H1("").Children(RawHTML(data.Content.Title)).
-						Class("richEditor-content font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px] cc-title")),
-					If(lo.Contains(data.Style.Visibility, "content"), Div().Children(RawHTML(data.Content.Content)).Class("richEditor-content xl:text-[24px] md:text-[22px] text-[12px] font-medium xl:leading-[32px] leading-normal cc-content").
-						ClassIf("text-left", data.Style.HorizontalAlign == "item-start").
-						ClassIf("text-center", data.Style.HorizontalAlign == "items-center").
-						ClassIf("text-right", data.Style.HorizontalAlign == "items-end")),
+						Class("richEditor-content w-full font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px] cc-title")),
+					If(lo.Contains(data.Style.Visibility, "content"), Div().Children(RawHTML(data.Content.Content)).Class("richEditor-content xl:text-[24px] md:text-[22px] text-[12px] font-medium xl:leading-[32px] leading-normal cc-content")),
 					If(lo.Contains(data.Style.Visibility, "button"), Div(
 						A().Attr("href", data.Content.ButtonHref).Attr("target", "_blank").Attr("rel", "noopener noreferrer").Children(Button(data.Content.Button).
 							Class("tw-theme-text-base xl:text-[16px] md:text-[14px] text-[12px] xl:px-6 xl:py-3 md:px-4 md:py-2 px-3 py-[6px] cc-btn")),
-					)),
-				).Attr("x-ref", "leftContent").Class(fmt.Sprintf("flex flex-col xl:gap-10 md:gap-6 gap-3 h-full %s %s", data.Style.VerticalAlign, data.Style.HorizontalAlign)),
+					).Class(data.Style.ButtonAlign)),
+				).Attr("x-ref", "leftContent").Class(fmt.Sprintf("flex flex-col xl:gap-10 md:gap-6 gap-3 h-full %s", data.Style.VerticalAlign)),
 			).ClassIf("order-2 xl:ml-10 md:ml-[20px] ml-6", data.Style.Layout == "right"),
 			If(hasHeroImage, Div(
 				Div(
@@ -150,7 +147,7 @@ func ImageWithTextBody(data *ImageWithText, input *pagebuilder.RenderInput) (bod
 			).Class(fmt.Sprintf("order-1 flex flex-col items-center %s", data.Style.VerticalAlign)).
 				ClassIf("xl:ml-10 md:ml-[20px] ml-6", data.Style.Layout == "left").
 				ClassIf("justify-center", data.Style.VerticalAlign == "justify-between")),
-		).Class(fmt.Sprintf("flex justify-between xl:max-w-[1280px] md:max-w-[768px] max-w-[414px] mx-auto xl:pl-[%dpx] xl:pr-[%dpx]  md:pl-[%dpx] md:pr-[%dpx] pl-[%dpx] pr-[%dpx] xl:pt-[%dpx] xl:pb-[%dpx] md:pt-[%dpx] md:pb-[%dpx]  pt-[%dpx] pb-[%dpx]",
+		).Class(fmt.Sprintf("flex justify-between xl:max-w-[1280px]  mx-auto xl:pl-[%dpx] xl:pr-[%dpx]  md:pl-[%dpx] md:pr-[%dpx] pl-[%dpx] pr-[%dpx] xl:pt-[%dpx] xl:pb-[%dpx] md:pt-[%dpx] md:pb-[%dpx]  pt-[%dpx] pb-[%dpx]",
 			data.Style.LeftSpace,
 			data.Style.RightSpace,
 			int(float64(data.Style.LeftSpace)*0.5),

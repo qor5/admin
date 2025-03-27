@@ -16,16 +16,16 @@ import (
 )
 
 type imageWithTextStyle struct {
-	Layout          string
-	HorizontalAlign string
-	VerticalAlign   string
-	TopSpace        int
-	BottomSpace     int
-	LeftSpace       int
-	RightSpace      int
-	Visibility      []string
-	ImageHeight     []string
-	ImageWidth      []string
+	Layout        string
+	ButtonAlign   string
+	VerticalAlign string
+	TopSpace      int
+	BottomSpace   int
+	LeftSpace     int
+	RightSpace    int
+	Visibility    []string
+	ImageHeight   []string
+	ImageWidth    []string
 }
 
 func (this imageWithTextStyle) Value() (driver.Value, error) {
@@ -44,7 +44,7 @@ func (this *imageWithTextStyle) Scan(value interface{}) error {
 }
 
 func SetStyleComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder) {
-	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&imageWithTextStyle{}).Only("Layout", "ImageHeight", "ImageWidth", "HorizontalAlign", "VerticalAlign", "Visibility", "TopSpace", "BottomSpace", "LeftSpace", "RightSpace")
+	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&imageWithTextStyle{}).Only("Layout", "ImageHeight", "ImageWidth", "ButtonAlign", "VerticalAlign", "Visibility", "TopSpace", "BottomSpace", "LeftSpace", "RightSpace")
 
 	fb.Field("Layout").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		// return presets.SelectField(obj, field, ctx).Items([]string{"left", "right"})
@@ -112,8 +112,8 @@ func SetStyleComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder) {
 		return presets.SelectField(obj, field, ctx).Items(utils.VerticalAlign).ItemTitle("Label").ItemValue("Value")
 	})
 
-	fb.Field("HorizontalAlign").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return presets.SelectField(obj, field, ctx).Items(utils.HorizontalAlign).ItemTitle("Label").ItemValue("Value")
+	fb.Field("ButtonAlign").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		return presets.SelectField(obj, field, ctx).Items(utils.ButtonAlign).ItemTitle("Label").ItemValue("Value")
 	})
 
 	fb.Field("Visibility").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {

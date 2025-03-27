@@ -48,7 +48,7 @@ func SetContentComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder, db
 		return Div(
 			tiptap.TiptapEditor(db, field.Name).
 				Extensions(utils.TiptapExtensions(
-					"Bold", "Italic", "Color", "FontFamily", "Clear",
+					"Bold", "Italic", "Color", "FontFamily", "Clear", "TextAlign",
 					"Link",
 				)).
 				MarkdownTheme("github"). // Match tiptap.ThemeGithubCSSComponentsPack
@@ -62,8 +62,8 @@ func SetContentComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder, db
 		return Div(
 			tiptap.TiptapEditor(db, field.Name).
 				Extensions(utils.TiptapExtensions(
-					"Bold", "Italic", "Heading", "Color", "FontFamily", "Clear",
-					"Heading", "BulletList", "OrderedList",
+					"Bold", "Italic", "Color", "FontFamily", "Clear", "TextAlign",
+					"BulletList", "OrderedList",
 					"Link",
 				)).
 				MarkdownTheme("github"). // Match tiptap.ThemeGithubCSSComponentsPack

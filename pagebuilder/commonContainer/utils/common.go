@@ -20,13 +20,13 @@ var VerticalAlign = []struct {
 	{Label: "space-between", Value: "justify-between"},
 }
 
-var HorizontalAlign = []struct {
+var ButtonAlign = []struct {
 	Label string
 	Value string
 }{
-	{Label: "left", Value: "items-start"},
-	{Label: "center", Value: "items-center"},
-	{Label: "right", Value: "items-end"},
+	{Label: "left", Value: "text-left"},
+	{Label: "center", Value: "text-center"},
+	{Label: "right", Value: "text-right"},
 }
 
 var ImageWithTextVisibilityOptions = []struct {
@@ -37,6 +37,16 @@ var ImageWithTextVisibilityOptions = []struct {
 	{Label: "content", Value: "content"},
 	{Label: "button", Value: "button"},
 	{Label: "image", Value: "image"},
+}
+
+var CardListVisibilityOptions = []struct {
+	Label string
+	Value string
+}{
+	{Label: "title", Value: "title"},
+	{Label: "image", Value: "image"},
+	{Label: "productTitle", Value: "productTitle"},
+	{Label: "description", Value: "description"},
 }
 
 var ImageWithTextImageWidthOptions = []struct {
@@ -97,7 +107,7 @@ func TiptapExtensions(enabledExtensions ...string) []*vx.VXTiptapEditorExtension
 		{
 			Name: "TextAlign",
 			Options: map[string]any{
-				"types": []string{"heading", "paragraph", "image"},
+				"types": []string{"paragraph"},
 			},
 		},
 		{
@@ -192,6 +202,37 @@ func TiptapExtensions(enabledExtensions ...string) []*vx.VXTiptapEditorExtension
 
 		// Always include BaseKit
 		enabledMap["BaseKit"] = true
+
+		// If TextAlign is enabled, ensure Paragraph is included and handle Heading and Image
+		if enabledMap["TextAlign"] {
+			// TextAlign需要Paragraph，所以总是确保它被启用
+			enabledMap["Paragraph"] = true
+
+			// 准备TextAlign的types，默认包含paragraph
+			textAlignTypes := []string{"paragraph"}
+
+			// 如果启用了Heading，将它添加到types
+			if enabledMap["Heading"] {
+				textAlignTypes = append(textAlignTypes, "heading")
+			}
+
+			// 如果启用了Image，将它添加到types
+			if enabledMap["Image"] {
+				textAlignTypes = append(textAlignTypes, "image")
+			}
+
+			// 更新TextAlign的Options.types
+			for i, ext := range extensions {
+				if ext.Name == "TextAlign" {
+					if ext.Options == nil {
+						ext.Options = map[string]any{}
+					}
+					ext.Options["types"] = textAlignTypes
+					extensions[i] = ext
+					break
+				}
+			}
+		}
 
 		// Filter extensions based on enabledMap
 		extensions = lo.Filter(extensions, func(ext *vx.VXTiptapEditorExtension, _ int) bool {

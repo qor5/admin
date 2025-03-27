@@ -13,11 +13,12 @@ import (
 )
 
 type cardListStyle struct {
-	// Layout          string
-	TopSpace    int
-	BottomSpace int
-	ImgInitial  bool
-	// ImageBackground media_library.MediaBox `sql:"type:text;"`
+	ProductColumns int
+	Visibility     []string
+	TopSpace       int
+	BottomSpace    int
+	LeftSpace      int
+	RightSpace     int
 }
 
 func (this cardListStyle) Value() (driver.Value, error) {
@@ -36,70 +37,15 @@ func (this *cardListStyle) Scan(value interface{}) error {
 }
 
 func SetStyleComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder) {
-	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&cardListStyle{}).Only("TopSpace", "BottomSpace")
+	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&cardListStyle{}).Only("ProductColumns", "Visibility", "TopSpace", "BottomSpace", "LeftSpace", "RightSpace")
 
-	// fb.Field("Layout").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-	// 	// return presets.SelectField(obj, field, ctx).Items([]string{"left", "right"})
-
-	// 	return Div(
-	// 		vx.VXLabel(Text(field.Label)).Class("mb-2"),
-	// 		v.VItemGroup(
-	// 			v.VItem(
-	// 				v.VBtn("").Children(
-	// 					Div(
-	// 						Div(
-	// 							Div().Style("width: 72px; height: 2px; background: #bdbdbd"),
-	// 							Div().Style("width: 72px; height: 2px; background: #bdbdbd"),
-	// 							Div().Style("width: 72px; height: 2px; background: #bdbdbd"),
-	// 							Div().Style("width: 40px; height: 2px; background: #bdbdbd"),
-	// 						).Class("d-flex justify-space-between flex-column").Style("height: 24px"),
-	// 						Div().Class("ml-2").Style("background: #bdbdbd;width: 24px;height: 24px;border-radius: 2px;")).Class("d-flex justify-space-between"),
-	// 				).
-	// 					Class("mr-2 px-2").
-	// 					Height(40).
-	// 					Attr("@click", "toggle").
-	// 					Attr(":class", "['d-flex', 'align-center']").
-	// 					Attr(":color", "isSelected ? 'primary' : 'grey'").
-	// 					Attr(":style", "{background: isSelected ? '#E6EDFE' : ''}").
-	// 					Attr(":variant", "isSelected ? 'outlined' : 'tonal'"),
-	// 			).
-	// 				Value("left").
-	// 				Attr("v-slot", "{ isSelected, toggle }"),
-	// 			v.VItem(
-	// 				v.VBtn("").Children(
-	// 					Div(
-	// 						Div().Class("mr-2").Style("background: #bdbdbd;width: 24px;height: 24px;border-radius: 2px;"),
-	// 						Div(
-	// 							Div().Style("width: 72px; height: 2px; background: #bdbdbd"),
-	// 							Div().Style("width: 72px; height: 2px; background: #bdbdbd"),
-	// 							Div().Style("width: 72px; height: 2px; background: #bdbdbd"),
-	// 							Div().Style("width: 40px; height: 2px; background: #bdbdbd"),
-	// 						).Class("d-flex justify-space-between flex-column").Style("height: 24px"),
-	// 					).Class("d-flex justify-space-between"),
-	// 				).
-	// 					Class("mr-2 px-2").
-	// 					Height(40).
-	// 					Attr("@click", "toggle").
-	// 					Attr(":class", "['d-flex', 'align-center']").
-	// 					Attr(":color", "isSelected ? 'primary' : 'grey'").
-	// 					Attr(":style", "{background: isSelected ? '#E6EDFE' : ''}").
-	// 					Attr(":variant", "isSelected ? 'outlined' : 'tonal'"),
-	// 			).Value("right").Attr("v-slot", "{ isSelected, toggle }"),
-	// 		).Class("d-flex").
-	// 			Attr(":mandatory", "true").
-	// 			// "Style.Layout"
-	// 			Attr(web.VField(field.FormKey, reflectutils.MustGet(obj, field.Name))...),
-	// 	).Class("mb-4")
-	// })
-
-	fb.Field("TopSpace").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return presets.SelectField(obj, field, ctx).Items(utils.SpaceOptions)
+	fb.Field("ProductColumns").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		return presets.SelectField(obj, field, ctx).Items([]int{1, 2, 3, 4, 5, 6})
 	})
 
-	fb.Field("BottomSpace").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
-		return presets.SelectField(obj, field, ctx).Items(utils.SpaceOptions)
+	fb.Field("Visibility").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		return presets.SelectField(obj, field, ctx).Chips(true).Items(utils.CardListVisibilityOptions).ItemTitle("Label").ItemValue("Value").Multiple(true)
 	})
-	// SetCommonStyleComponent(pb, fb.Field("Style"))
 
 	eb.Field("Style").Nested(fb).PlainFieldBody().HideLabel()
 }
