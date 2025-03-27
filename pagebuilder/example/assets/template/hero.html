@@ -90,24 +90,6 @@
         font-family: var(--font-family-p), var(--font-family-fallback);
       }
 
-      .tw-theme-filter-container {
-        position: relative;
-      }
-
-      .tw-theme-filter-container::before {
-        --color-opacity: 0.2;
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: rgba(var(--color-brand), var(--color-opacity));
-        z-index: 1;
-        mix-blend-mode: multiply;
-        pointer-events: none;
-      }
-
       .tw-theme-bg-base {
         --color-opacity: 1;
         background-color: rgba(var(--color-base), var(--color-opacity));
@@ -188,51 +170,117 @@
       </div>
     </div>
 
-    <!-- hero-image-list -->
+    <!-- hero-card-list -->
     <div class="tailwind-scope tw-theme-bg-base">
-      <div class="p-[120px] w-[1280px] m-auto">
+      <div class="px-5 py-10 xl:w-[1280px] m-auto">
         <h1
-          class="tw-theme-text cc-h1 text-center font-medium xl:text-[80px] md:text-[48px] text-[25.875px] xl:leading-[98px] md:leading-normal leading-[31.697px]"
+          class="tw-theme-text cc-h1 text-center font-medium text-5xl leading-none"
         >
           This is a title
         </h1>
 
-        <ul class="flex justify-between mt-10" data-list-unset>
-          <li class="w-[320px]">
+        <ul
+          class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4 mt-[60px]"
+          data-list-unset
+        >
+          <li>
             <div
-              class="w-[320px] h-[288px] tw-theme-filter-container"
+              class="flex-1 aspect-square bg-center bg-cover"
               style="background-image: url(https://placehold.co/320x288)"
             ></div>
-            <h2 class="tw-theme-text cc-h2 text-[35px] leading-10 mt-6">
+            <h2
+              class="tw-theme-text cc-h2 text-bold xl:text-xl xl:leading-6 md:text-xl md:leading-7 mt-4"
+            >
               Commerce
             </h2>
-            <p class="mt-4 tw-theme-text cc-content text-[16px] leading-6">
+            <p
+              class="mt-2 tw-theme-text cc-content xl:text-base xl:leading-6 text-[14px] leading-[20px]"
+            >
               Ultra-reliable Omni-channel software tuned to the needs of any
               market.Ultra-reliable Ultra-reliable
             </p>
           </li>
-          <li class="w-[320px]">
+          <li>
             <div
-              class="w-[320px] h-[288px] tw-theme-filter-container"
+              class="flex-1 aspect-square bg-center bg-cover"
               style="background-image: url(https://placehold.co/320x288)"
             ></div>
-            <h2 class="tw-theme-text cc-h2 text-[35px] leading-10 mt-6">
+            <h2
+              class="tw-theme-text cc-h2 text-bold xl:text-xl xl:leading-6 md:text-xl md:leading-7 mt-4"
+            >
               Commerce
             </h2>
-            <p class="mt-4 tw-theme-text cc-content text-[16px] leading-6">
+            <p
+              class="mt-2 tw-theme-text cc-content xl:text-base xl:leading-6 text-[14px] leading-[20px]"
+            >
               Ultra-reliable Omni-channel software tuned to the needs of any
               market.Ultra-reliable Ultra-reliable
             </p>
           </li>
-          <li class="w-[320px]">
+          <li>
             <div
-              class="w-[320px] h-[288px] tw-theme-filter-container"
+              class="flex-1 aspect-square bg-center bg-cover"
               style="background-image: url(https://placehold.co/320x288)"
             ></div>
-            <h2 class="tw-theme-text cc-h2 text-[35px] leading-10 mt-6">
+            <h2
+              class="tw-theme-text cc-h2 text-bold xl:text-xl xl:leading-6 md:text-xl md:leading-7 mt-4"
+            >
               Commerce
             </h2>
-            <p class="mt-4 tw-theme-text cc-content text-[16px] leading-6">
+            <p
+              class="mt-2 tw-theme-text cc-content xl:text-base xl:leading-6 text-[14px] leading-[20px]"
+            >
+              Ultra-reliable Omni-channel software tuned to the needs of any
+              market.Ultra-reliable Ultra-reliable
+            </p>
+          </li>
+          <li>
+            <div
+              class="flex-1 aspect-square bg-center bg-cover"
+              style="background-image: url(https://placehold.co/320x288)"
+            ></div>
+            <h2
+              class="tw-theme-text cc-h2 text-bold xl:text-xl xl:leading-6 md:text-xl md:leading-7 mt-4"
+            >
+              Commerce
+            </h2>
+            <p
+              class="mt-2 tw-theme-text cc-content xl:text-base xl:leading-6 text-[14px] leading-[20px]"
+            >
+              Ultra-reliable Omni-channel software tuned to the needs of any
+              market.Ultra-reliable Ultra-reliable
+            </p>
+          </li>
+          <li>
+            <div
+              class="flex-1 aspect-square bg-center bg-cover"
+              style="background-image: url(https://placehold.co/320x288)"
+            ></div>
+            <h2
+              class="tw-theme-text cc-h2 text-bold xl:text-xl xl:leading-6 md:text-xl md:leading-7 mt-4"
+            >
+              Commerce
+            </h2>
+            <p
+              class="mt-2 tw-theme-text cc-content xl:text-base xl:leading-6 text-[14px] leading-[20px]"
+            >
+              Ultra-reliable Omni-channel software tuned to the needs of any
+              market.Ultra-reliable Ultra-reliable
+            </p>
+          </li>
+          <li>
+            <div
+              class="flex-1 aspect-square bg-center bg-cover"
+              style="background-image: url(https://placehold.co/320x288)"
+            ></div>
+            <h2
+              class="tw-theme-text cc-h2 text-bold xl:text-xl xl:leading-6 md:text-xl md:leading-7 mt-4"
+            >
+              Commerce
+            </h2>
+            <p
+              class="mt-2 tw-theme-text cc-content xl:text-base xl:leading-6 text-[14px] leading-[20px]"
+            >
               Ultra-reliable Omni-channel software tuned to the needs of any
               market.Ultra-reliable Ultra-reliable
             </p>

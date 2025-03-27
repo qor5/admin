@@ -61,6 +61,7 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, b *presets.Builder) *p
 		commonContainer.TailWindExampleHeader,
 		commonContainer.TailWindExampleFooter,
 		commonContainer.ImageWithText,
+		commonContainer.CardList,
 	)
 
 	if style != "" {

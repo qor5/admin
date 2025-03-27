@@ -5,6 +5,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
@@ -23,12 +24,13 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 	b := m.builder
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		var (
-			start, end, se string
-			onlineHint     h.HTMLComponent
-			ps             string
-			version        string
-			id             uint
-			containerCount int64
+			start, end, se     string
+			onlineHint         h.HTMLComponent
+			ps                 string
+			version            string
+			id                 uint
+			containerCount     int64
+			updatedSharedCount int64
 		)
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		versionComponent := publish.DefaultVersionComponentFunc(pm)(obj, field, ctx)
@@ -37,6 +39,7 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 		}
 
 		id = reflectutils.MustGet(obj, "ID").(uint)
+		UpdatedAt := reflectutils.MustGet(obj, "UpdatedAt").(time.Time)
 		ctx.R.Form.Set(paramPageID, strconv.Itoa(int(id)))
 
 		if v, ok := obj.(publish.VersionInterface); ok {
@@ -63,12 +66,21 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 		b.db.Model(&Container{}).
 			Where("page_id = ? AND page_version = ? and page_model_name = ?", id, version, m.name).
 			Count(&containerCount)
+		b.db.Model(&Container{}).
+			Where("page_id = ? AND page_version = ? and page_model_name = ? and shared=true and updated_at > ?", id, version, m.name, UpdatedAt).
+			Count(&updatedSharedCount)
 		var copyURL string
 		if p, ok := obj.(publish.StatusInterface); ok {
 			copyURL = fmt.Sprintf(`$event.view.window.location.origin+%q`, previewDevelopUrl)
 			if p.EmbedStatus().Status == publish.StatusOnline {
-				onlineHint = VAlert(h.Text(msgr.OnlineHit)).
-					Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("my-4")
+				onlineHint = h.Div(
+					h.If(updatedSharedCount > 0, VAlert(h.Text(msgr.SharedContainerHasBeenUpdated)).
+						Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("my-2"),
+					),
+					VAlert(
+						h.Text(msgr.OnlineHit)).
+						Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("my-2"),
+				)
 				var err error
 				previewDevelopUrl, err = b.publisher.FullUrl(ctx.R.Context(), p.EmbedStatus().OnlineUrl)
 				if err != nil {
@@ -83,6 +95,7 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 		}
 		return h.Div(
 			onlineHint,
+
 			versionComponent,
 			web.Listen(m.mb.NotifModelsUpdated(),
 				web.Plaid().URL(m.mb.Info().DetailingHref(ps)).Go()),

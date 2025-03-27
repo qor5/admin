@@ -80,6 +80,8 @@ type (
 	}
 )
 
+const DummyCursor = "dummy"
+
 type SearchResult struct {
 	PageInfo   relay.PageInfo
 	TotalCount *int

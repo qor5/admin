@@ -41,14 +41,14 @@ func (this *imageWithTextContent) Scan(value interface{}) error {
 	}
 }
 
-func SetHeroContentComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder, db *gorm.DB) {
+func SetContentComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder, db *gorm.DB) {
 	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&imageWithTextContent{}).Only("Title", "Content", "Button", "ButtonHref", "ImageUpload")
 
 	fb.Field("Title").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return Div(
 			tiptap.TiptapEditor(db, field.Name).
 				Extensions(utils.TiptapExtensions(
-					"Bold", "Italic", "Color", "FontFamily", "Clear",
+					"Bold", "Italic", "Color", "FontFamily", "Clear", "TextAlign",
 					"Link",
 				)).
 				MarkdownTheme("github"). // Match tiptap.ThemeGithubCSSComponentsPack
@@ -62,8 +62,8 @@ func SetHeroContentComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder
 		return Div(
 			tiptap.TiptapEditor(db, field.Name).
 				Extensions(utils.TiptapExtensions(
-					"Bold", "Italic", "Heading", "Color", "FontFamily", "Clear",
-					"Heading", "BulletList", "OrderedList",
+					"Bold", "Italic", "Color", "FontFamily", "Clear", "TextAlign",
+					"BulletList", "OrderedList",
 					"Link",
 				)).
 				MarkdownTheme("github"). // Match tiptap.ThemeGithubCSSComponentsPack

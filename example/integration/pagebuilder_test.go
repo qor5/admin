@@ -119,7 +119,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().PageURL("/page_builder/pages/10_2024-05-21-v01_International").
-					Query("containerDataID", "list-content_10").
+					Query("containerDataID", "list-content_10_10International").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -1146,7 +1146,7 @@ func TestPageBuilder(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
 					EventFunc(pagebuilder.EditContainerEvent).
-					Query("containerDataID", "headers_10").
+					Query("containerDataID", "headers_10_10_International").
 					BuildEventFuncRequest()
 
 				return req

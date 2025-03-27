@@ -4,21 +4,21 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/pagebuilder"
+	cardList "github.com/qor5/admin/v3/pagebuilder/commonContainer/cardList"
 	"github.com/qor5/admin/v3/pagebuilder/commonContainer/footer"
 	"github.com/qor5/admin/v3/pagebuilder/commonContainer/header"
-	"github.com/qor5/admin/v3/pagebuilder/commonContainer/heroImageList"
 	"github.com/qor5/admin/v3/pagebuilder/commonContainer/heroImageVertical"
 	"github.com/qor5/admin/v3/pagebuilder/commonContainer/imageWithText"
 	"github.com/qor5/admin/v3/tiptap"
 )
 
 const (
-	HeroImageHorizontal   ContainerType = "heroImageHorizontal"
 	TailWindHeroList      ContainerType = "tailWindHeroList"
 	TailWindHeroVertical  ContainerType = "tailWindHeroVertical"
 	TailWindExampleHeader ContainerType = "tailWindExampleHeader"
 	TailWindExampleFooter ContainerType = "tailWindExampleFooter"
 	ImageWithText         ContainerType = "imageWithText"
+	CardList              ContainerType = "cardList"
 )
 
 type (
@@ -31,14 +31,9 @@ type (
 )
 
 var (
-	allContainerType = []ContainerType{HeroImageHorizontal, TailWindHeroList, TailWindHeroVertical, TailWindExampleHeader, TailWindExampleFooter}
+	allContainerType = []ContainerType{CardList, ImageWithText, TailWindHeroList, TailWindHeroVertical, TailWindExampleHeader, TailWindExampleFooter}
 
 	register = []containerRegister{
-		{
-			ContainerType: TailWindHeroList,
-			Register:      heroImageList.RegisterContainer,
-			Model:         &heroImageList.TailWindHeroList{},
-		},
 		{
 			ContainerType: TailWindHeroVertical,
 			Register:      heroImageVertical.RegisterContainer,
@@ -58,6 +53,11 @@ var (
 			ContainerType: ImageWithText,
 			Register:      imageWithText.RegisterContainer,
 			Model:         &imageWithText.ImageWithText{},
+		},
+		{
+			ContainerType: CardList,
+			Register:      cardList.RegisterContainer,
+			Model:         &cardList.CardList{},
 		},
 	}
 )

@@ -43,7 +43,8 @@ func PageBuilderCommonContainerExample(b *presets.Builder, db *gorm.DB) http.Han
 		Publisher(puBuilder)
 
 	commonContainer.Setup(pb, db, nil,
-		commonContainer.HeroImageHorizontal,
+		commonContainer.CardList,
+		commonContainer.ImageWithText,
 		commonContainer.TailWindHeroList,
 		commonContainer.TailWindHeroVertical,
 		commonContainer.TailWindExampleHeader,
