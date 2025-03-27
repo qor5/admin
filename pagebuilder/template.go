@@ -478,7 +478,7 @@ func (b *TemplateBuilder) Install() {
 	if tm == nil {
 		tm = builder.templateModel
 	}
-	defer builder.useAllPlugin(tm)
+
 	model := builder.GetModelBuilder(tm)
 	if model == nil {
 		model = builder.Model(tm)
@@ -487,6 +487,7 @@ func (b *TemplateBuilder) Install() {
 		}
 		builder.configEditor(model)
 	}
+	defer builder.useAllPlugin(tm, model.name)
 	b.model = model
 	model.tb = b
 	b.configModelWithTemplate()
