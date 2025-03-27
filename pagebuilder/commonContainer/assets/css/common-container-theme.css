@@ -11,9 +11,9 @@
   --cc-color-brand: 62, 99, 221;
 
   /** global theme - present set2 **/
-  --cc-color-base: 47, 45, 39;
+  /* --cc-color-base: 47, 45, 39;
   --cc-color-surface: 255, 255, 255;
-  --cc-color-brand: 137, 255, 176;
+  --cc-color-brand: 137, 255, 176; */
 
   /** global theme - present set3 **/
   /* --cc-color-base: 255, 242, 185;
@@ -36,15 +36,10 @@
 
   --cc-btn-border-radius: 4px;
   --cc-image-border-radius: 0;
-  --cc-cardItem-horizon-gap: ;
-  --cc-cardItem-vertical-gap: ;
 
   /********************* <rich text editor variables> START *********************/
 
-  /* richEditor h1~h6 */
   --cc-richEditor-base-text-weight-semibold: 600;
-
-  --cc-richEditor-base-text-color-h6: #57606a;
   --cc-richEditor-base-text-color-link: var(rgba(currentColor, 0.8));
   /* richEditor link */
   --cc-richEditor-base-text-decoration-link: underline;

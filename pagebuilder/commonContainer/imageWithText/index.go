@@ -136,7 +136,7 @@ func ImageWithTextBody(data *ImageWithText, input *pagebuilder.RenderInput) (bod
 				Div(
 					Img(heroImgUrl).Class("position-absolute w-full object-cover object-center h-full max-w-full left-0 top-0 flex-shrink-0"),
 				).
-					Class(fmt.Sprintf("position-relative tw-theme-filter-container tw-theme-image-radius flex-shrink-0 overflow-hidden xl:h-[%s] xl:w-[%s] md:h-[%s] md:w-[%s] h-[%s] w-[%s] cc-image",
+					Class(fmt.Sprintf("position-relative tw-theme-image-radius flex-shrink-0 overflow-hidden xl:h-[%s] xl:w-[%s] md:h-[%s] md:w-[%s] h-[%s] w-[%s] cc-image",
 						imageHeight,
 						imageWidth,
 						getScaledImageDimension(imageHeight, 314.0/500.0),

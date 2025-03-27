@@ -39,6 +39,21 @@ var ImageWithTextVisibilityOptions = []struct {
 	{Label: "image", Value: "image"},
 }
 
+var ImageRatioOptions = []struct {
+	Label string
+	Value string
+}{
+	{Label: "1:1", Value: "1/1"},
+	{Label: "3:2", Value: "3/2"},
+	{Label: "2:3", Value: "2/3"},
+	{Label: "3:4", Value: "3/4"},
+	{Label: "4:3", Value: "4/3"},
+	{Label: "5:4", Value: "5/4"},
+	{Label: "4:5", Value: "4/5"},
+	{Label: "16:9", Value: "16/9"},
+	{Label: "9:16", Value: "9/16"},
+}
+
 var CardListVisibilityOptions = []struct {
 	Label string
 	Value string

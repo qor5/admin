@@ -14,6 +14,7 @@ import (
 
 type cardListStyle struct {
 	ProductColumns int
+	ImageRatio     string
 	Visibility     []string
 	TopSpace       int
 	BottomSpace    int
@@ -37,10 +38,14 @@ func (this *cardListStyle) Scan(value interface{}) error {
 }
 
 func SetStyleComponent(pb *pagebuilder.Builder, eb *presets.EditingBuilder) {
-	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&cardListStyle{}).Only("ProductColumns", "Visibility", "TopSpace", "BottomSpace", "LeftSpace", "RightSpace")
+	fb := pb.GetPresetsBuilder().NewFieldsBuilder(presets.WRITE).Model(&cardListStyle{}).Only("ProductColumns", "ImageRatio", "Visibility", "TopSpace", "BottomSpace", "LeftSpace", "RightSpace")
 
 	fb.Field("ProductColumns").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 		return presets.SelectField(obj, field, ctx).Items([]int{1, 2, 3, 4, 5, 6})
+	})
+
+	fb.Field("ImageRatio").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+		return presets.SelectField(obj, field, ctx).Chips(true).Items(utils.ImageRatioOptions).ItemTitle("Label").ItemValue("Value")
 	})
 
 	fb.Field("Visibility").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {

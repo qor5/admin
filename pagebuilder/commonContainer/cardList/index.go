@@ -70,6 +70,7 @@ func RegisterContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 			p.Style.LeftSpace = 20
 			p.Style.RightSpace = 20
 			p.Style.Visibility = []string{"title", "image", "productTitle", "description"}
+			p.Style.ImageRatio = "1:1"
 
 			if err = in(obj, id, ctx); err != nil {
 				return
@@ -110,13 +111,15 @@ func imgList(data *CardList) HTMLComponent {
 	for _, product := range data.Content.Products {
 		imgList = append(imgList, A(
 			If(lo.Contains(data.Style.Visibility, "image"),
-				Div().Class("aspect-square bg-center bg-cover  mb-4").
-					Style(fmt.Sprintf("background-image: url(%s)", func() string {
+				Div(
+					Img(func() string {
 						if product.Image.URL() == "" {
 							return image
 						}
 						return product.Image.URL()
-					}()))),
+					}()).Class("position-absolute w-full object-cover object-center h-full max-w-full left-0 top-0"),
+				).Class(fmt.Sprintf("position-relative aspect-[%s] tw-theme-image-radius overflow-hidden mb-4 cc-image", data.Style.ImageRatio)),
+			),
 			If(lo.Contains(data.Style.Visibility, "productTitle"),
 				H2("").Children(RawHTML(product.Title)).Class("tw-theme-text mb-2 cc-h2 text-bold xl:text-xl xl:leading-6 md:text-xl md:leading-7")),
 			If(lo.Contains(data.Style.Visibility, "description"),
@@ -125,17 +128,10 @@ func imgList(data *CardList) HTMLComponent {
 		).Href(product.Href),
 		)
 	}
-	return Div(imgList...).Class(fmt.Sprintf("grid grid-cols-1 grid-cols-2 lg:grid-cols-%d gap-x-4 gap-y-8", data.Style.ProductColumns))
+	return Div(imgList...).Class(fmt.Sprintf("grid grid-cols-2 lg:grid-cols-%d gap-x-4 gap-y-8", data.Style.ProductColumns))
 }
 
 func CardListBody(data *CardList, input *pagebuilder.RenderInput) (body HTMLComponent) {
-	// heroImgUrl := data.Content.ImageUpload.URL()
-	// backgroundImgUrl := data.Style.ImageBackground.URL()
-
-	// if heroImgUrl == "" && !data.Content.ImgInitial {
-	// 	heroImgUrl = "https://placehold.co/1024x585"
-	// }
-
 	heroBody := Div(
 		Div(
 			If(lo.Contains(data.Style.Visibility, "title"), H1("").Children(RawHTML(data.Content.Title)).
