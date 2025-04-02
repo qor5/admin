@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/l10n"
+	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/seo"
 )
@@ -74,7 +75,7 @@ func primaryColumnValuesBySlug(slug string) map[string]string {
 		}
 	}
 	if len(segs) != 3 {
-		panic("wrong slug")
+		panic(presets.ErrNotFound("wrong slug"))
 	}
 	return map[string]string{
 		"id":                segs[0],
