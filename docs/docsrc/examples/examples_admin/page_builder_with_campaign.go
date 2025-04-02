@@ -16,10 +16,11 @@ import (
 
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/media/media_library"
-	"github.com/qor5/admin/v3/pagebuilder"
+	pagebuilder "github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
+	"github.com/spf13/cast"
 )
 
 // models
@@ -106,6 +107,12 @@ func (p *CampaignTemplate) PrimaryColumnValuesBySlug(slug string) map[string]str
 	if len(segs) != 1 {
 		panic(presets.ErrNotFound("wrong slug"))
 	}
+
+	_, err := cast.ToInt64E(segs[0])
+	if err != nil {
+		panic(presets.ErrNotFound(fmt.Sprintf("wrong slug %q: %v", slug, err)))
+	}
+
 	return map[string]string{
 		presets.ParamID: segs[0],
 	}
@@ -120,6 +127,12 @@ func (p *CampaignProductTemplate) PrimaryColumnValuesBySlug(slug string) map[str
 	if len(segs) != 1 {
 		panic(presets.ErrNotFound("wrong slug"))
 	}
+
+	_, err := cast.ToInt64E(segs[0])
+	if err != nil {
+		panic(presets.ErrNotFound(fmt.Sprintf("wrong slug %q: %v", slug, err)))
+	}
+
 	return map[string]string{
 		presets.ParamID: segs[0],
 	}
@@ -159,6 +172,11 @@ func (p *Campaign) PrimaryColumnValuesBySlug(slug string) map[string]string {
 		panic(presets.ErrNotFound("wrong slug"))
 	}
 
+	_, err := cast.ToInt64E(segs[0])
+	if err != nil {
+		panic(presets.ErrNotFound(fmt.Sprintf("wrong slug %q: %v", slug, err)))
+	}
+
 	return map[string]string{
 		presets.ParamID:     segs[0],
 		publish.SlugVersion: segs[1],
@@ -184,6 +202,11 @@ func (p *CampaignProduct) PrimaryColumnValuesBySlug(slug string) map[string]stri
 		panic(presets.ErrNotFound("wrong slug"))
 	}
 
+	_, err := cast.ToInt64E(segs[0])
+	if err != nil {
+		panic(presets.ErrNotFound(fmt.Sprintf("wrong slug %q: %v", slug, err)))
+	}
+
 	return map[string]string{
 		presets.ParamID:     segs[0],
 		publish.SlugVersion: segs[1],
@@ -207,6 +230,11 @@ func (p *PageProduct) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 2 {
 		panic(presets.ErrNotFound("wrong slug"))
+	}
+
+	_, err := cast.ToInt64E(segs[0])
+	if err != nil {
+		panic(presets.ErrNotFound(fmt.Sprintf("wrong slug %q: %v", slug, err)))
 	}
 
 	return map[string]string{

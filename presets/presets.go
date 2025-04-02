@@ -1273,10 +1273,10 @@ func (b *Builder) wrap(m *ModelBuilder, pf web.PageFunc) http.Handler {
 		return func(ctx *web.EventContext) (r web.PageResponse, err error) {
 			defer func() {
 				if v := recover(); v != nil {
-					if rerr, ok := v.(error); ok {
-						log.Printf("panic err: %+v", rerr)
-					}
 					if render, ok := v.(PageRenderIface); ok {
+						if rerr, ok := v.(error); ok {
+							log.Printf("catch render err: %+v", rerr)
+						}
 						r, err = render.Render(ctx)
 						return
 					}

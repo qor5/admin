@@ -90,18 +90,22 @@ func primaryColumnValuesBySlug(slug string) map[string]string {
 
 func primaryColumnValuesBySlugWithoutVersion(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
-	if len(segs) == 1 {
-		return map[string]string{
-			"id": segs[0],
-		}
-	}
-	if len(segs) != 2 {
+	if len(segs) != 1 && len(segs) != 2 {
 		panic(presets.ErrNotFound("wrong slug"))
 	}
-	return map[string]string{
-		"id":                segs[0],
-		l10n.SlugLocaleCode: segs[1],
+
+	_, err := cast.ToInt64E(segs[0])
+	if err != nil {
+		panic(presets.ErrNotFound(fmt.Sprintf("wrong slug %q: %v", slug, err)))
 	}
+
+	m := map[string]string{
+		"id": segs[0],
+	}
+	if len(segs) == 2 {
+		m[l10n.SlugLocaleCode] = segs[1]
+	}
+	return m
 }
 
 func (p *Page) PrimarySlug() string {
