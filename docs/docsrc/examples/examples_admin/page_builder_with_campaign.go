@@ -104,7 +104,7 @@ func (p *CampaignTemplate) PrimarySlug() string {
 func (p *CampaignTemplate) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 1 {
-		panic("wrong slug")
+		panic(presets.ErrNotFound("wrong slug"))
 	}
 	return map[string]string{
 		presets.ParamID: segs[0],
@@ -118,7 +118,7 @@ func (p *CampaignProductTemplate) PrimarySlug() string {
 func (p *CampaignProductTemplate) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 1 {
-		panic("wrong slug")
+		panic(presets.ErrNotFound("wrong slug"))
 	}
 	return map[string]string{
 		presets.ParamID: segs[0],
@@ -156,7 +156,7 @@ func (p *Campaign) PrimarySlug() string {
 func (p *Campaign) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 2 {
-		panic("wrong slug")
+		panic(presets.ErrNotFound("wrong slug"))
 	}
 
 	return map[string]string{
@@ -181,7 +181,7 @@ func (p *CampaignProduct) PrimarySlug() string {
 func (p *CampaignProduct) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 2 {
-		panic("wrong slug")
+		panic(presets.ErrNotFound("wrong slug"))
 	}
 
 	return map[string]string{
@@ -206,7 +206,7 @@ func (p *PageProduct) PrimarySlug() string {
 func (p *PageProduct) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 2 {
-		panic("wrong slug")
+		panic(presets.ErrNotFound("wrong slug"))
 	}
 
 	return map[string]string{

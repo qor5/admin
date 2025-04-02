@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/mholt/archiver/v4"
 	"github.com/qor5/admin/v3/microsite/utils"
+	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/x/v3/oss"
 	"gorm.io/gorm"
@@ -43,7 +44,7 @@ func (this *MicroSite) PrimarySlug() string {
 func (*MicroSite) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 2 {
-		panic("wrong slug")
+		panic(presets.ErrNotFound("wrong slug"))
 	}
 
 	return map[string]string{
