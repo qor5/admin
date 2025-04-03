@@ -68,6 +68,12 @@ type LoginSession struct {
 	LastActivedAt time.Time
 }
 
+type SessionTableFunc func(ctx context.Context, current h.HTMLComponent) (h.HTMLComponent, error)
+
+var NopSessionTableFunc = func(ctx context.Context, current h.HTMLComponent) (h.HTMLComponent, error) {
+	return current, nil
+}
+
 type SessionBuilder struct {
 	once              sync.Once
 	calledAutoMigrate atomic.Bool // auto migrate flag
@@ -81,6 +87,7 @@ type SessionBuilder struct {
 	pb             *presets.Builder
 	isPublicUser   func(user any) bool
 	parseIPFunc    func(ctx context.Context, lang language.Tag, addr string) (string, error)
+	tableFunc      SessionTableFunc
 }
 
 func NewSessionBuilder(lb *login.Builder, db *gorm.DB) *SessionBuilder {
@@ -465,6 +472,15 @@ func (b *SessionBuilder) OpenSessionsDialog() string {
 	return web.Plaid().URL("/" + uriNameLoginSessionsDialog).EventFunc(eventLoginSessionsDialog).Go()
 }
 
+func (b *SessionBuilder) WrapSessionTable(w func(in SessionTableFunc) SessionTableFunc) *SessionBuilder {
+	if b.tableFunc == nil {
+		b.tableFunc = w(NopSessionTableFunc)
+	} else {
+		b.tableFunc = w(b.tableFunc)
+	}
+	return b
+}
+
 type dataTableHeader struct {
 	Title    string `json:"title"`
 	Key      string `json:"key"`
@@ -597,6 +613,14 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 		))
 	}
 
+	var tableCompo h.HTMLComponent = table
+	if b.tableFunc != nil {
+		tableCompo, err = b.tableFunc(ctx.R.Context(), tableCompo)
+		if err != nil {
+			return r, err
+		}
+	}
+
 	body := web.Scope().VSlot("{locals: xlocals}").Init("{dialog:true}").Children(
 		v.VDialog().Attr("v-model", "xlocals.dialog").Width("60%").MaxWidth(828).Scrollable(true).Children(
 			v.VCard().Children(
@@ -606,7 +630,7 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 					v.VBtn("").Size(v.SizeXSmall).Icon("mdi-close").Variant(v.VariantText).Color(v.ColorGreyDarken1).Attr("@click", "xlocals.dialog=false"),
 				),
 				v.VCardText().Class("px-6 pt-0 pb-6").Attr("style", "max-height: 46vh;").ClassIf("mb-6", isPublicUser).Children(
-					table,
+					tableCompo,
 				),
 
 				h.Iff(!isPublicUser && activeCount > 1, func() h.HTMLComponent {

@@ -13,9 +13,11 @@ import (
 
 	"github.com/qor5/admin/v3/example/admin"
 	"github.com/qor5/admin/v3/example/models"
+	"github.com/qor5/admin/v3/login"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/role"
+	h "github.com/theplant/htmlgo"
 )
 
 var profileData = gofixtures.Data(gofixtures.Sql(`
@@ -42,7 +44,7 @@ func TestProfile(t *testing.T) {
 		},
 	}
 	user.Account = user.Name
-	h := admin.TestHandler(TestDB, user)
+	hdlr := admin.TestHandler(TestDB, user)
 
 	dbr, _ := TestDB.DB()
 
@@ -103,6 +105,30 @@ func TestProfile(t *testing.T) {
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{`Login Sessions`, `"title":"Time"`, `"title":"Device"`, `"title":"IP Address"`, `"title":"Status"`, `"title":"Last Active Time"`},
 			ExpectPortalUpdate0NotContains:     []string{`"title":"Location"`},
+		},
+		{
+			Name:  "login Sessions with table func",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				hdlr, cfg := admin.TestHandlerComplex(TestDB, user, false)
+				cfg.GetLoginSessionBuilder().WrapSessionTable(func(in login.SessionTableFunc) login.SessionTableFunc {
+					return func(ctx context.Context, current h.HTMLComponent) (h.HTMLComponent, error) {
+						return h.Components(
+							current,
+							h.Div().Class("text-caption pt-2").Text("Customized Bottom Text"),
+						), nil
+					}
+				})
+				return hdlr
+			},
+			ReqFunc: func() *http.Request {
+				profileData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/login-sessions-dialog?__execute_event__=loginSession_eventLoginSessionsDialog").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`Customized Bottom Text`},
 		},
 		{
 			Name:  "login Sessions with location",
@@ -222,7 +248,7 @@ func TestProfile(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-			RunCase(t, c, h)
+			RunCase(t, c, hdlr)
 		})
 	}
 }
