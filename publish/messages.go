@@ -41,6 +41,7 @@ type Messages struct {
 	DeleteVersionConfirmationTextTemplate   string
 	ToStatusOnlineTemplate                  string
 	ToStatusOfflineTemplate                 string
+	OnlineVersionEditTip                    string
 
 	FilterTabAllVersions   string
 	FilterTabOnlineVersion string
@@ -57,6 +58,7 @@ type Messages struct {
 
 	HeaderDraftCount string
 	HeaderLive       string
+	DuplicateToEdit  string
 }
 
 func (msgr *Messages) DeleteVersionConfirmationText(versionName string) string {
@@ -117,6 +119,7 @@ var Messages_en_US = &Messages{
 	DeleteVersionConfirmationTextTemplate:   "Are you sure you want to delete version {VersionName} ?",
 	ToStatusOnlineTemplate:                  "{VersionName} will be online at {ScheduleTime}",
 	ToStatusOfflineTemplate:                 "{VersionName} will be offline at {ScheduleTime}",
+	OnlineVersionEditTip:                    "The current version is published and cannot be modified. Would you like to duplicate it to create a new version for editing?",
 
 	FilterTabAllVersions:   "All Versions",
 	FilterTabOnlineVersion: "Online Versions",
@@ -133,6 +136,7 @@ var Messages_en_US = &Messages{
 
 	HeaderDraftCount: "Draft Count",
 	HeaderLive:       "Live",
+	DuplicateToEdit:  "Duplicate To Edit",
 }
 
 var Messages_zh_CN = &Messages{
@@ -174,6 +178,7 @@ var Messages_zh_CN = &Messages{
 	DeleteVersionConfirmationTextTemplate:   "你确定你要删除此版本 {VersionName} 吗？",
 	ToStatusOnlineTemplate:                  "{VersionName} 将在 {ScheduleTime} 上线",
 	ToStatusOfflineTemplate:                 "{VersionName} 将在 {ScheduleTime} 下线",
+	OnlineVersionEditTip:                    "当前版本已发布，无法修改。要复制一个新版本进行编辑吗？",
 
 	FilterTabAllVersions:   "所有版本",
 	FilterTabOnlineVersion: "在线版本",
@@ -190,6 +195,7 @@ var Messages_zh_CN = &Messages{
 
 	HeaderDraftCount: "草稿数",
 	HeaderLive:       "发布状态",
+	DuplicateToEdit:  "复制并编辑",
 }
 
 var Messages_ja_JP = &Messages{
@@ -231,6 +237,7 @@ var Messages_ja_JP = &Messages{
 	DeleteVersionConfirmationTextTemplate:   "本当にバージョン{VersionName}を削除しますか？",
 	ToStatusOnlineTemplate:                  "{VersionName} は {ScheduleTime} にオンラインになります",
 	ToStatusOfflineTemplate:                 "{VersionName} は {ScheduleTime} にオフラインになります",
+	OnlineVersionEditTip:                    "現在のバージョンは公開されており、変更できません。編集用に新しいバージョンを複製しますか？",
 
 	FilterTabAllVersions:   "すべてのバージョン",
 	FilterTabOnlineVersion: "オンラインバージョン",
@@ -247,4 +254,5 @@ var Messages_ja_JP = &Messages{
 
 	HeaderDraftCount: "下書き数",
 	HeaderLive:       "公開ステータス",
+	DuplicateToEdit:  "複製して編集",
 }

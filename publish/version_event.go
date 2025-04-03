@@ -4,14 +4,15 @@ import (
 	"errors"
 	"time"
 
-	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/utils"
 )
 
 const (
@@ -192,6 +193,25 @@ func deleteVersionDialog(_ *presets.ModelBuilder) web.EventFunc {
 					EventFunc(eventDeleteVersion).
 					Queries(ctx.Queries()).Go(),
 				utilMsgr),
+		})
+		return
+	}
+}
+func duplicateEditDialog(_ *presets.ModelBuilder) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)
+		utilsMsgr := i18n.MustGetModuleMessages(ctx.R, utils.I18nUtilsKey, utils.Messages_en_US).(*utils.Messages)
+
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: presets.DialogPortalName,
+			Body: web.Scope(
+				utils.ConfirmDialog(
+					utils.UtilDialogPayloadType{
+						Text:     msgr.OnlineVersionEditTip,
+						OkAction: web.Plaid().EventFunc(EventDuplicateVersion).Query(presets.ParamID, ctx.Param(presets.ParamID)).Go(),
+						Msgr:     utilsMsgr,
+					}),
+			).VSlot("{locals}").Init("{commonConfirmDialog:true}"),
 		})
 		return
 	}

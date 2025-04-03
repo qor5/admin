@@ -117,15 +117,22 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 					continue
 				}
 				detailField := m.Detailing().GetField(detailName.(string)).GetComponent().(*presets.SectionBuilder)
-				wrapper := func(in presets.ObjectBoolFunc) presets.ObjectBoolFunc {
-					return func(obj interface{}, ctx *web.EventContext) bool {
-						return in(obj, ctx) && EmbedStatus(obj).Status == StatusDraft
+				detailField.WrapViewComponentEditBtnFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
+					return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+						btn := in(obj, field, ctx)
+						if EmbedStatus(obj).Status != StatusDraft {
+							var slug string
+							if slugEncoder, ok := obj.(presets.SlugEncoder); ok {
+								slug = slugEncoder.PrimarySlug()
+							}
+							p, ok := btn.(h.MutableAttrHTMLComponent)
+							if ok && slug != "" {
+								p.SetAttr("@click", web.Plaid().EventFunc(eventDuplicateEditDialog).Query(presets.ParamID, slug).Go())
+							}
+						}
+						return btn
 					}
-				}
-				detailField.WrapComponentEditBtnFunc(wrapper)
-				detailField.WrapComponentHoverFunc(wrapper)
-				detailField.WrapElementEditBtnFunc(wrapper)
-				detailField.WrapElementHoverFunc(wrapper)
+				})
 			}
 		}
 	}

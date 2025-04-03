@@ -77,7 +77,18 @@ func NewSectionBuilder(mb *ModelBuilder, name string) (r *SectionBuilder) {
 	// d.Field(name).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	// 	panic("you must set ViewComponentFunc and EditComponentFunc if you want to use SectionsBuilder")
 	// })
-
+	r.viewComponentEditBtnFunc = func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		id := r.getObjectID(ctx, obj)
+		disableEditBtn := r.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
+		return VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Edit")).Variant(VariantFlat).Size(SizeXSmall).
+			PrependIcon("mdi-pencil-outline").
+			Attr("v-show", fmt.Sprintf("%t&&%t", r.componentEditBtnFunc(obj, ctx), !disableEditBtn)).
+			Attr("@click", web.Plaid().
+				URL(ctx.R.URL.Path).
+				EventFunc(r.EventEdit()).
+				Query(ParamID, id).
+				Go())
+	}
 	return
 }
 
@@ -110,6 +121,9 @@ type SectionBuilder struct {
 	// Only when isList is false, the following param will take effect
 	// control Delete button in the show component
 	componentEditBtnFunc ObjectBoolFunc
+
+	viewComponentEditBtnFunc FieldComponentFunc
+
 	// control Hover in the show component
 	componentHoverFunc ObjectBoolFunc
 
@@ -165,6 +179,14 @@ func (b *SectionBuilder) ComponentEditBtnFunc(v ObjectBoolFunc) *SectionBuilder 
 		panic("value required")
 	}
 	b.componentEditBtnFunc = v
+	return b
+}
+func (b *SectionBuilder) ViewComponentEditBtnFunc(v FieldComponentFunc) *SectionBuilder {
+	b.viewComponentEditBtnFunc = v
+	return b
+}
+func (b *SectionBuilder) WrapViewComponentEditBtnFunc(w func(v FieldComponentFunc) FieldComponentFunc) *SectionBuilder {
+	b.viewComponentEditBtnFunc = w(b.viewComponentEditBtnFunc)
 	return b
 }
 
@@ -462,19 +484,10 @@ func (b *SectionBuilder) EventReload() string {
 }
 
 func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	id := b.getObjectID(ctx, obj)
 	initDataChanged := fmt.Sprintf("if (vars.%s ){vars.%s.section_%s=false};", VarsPresetsDataChanged, VarsPresetsDataChanged, b.name)
 
 	disableEditBtn := b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
-	btn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Edit")).Variant(VariantFlat).Size(SizeXSmall).
-		PrependIcon("mdi-pencil-outline").
-		Attr("v-show", fmt.Sprintf("%t&&%t", b.componentEditBtnFunc(obj, ctx), !disableEditBtn)).
-		Attr("@click", web.Plaid().
-			URL(ctx.R.URL.Path).
-			EventFunc(b.EventEdit()).
-			// Query(SectionFieldName, b.name).
-			Query(ParamID, id).
-			Go())
+	btn := b.viewComponentEditBtnFunc(obj, field, ctx)
 
 	hiddenComp := h.Div()
 	if len(b.hiddenFuncs) > 0 {
