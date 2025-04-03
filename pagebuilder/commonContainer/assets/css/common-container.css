@@ -1,0 +1,122 @@
+/** global style **/
+* {
+  font-family: var(--cc-font-family);
+}
+
+/* .tw-theme-filter-container::before {
+  --cc-color-opacity: 0.2;
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(var(--cc-color-brand), var(--cc-color-opacity));
+  z-index: 1;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+} */
+
+.tw-theme-bg-base {
+  background-color: rgba(var(--cc-color-base), 1);
+}
+
+.tw-theme-text-base {
+  color: rgba(var(--cc-color-base), 1);
+}
+
+.tw-theme-bg-brand {
+  background-color: rgba(var(--cc-color-brand), 1);
+}
+
+.tw-theme-bg-brand-20 {
+  background-color: rgba(var(--cc-color-brand), 0.2);
+}
+
+.tw-theme-text {
+  color: rgba(var(--cc-color-surface), 1);
+}
+
+/** rich text editor **/
+.richEditor-content ul,
+.richEditor-content ol {
+  padding-left: var(--cc-richEditor-list-text-padding-left, 2em);
+  margin-bottom: var(--cc-richEditor-list-margin-bottom, 1em);
+  margin-top: var(--cc-richEditor-list-margin-top, 1em);
+}
+
+.richEditor-content ul {
+  list-style-type: disc;
+}
+
+.richEditor-content ol {
+  list-style-type: decimal;
+}
+
+.richEditor-content b,
+.richEditor-content strong {
+  font-weight: var(--cc-richEditor-base-text-weight-semibold, 600);
+}
+
+.richEditor-content a {
+  color: var(--cc-richEditor-base-text-color-link, currentColor);
+  opacity: var(--cc-richEditor-base-text-opacity-link, 0.8);
+  text-decoration: var(--cc-richEditor-base-text-decoration-link, underline);
+}
+
+.richEditor-content a > span {
+  color: var(--cc-richEditor-base-text-color-link, currentColor);
+  text-decoration: var(--cc-richEditor-base-text-decoration-link, underline);
+  /** fix when richeditor a wraped span with color but underline's color is not correct **/
+}
+
+.richEditor-content p {
+  margin-bottom: 16px;
+  /* font-size: inherit;
+  color: inherit; */
+}
+
+.richEditor-content {
+  word-break: break-word;
+}
+
+/** image with text component style **/
+.container-image-with-text.cc-wrapper {
+  --cc_rgba-brand20: rgba(
+    var(--cc-color-brand),
+    0.2
+  ); /* brand color transparent 20% */
+  --cc_rgba-base100: rgba(var(--cc-color-base), 1); /* base color pure color */
+
+  background-image: linear-gradient(
+      var(--cc_rgba-brand20),
+      var(--cc_rgba-brand20)
+    ),
+    linear-gradient(var(--cc_rgba-base100), var(--cc_rgba-base100));
+  background-blend-mode: normal;
+}
+
+.container-image-with-text .cc-title {
+  /* font-family: var(--cc-font-family); */
+  color: rgb(var(--cc-color-surface));
+}
+
+.container-image-with-text .cc-content {
+  /* font-family: var(--cc-font-family); */
+  color: rgb(var(--cc-color-surface));
+}
+
+.container-image-with-text .cc-btn {
+  background: rgb(var(--cc-color-brand));
+  color: rgb(var(--cc-color-base));
+  border-radius: var(--cc-btn-border-radius, 4px);
+}
+
+.container-image-with-text .cc-image {
+  border-radius: var(--cc-image-border-radius, 0);
+}
+
+/** card list style **/
+.container-card-list .cc-wrapper {
+  background-color: rgb(var(--cc-color-base));
+}

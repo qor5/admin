@@ -13,9 +13,9 @@ import (
 	"gorm.io/gorm/logger"
 
 	"github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/pagebuilder/commonContainer"
 	"github.com/qor5/admin/v3/pagebuilder/example/containers"
 	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/tiptap"
 )
 
 var dbParamsString = osenv.Get("DB_PARAMS", "page builder example database connection string", "")
@@ -48,15 +48,25 @@ func ConfigPageBuilder(db *gorm.DB, prefix, style string, b *presets.Builder) *p
 		&containers.PageTitle{},
 		&containers.ListContentLite{},
 		&containers.ListContentWithImage{},
+		&containers.Freestyle{},
 	)
 	if err != nil {
 		panic(err)
 	}
 	pb := pagebuilder.New(prefix, db, b).AutoMigrate()
+
+	commonContainer.Setup(pb, db, nil,
+		commonContainer.TailWindHeroList,
+		commonContainer.TailWindHeroVertical,
+		commonContainer.TailWindExampleHeader,
+		commonContainer.TailWindExampleFooter,
+		commonContainer.ImageWithText,
+		commonContainer.CardList,
+	)
+
 	if style != "" {
 		pb.PageStyle(h.RawHTML(style))
 	}
-	pb.GetPresetsBuilder().ExtraAsset("/tiptap.css", "text/css", tiptap.ThemeGithubCSSComponentsPack())
 
 	fSys, _ := fs.Sub(containerImages, "assets/images")
 	imagePrefix := "/assets/images"
