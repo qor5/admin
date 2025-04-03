@@ -197,6 +197,7 @@ func deleteVersionDialog(_ *presets.ModelBuilder) web.EventFunc {
 		return
 	}
 }
+
 func duplicateEditDialog(_ *presets.ModelBuilder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPublishKey, Messages_en_US).(*Messages)

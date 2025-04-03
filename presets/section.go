@@ -181,10 +181,12 @@ func (b *SectionBuilder) ComponentEditBtnFunc(v ObjectBoolFunc) *SectionBuilder 
 	b.componentEditBtnFunc = v
 	return b
 }
+
 func (b *SectionBuilder) ViewComponentEditBtnFunc(v FieldComponentFunc) *SectionBuilder {
 	b.viewComponentEditBtnFunc = v
 	return b
 }
+
 func (b *SectionBuilder) WrapViewComponentEditBtnFunc(w func(v FieldComponentFunc) FieldComponentFunc) *SectionBuilder {
 	b.viewComponentEditBtnFunc = w(b.viewComponentEditBtnFunc)
 	return b
