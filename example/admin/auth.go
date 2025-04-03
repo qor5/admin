@@ -169,12 +169,17 @@ func initLoginSessionBuilder(db *gorm.DB, pb *presets.Builder, ab *activity.Buil
 			return user.GetAccountName() == loginInitialUserEmail
 		}).
 		TablePrefix("cms_").
-		// WrapSessionTable(func(in plogin.SessionTableFunc) plogin.SessionTableFunc {
-		// 	return func(ctx context.Context, current h.HTMLComponent) (h.HTMLComponent, error) {
-		// 		return h.Components(
-		// 			current,
+		// WithSessionTableHook(func(next plogin.SessionTableFunc) plogin.SessionTableFunc {
+		// 	return func(ctx context.Context, input *plogin.SessionTableInput) (*plogin.SessionTableOutput, error) {
+		// 		output, err := next(ctx, input)
+		// 		if err != nil {
+		// 			return nil, err
+		// 		}
+		// 		output.Component = h.Components(
+		// 			output.Component,
 		// 			h.Div().Class("text-caption pt-2 text-warning").Text("Customized Bottom Text"),
-		// 		), nil
+		// 		)
+		// 		return output, nil
 		// 	}
 		// }).
 		// ParseIPFunc(func(ctx context.Context, lang language.Tag, addr string) (string, error) {

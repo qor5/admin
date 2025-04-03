@@ -111,12 +111,17 @@ func TestProfile(t *testing.T) {
 			Debug: true,
 			HandlerMaker: func() http.Handler {
 				hdlr, cfg := admin.TestHandlerComplex(TestDB, user, false)
-				cfg.GetLoginSessionBuilder().WrapSessionTable(func(in login.SessionTableFunc) login.SessionTableFunc {
-					return func(ctx context.Context, current h.HTMLComponent) (h.HTMLComponent, error) {
-						return h.Components(
-							current,
-							h.Div().Class("text-caption pt-2").Text("Customized Bottom Text"),
-						), nil
+				cfg.GetLoginSessionBuilder().WithSessionTableHook(func(next login.SessionTableFunc) login.SessionTableFunc {
+					return func(ctx context.Context, input *login.SessionTableInput) (*login.SessionTableOutput, error) {
+						output, err := next(ctx, input)
+						if err != nil {
+							return nil, err
+						}
+						output.Component = h.Components(
+							output.Component,
+							h.Div().Class("text-caption pt-2 text-warning").Text("Customized Bottom Text"),
+						)
+						return output, nil
 					}
 				})
 				return hdlr

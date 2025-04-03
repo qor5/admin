@@ -69,12 +69,6 @@ type LoginSession struct {
 	LastActivedAt time.Time
 }
 
-type SessionTableFunc func(ctx context.Context, current h.HTMLComponent) (h.HTMLComponent, error)
-
-var NopSessionTableFunc = func(ctx context.Context, current h.HTMLComponent) (h.HTMLComponent, error) {
-	return current, nil
-}
-
 type SessionBuilder struct {
 	once              sync.Once
 	calledAutoMigrate atomic.Bool // auto migrate flag
@@ -88,8 +82,8 @@ type SessionBuilder struct {
 	pb                  *presets.Builder
 	isPublicUser        func(user any) bool
 	parseIPFunc         func(ctx context.Context, lang language.Tag, addr string) (string, error)
-	validateSessionHook func(next ValidateSessionFunc) ValidateSessionFunc
-	tableFunc           SessionTableFunc
+	validateSessionHook common.Hook[ValidateSessionFunc]
+	sessionTableHook    common.Hook[SessionTableFunc]
 }
 
 func NewSessionBuilder(lb *login.Builder, db *gorm.DB) *SessionBuilder {
@@ -169,9 +163,22 @@ type (
 	ValidateSessionFunc   func(ctx context.Context, input *ValidateSessionInput) (*ValidateSessionOutput, error)
 )
 
-func (c *SessionBuilder) WithValidateSessionHook(hooks ...common.Hook[ValidateSessionFunc]) *SessionBuilder {
-	c.validateSessionHook = common.ChainHookWith(c.validateSessionHook, hooks...)
-	return c
+func (b *SessionBuilder) WithValidateSessionHook(hooks ...common.Hook[ValidateSessionFunc]) *SessionBuilder {
+	b.validateSessionHook = common.ChainHookWith(b.validateSessionHook, hooks...)
+	return b
+}
+
+type (
+	SessionTableInput  struct{}
+	SessionTableOutput struct {
+		Component h.HTMLComponent
+	}
+	SessionTableFunc func(ctx context.Context, input *SessionTableInput) (*SessionTableOutput, error)
+)
+
+func (b *SessionBuilder) WithSessionTableHook(hooks ...common.Hook[SessionTableFunc]) *SessionBuilder {
+	b.sessionTableHook = common.ChainHookWith(b.sessionTableHook, hooks...)
+	return b
 }
 
 func (b *SessionBuilder) GetLoginBuilder() *login.Builder {
@@ -511,15 +518,6 @@ func (b *SessionBuilder) OpenSessionsDialog() string {
 	return web.Plaid().URL("/" + uriNameLoginSessionsDialog).EventFunc(eventLoginSessionsDialog).Go()
 }
 
-func (b *SessionBuilder) WrapSessionTable(w func(in SessionTableFunc) SessionTableFunc) *SessionBuilder {
-	if b.tableFunc == nil {
-		b.tableFunc = w(NopSessionTableFunc)
-	} else {
-		b.tableFunc = w(b.tableFunc)
-	}
-	return b
-}
-
 type dataTableHeader struct {
 	Title    string `json:"title"`
 	Key      string `json:"key"`
@@ -635,6 +633,7 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 		}
 		tableHeaders[i].Width = fmt.Sprintf("%d%%", percent)
 	}
+
 	table := v.VDataTable().Headers(tableHeaders).Items(wrappers).ItemsPerPage(-1).HideDefaultFooter(true)
 	if !isPublicUser {
 		table = table.Children(web.Slot().Name("item.Action").Scope("{ item }").Children(
@@ -652,12 +651,15 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 		))
 	}
 
-	var tableCompo h.HTMLComponent = table
-	if b.tableFunc != nil {
-		tableCompo, err = b.tableFunc(ctx.R.Context(), tableCompo)
-		if err != nil {
-			return r, err
-		}
+	sessionTableFunc := func(ctx context.Context, input *SessionTableInput) (*SessionTableOutput, error) {
+		return &SessionTableOutput{Component: table}, nil
+	}
+	if b.sessionTableHook != nil {
+		sessionTableFunc = b.sessionTableHook(sessionTableFunc)
+	}
+	sessionTableoutput, err := sessionTableFunc(ctx.R.Context(), &SessionTableInput{})
+	if err != nil {
+		return r, err
 	}
 
 	body := web.Scope().VSlot("{locals: xlocals}").Init("{dialog:true}").Children(
@@ -669,7 +671,7 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 					v.VBtn("").Size(v.SizeXSmall).Icon("mdi-close").Variant(v.VariantText).Color(v.ColorGreyDarken1).Attr("@click", "xlocals.dialog=false"),
 				),
 				v.VCardText().Class("px-6 pt-0 pb-6").Attr("style", "max-height: 46vh;").ClassIf("mb-6", isPublicUser).Children(
-					tableCompo,
+					sessionTableoutput.Component,
 				),
 
 				h.Iff(!isPublicUser && activeCount > 1, func() h.HTMLComponent {
