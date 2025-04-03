@@ -118,6 +118,14 @@
 <a href='basics/l10n.html' id='basics/l10n.html' onclick='window.storeMenuState("basics/l10n.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Localization</a>
 </li>
 
+<li class='m-0'>
+<a href='basics/redirection.html' id='basics/redirection.html' onclick='window.storeMenuState("basics/redirection.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Redirection</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/custom-page.html' id='basics/custom-page.html' onclick='window.storeMenuState("basics/custom-page.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Custom Pages</a>
+</li>
+
 <li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Web Application</li>
 
 <li class='m-0'>
@@ -225,12 +233,6 @@ Theme</h2>
 <p>Presets UI is based on <a href="https://v2.vuetifyjs.com/en/" rel="nofollow">Vuetify</a>, you can modify the Admin theme by configuring the <a href="https://v2.vuetifyjs.com/en/features/presets/#default-preset" rel="nofollow">Vuetify options</a></p>
 
 <highlightjs :language='"go"' :code='"presetsBuilder.VuetifyOptions(`\n       {\n           icons: {\n               iconfont: &#39;md&#39;,\n           },\n           theme: {\n               themes: {\n                   light: {\n                       primary: \"#673ab7\",\n                       secondary: \"#009688\",\n                       accent: \"#ff5722\",\n                       error: \"#f44336\",\n                       warning: \"#ff9800\",\n                       info: \"#8bc34a\",\n                       success: \"#4caf50\"\n                   },\n               },\n           },\n       }\n   `)"'></highlightjs>
-<h2><a name="assets" class="anchor" href="#assets" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Assets</h2>
-
-<p>If you need third-party front-end libraries to achieve some functions,
-you can inject them via the <em>ExtraAsset</em> method, and they will be automatically served.</p>
-
-<highlightjs :language='"go"' :code='"presetsBuilder.ExtraAsset(\"/redactor.js\", \"text/javascript\", richeditor.JSComponentsPack())\npresetsBuilder.ExtraAsset(\"/redactor.css\", \"text/css\", richeditor.CSSComponentsPack())"'></highlightjs>
 <p>you can also call Injector in AssetFunc to add meta, add custom HTML in HEAD and TAIL.</p>
 
 <highlightjs :language='"go"' :code='"presetsBuilder.AssetFunc(func(ctx *web.EventContext) {\n\tctx.Injector.Meta(web.MetaKey(\"charset\"), \"charset\", \"utf8\")\n\tctx.Injector.HeadHTML(`\u003cscript src=\"https://cdn.example.com/hello.js\"\u003e\u003c/script\u003e`)\n})"'></highlightjs>

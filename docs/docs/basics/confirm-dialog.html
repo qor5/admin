@@ -118,6 +118,14 @@
 <a href='basics/l10n.html' id='basics/l10n.html' onclick='window.storeMenuState("basics/l10n.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Localization</a>
 </li>
 
+<li class='m-0'>
+<a href='basics/redirection.html' id='basics/redirection.html' onclick='window.storeMenuState("basics/redirection.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Redirection</a>
+</li>
+
+<li class='m-0'>
+<a href='basics/custom-page.html' id='basics/custom-page.html' onclick='window.storeMenuState("basics/custom-page.html")' class='inline-block pl-10 pr-4 py-1 truncate break-words w-64 hover:text-blue-400 text-gray-700'>Custom Pages</a>
+</li>
+
 <li class='cursor-default px-4 py-1 truncate break-words w-64 m-0'>Web Application</li>
 
 <li class='m-0'>
@@ -235,13 +243,13 @@ optional<br>
 To use a custom portal for dialog.</p>
 <h2><a name="example" class="anchor" href="#example" rel="nofollow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example</h2>
 
-<highlightjs :language='"go"' :code='"vuetify.VBtn(\"Delete File\").\n\tAttr(\"@click\",\n\t\tweb.Plaid().\n\t\t\tEventFunc(presets.OpenConfirmDialog).\n\t\t\tQuery(presets.ConfirmDialogConfirmEvent,\n\t\t\t\t`alert(\"file deleted\")`,\n\t\t\t).\n\t\t\tGo(),\n\t),"'></highlightjs>
+<highlightjs :language='"go"' :code='"vuetify.VBtn(\"Delete File\").\n\tAttr(\"@click\",\n\t\tweb.Plaid().\n\t\t\tEventFunc(presets.OpenConfirmDialog).\n\t\t\tQuery(presets.ConfirmDialogPromptText, `Are you sure you want to delete this file?`).\n\t\t\tQuery(presets.ConfirmDialogConfirmEvent,\n\t\t\t\t`alert(\"file deleted\")`,\n\t\t\t).\n\t\t\tGo(),\n\t),"'></highlightjs>
 
 <div>
 <div class='demo'>
 <a href='/examples/presets-confirm-dialog/confirm-dialog' target='_blank'>Check the demo</a>
  | 
-<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/confirm-dialog.go#L43-L53' target='_blank'>Source on GitHub</a>
+<a href='https://github.com/qor5/admin/tree/main/docs/docsrc/examples/examples_presets/confirm-dialog.go#L43-L54' target='_blank'>Source on GitHub</a>
 </div>
 </div>
 </div>

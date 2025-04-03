@@ -200,3 +200,48 @@ func runSwitchLocaleFunc(lb *Builder) func(ctx *web.EventContext) (r h.HTMLCompo
 		)
 	}
 }
+
+func (b *Builder) runSwitchLocaleFunc(ctx *web.EventContext) (r h.HTMLComponent) {
+	var (
+		chip            h.HTMLComponent
+		localsListItems []h.HTMLComponent
+
+		allLocales = b.GetSupportLocaleCodesFromRequest(ctx.R)
+		fromLocale = b.GetCorrectLocaleCode(ctx.R)
+		fromImg    = b.GetLocaleImg(fromLocale)
+	)
+	if fromImg != "" {
+		chip = h.RawHTML(fromImg)
+	} else {
+		chip = VChip(h.Text(MustGetTranslation(ctx.R, b.GetLocaleLabel(fromLocale)))).Color(ColorSuccess).Variant(VariantFlat).Label(true).Size(SizeSmall)
+	}
+	for _, locale := range allLocales {
+		if locale == fromLocale {
+			continue
+		}
+		img := b.GetLocaleImg(locale)
+		localsListItems = append(localsListItems, VListItem(
+			VListItemTitle(
+				h.If(img != "", h.RawHTML(img)),
+				h.Text(MustGetTranslation(ctx.R, b.GetLocaleLabel(locale))),
+			).Class("d-flex align-center ga-2"),
+		).Attr("@click", web.Plaid().Query(b.queryName, locale).Go()))
+	}
+	return VMenu(
+		web.Slot(
+			VTooltip(
+				web.Slot(
+					VBtn("").Children(
+						h.Div(
+							chip,
+							VIcon("mdi-menu-down"),
+						).Class("d-flex ga-2"),
+					).Attr("v-bind", "plaid().vue.mergeProps(menu,tooltip)").Size(SizeSmall).Variant(VariantText),
+				).Name("activator").Scope(`{props:tooltip}`),
+			).Location(LocationBottom).Text(MustGetTranslation(ctx.R, "Location")),
+		).Name("activator").Scope(`{props:menu}`),
+		VList(
+			localsListItems...,
+		),
+	)
+}

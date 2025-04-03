@@ -306,6 +306,11 @@ func (b *SectionBuilder) SaveFunc(v SaveFunc) (r *SectionBuilder) {
 	return b
 }
 
+func (b *SectionBuilder) WrapSaveFunc(w func(in SaveFunc) SaveFunc) (r *SectionBuilder) {
+	b.saver = w(b.saver)
+	return b
+}
+
 func (b *SectionBuilder) WrapSetterFunc(w func(in func(obj interface{}, ctx *web.EventContext) error) func(obj interface{}, ctx *web.EventContext) error) (r *SectionBuilder) {
 	b.setter = w(b.setter)
 	return b
@@ -511,7 +516,7 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 			).VSlot("{ form }"),
 		).VSlot("{ dash }").DashInit("{errorMessages:{}}"),
 		hiddenComp,
-	).Attr("v-on-mounted", fmt.Sprintf(`()=>{%s}`, initDataChanged))
+	).Attr("v-on-mounted", fmt.Sprintf(`()=>{%s}`, initDataChanged)).Class("mb-10")
 }
 
 func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -609,7 +614,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 				hiddenComp,
 			).VSlot("{ form}").OnChange(onChangeEvent).UseDebounce(500),
 		).VSlot("{ dash }").DashInit("{errorMessages:{}}"),
-	)
+	).Class("mb-10")
 }
 
 func (b *SectionBuilder) defaultUnmarshalFunc(obj interface{}, ctx *web.EventContext) (err error) {
@@ -1473,7 +1478,7 @@ func (b *SectionBuilder) ReloadDetailListField(ctx *web.EventContext) (r web.Eve
 	return
 }
 
-func (b *SectionBuilder) getObjectID(ctx *web.EventContext, obj interface{}) string {
+func (*SectionBuilder) getObjectID(ctx *web.EventContext, obj interface{}) string {
 	id := ctx.Param(ParamID)
 	if id == "" {
 		if slugIf, ok := obj.(SlugEncoder); ok {

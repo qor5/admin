@@ -1,12 +1,14 @@
 package integration_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	. "github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
+	"golang.org/x/text/language"
 	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/example/admin"
@@ -23,10 +25,13 @@ INSERT INTO public.roles (id, created_at, updated_at, deleted_at, name) VALUES (
 INSERT INTO public.roles (id, created_at, updated_at, deleted_at, name) VALUES (4, '2024-08-23 08:43:32.969461 +00:00', '2024-08-23 08:43:32.969461 +00:00', null, 'Viewer');
 INSERT INTO public.roles (id, created_at, updated_at, deleted_at, name) VALUES (1, '2024-08-23 08:43:32.969461 +00:00', '2024-09-12 06:25:17.533058 +00:00', null, 'Admin');
 INSERT INTO public.user_role_join (user_id, role_id) VALUES (1, 1);
-`, []string{`user_role_join`, `roles`, "users"}))
+
+INSERT INTO "public"."cms_login_sessions" ("id", "created_at", "updated_at", "deleted_at", "user_id", "device", "ip", "token_hash", "expired_at", "extended_at", "last_token_hash", "last_actived_at") VALUES ('100', '2024-12-23 15:58:08.674416+00', '2024-12-23 15:58:12.333091+00', NULL, '1', 'Chrome - Mac OS X', '127.0.0.1', '13c81d17', '2024-12-23 16:58:08.673345+00', '2024-12-23 15:58:08.673344+00', '', '2024-12-23 15:58:12.331334+00'),
+('101', '2024-12-23 15:58:33.060198+00', '2024-12-23 15:58:33.070917+00', NULL, '1', 'Chrome - Mac OS X', '127.0.0.1', 'fdbf89c2', '2024-12-23 16:58:33.058956+00', '2024-12-23 15:58:33.058956+00', '', '2024-12-23 15:58:33.070097+00');
+`, []string{`user_role_join`, `roles`, "users", "cms_login_sessions"}))
 
 func TestProfile(t *testing.T) {
-	h := admin.TestHandler(TestDB, &models.User{
+	user := &models.User{
 		Model: gorm.Model{ID: 1},
 		Name:  "qor@theplant.jp",
 		Roles: []role.Role{
@@ -35,7 +40,9 @@ func TestProfile(t *testing.T) {
 				Name:  models.RoleAdmin,
 			},
 		},
-	})
+	}
+	user.Account = user.Name
+	h := admin.TestHandler(TestDB, user)
 
 	dbr, _ := TestDB.DB()
 
@@ -50,7 +57,7 @@ func TestProfile(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPageBodyContainsInOrder: []string{`DEMO`, `portal-name='ProfileCompo:`, `<v-avatar`, `text='Q'`, `/v-avatar>`, `qor@theplant.jp`, `Admin`},
+			ExpectPageBodyContainsInOrder: []string{`portal-name='ProfileCompo:`, `<v-avatar`, `text='Q'`, `/v-avatar>`, `qor@theplant.jp`, `Admin`},
 		},
 		{
 			Name:  "rename",
@@ -94,7 +101,40 @@ func TestProfile(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`Login Sessions`, `Time`, `Device`, `IP`, `Status`},
+			ExpectPortalUpdate0ContainsInOrder: []string{`Login Sessions`, `"title":"Time"`, `"title":"Device"`, `"title":"IP Address"`, `"title":"Status"`, `"title":"Last Active Time"`},
+			ExpectPortalUpdate0NotContains:     []string{`"title":"Location"`},
+		},
+		{
+			Name:  "login Sessions with location",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				h, cfg := admin.TestHandlerComplex(TestDB, user, false)
+				cfg.GetLoginSessionBuilder().ParseIPFunc(func(_ context.Context, _ language.Tag, addr string) (string, error) {
+					return "Location Of " + addr, nil
+				})
+				return h
+			},
+			ReqFunc: func() *http.Request {
+				profileData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/login-sessions-dialog?__execute_event__=loginSession_eventLoginSessionsDialog").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`Login Sessions`, `"title":"Time"`, `"title":"Device"`, `"title":"Location"`, `"title":"IP Address"`, `"title":"Status"`, `"title":"Last Active Time"`},
+		},
+		{
+			Name:  "logout one session",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				profileData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/login-sessions-dialog?__execute_event__=loginSession_eventExpireSession").
+					Query("token_hash", "13c81d17").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"Session has successfully been signed out."},
 		},
 		{
 			Name:  "Index Role",

@@ -12,9 +12,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/iancoleman/strcase"
-	"github.com/qor5/admin/v3/activity"
-	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/oss"
@@ -24,6 +21,10 @@ import (
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
+
+	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/utils"
 )
 
 type (
@@ -57,6 +58,11 @@ func New(db *gorm.DB, storage oss.StorageInterface) *Builder {
 
 func (b *Builder) Activity(v *activity.Builder) (r *Builder) {
 	b.ab = v
+	return b
+}
+
+func (b *Builder) WrapStorage(v func(oss.StorageInterface) oss.StorageInterface) (r *Builder) {
+	b.storage = v(b.storage)
 	return b
 }
 
@@ -365,7 +371,7 @@ func (b *Builder) WithContextValues(ctx context.Context) context.Context {
 	return ctx
 }
 
-func (b *Builder) getPublishContent(ctx context.Context, obj interface{}) (r string, err error) {
+func (*Builder) getPublishContent(ctx context.Context, obj interface{}) (r string, err error) {
 	var (
 		mb PreviewBuilderInterface
 		ok bool
@@ -379,7 +385,7 @@ func (b *Builder) getPublishContent(ctx context.Context, obj interface{}) (r str
 	return
 }
 
-func (b *Builder) getObjectLiveUrl(ctx context.Context, db *gorm.DB, obj interface{}) (url string) {
+func (*Builder) getObjectLiveUrl(ctx context.Context, db *gorm.DB, obj interface{}) (url string) {
 	builder := ctx.Value(utils.GetObjectName(obj))
 	mb, ok := builder.(PreviewBuilderInterface)
 	if !ok {

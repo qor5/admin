@@ -164,7 +164,7 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 			).Class("px-2"),
 			h.Div(
 				c.toolbarSearch(ctx),
-			),
+			).Class("mb-n2"),
 			VCardText().Class("list-table-wrap").Children(
 				c.dataTable(ctx),
 			),
@@ -675,27 +675,32 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 	if err != nil {
 		panic(errors.Wrap(err, "get columns error"))
 	}
+	var dataBody h.HTMLComponent
+	if c.lb.dataTableFunc == nil {
+		dataTable := vx.DataTable(searchResult.Nodes).Hover(true).HoverClass("cursor-pointer").
+			HeadCellWrapperFunc(c.headCellWrapperFunc(ctx, columns, colOrderBys, orderableFieldMap)).
+			RowWrapperFunc(c.rowWrapperFunc(evCtx)).
+			RowMenuHead(btnConfigColumns).
+			RowMenuItemFuncs(c.lb.RowMenu().listingItemFuncs(evCtx)...).
+			CellWrapperFunc(c.cellWrapperFunc(evCtx))
 
-	dataTable := vx.DataTable(searchResult.Nodes).Hover(true).HoverClass("cursor-pointer").
-		HeadCellWrapperFunc(c.headCellWrapperFunc(ctx, columns, colOrderBys, orderableFieldMap)).
-		RowWrapperFunc(c.rowWrapperFunc(evCtx)).
-		RowMenuHead(btnConfigColumns).
-		RowMenuItemFuncs(c.lb.RowMenu().listingItemFuncs(evCtx)...).
-		CellWrapperFunc(c.cellWrapperFunc(evCtx))
+		c.setupBulkActions(ctx, dataTable)
+		c.setupColumns(dataTable, columns)
 
-	c.setupBulkActions(ctx, dataTable)
-	c.setupColumns(dataTable, columns)
-
-	if c.lb.tableProcessor != nil {
-		dataTable, err = c.lb.tableProcessor(evCtx, dataTable)
-		if err != nil {
-			panic(err)
+		if c.lb.tableProcessor != nil {
+			dataTable, err = c.lb.tableProcessor(evCtx, dataTable)
+			if err != nil {
+				panic(err)
+			}
 		}
+		dataBody = dataTable
+	} else {
+		dataBody = c.lb.dataTableFunc(evCtx, searchParams, searchResult)
 	}
 
 	return h.Components(
 		filterScript,
-		dataTable,
+		dataBody,
 		c.buildDataTableAdditions(ctx, searchParams, searchResult),
 	)
 }
@@ -922,7 +927,7 @@ func (c *ListingCompo) actionDialogContentPortalName() string {
 	return fmt.Sprintf("%s_action_dialog_content", c.CompoID())
 }
 
-func (c *ListingCompo) closeActionDialog() string {
+func (*ListingCompo) closeActionDialog() string {
 	return "locals.dialog = false;"
 }
 

@@ -4,12 +4,13 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/qor5/admin/v3/activity"
-	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
 	"github.com/sunfmin/reflectutils"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/utils"
 )
 
 const (
@@ -72,16 +73,17 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, lb *Builder, ab *activi
 			if ab == nil {
 				return
 			}
-			if _, ok := ab.GetModelBuilder(fromObj); !ok {
+			amb, ok := ab.GetModelBuilder(mb)
+			if !ok {
 				return
 			}
 			if len(toObjs) > 0 {
-				_, err = ab.Log(ctx.R.Context(), LocalizeFrom, fromObj, nil)
+				_, err = amb.Log(ctx.R.Context(), LocalizeFrom, fromObj, nil)
 				if err != nil {
 					return
 				}
 				for _, toObj := range toObjs {
-					_, err = ab.Log(ctx.R.Context(), LocalizeTo, toObj, nil)
+					_, err = amb.Log(ctx.R.Context(), LocalizeTo, toObj, nil)
 					if err != nil {
 						return
 					}

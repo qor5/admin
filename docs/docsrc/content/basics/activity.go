@@ -1,9 +1,10 @@
 package basics
 
 import (
-	"github.com/qor5/admin/v3/docs/docsrc/generated"
 	. "github.com/theplant/docgo"
 	"github.com/theplant/docgo/ch"
+
+	"github.com/qor5/admin/v3/docs/docsrc/generated"
 )
 
 var Activity = Doc(
@@ -31,18 +32,4 @@ Same with above, the activity package uses the db instance that passed in during
 This example demonstrates how to register ~~Product~~ into the activity. The activities on the product model will be automatically recorded when it is created, updated, or deleted.
 `),
 	ch.Code(generated.ActivityRegisterPresetsModelsSample).Language("go"),
-	Markdown(`
-By default, the activity package will use the primary key as the key to indentify the current model data. You can use ~~SetKeys~~ and ~~AddKeys~~ methods to customize it.
-
-When diffing the modified data, the activity package will ignore the ~~ID~~, ~~CreatedAt~~, ~~UpdatedAt~~, ~~DeletedAt~~ fields. You can either use ~~AddIgnoredFields~~ to append your own fields to the default ignored fields. Or ~~SetIgnoredFields~~ method to replace the default ignored fields.
-
-For special fields like ~~time.Time~~ or media files handled by QOR5 media_library, activity package already handled them. You can use ~~AddTypeHanders~~ method to handle your own field types.
-
-If you want to skip the automatic recording, you can use ~~SkipCreate~~, ~~SkipUpdate~~ and ~~SkipDelete~~ methods.
-
-The Activity package allows for displaying the activities of a record on its editing page. Simply use the ~~EnableActivityInfoTab~~ method to enable this feature. Once enabled, you can customize the format of each activity's display text using the ~~TabHeading~~ method. Additionally, you can make each activity a link to the corresponding record using the ~~SetLink~~ method.
-
-## Record the activity log manually
-If you register a preset model into the activity, the activity package will automatically record the activity log for CRUD operations. However, if you need to manually record the activity log for other operations or if you want to register a non-preset model, you can use the following sample code.`),
-	ch.Code(generated.ActivityRecordLogSample).Language("go"),
 ).Title("Activity Log")
