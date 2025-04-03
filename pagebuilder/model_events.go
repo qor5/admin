@@ -500,9 +500,9 @@ func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.Event
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr    = presets.MustGetMessages(ctx.R)
 		okAction = web.Plaid().
-				URL(b.mb.Info().ListingHref()).
-				ThenScript("locals.renameDialog=false").
-				EventFunc(RenameContainerFromDialogEvent).Query(paramContainerID, paramID).Go()
+			URL(b.mb.Info().ListingHref()).
+			ThenScript("locals.renameDialog=false").
+			EventFunc(RenameContainerFromDialogEvent).Query(paramContainerID, paramID).Go()
 		portalName = dialogPortalName
 	)
 
@@ -910,12 +910,17 @@ func (b *ModelBuilder) reloadRenderPageOrTemplateBody(ctx *web.EventContext) (r 
 	if data, err = body.MarshalHTML(ctx.R.Context()); err != nil {
 		return
 	}
+	iframeEventName := ctx.Param(paramIframeEventName)
+	if iframeEventName == "" {
+		iframeEventName = updateBodyEventName
+	}
 	web.AppendRunScripts(&r,
 		web.Emit(b.notifIframeBodyUpdated(),
 			notifIframeBodyUpdatedPayload{
 				Body:            string(data),
 				ContainerDataID: ctx.Param(paramContainerDataID),
 				IsUpdate:        ctx.Param(paramIsUpdate) == "true",
+				EventName:       iframeEventName,
 			},
 		),
 	)
@@ -930,4 +935,5 @@ type notifIframeBodyUpdatedPayload struct {
 	Body            string `json:"body"`
 	ContainerDataID string `json:"containerDataID"`
 	IsUpdate        bool   `json:"isUpdate"`
+	EventName       string `json:"eventName"`
 }

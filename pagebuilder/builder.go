@@ -1494,21 +1494,23 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 		device = b.getDevices()[0].Name
 	}
 	containerDataID := web.Var(fmt.Sprintf("vars.%s", paramContainerDataID))
-	reloadBodyEditingEvent := fmt.Sprintf("const device = toggleLocals.devices.find(device => device.Name === toggleLocals.activeDevice);vars.__scrollIframeWidth=device ? device.Width : '';") + web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).
-		BeforeScript(
-			web.Plaid().
-				PushState(true).MergeQuery(true).Query(paramDevice, web.Var("toggleLocals.activeDevice")).RunPushState(),
-		).
-		Query(paramContainerDataID, containerDataID).
-		AfterScript("vars.__pageBuilderEditingUnPassed=false;toggleLocals.oldDevice = toggleLocals.activeDevice;").
-		ThenScript(fmt.Sprintf(`if(%s!==""){%s}`, containerDataID,
-			web.Plaid().EventFunc(EditContainerEvent).
-				MergeQuery(true).
-				Query(paramContainerDataID, containerDataID).
-				Query(presets.ParamPortalName, pageBuilderRightContentPortal).
-				Query(presets.ParamOverlay, actions.Content).Go()),
-		).
-		Go()
+	reloadBodyEditingEvent := fmt.Sprintf("const device = toggleLocals.devices.find(device => device.Name === toggleLocals.activeDevice);vars.__scrollIframeWidth=device ? device.Width : '';") +
+		web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).
+			BeforeScript(
+				web.Plaid().
+					PushState(true).MergeQuery(true).Query(paramDevice, web.Var("toggleLocals.activeDevice")).RunPushState(),
+			).
+			Query(paramIframeEventName, changeDeviceEventName).
+			Query(paramContainerDataID, containerDataID).
+			AfterScript("vars.__pageBuilderEditingUnPassed=false;toggleLocals.oldDevice = toggleLocals.activeDevice;").
+			ThenScript(fmt.Sprintf(`if(%s!==""){%s}`, containerDataID,
+				web.Plaid().EventFunc(EditContainerEvent).
+					MergeQuery(true).
+					Query(paramContainerDataID, containerDataID).
+					Query(presets.ParamPortalName, pageBuilderRightContentPortal).
+					Query(presets.ParamOverlay, actions.Content).Go()),
+			).
+			Go()
 	changeDeviceEvent := fmt.Sprintf(`if (vars.__pageBuilderEditingUnPassed){toggleLocals.dialog=true}else{%s}`, reloadBodyEditingEvent)
 
 	return web.Scope(
