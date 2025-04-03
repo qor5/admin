@@ -1269,6 +1269,24 @@ func (b *Builder) wrap(m *ModelBuilder, pf web.PageFunc) http.Handler {
 		}
 	})
 
+	p.Wrap(func(in web.PageFunc) web.PageFunc {
+		return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+			defer func() {
+				if v := recover(); v != nil {
+					if render, ok := v.(PageRenderIface); ok {
+						if rerr, ok := v.(error); ok {
+							log.Printf("catch render err: %+v", rerr)
+						}
+						r, err = render.Render(ctx)
+						return
+					}
+					panic(v)
+				}
+			}()
+			return in(ctx)
+		}
+	})
+
 	handlers := b.GetI18n().EnsureLanguage(
 		p,
 	)
