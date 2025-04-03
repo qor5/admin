@@ -82,7 +82,8 @@ type SessionBuilder struct {
 	pb                  *presets.Builder
 	isPublicUser        func(user any) bool
 	parseIPFunc         func(ctx context.Context, lang language.Tag, addr string) (string, error)
-	validateSessionHook func(next ValidateSessionFunc) ValidateSessionFunc
+	validateSessionHook common.Hook[ValidateSessionFunc]
+	sessionTableHook    common.Hook[SessionTableFunc]
 }
 
 func NewSessionBuilder(lb *login.Builder, db *gorm.DB) *SessionBuilder {
@@ -162,9 +163,22 @@ type (
 	ValidateSessionFunc   func(ctx context.Context, input *ValidateSessionInput) (*ValidateSessionOutput, error)
 )
 
-func (c *SessionBuilder) WithValidateSessionHook(hooks ...common.Hook[ValidateSessionFunc]) *SessionBuilder {
-	c.validateSessionHook = common.ChainHookWith(c.validateSessionHook, hooks...)
-	return c
+func (b *SessionBuilder) WithValidateSessionHook(hooks ...common.Hook[ValidateSessionFunc]) *SessionBuilder {
+	b.validateSessionHook = common.ChainHookWith(b.validateSessionHook, hooks...)
+	return b
+}
+
+type (
+	SessionTableInput  struct{}
+	SessionTableOutput struct {
+		Component h.HTMLComponent
+	}
+	SessionTableFunc func(ctx context.Context, input *SessionTableInput) (*SessionTableOutput, error)
+)
+
+func (b *SessionBuilder) WithSessionTableHook(hooks ...common.Hook[SessionTableFunc]) *SessionBuilder {
+	b.sessionTableHook = common.ChainHookWith(b.sessionTableHook, hooks...)
+	return b
 }
 
 func (b *SessionBuilder) GetLoginBuilder() *login.Builder {
@@ -619,6 +633,7 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 		}
 		tableHeaders[i].Width = fmt.Sprintf("%d%%", percent)
 	}
+
 	table := v.VDataTable().Headers(tableHeaders).Items(wrappers).ItemsPerPage(-1).HideDefaultFooter(true)
 	if !isPublicUser {
 		table = table.Children(web.Slot().Name("item.Action").Scope("{ item }").Children(
@@ -636,6 +651,17 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 		))
 	}
 
+	sessionTableFunc := func(ctx context.Context, input *SessionTableInput) (*SessionTableOutput, error) {
+		return &SessionTableOutput{Component: table}, nil
+	}
+	if b.sessionTableHook != nil {
+		sessionTableFunc = b.sessionTableHook(sessionTableFunc)
+	}
+	sessionTableoutput, err := sessionTableFunc(ctx.R.Context(), &SessionTableInput{})
+	if err != nil {
+		return r, err
+	}
+
 	body := web.Scope().VSlot("{locals: xlocals}").Init("{dialog:true}").Children(
 		v.VDialog().Attr("v-model", "xlocals.dialog").Width("60%").MaxWidth(828).Scrollable(true).Children(
 			v.VCard().Children(
@@ -645,7 +671,7 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 					v.VBtn("").Size(v.SizeXSmall).Icon("mdi-close").Variant(v.VariantText).Color(v.ColorGreyDarken1).Attr("@click", "xlocals.dialog=false"),
 				),
 				v.VCardText().Class("px-6 pt-0 pb-6").Attr("style", "max-height: 46vh;").ClassIf("mb-6", isPublicUser).Children(
-					table,
+					sessionTableoutput.Component,
 				),
 
 				h.Iff(!isPublicUser && activeCount > 1, func() h.HTMLComponent {

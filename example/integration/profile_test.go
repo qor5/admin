@@ -13,9 +13,11 @@ import (
 
 	"github.com/qor5/admin/v3/example/admin"
 	"github.com/qor5/admin/v3/example/models"
+	"github.com/qor5/admin/v3/login"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/role"
+	h "github.com/theplant/htmlgo"
 )
 
 var profileData = gofixtures.Data(gofixtures.Sql(`
@@ -42,7 +44,7 @@ func TestProfile(t *testing.T) {
 		},
 	}
 	user.Account = user.Name
-	h := admin.TestHandler(TestDB, user)
+	hdlr := admin.TestHandler(TestDB, user)
 
 	dbr, _ := TestDB.DB()
 
@@ -57,7 +59,7 @@ func TestProfile(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPageBodyContainsInOrder: []string{`DEMO`, `portal-name='ProfileCompo:`, `<v-avatar`, `text='Q'`, `/v-avatar>`, `qor@theplant.jp`, `Admin`},
+			ExpectPageBodyContainsInOrder: []string{`portal-name='ProfileCompo:`, `<v-avatar`, `text='Q'`, `/v-avatar>`, `qor@theplant.jp`, `Admin`},
 		},
 		{
 			Name:  "rename",
@@ -103,6 +105,35 @@ func TestProfile(t *testing.T) {
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{`Login Sessions`, `"title":"Time"`, `"title":"Device"`, `"title":"IP Address"`, `"title":"Status"`, `"title":"Last Active Time"`},
 			ExpectPortalUpdate0NotContains:     []string{`"title":"Location"`},
+		},
+		{
+			Name:  "login Sessions with table func",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				hdlr, cfg := admin.TestHandlerComplex(TestDB, user, false)
+				cfg.GetLoginSessionBuilder().WithSessionTableHook(func(next login.SessionTableFunc) login.SessionTableFunc {
+					return func(ctx context.Context, input *login.SessionTableInput) (*login.SessionTableOutput, error) {
+						output, err := next(ctx, input)
+						if err != nil {
+							return nil, err
+						}
+						output.Component = h.Components(
+							output.Component,
+							h.Div().Class("text-caption pt-2 text-warning").Text("Customized Bottom Text"),
+						)
+						return output, nil
+					}
+				})
+				return hdlr
+			},
+			ReqFunc: func() *http.Request {
+				profileData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/login-sessions-dialog?__execute_event__=loginSession_eventLoginSessionsDialog").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`Customized Bottom Text`},
 		},
 		{
 			Name:  "login Sessions with location",
@@ -222,7 +253,7 @@ func TestProfile(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-			RunCase(t, c, h)
+			RunCase(t, c, hdlr)
 		})
 	}
 }

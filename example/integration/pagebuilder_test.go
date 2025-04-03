@@ -1,9 +1,11 @@
 package integration_test
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/qor5/web/v3"
 	. "github.com/qor5/web/v3/multipartestutils"
@@ -20,6 +22,7 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/publish"
+	"github.com/qor5/admin/v3/utils"
 )
 
 var TestDB *gorm.DB
@@ -49,7 +52,7 @@ INSERT INTO public.page_builder_templates (id, created_at, updated_at, deleted_a
 
 var pageBuilderContainerTestData = gofixtures.Data(gofixtures.Sql(`
 INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, seo, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code) VALUES 
-										(10, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, '1234567', '12313', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'draft', '', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'International');
+										(10, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, '1234567', '/12313', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'draft', '', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'International');
 SELECT setval('page_builder_pages_id_seq', 10, true);
 
 INSERT INTO public.page_builder_containers (id,created_at, updated_at, deleted_at, page_id, page_version, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id,page_model_name) VALUES 
@@ -116,7 +119,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().PageURL("/page_builder/pages/10_2024-05-21-v01_International").
-					Query("containerDataID", "list-content_10").
+					Query("containerDataID", "list-content_10_10International").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -1143,7 +1146,7 @@ func TestPageBuilder(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
 					EventFunc(pagebuilder.EditContainerEvent).
-					Query("containerDataID", "headers_10").
+					Query("containerDataID", "headers_10_10_International").
 					BuildEventFuncRequest()
 
 				return req
@@ -1295,6 +1298,43 @@ func TestPageBuilder(t *testing.T) {
 				return req
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"vx-scroll-iframe"},
+		},
+		{
+			Name:  "Page DoLocalize",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages").
+					EventFunc(l10n.DoLocalize).
+					Query(presets.ParamID, "10_2024-05-21-v01_International").
+					AddField("localize_from", "International").
+					AddField("localize_to", "Japan").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var (
+					page  pagebuilder.Page
+					now   = time.Now()
+					count int64
+					err   error
+				)
+				if err = utils.PrimarySluggerWhere(TestDB, &page, fmt.Sprintf("10_%v_Japan", page.GetNextVersion(&now))).First(&page).Error; err != nil {
+					t.Fatalf("Copy Page Failed %v", err)
+					return
+				}
+				if err = TestDB.Model(&pagebuilder.Container{}).Where("page_id=10 and locale_code='Japan'").Count(&count).Error; err != nil {
+					t.Fatalf("Find Containers %v", err)
+					return
+				}
+				if count == 0 {
+					t.Fatalf("Containers not copied")
+					return
+				}
+				return
+			},
 		},
 	}
 

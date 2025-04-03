@@ -297,7 +297,7 @@ func (b *Builder) vseo(fieldPrefix string, field *presets.FieldContext, seo *SEO
 		image.ID = json.Number("")
 	}
 	refPrefix := strings.ReplaceAll(strings.ToLower(fieldPrefix), " ", "_")
-	return VSeo(
+	return VXSendVariables(
 		h.H4(msgr.Basic).Style("margin-top:15px;font-weight: 500"),
 		VRow(
 			varComps...,

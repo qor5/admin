@@ -9,7 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func (version *Version) GetNextVersion(t *time.Time) string {
+func (*Version) GetNextVersion(t *time.Time) string {
 	if t == nil {
 		return ""
 	}

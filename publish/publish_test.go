@@ -39,7 +39,7 @@ func (p *Product) getUrl() string {
 	return fmt.Sprintf("test/product/%s/index.html", p.Code)
 }
 
-func (p *Product) getListUrl() string {
+func (*Product) getListUrl() string {
 	return "test/product/list/index.html"
 }
 
@@ -137,11 +137,11 @@ func (p *ProductWithoutVersion) GetUnPublishActions(ctx context.Context, db *gor
 	return
 }
 
-func (p ProductWithoutVersion) GetListUrl(pageNumber string) string {
+func (ProductWithoutVersion) GetListUrl(pageNumber string) string {
 	return fmt.Sprintf("/product_without_version/list/%v.html", pageNumber)
 }
 
-func (p ProductWithoutVersion) GetListContent(db *gorm.DB, onePageItems *publish.OnePageItems) string {
+func (ProductWithoutVersion) GetListContent(db *gorm.DB, onePageItems *publish.OnePageItems) string {
 	pageNumber := onePageItems.PageNumber
 	var result string
 	for _, item := range onePageItems.Items {
@@ -152,7 +152,7 @@ func (p ProductWithoutVersion) GetListContent(db *gorm.DB, onePageItems *publish
 	return result
 }
 
-func (p ProductWithoutVersion) Sort(array []interface{}) {
+func (ProductWithoutVersion) Sort(array []interface{}) {
 	var temp []*ProductWithoutVersion
 	sliceutils.Unwrap(array, &temp)
 	sort.Sort(SliceProductWithoutVersion(temp))
@@ -232,7 +232,7 @@ type ProductWithError struct {
 	afterUnPublishError  error
 }
 
-func (p *ProductWithError) TableName() string {
+func (*ProductWithError) TableName() string {
 	return "products"
 }
 
@@ -443,15 +443,15 @@ type ProductWithSchedulePublisherDBScope struct {
 	Product
 }
 
-func (p ProductWithSchedulePublisherDBScope) TableName() string {
+func (ProductWithSchedulePublisherDBScope) TableName() string {
 	return "products"
 }
 
-func (p ProductWithSchedulePublisherDBScope) SchedulePublishDBScope(db *gorm.DB) *gorm.DB {
+func (ProductWithSchedulePublisherDBScope) SchedulePublishDBScope(db *gorm.DB) *gorm.DB {
 	return db.Where("name <> ?", "should_ignored_by_publish")
 }
 
-func (p ProductWithSchedulePublisherDBScope) ScheduleUnPublishDBScope(db *gorm.DB) *gorm.DB {
+func (ProductWithSchedulePublisherDBScope) ScheduleUnPublishDBScope(db *gorm.DB) *gorm.DB {
 	return db.Where("name <> ?", "should_ignored_by_unpublish")
 }
 
