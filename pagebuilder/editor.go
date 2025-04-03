@@ -64,6 +64,10 @@ const (
 	EventDelete = "delete"
 	EventAdd    = "add"
 	EventEdit   = "edit"
+
+	paramIframeEventName  = "iframeEventName"
+	changeDeviceEventName = "change_device"
+	updateBodyEventName   = "update_body"
 )
 
 const (
