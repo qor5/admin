@@ -382,7 +382,7 @@ func (b *SessionBuilder) validateSessionToken() func(next http.Handler) http.Han
 
 			uid := presets.MustObjectID(user)
 
-			err := b.IsSessionValid(r, presets.MustObjectID(user))
+			err := b.IsSessionValid(r, uid)
 			if err != nil {
 				log.Printf("login: session invalid: %v", err)
 				if r.URL.Path == b.lb.LogoutURL {
