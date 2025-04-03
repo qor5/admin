@@ -1,8 +1,9 @@
 package publish
 
 import (
-	"github.com/qor5/admin/v3/presets"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/presets"
 )
 
 const (
@@ -18,6 +19,7 @@ const (
 	eventRenameVersion       = "publish_eventRenameVersion"
 	eventDeleteVersionDialog = "publish_eventDeleteVersionDialog"
 	eventDeleteVersion       = "publish_eventDeleteVersion"
+	eventDuplicateEditDialog = "publish_eventDuplicateEditDialog"
 
 	ActivityPublish   = "Publish"
 	ActivityRepublish = "Republish"
@@ -34,6 +36,7 @@ func registerEventFuncsForResource(db *gorm.DB, mb *presets.ModelBuilder, publis
 	mb.RegisterEventFunc(EventDuplicateVersion, duplicateVersionAction(mb, db))
 	mb.RegisterEventFunc(eventSchedulePublishDialog, scheduleDialog(db, mb))
 	mb.RegisterEventFunc(eventSchedulePublish, schedule(db, mb))
+	mb.RegisterEventFunc(eventDuplicateEditDialog, duplicateEditDialog(mb))
 }
 
 func registerEventFuncsForVersion(mb *presets.ModelBuilder, db *gorm.DB) {

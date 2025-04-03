@@ -82,7 +82,11 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 			div.AppendChildren(buildVersionSwitch(obj, mb, slug, urlSuffix, msgr, phraseHasPresetsDataChanged))
 
 			if !DeniedDo(mb.Info().Verifier(), obj, ctx.R, presets.PermUpdate, PermDuplicate) {
-				div.AppendChildren(v.VBtn(msgr.Duplicate).
+				dupicateMsg := msgr.Duplicate
+				if p, ok := obj.(StatusInterface); ok && config.Top && p.EmbedStatus().Status != StatusDraft {
+					dupicateMsg = msgr.DuplicateToEdit
+				}
+				div.AppendChildren(v.VBtn(dupicateMsg).
 					Height(36).Class("ml-2").Variant(v.VariantOutlined).
 					Attr(":disabled", phraseHasPresetsDataChanged).
 					Attr("@click", fmt.Sprintf(`locals.action=%q;locals.commonConfirmDialog = true`, EventDuplicateVersion)))
@@ -255,7 +259,7 @@ func DefaultVersionBar(db *gorm.DB) presets.ObjectComponentFunc {
 		}
 		versionIf := currentObj.(VersionInterface)
 		currentVersionStr := fmt.Sprintf("%s: %s", msgr.OnlineVersion, versionIf.EmbedVersion().VersionName)
-		res.AppendChildren(v.VChip(h.Span(currentVersionStr)).Density(v.DensityProminent).Color(v.ColorSuccess).Size(v.SizeSmall))
+		res.AppendChildren(v.VChip(h.Span(currentVersionStr)).Density(v.DensityCompact).Color(v.ColorSuccess).Size(v.SizeSmall))
 
 		if _, ok := currentObj.(ScheduleInterface); !ok {
 			return res

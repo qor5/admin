@@ -66,7 +66,7 @@ func TestPageBuilderOnline(t *testing.T) {
 				pageBuilderOnlineData.TruncatePut(dbr)
 				return httptest.NewRequest("GET", "/pages/10_2024-05-21-v01_International", nil)
 			},
-			ExpectPageBodyContainsInOrder: []string{`<a href='example-publish.s3.ap-northeast-1.amazonaws.com/'>example-publish.s3.ap-northeast-1.amazonaws.com/</a>`},
+			ExpectPageBodyContainsInOrder: []string{`<a href='example-publish.s3.ap-northeast-1.amazonaws.com/'>example-publish.s3.ap-northeast-1.amazonaws.com/</a>`, "publish_eventDuplicateEditDialog", "Edit"},
 		},
 		{
 			Name:  "PageBuilder Online Wrap EditContainerEvent",
@@ -149,6 +149,20 @@ func TestPageBuilderOnline(t *testing.T) {
 				return req
 			},
 			ExpectRunScriptContainsInOrder: []string{`vars.presetsMessage = { show: true, message: "The resource can not be modified", color: "warning"}`},
+		},
+		{
+			Name:  "PageBuilder Online EventDuplicateEditDialog",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderOnlineData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					EventFunc("publish_eventDuplicateEditDialog").
+					Query(presets.ParamID, "10_2024-05-21-v01_International").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"vx-dialog", "The current version is published and cannot be modified. Would you like to duplicate it to create a new version for editing?", "publish_EventDuplicateVersion"},
 		},
 	}
 
