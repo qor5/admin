@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/qor5/web/v3"
+	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"github.com/theplant/relay/cursor"
 	"golang.org/x/text/language"
@@ -423,6 +424,50 @@ func PresetsListingCustomizationSearcher(b *presets.Builder, db *gorm.DB) (
 		// only display approved customers
 		qdb := db.Where("approved_at IS NOT NULL")
 		return gorm2op.DataOperator(qdb).Search(ctx, params)
+	})
+	return
+}
+
+// @snippet_end
+
+// @snippet_begin(PresetsListingDatatableFuncSample)
+
+func PresetsListingDatatableFunc(b *presets.Builder, db *gorm.DB) (
+	mb *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	b.DataOperator(gorm2op.DataOperator(db))
+	mb = b.Model(&Customer{})
+	mb.Listing().DataTableFunc(func(context *web.EventContext, params *presets.SearchParams, result *presets.SearchResult) h.HTMLComponent {
+		rows := v.VRow()
+		reflectutils.ForEach(result.Nodes, func(obj interface{}) {
+			p := obj.(*Customer)
+			rows.AppendChildren(v.VCol(
+				v.VCard(
+					v.VCardItem(
+						v.VCard(
+							v.VCardText(
+								h.Text(p.Name),
+							).Class("pa-0", v.H100, "bg-"+v.ColorGreyLighten4),
+						).Elevation(0).Height(80),
+					).Class("pa-0", v.W100),
+					v.VCardItem(
+						v.VCard(
+							v.VCardItem(
+								h.Div(
+									h.Text(p.Email),
+								).Class(v.W100, "d-flex", "justify-space-between", "align-center"),
+							).Class("pa-2"),
+						).Color(v.ColorGreyLighten5).Height(80),
+					).Class("pa-0"),
+				).Elevation(0),
+			).Cols(3))
+		})
+		return v.VContainer(
+			rows,
+		).Fluid(true).Class("pa-0")
 	})
 	return
 }
