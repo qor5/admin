@@ -500,9 +500,9 @@ func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.Event
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr    = presets.MustGetMessages(ctx.R)
 		okAction = web.Plaid().
-				URL(b.mb.Info().ListingHref()).
-				ThenScript("locals.renameDialog=false").
-				EventFunc(RenameContainerFromDialogEvent).Query(paramContainerID, paramID).Go()
+			URL(b.mb.Info().ListingHref()).
+			ThenScript("locals.renameDialog=false").
+			EventFunc(RenameContainerFromDialogEvent).Query(paramContainerID, paramID).Go()
 		portalName = dialogPortalName
 	)
 
@@ -560,7 +560,7 @@ func (b *ModelBuilder) renderContainerHover(cb *ContainerBuilder, ctx *web.Event
 				).Attr("v-bind", "props", ":active", "isHovering").
 					Class("cursor-pointer").
 					Attr("@click", fmt.Sprintf(`if (isHovering &&!pLocals.creating){%s}`, addContainerEvent)).
-					ActiveColor(ColorPrimary),
+					Color(ColorPrimary),
 			).VSlot("{ locals: pLocals }").Init(`{ creating : false }`),
 		).Name("default").Scope(`{isHovering, props }`),
 	).Attr("@update:model-value", fmt.Sprintf(`(val)=>{if (val){%s} }`,
@@ -589,7 +589,7 @@ func (b *ModelBuilder) renderSharedContainerHover(displayName, modelName string,
 				).Attr("v-bind", "props", ":active", "isHovering").
 					Class("cursor-pointer").
 					Attr("@click", fmt.Sprintf(`if (isHovering &&!pLocals.creating){%s}`, addContainerEvent)).
-					ActiveColor(ColorPrimary),
+					Color(ColorPrimary),
 			).VSlot("{ locals: pLocals }").Init(`{ creating : false }`),
 		).Name("default").Scope(`{isHovering, props }`),
 	).Attr("@update:model-value", fmt.Sprintf(`(val)=>{if (val){%s} }`,
