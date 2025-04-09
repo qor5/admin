@@ -382,15 +382,17 @@ func PresetsDetailDisableSave(b *presets.Builder, db *gorm.DB) (
 		panic(err)
 	}
 	cust, cl, ce, dp = PresetsHelloWorld(b, db)
-	dp = cust.Detailing("DisabledSection")
+	dp = cust.Detailing("DisabledSection", "Normal")
 	section := presets.NewSectionBuilder(cust, "DisabledSection").Editing("Name", "Email")
 	section.EditingField("Btn").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		return h.Div(
-			vx.VXBtn("Disabled").Attr("@click", fmt.Sprintf("dash.%s_disabledSectionSave=true", "DisabledSection")).Color(ColorSecondary),
-			vx.VXBtn("Savable").Attr("@click", fmt.Sprintf("dash.%s_disabledSectionSave=false", "DisabledSection")).Color(ColorPrimary),
+			vx.VXBtn("Disabled").Attr("@click", "dash.disabled.sectionSave=true").Color(ColorSecondary),
+			vx.VXBtn("Savable").Attr("@click", "dash.disabled.sectionSave=false").Color(ColorPrimary),
 		).Class("d-flex d-flex-inline ga-4")
 	})
-	dp.Section(section)
+	normalSec := presets.NewSectionBuilder(cust, "Normal").Editing("Email")
+
+	dp.Section(section, normalSec)
 	mb := b.Model(&Company{})
 	dpc := mb.Detailing("DisabledSectionCompany").Drawer(true)
 	sec := presets.NewSectionBuilder(mb, "DisabledSectionCompany").Editing("Name")
