@@ -13,17 +13,18 @@ import (
 
 type PlainNestedBody struct {
 	gorm.Model
-	Name        string
-	NumberCards NumberCards
+	Name  string
+	Items NumberCards
 }
 
 type NumberCards []*NumberCard
 
 type NumberCard struct {
+	Name   string
 	Number string
 }
 
-func (n *NumberCards) Value() (driver.Value, error) {
+func (n NumberCards) Value() (driver.Value, error) {
 	return json.Marshal(n)
 }
 
@@ -66,9 +67,9 @@ func PresetsPlainNestedField(b *presets.Builder, db *gorm.DB) (
 ) {
 	mb, cl, ce, dp = PresetsPlainNestedFieldStruct(b, db)
 	ce.Creating()
-	ed := mb.Editing("NumberCards")
-	fb := b.NewFieldsBuilder(presets.WRITE).Model(&NumberCard{}).Only("Number")
+	ed := mb.Editing("Items")
+	fb := b.NewFieldsBuilder(presets.WRITE).Model(&NumberCard{}).Only("Name", "Number")
 
-	ed.Field("NumberCards").Nested(fb)
+	ed.Field("Items").Nested(fb)
 	return
 }

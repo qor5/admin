@@ -2,6 +2,7 @@ package examples_presets
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	. "github.com/qor5/web/v3/multipartestutils"
@@ -13,9 +14,8 @@ import (
 )
 
 var customerDataWithNumberRecord = gofixtures.Data(gofixtures.Sql(`
-				insert into customers (id, email,name) values (1, 'xxx@gmail.com','Terry');
-				insert into credit_cards (id, customer_id, number) values (1, 1, '1234567890');
-			`, []string{"customers", "credit_cards"}))
+	INSERT INTO public.plain_nested_bodies (id, created_at, updated_at, deleted_at, name, items) VALUES (1, '2025-04-09 03:42:47.416003 +00:00', '2025-04-09 03:42:47.416003 +00:00', null, '123', null);
+			`, []string{"plain_nested_bodies"}))
 
 func TestPresetsPlainNestedField(t *testing.T) {
 	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
@@ -23,17 +23,39 @@ func TestPresetsPlainNestedField(t *testing.T) {
 
 	cases := []TestCase{
 		{
-			Name:  "editing create",
+			Name:  "PlainNestedBody Update",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				customerData.TruncatePut(SqlDB)
+				customerDataWithNumberRecord.TruncatePut(SqlDB)
 				return NewMultipartBuilder().
-					PageURL("/customers").
-					EventFunc(actions.Edit).
+					PageURL("/plain-nested-bodies").
+					EventFunc(actions.Update).
+					Query(presets.ParamID, "1").
+					AddField("Items[0].Number", "123").
+					AddField("Items[0].Name", "234").
 					BuildEventFuncRequest()
 			},
-			ExpectPageBodyNotContains:          []string{"Notes"},
-			ExpectPortalUpdate0ContainsInOrder: []string{`<label class="v-label theme--light text-caption">Notes</label>`},
+			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {
+				m := PlainNestedBody{}
+				TestDB.First(&m, 1)
+				if m.Items == nil {
+					t.Fatalf("Items is nil")
+					return
+				}
+				if len(m.Items) == 0 {
+					t.Fatalf("Number card is empty")
+					return
+				}
+				if m.Items[0].Number != "123" {
+					t.Fatalf("Number card is not 123")
+					return
+				}
+				if m.Items[0].Name != "234" {
+					t.Fatalf("Name card is not 234")
+					return
+				}
+				return
+			},
 		},
 	}
 
