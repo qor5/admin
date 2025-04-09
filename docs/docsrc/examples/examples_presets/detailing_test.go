@@ -1,6 +1,7 @@
 package examples_presets
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -862,7 +863,7 @@ func TestPresetsDetailDisableSave(t *testing.T) {
 					EventFunc("section_edit_DisabledSection").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"dash.DisabledSection_disabledSectionSave=true", "dash.DisabledSection_disabledSectionSave=false", "Savable"},
+			ExpectPortalUpdate0ContainsInOrder: []string{fmt.Sprintf("dash.disabled.%s=true", presets.SectionDisabledSave), fmt.Sprintf("dash.disabled.%s=false", presets.SectionDisabledSave), "Savable"},
 		},
 		{
 			Name:  "detail with drawer disable save",
@@ -874,7 +875,7 @@ func TestPresetsDetailDisableSave(t *testing.T) {
 					EventFunc("section_edit_DisabledSectionCompany").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"dash.DisabledSectionCompany_disabledSectionSave=true", "dash.DisabledSectionCompany_disabledSectionSave=false", "Savable"},
+			ExpectPortalUpdate0ContainsInOrder: []string{fmt.Sprintf("dash.disabled.%s=true", presets.SectionDisabledSave), fmt.Sprintf("dash.disabled.%s=false", presets.SectionDisabledSave), "Savable"},
 		},
 	}
 	for _, c := range cases {

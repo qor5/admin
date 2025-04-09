@@ -27,6 +27,8 @@ const (
 	sectionListFieldDeleteBtnKey = "sectionListDeleteBtn"
 
 	sectionListFieldEditing = "sectionListEditing"
+
+	SectionDisabledSave = "sectionSaveDisabled"
 )
 
 func NewSectionBuilder(mb *ModelBuilder, name string) (r *SectionBuilder) {
@@ -537,7 +539,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 	disableEditBtn := b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
 	saveBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Save")).PrependIcon("mdi-check").
 		Size(SizeSmall).Variant(VariantFlat).Color(ColorPrimary).
-		Attr(":disabled", fmt.Sprintf("%v || dash.disabled.sectionSave", disableEditBtn)).
+		Attr(":disabled", fmt.Sprintf("%v || dash.disabled.%v", disableEditBtn, SectionDisabledSave)).
 		Attr("style", "text-transform: none;").
 		Attr("@click", web.Plaid().
 			URL(ctx.R.URL.Path).
