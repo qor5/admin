@@ -14,19 +14,20 @@ import (
 type PlainNestedBody struct {
 	gorm.Model
 	Name        string
-	NumberCards []*NumberCard `sql:"type:text;"`
+	NumberCards NumberCards
 }
 
+type NumberCards []*NumberCard
+
 type NumberCard struct {
-	ID     int
 	Number string
 }
 
-func (n *NumberCard) Value() (driver.Value, error) {
+func (n *NumberCards) Value() (driver.Value, error) {
 	return json.Marshal(n)
 }
 
-func (n *NumberCard) Scan(value interface{}) error {
+func (n *NumberCards) Scan(value interface{}) error {
 	switch v := value.(type) {
 	case string:
 		return json.Unmarshal([]byte(v), n)
