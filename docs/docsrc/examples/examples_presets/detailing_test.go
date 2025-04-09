@@ -863,7 +863,7 @@ func TestPresetsDetailDisableSave(t *testing.T) {
 					EventFunc("section_edit_DisabledSection").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{fmt.Sprintf("dash.disabled.%s=true", presets.SectionDisabledSave), fmt.Sprintf("dash.disabled.%s=false", presets.SectionDisabledSave), "Savable"},
+			ExpectPortalUpdate0ContainsInOrder: []string{fmt.Sprintf("dash.disabled.%s=true", presets.DisabledKeyButtonSave), fmt.Sprintf("dash.disabled.%s=false", presets.DisabledKeyButtonSave), "Savable"},
 		},
 		{
 			Name:  "detail with drawer disable save",
@@ -875,7 +875,7 @@ func TestPresetsDetailDisableSave(t *testing.T) {
 					EventFunc("section_edit_DisabledSectionCompany").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{fmt.Sprintf("dash.disabled.%s=true", presets.SectionDisabledSave), fmt.Sprintf("dash.disabled.%s=false", presets.SectionDisabledSave), "Savable"},
+			ExpectPortalUpdate0ContainsInOrder: []string{fmt.Sprintf("dash.disabled.%s=true", presets.DisabledKeyButtonSave), fmt.Sprintf("dash.disabled.%s=false", presets.DisabledKeyButtonSave), "Savable"},
 		},
 	}
 	for _, c := range cases {
