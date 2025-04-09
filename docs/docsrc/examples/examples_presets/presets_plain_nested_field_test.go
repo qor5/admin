@@ -2,7 +2,6 @@ package examples_presets
 
 import (
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	. "github.com/qor5/web/v3/multipartestutils"
@@ -23,39 +22,32 @@ func TestPresetsPlainNestedField(t *testing.T) {
 
 	cases := []TestCase{
 		{
-			Name:  "PlainNestedBody Update",
+			Name:  "editing create",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				customerDataWithNumberRecord.TruncatePut(SqlDB)
 				return NewMultipartBuilder().
 					PageURL("/plain-nested-bodies").
-					EventFunc(actions.Update).
+					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
-					AddField("Items[0].Number", "123").
-					AddField("Items[0].Name", "234").
 					BuildEventFuncRequest()
 			},
-			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {
-				m := PlainNestedBody{}
-				TestDB.First(&m, 1)
-				if m.Items == nil {
-					t.Fatalf("Items is nil")
-					return
-				}
-				if len(m.Items) == 0 {
-					t.Fatalf("Number card is empty")
-					return
-				}
-				if m.Items[0].Number != "123" {
-					t.Fatalf("Number card is not 123")
-					return
-				}
-				if m.Items[0].Name != "234" {
-					t.Fatalf("Name card is not 234")
-					return
-				}
-				return
+			ExpectPageBodyNotContains:          []string{`v-card :variant='"outlined"' class='mx-0 mb-2 px-4 pb-0 pt-4'`},
+			ExpectPortalUpdate0ContainsInOrder: []string{`v-btn :variant='"text"' color='primary' id='Items_1' @click='plaid()`},
+		},
+		{
+			Name:  "add row",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return NewMultipartBuilder().
+					PageURL("/plain-nested-bodies").
+					EventFunc("listEditor_addRowEvent").
+					Query(presets.ParamID, "1").
+					Query("listEditor_AddRowFormKey", "Items").
+					Query("ItemsAddRowBtnID", "Items_1").
+					BuildEventFuncRequest()
 			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`vx-field label='Name'`, `v-model='form["Items[0].Name"]'`},
 		},
 	}
 
