@@ -535,7 +535,9 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 			Go())
 
 	disableEditBtn := b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
-	saveBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Save")).PrependIcon("mdi-check").Size(SizeSmall).Variant(VariantFlat).Color(ColorPrimary).Disabled(disableEditBtn).
+	saveBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Save")).PrependIcon("mdi-check").
+		Size(SizeSmall).Variant(VariantFlat).Color(ColorPrimary).
+		Attr(":disabled", fmt.Sprintf("%v || dash.%s_disabledSectionSave", disableEditBtn, field.FormKey)).
 		Attr("style", "text-transform: none;").
 		Attr("@click", web.Plaid().
 			URL(ctx.R.URL.Path).
