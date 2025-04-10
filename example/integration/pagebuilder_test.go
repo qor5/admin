@@ -114,6 +114,28 @@ func TestPageBuilder(t *testing.T) {
 			ExpectPageBodyNotContains: []string{"_blank"},
 		},
 		{
+			Name:  "Page Builder Detail Page with invalid slug",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				return httptest.NewRequest("GET", "/pages/1_2024-05-18-v01_International_invalid", nil)
+			},
+			ExpectPageBodyContainsInOrder: []string{
+				`Sorry, the requested page cannot be found. Please check the URL.`,
+			},
+		},
+		{
+			Name:  "Page Builder Detail Page with invalid id in slug",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				return httptest.NewRequest("GET", "/pages/a_2024-05-18-v01_International", nil)
+			},
+			ExpectPageBodyContainsInOrder: []string{
+				`Sorry, the requested page cannot be found. Please check the URL.`,
+			},
+		},
+		{
 			Name:  "Page Builder Detail editor",
 			Debug: true,
 			ReqFunc: func() *http.Request {
