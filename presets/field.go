@@ -548,14 +548,18 @@ func (*FieldsBuilder) setWithChildFromObjs(
 
 			if arrayElementType.Kind() == reflect.Ptr {
 				arrayElementType = arrayElementType.Elem()
+				err := reflectutils.Set(toObj, sliceFieldName, reflect.New(arrayElementType).Interface())
+				if err != nil {
+					panic(err)
+				}
 			} else {
-				panic(fmt.Sprintf("%s must be a pointer", sliceFieldName))
+				// panic(fmt.Sprintf("%s must be a pointer", sliceFieldName))
+				err := reflectutils.Set(toObj, sliceFieldName, reflect.Zero(arrayElementType).Interface())
+				if err != nil {
+					panic(err)
+				}
 			}
 
-			err := reflectutils.Set(toObj, sliceFieldName, reflect.New(arrayElementType).Interface())
-			if err != nil {
-				panic(err)
-			}
 			childToObj = reflectutils.MustGet(toObj, sliceFieldName)
 		}
 
