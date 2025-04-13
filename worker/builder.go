@@ -335,7 +335,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 							Query("job", qorJob.Job),
 						).
 						AutoReloadInterval("loaderLocals.worker_updateJobProgressingInterval"),
-				).VSlot(" { locals : loaderLocals }").Init("{worker_updateJobProgressingInterval: 2000}"),
+				).VSlot(" { locals : loaderLocals }").Init("{worker_updateJobProgressingInterval: 0}"),
 			),
 			web.Portal().Name("worker_snackbar"),
 		)
