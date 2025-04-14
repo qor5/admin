@@ -1321,16 +1321,20 @@ func (b *ContainerBuilder) firstOrCreate(localeCodes []string) (err error) {
 func republishRelatedOnlinePages(pageURL string) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		ids := strings.Split(ctx.R.FormValue("ids"), ",")
-		for _, id := range ids {
+		msgr := i18n.MustGetModuleMessages(ctx.R, publish.I18nPublishKey, Messages_en_US).(*publish.Messages)
+		for index, id := range ids {
 			statusVar := fmt.Sprintf(`republish_status_%s`, strings.Replace(id, "-", "_", -1))
+			plaid := web.Plaid().
+				URL(pageURL).
+				EventFunc(publish.EventRepublish).
+				Query("id", id).
+				Query(publish.ParamScriptAfterPublish, fmt.Sprintf(`vars.%s = "done"`, statusVar)).
+				Query("status_var", statusVar)
+			if index == len(ids)-1 {
+				plaid = plaid.ThenScript(presets.ShowSnackbarScript(msgr.SuccessfullyPublish, ColorSuccess))
+			}
 			web.AppendRunScripts(&r,
-				web.Plaid().
-					URL(pageURL).
-					EventFunc(publish.EventRepublish).
-					Query("id", id).
-					Query(publish.ParamScriptAfterPublish, fmt.Sprintf(`vars.%s = "done"`, statusVar)).
-					Query("status_var", statusVar).
-					Go(),
+				plaid.Go(),
 				fmt.Sprintf(`vars.%s = "pending"`, statusVar),
 			)
 		}
