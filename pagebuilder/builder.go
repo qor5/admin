@@ -1253,7 +1253,7 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 }
 
 func (b *ContainerBuilder) getContainerDataID(modelID int, primarySlug string) string {
-	return fmt.Sprintf(inflection.Plural(strcase.ToKebab(b.name))+"_%v_%v", modelID, primarySlug)
+	return fmt.Sprintf(inflection.Plural(strcase.ToKebab(b.name))+"_%v__%v", modelID, primarySlug)
 }
 
 func (b *ContainerBuilder) firstOrCreate(localeCodes []string) (err error) {
@@ -1408,8 +1408,13 @@ function(e){
 	if (!msg_type || !container_data_id.split) {
 		return
 	} 
-	let arr = container_data_id.split("_");
-	if (arr.length != 4) {
+	let data_id = container_data_id.split("__");
+	if (data_id.length != 2) {
+		console.log(data_id);
+		return
+	}
+	let arr = data_id[0];
+	if (arr.length != 2) {
 		console.log(arr);
 		return
 	}
