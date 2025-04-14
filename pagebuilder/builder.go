@@ -1417,7 +1417,7 @@ function(e){
 		console.log(data_id);
 		return
 	}
-	let arr = data_id[0];
+	let arr = data_id[0].split("_");
 	if (arr.length != 2) {
 		console.log(arr);
 		return
