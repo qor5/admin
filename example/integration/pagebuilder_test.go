@@ -1168,7 +1168,7 @@ func TestPageBuilder(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
 					EventFunc(pagebuilder.EditContainerEvent).
-					Query("containerDataID", "headers_10_10_International").
+					Query("containerDataID", "headers_10__10_International").
 					BuildEventFuncRequest()
 
 				return req

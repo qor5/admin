@@ -759,7 +759,7 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
 		)
 	})
 	listing.Field("DisplayName").Label("Name")
-	listing.SearchFunc(sharedContainerSearcher(db, r))
+	listing.SearchFunc(sharedContainerSearcher(db))
 	listing.WrapCell(func(in presets.CellProcessor) presets.CellProcessor {
 		return func(evCtx *web.EventContext, cell h.MutableAttrHTMLComponent, id string, obj any) (h.MutableAttrHTMLComponent, error) {
 			c := obj.(*Container)
@@ -906,7 +906,7 @@ func (b *Builder) firstOrCreateDemoContainers(ctx *web.EventContext, cons ...*Co
 	}
 }
 
-func sharedContainerSearcher(db *gorm.DB, b *ModelBuilder) presets.SearchFunc {
+func sharedContainerSearcher(db *gorm.DB) presets.SearchFunc {
 	return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 		ilike := "ILIKE"
 		if db.Dialector.Name() == "sqlite" {
@@ -930,7 +930,7 @@ func sharedContainerSearcher(db *gorm.DB, b *ModelBuilder) presets.SearchFunc {
 
 		locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
 		var c int64
-		if err = wh.Select("count(display_name)").Where("shared = true AND locale_code = ? and page_model_name = ? ", locale, b.name).Group("display_name, model_name, model_id, locale_code").Count(&c).Error; err != nil {
+		if err = wh.Select("count(display_name)").Where("shared = true AND locale_code = ? ", locale).Group("display_name, model_name, model_id, locale_code").Count(&c).Error; err != nil {
 			return nil, err
 		}
 
@@ -1253,7 +1253,7 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 }
 
 func (b *ContainerBuilder) getContainerDataID(modelID int, primarySlug string) string {
-	return fmt.Sprintf(inflection.Plural(strcase.ToKebab(b.name))+"_%v_%v", modelID, primarySlug)
+	return fmt.Sprintf(inflection.Plural(strcase.ToKebab(b.name))+"_%v__%v", modelID, primarySlug)
 }
 
 func (b *ContainerBuilder) firstOrCreate(localeCodes []string) (err error) {
@@ -1321,16 +1321,20 @@ func (b *ContainerBuilder) firstOrCreate(localeCodes []string) (err error) {
 func republishRelatedOnlinePages(pageURL string) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		ids := strings.Split(ctx.R.FormValue("ids"), ",")
-		for _, id := range ids {
+		msgr := i18n.MustGetModuleMessages(ctx.R, publish.I18nPublishKey, Messages_en_US).(*publish.Messages)
+		for index, id := range ids {
 			statusVar := fmt.Sprintf(`republish_status_%s`, strings.Replace(id, "-", "_", -1))
+			plaid := web.Plaid().
+				URL(pageURL).
+				EventFunc(publish.EventRepublish).
+				Query("id", id).
+				Query(publish.ParamScriptAfterPublish, fmt.Sprintf(`vars.%s = "done"`, statusVar)).
+				Query("status_var", statusVar)
+			if index == len(ids)-1 {
+				plaid = plaid.ThenScript(presets.ShowSnackbarScript(msgr.SuccessfullyPublish, ColorSuccess))
+			}
 			web.AppendRunScripts(&r,
-				web.Plaid().
-					URL(pageURL).
-					EventFunc(publish.EventRepublish).
-					Query("id", id).
-					Query(publish.ParamScriptAfterPublish, fmt.Sprintf(`vars.%s = "done"`, statusVar)).
-					Query("status_var", statusVar).
-					Go(),
+				plaid.Go(),
 				fmt.Sprintf(`vars.%s = "pending"`, statusVar),
 			)
 		}
@@ -1408,8 +1412,13 @@ function(e){
 	if (!msg_type || !container_data_id.split) {
 		return
 	} 
-	let arr = container_data_id.split("_");
-	if (arr.length != 4) {
+	let data_id = container_data_id.split("__");
+	if (data_id.length != 2) {
+		console.log(data_id);
+		return
+	}
+	let arr = data_id[0];
+	if (arr.length != 2) {
 		console.log(arr);
 		return
 	}
