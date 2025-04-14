@@ -759,7 +759,7 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
 		)
 	})
 	listing.Field("DisplayName").Label("Name")
-	listing.SearchFunc(sharedContainerSearcher(db, r))
+	listing.SearchFunc(sharedContainerSearcher(db))
 	listing.WrapCell(func(in presets.CellProcessor) presets.CellProcessor {
 		return func(evCtx *web.EventContext, cell h.MutableAttrHTMLComponent, id string, obj any) (h.MutableAttrHTMLComponent, error) {
 			c := obj.(*Container)
@@ -906,7 +906,7 @@ func (b *Builder) firstOrCreateDemoContainers(ctx *web.EventContext, cons ...*Co
 	}
 }
 
-func sharedContainerSearcher(db *gorm.DB, b *ModelBuilder) presets.SearchFunc {
+func sharedContainerSearcher(db *gorm.DB) presets.SearchFunc {
 	return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 		ilike := "ILIKE"
 		if db.Dialector.Name() == "sqlite" {
@@ -930,7 +930,7 @@ func sharedContainerSearcher(db *gorm.DB, b *ModelBuilder) presets.SearchFunc {
 
 		locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
 		var c int64
-		if err = wh.Select("count(display_name)").Where("shared = true AND locale_code = ? and page_model_name = ? ", locale, b.name).Group("display_name, model_name, model_id, locale_code").Count(&c).Error; err != nil {
+		if err = wh.Select("count(display_name)").Where("shared = true AND locale_code = ? ", locale).Group("display_name, model_name, model_id, locale_code").Count(&c).Error; err != nil {
 			return nil, err
 		}
 
