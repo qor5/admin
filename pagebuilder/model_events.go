@@ -137,7 +137,6 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 		if c.Hidden {
 			vicon = "mdi-eye-off"
 		}
-
 		sorterData.Items = append(sorterData.Items,
 			ContainerSorterItem{
 				Index:           i,
@@ -152,7 +151,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 				ParamID:         c.PrimarySlug(),
 				Locale:          locale,
 				Hidden:          c.Hidden,
-				ContainerDataID: fmt.Sprintf(`%s_%s__%s`, inflection.Plural(strcase.ToKebab(c.ModelName)), strconv.Itoa(int(c.ModelID)), c.PrimarySlug()),
+				ContainerDataID: fmt.Sprintf(`%s_%s_%s`, inflection.Plural(strcase.ToKebab(c.ModelName)), strconv.Itoa(int(c.ModelID)), c.PrimarySlug()),
 			},
 		)
 	}
@@ -862,24 +861,21 @@ func (b *ModelBuilder) replicateContainer(ctx *web.EventContext) (r web.EventRes
 }
 
 func (b *ModelBuilder) editContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
-	dataId := strings.Split(ctx.Param(paramContainerDataID), "__")
-	if len(dataId) == 2 {
-		data := strings.Split(dataId[0], "_")
-		if len(data) == 2 {
-			r.RunScript = web.Plaid().URL(b.builder.prefix+"/"+data[0]).
-				EventFunc(actions.Edit).
-				Query(presets.ParamID, data[1]).
-				Query(presets.ParamPortalName, pageBuilderRightContentPortal).
-				Query(presets.ParamOverlay, actions.Content).
-				Query(paramDevice, cmp.Or(ctx.Param(paramDevice), b.builder.defaultDevice)).
-				Go()
-			return
-		}
+	data := strings.Split(ctx.Param(paramContainerDataID), "_")
+	if len(data) <= 2 {
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: pageBuilderRightContentPortal,
+			Body: b.builder.emptyEdit(ctx),
+		})
+		return
 	}
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-		Name: pageBuilderRightContentPortal,
-		Body: b.builder.emptyEdit(ctx),
-	})
+	r.RunScript = web.Plaid().URL(b.builder.prefix+"/"+data[0]).
+		EventFunc(actions.Edit).
+		Query(presets.ParamID, data[1]).
+		Query(presets.ParamPortalName, pageBuilderRightContentPortal).
+		Query(presets.ParamOverlay, actions.Content).
+		Query(paramDevice, cmp.Or(ctx.Param(paramDevice), b.builder.defaultDevice)).
+		Go()
 	return
 }
 

@@ -755,7 +755,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/page_builder/campaigns/1_2024-05-20-v01").
 					EventFunc(pagebuilder.EditContainerEvent).
-					Query("containerDataID", "my-contents_1__1").
+					Query("containerDataID", "my-contents_1_1").
 					BuildEventFuncRequest()
 
 				return req
