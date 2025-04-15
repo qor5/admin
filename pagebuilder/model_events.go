@@ -137,7 +137,6 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 		if c.Hidden {
 			vicon = "mdi-eye-off"
 		}
-
 		sorterData.Items = append(sorterData.Items,
 			ContainerSorterItem{
 				Index:           i,
@@ -863,7 +862,7 @@ func (b *ModelBuilder) replicateContainer(ctx *web.EventContext) (r web.EventRes
 
 func (b *ModelBuilder) editContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	data := strings.Split(ctx.Param(paramContainerDataID), "_")
-	if len(data) != 4 {
+	if len(data) <= 2 {
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: pageBuilderRightContentPortal,
 			Body: b.builder.emptyEdit(ctx),

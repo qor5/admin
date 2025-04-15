@@ -746,6 +746,22 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ExpectPageBodyContainsInOrder: []string{"MyContent", "CampaignContent"},
 			ExpectPageBodyNotContains:     []string{`v-list-group :value='"Navigation"'`, `v-list-group :value='"Campaign"'`},
 		},
+
+		{
+			Name:  "Campaign Editors Wrap EditContainerEvent",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/campaigns/1_2024-05-20-v01").
+					EventFunc(pagebuilder.EditContainerEvent).
+					Query("containerDataID", "my-contents_1_1").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{`url("/page_builder/my-contents").eventFunc("presets_Edit").query("id", "1").query("portal_name", "pageBuilderRightContentPortal").query("overlay", "content")`},
+		},
 		{
 			Name:  "Product Editors Demo Containers List DisabledNormalContainersGroup",
 			Debug: true,
