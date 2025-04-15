@@ -233,13 +233,14 @@ func (b *SessionBuilder) CreateSession(r *http.Request, uid string) error {
 func (b *SessionBuilder) ExtendSession(r *http.Request, uid string, oldToken, newToken string) error {
 	newTokenHash := getStringHash(newToken, LoginTokenHashLen)
 	oldTokenHash := getStringHash(oldToken, LoginTokenHashLen)
+	now := b.db.NowFunc()
 	result := b.db.Model(&LoginSession{}).
-		Where("user_id = ? and token_hash = ?", uid, oldTokenHash).
+		Where("user_id = ? and token_hash = ? and expired_at > ?", uid, oldTokenHash, now).
 		Updates(map[string]any{
 			"token_hash":      newTokenHash,
 			"last_token_hash": oldTokenHash,
-			"extended_at":     b.db.NowFunc(),
-			"expired_at":      b.db.NowFunc().Add(time.Duration(b.lb.GetSessionMaxAge()) * time.Second),
+			"extended_at":     now,
+			"expired_at":      now.Add(time.Duration(b.lb.GetSessionMaxAge()) * time.Second),
 		})
 	if result.Error != nil {
 		return errors.Wrap(result.Error, "failed to extend session")
