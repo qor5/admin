@@ -96,9 +96,12 @@ func TestPageBuilder(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/pages?__execute_event__=presets_New", nil)
+				req := NewMultipartBuilder().PageURL("/pages").
+					EventFunc(actions.New).
+					BuildEventFuncRequest()
+				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Template", "Title", `form["CategoryID"]`, `prefix='/'`},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Template", "Title", `form["CategoryID"]`, `:clearable='true'`, `prefix='/'`},
 		},
 
 		{
@@ -742,7 +745,7 @@ func TestPageBuilder(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`"Title":"1234567"`, `"CategoryID":""`, `"Slug":"12313"`},
+			ExpectPortalUpdate0ContainsInOrder: []string{`"Title":"1234567"`, `"CategoryID":""`, `:clearable='true'`, `"Slug":"12313"`},
 		},
 		{
 			Name:  "Page Detail Editing Has Category",
@@ -756,7 +759,7 @@ func TestPageBuilder(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`"Title":"12312"`, `"CategoryID":1`, `"Slug":"123"`},
+			ExpectPortalUpdate0ContainsInOrder: []string{`"Title":"12312"`, `"CategoryID":1`, `:clearable='true'`, `"Slug":"123"`},
 		},
 
 		{

@@ -873,7 +873,7 @@ func (b *Builder) defaultLayoutCompo(_ *web.EventContext, menu, body h.HTMLCompo
 				Attr(":color", "vars.presetsMessage.color").
 				Attr("style", "bottom: 48px;").
 				Timeout(2000).
-				Location(LocationBottom),
+				Location(LocationTop),
 		).Attr("v-if", "vars.presetsMessage"),
 		VLayout(
 

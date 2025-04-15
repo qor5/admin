@@ -50,7 +50,7 @@ func localeListFunc(db *gorm.DB, lb *Builder) func(obj interface{}, field *prese
 		if fromImg != "" {
 			chips = append(chips, h.RawHTML(fromImg))
 		} else {
-			chips = append(chips, VChip(h.Text(MustGetTranslation(ctx.R, lb.GetLocaleLabel(fromLocale)))).Color("success").Variant(VariantFlat).Label(true).Size(SizeSmall))
+			chips = append(chips, VChip(h.Text(MustGetTranslation(ctx.R, lb.GetLocaleLabel(fromLocale)))).Color("success").Variant(VariantFlat).Label(true).Size(SizeXSmall))
 		}
 
 		for _, locale := range otherLocales {
@@ -64,7 +64,7 @@ func localeListFunc(db *gorm.DB, lb *Builder) func(obj interface{}, field *prese
 					h.Text(MustGetTranslation(ctx.R, lb.GetLocaleLabel(locale))),
 				).
 					Label(true).
-					Size(SizeSmall),
+					Size(SizeXSmall),
 			)
 		}
 		menu := lb.localizeMenu(obj, chips, field, ctx, slices.DeleteFunc(allLocales, func(s string) bool {
@@ -213,7 +213,7 @@ func (b *Builder) runSwitchLocaleFunc(ctx *web.EventContext) (r h.HTMLComponent)
 	if fromImg != "" {
 		chip = h.RawHTML(fromImg)
 	} else {
-		chip = VChip(h.Text(MustGetTranslation(ctx.R, b.GetLocaleLabel(fromLocale)))).Color(ColorSuccess).Variant(VariantFlat).Label(true).Size(SizeSmall)
+		chip = VChip(h.Text(MustGetTranslation(ctx.R, b.GetLocaleLabel(fromLocale)))).Color(ColorSuccess).Variant(VariantFlat).Label(true).Size(SizeXSmall)
 	}
 	for _, locale := range allLocales {
 		if locale == fromLocale {
