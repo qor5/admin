@@ -88,7 +88,6 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 					Attr("@click", fmt.Sprintf(`locals.action=%q;locals.commonConfirmDialog = true`, EventDuplicateVersion)))
 			}
 		}
-
 		verifier := mb.Info().Verifier()
 		deniedPublish := DeniedDo(verifier, obj, ctx.R, PermPublish)
 		deniedUnpublish := DeniedDo(verifier, obj, ctx.R, PermUnpublish)
@@ -255,7 +254,7 @@ func DefaultVersionBar(db *gorm.DB) presets.ObjectComponentFunc {
 		}
 		versionIf := currentObj.(VersionInterface)
 		currentVersionStr := fmt.Sprintf("%s: %s", msgr.OnlineVersion, versionIf.EmbedVersion().VersionName)
-		res.AppendChildren(v.VChip(h.Span(currentVersionStr)).Density(v.DensityProminent).Color(v.ColorSuccess).Size(v.SizeSmall))
+		res.AppendChildren(v.VChip(h.Span(currentVersionStr)).Density(v.DensityComfortable).Color(v.ColorSuccess).Size(v.SizeSmall))
 
 		if _, ok := currentObj.(ScheduleInterface); !ok {
 			return res
