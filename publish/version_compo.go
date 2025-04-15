@@ -16,6 +16,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/utils"
@@ -353,6 +354,13 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 					con := presets.SQLCondition{
 						Query: "id = ?",
 						Args:  []interface{}{cs["id"]},
+					}
+					params.SQLConditions = append(params.SQLConditions, &con)
+				}
+				if localeCode := ctx.R.Context().Value(l10n.LocaleCode); localeCode != nil {
+					con := presets.SQLCondition{
+						Query: "locale_code = ?",
+						Args:  []interface{}{localeCode},
 					}
 					params.SQLConditions = append(params.SQLConditions, &con)
 				}
