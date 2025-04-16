@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"slices"
+	"strings"
 
 	"github.com/qor5/web/v3"
 	. "github.com/qor5/x/v3/ui/vuetify"
@@ -203,21 +204,32 @@ func runSwitchLocaleFunc(lb *Builder) func(ctx *web.EventContext) (r h.HTMLCompo
 
 func (b *Builder) runSwitchLocaleFunc(ctx *web.EventContext) (r h.HTMLComponent) {
 	var (
-		chip            h.HTMLComponent
+		btn             h.HTMLComponent
 		localsListItems []h.HTMLComponent
 
 		allLocales = b.GetSupportLocaleCodesFromRequest(ctx.R)
 		fromLocale = b.GetCorrectLocaleCode(ctx.R)
 		fromImg    = b.GetLocaleImg(fromLocale)
+		id         = ctx.Param(presets.ParamID)
 	)
 	if fromImg != "" {
-		chip = h.RawHTML(fromImg)
+		btn = VBtn("").Children(
+			h.Div(
+				h.RawHTML(fromImg),
+				VIcon("mdi-menu-down"),
+			).Class("d-flex ga-2"),
+		).Attr("v-bind", "plaid().vue.mergeProps(menu,tooltip)").Size(SizeSmall).Variant(VariantText)
 	} else {
-		chip = VChip(h.Text(MustGetTranslation(ctx.R, b.GetLocaleLabel(fromLocale)))).Color(ColorSuccess).Variant(VariantFlat).Label(true).Size(SizeXSmall)
+		btn = VChip(h.Text(MustGetTranslation(ctx.R, b.GetLocaleLabel(fromLocale)))).Color(ColorSuccess).Variant(VariantFlat).Label(true).Size(SizeXSmall).Attr("v-bind", "plaid().vue.mergeProps(menu,tooltip)")
 	}
 	for _, locale := range allLocales {
 		if locale == fromLocale {
 			continue
+		}
+		clickEvent := web.Plaid().Query(b.queryName, locale).Go()
+		if id != "" {
+			uri := strings.TrimSuffix(ctx.R.URL.Path, "/"+id)
+			clickEvent = web.Plaid().URL(uri).PushState(true).FieldValue(b.queryName, locale).Go()
 		}
 		img := b.GetLocaleImg(locale)
 		localsListItems = append(localsListItems, VListItem(
@@ -225,18 +237,13 @@ func (b *Builder) runSwitchLocaleFunc(ctx *web.EventContext) (r h.HTMLComponent)
 				h.If(img != "", h.RawHTML(img)),
 				h.Text(MustGetTranslation(ctx.R, b.GetLocaleLabel(locale))),
 			).Class("d-flex align-center ga-2"),
-		).Attr("@click", web.Plaid().Query(b.queryName, locale).Go()))
+		).Attr("@click", clickEvent))
 	}
 	return VMenu(
 		web.Slot(
 			VTooltip(
 				web.Slot(
-					VBtn("").Children(
-						h.Div(
-							chip,
-							VIcon("mdi-menu-down"),
-						).Class("d-flex ga-2"),
-					).Attr("v-bind", "plaid().vue.mergeProps(menu,tooltip)").Size(SizeSmall).Variant(VariantText),
+					btn,
 				).Name("activator").Scope(`{props:tooltip}`),
 			).Location(LocationBottom).Text(MustGetTranslation(ctx.R, "Location")),
 		).Name("activator").Scope(`{props:menu}`),
