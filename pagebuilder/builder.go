@@ -474,9 +474,7 @@ func (b *Builder) useAllPlugin(pm *presets.ModelBuilder, pageModelName string) {
 					if innerErr = in(ctx, record); innerErr != nil {
 						return
 					}
-					builder := ctx.Value(pageModelName)
-					_, ok := builder.(*ModelBuilder)
-					if !ok {
+					if utils.GetObjectName(record) != pageModelName {
 						return
 					}
 					if innerErr = b.updateAllContainersUpdatedTime(tx, pageModelName, record); innerErr != nil {
