@@ -468,10 +468,14 @@ func (b *Builder) configTemplateAndPage(pb *presets.Builder, r *ModelBuilder) {
 func (b *Builder) useAllPlugin(pm *presets.ModelBuilder, pageModelName string) {
 	if b.publisher != nil {
 		pm.Use(b.publisher)
+		objType := reflect.TypeOf(pm.NewModel())
 		b.publisher.WrapPublish(func(in publish.PublishFunc) publish.PublishFunc {
 			return func(ctx context.Context, record any) (err error) {
 				return b.db.Transaction(func(tx *gorm.DB) (innerErr error) {
 					if innerErr = in(ctx, record); innerErr != nil {
+						return
+					}
+					if reflect.TypeOf(record) != objType {
 						return
 					}
 					if innerErr = b.updateAllContainersUpdatedTime(tx, pageModelName, record); innerErr != nil {
