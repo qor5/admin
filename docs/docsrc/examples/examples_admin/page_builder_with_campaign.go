@@ -154,6 +154,7 @@ func (p *CampaignWithStringID) PrimaryColumnValuesBySlug(slug string) map[string
 		presets.ParamID: segs[0],
 	}
 }
+
 func (b *CampaignWithStringID) PublishUrl(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
 	b.OnlineUrl = fmt.Sprintf("campaign-with-string-ids/%v/index.html", b.ID)
 	return b.OnlineUrl
