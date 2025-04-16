@@ -3,8 +3,11 @@ package l10n
 import (
 	"context"
 	"reflect"
+	"slices"
 
 	"github.com/qor5/web/v3"
+	v "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
 	"gorm.io/gorm"
 
@@ -26,7 +29,8 @@ const (
 )
 
 func registerEventFuncs(db *gorm.DB, mb *presets.ModelBuilder, lb *Builder, ab *activity.Builder) {
-	mb.RegisterEventFunc(DoLocalize, doLocalizeTo(db, mb, lb, ab)) // Execute localization
+	mb.RegisterEventFunc(Localize, localizeToConfirmation(db, lb, mb)) // Localization validation
+	mb.RegisterEventFunc(DoLocalize, doLocalizeTo(db, mb, lb, ab))     // Execute localization
 }
 
 type SelectLocale struct {
@@ -129,6 +133,71 @@ func doLocalizeTo(db *gorm.DB, mb *presets.ModelBuilder, lb *Builder, ab *activi
 
 		// refresh current page
 		web.AppendRunScripts(&r, web.Plaid().MergeQuery(true).Go())
+		return
+	}
+}
+
+func localizeToConfirmation(db *gorm.DB, lb *Builder, mb *presets.ModelBuilder) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		presetsMsgr := presets.MustGetMessages(ctx.R)
+
+		paramID := ctx.Param(presets.ParamID)
+		cs := mb.NewModel().(presets.SlugDecoder).PrimaryColumnValuesBySlug(paramID)
+		id := cs["id"]
+
+		fromLocale := lb.GetCorrectLocaleCode(ctx.R)
+
+		obj := mb.NewModelSlice()
+		err = db.Distinct("locale_code").Where("id = ? AND locale_code <> ?", id, fromLocale).Find(obj).Error
+		if err != nil {
+			return
+		}
+		vo := reflect.ValueOf(obj).Elem()
+		var existLocales []string
+		for i := 0; i < vo.Len(); i++ {
+			existLocales = append(existLocales, vo.Index(i).Elem().FieldByName("LocaleCode").String())
+		}
+		toLocales := lb.GetSupportLocaleCodesFromRequest(ctx.R)
+		var selectLocales = make([]SelectLocale, 0)
+		for _, locale := range toLocales {
+			if locale == fromLocale {
+				continue
+			}
+			if !slices.Contains(existLocales, locale) || vo.Len() == 0 {
+				selectLocales = append(selectLocales, SelectLocale{Label: MustGetTranslation(ctx.R, lb.GetLocaleLabel(locale)), Code: locale})
+			}
+		}
+
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: presets.DialogPortalName,
+			Body: web.Scope(
+				vx.VXDialog(
+					v.VCard(
+						v.VCardItem(
+							vx.VXSelect().
+								Attr(web.VField("localize_to", nil)...).
+								Label(MustGetTranslation(ctx.R, "LocalizeTo")).
+								Multiple(true).Chips(true).
+								Items(selectLocales).
+								ItemTitle("Label").
+								ItemValue("Code"),
+						),
+					).Title(MustGetTranslation(ctx.R, "LocalizeFrom")).
+						Subtitle(MustGetTranslation(ctx.R, lb.GetLocaleLabel(fromLocale))).Elevation(0),
+				).
+					Title(MustGetTranslation(ctx.R, "Localize")).
+					CancelText(presetsMsgr.Cancel).
+					OkText(presetsMsgr.OK).
+					Attr("v-model", "dialogLocals.dialog").
+					Attr("@click:ok", "dialogLocals.dialog=false;"+web.Plaid().
+						EventFunc(DoLocalize).
+						Query(presets.ParamID, paramID).
+						Query("localize_from", fromLocale).
+						URL(ctx.R.URL.Path).
+						Go()),
+			).VSlot("{locals:dialogLocals}").Init("{dialog:true}"),
+		})
+
 		return
 	}
 }

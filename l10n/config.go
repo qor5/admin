@@ -2,12 +2,14 @@ package l10n
 
 import (
 	"fmt"
+	"net/url"
 	"reflect"
 	"slices"
 	"strings"
 
 	"github.com/qor5/web/v3"
 	. "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
@@ -68,11 +70,11 @@ func localeListFunc(db *gorm.DB, lb *Builder) func(obj interface{}, field *prese
 					Size(SizeXSmall),
 			)
 		}
-		menu := lb.localizeMenu(obj, chips, field, ctx, slices.DeleteFunc(allLocales, func(s string) bool {
-			return s == fromLocale
-		}), existLocales)
+		//menu := lb.localizeMenu(obj, chips, field, ctx, slices.DeleteFunc(allLocales, func(s string) bool {
+		//	return s == fromLocale
+		//}), existLocales)
 		return h.Td(
-			menu,
+			h.Div(chips...).Class("d-flex ga-2"),
 		)
 	}
 }
@@ -251,4 +253,24 @@ func (b *Builder) runSwitchLocaleFunc(ctx *web.EventContext) (r h.HTMLComponent)
 			localsListItems...,
 		),
 	)
+}
+func localizeRowMenuItemFunc(mi *presets.ModelInfo, url string, editExtraParams url.Values) vx.RowMenuItemFunc {
+	return func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
+		if mi.Verifier().Do(presets.PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+			return nil
+		}
+
+		return VListItem(
+			web.Slot(
+				// icon was language
+				VIcon("mdi-translate"),
+			).Name("prepend"),
+			VListItemTitle(h.Text(MustGetTranslation(ctx.R, "Localize"))),
+		).Attr("@click", web.Plaid().
+			EventFunc(Localize).
+			Queries(editExtraParams).
+			Query(presets.ParamID, id).
+			URL(url).
+			Go())
+	}
 }
