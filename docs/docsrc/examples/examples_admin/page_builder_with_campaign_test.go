@@ -53,7 +53,9 @@ INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_
 INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, page_model_name, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (2, '2024-06-05 07:20:58.435363 +00:00', '2024-06-05 07:20:58.435363 +00:00', null, 1, '2024-05-20-v01', 'pages', 'MyContent', 2, 2, false, false, 'MyContent', '', 0);
 INSERT INTO public.my_contents (id,text) values (1,'my-contents');
 INSERT INTO public.my_contents (id,text) values (2,'my-contents2');
-`, []string{"page_builder_pages", "page_builder_categories", "page_builder_containers", "my_contents"}))
+INSERT INTO public.campaign_with_string_ids (id, name, price, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version) VALUES ('ox1744771495', '123', 0, 'offline', 'campaign-with-string-ids/ox1744771495/index.html', null, null, '2025-04-16 02:46:37.336422 +00:00', '2025-04-16 02:46:40.904752 +00:00', '2025-04-16-v01', '2025-04-16-v01', '');
+
+`, []string{"page_builder_pages", "page_builder_categories", "page_builder_containers", "my_contents", "campaign_with_string_ids"}))
 
 var pageBuilderTemplateData = gofixtures.Data(gofixtures.Sql(`
 INSERT INTO public.campaign_templates (id, created_at, updated_at, deleted_at, name, description) VALUES (1, '2024-08-28 08:54:01.730555 +00:00', '2024-08-28 08:54:01.730555 +00:00', null, '12312', '123132');
@@ -68,6 +70,7 @@ INSERT INTO public.product_contents (id,name) values (1,'demo-product-contents')
 INSERT INTO public.page_builder_templates (id, created_at, updated_at, deleted_at, name, description, locale_code)
 VALUES (1, '2024-07-22 01:41:13.206348 +00:00', '2024-07-22 01:41:13.206348 +00:00', null, '123', '456',
         'International');
+
 `, []string{"campaign_templates", "campaign_product_templates", "page_builder_containers", "my_contents", "campaign_contents", "product_contents", "page_builder_templates"}))
 
 var pageBuilderPublicTemplateData = gofixtures.Data(gofixtures.Sql(`
@@ -82,6 +85,7 @@ VALUES (1, '2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:
         false, 'MyContent', '', 0, 'templates');
 INSERT INTO public.my_contents (id,text) values (1,'my-contents');
 INSERT INTO public.pages_contents (id,text) values (1,'my-pages-contents');
+
 
 `, []string{"page_builder_templates", "page_builder_containers", "my_contents", "pages_contents"}))
 
@@ -989,6 +993,75 @@ func TestPageBuilderCampaign(t *testing.T) {
 				return req
 			},
 			ExpectPageBodyContainsInOrder: []string{"12312", "my-contents", "my-contents2"},
+		},
+		{
+			Name:  "Campaign With String ID List",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderPageData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/campaign-with-string-ids").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"ox1744771495", "Offline"},
+		},
+		{
+			Name:  "Campaign With String ID Detail",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderPageData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/campaign-with-string-ids").
+					EventFunc(actions.DetailingDrawer).
+					Query(presets.ParamID, "ox1744771495").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"ox1744771495", "Offline", "Publish", "PRODUCT INFORMATION", "Name", "123"},
+		},
+		{
+			Name:  "Campaign With String ID New",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderPageData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/campaign-with-string-ids").
+					EventFunc(actions.Update).
+					AddField("Name", "HelloCampaign").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var m CampaignWithStringID
+				TestDB.Order("id desc").First(&m)
+				if !strings.HasPrefix(m.ID, "ox") {
+					t.Fatalf("wrong Id , expected `ox`, got %s", m.ID)
+					return
+				}
+				if m.Name != "HelloCampaign" {
+					t.Fatalf("wrong Name , expected `HelloCampaign`, got %s", m.Name)
+					return
+				}
+			},
+		},
+		{
+			Name:  "Campaign With String ID Publish",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderPageData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/campaign-with-string-ids").
+					EventFunc(publish.EventPublish).
+					Query(presets.ParamID, "ox1744771495").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"Successfully Publish"},
 		},
 	}
 	for _, c := range cases {
