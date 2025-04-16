@@ -161,7 +161,7 @@ func (p *CampaignWithStringID) PrimarySlug() string {
 func (p *CampaignWithStringID) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 1 {
-		panic("wrong slug")
+		panic(presets.ErrNotFound("wrong slug"))
 	}
 	return map[string]string{
 		presets.ParamID: segs[0],
