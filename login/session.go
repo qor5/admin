@@ -82,7 +82,8 @@ type SessionBuilder struct {
 	pb                  *presets.Builder
 	isPublicUser        func(user any) bool
 	parseIPFunc         func(ctx context.Context, lang language.Tag, addr string) (string, error)
-	validateSessionHook func(next ValidateSessionFunc) ValidateSessionFunc
+	validateSessionHook common.Hook[ValidateSessionFunc]
+	sessionTableHook    common.Hook[SessionTableFunc]
 }
 
 func NewSessionBuilder(lb *login.Builder, db *gorm.DB) *SessionBuilder {
@@ -162,9 +163,22 @@ type (
 	ValidateSessionFunc   func(ctx context.Context, input *ValidateSessionInput) (*ValidateSessionOutput, error)
 )
 
-func (c *SessionBuilder) WithValidateSessionHook(hooks ...common.Hook[ValidateSessionFunc]) *SessionBuilder {
-	c.validateSessionHook = common.ChainHookWith(c.validateSessionHook, hooks...)
-	return c
+func (b *SessionBuilder) WithValidateSessionHook(hooks ...common.Hook[ValidateSessionFunc]) *SessionBuilder {
+	b.validateSessionHook = common.ChainHookWith(b.validateSessionHook, hooks...)
+	return b
+}
+
+type (
+	SessionTableInput  struct{}
+	SessionTableOutput struct {
+		Component h.HTMLComponent
+	}
+	SessionTableFunc func(ctx context.Context, input *SessionTableInput) (*SessionTableOutput, error)
+)
+
+func (b *SessionBuilder) WithSessionTableHook(hooks ...common.Hook[SessionTableFunc]) *SessionBuilder {
+	b.sessionTableHook = common.ChainHookWith(b.sessionTableHook, hooks...)
+	return b
 }
 
 func (b *SessionBuilder) GetLoginBuilder() *login.Builder {
@@ -219,13 +233,14 @@ func (b *SessionBuilder) CreateSession(r *http.Request, uid string) error {
 func (b *SessionBuilder) ExtendSession(r *http.Request, uid string, oldToken, newToken string) error {
 	newTokenHash := getStringHash(newToken, LoginTokenHashLen)
 	oldTokenHash := getStringHash(oldToken, LoginTokenHashLen)
+	now := b.db.NowFunc()
 	result := b.db.Model(&LoginSession{}).
-		Where("user_id = ? and token_hash = ?", uid, oldTokenHash).
+		Where("user_id = ? and token_hash = ? and expired_at > ?", uid, oldTokenHash, now).
 		Updates(map[string]any{
 			"token_hash":      newTokenHash,
 			"last_token_hash": oldTokenHash,
-			"extended_at":     b.db.NowFunc(),
-			"expired_at":      b.db.NowFunc().Add(time.Duration(b.lb.GetSessionMaxAge()) * time.Second),
+			"extended_at":     now,
+			"expired_at":      now.Add(time.Duration(b.lb.GetSessionMaxAge()) * time.Second),
 		})
 	if result.Error != nil {
 		return errors.Wrap(result.Error, "failed to extend session")
@@ -368,7 +383,7 @@ func (b *SessionBuilder) validateSessionToken() func(next http.Handler) http.Han
 
 			uid := presets.MustObjectID(user)
 
-			err := b.IsSessionValid(r, presets.MustObjectID(user))
+			err := b.IsSessionValid(r, uid)
 			if err != nil {
 				log.Printf("login: session invalid: %v", err)
 				if r.URL.Path == b.lb.LogoutURL {
@@ -619,6 +634,7 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 		}
 		tableHeaders[i].Width = fmt.Sprintf("%d%%", percent)
 	}
+
 	table := v.VDataTable().Headers(tableHeaders).Items(wrappers).ItemsPerPage(-1).HideDefaultFooter(true)
 	if !isPublicUser {
 		table = table.Children(web.Slot().Name("item.Action").Scope("{ item }").Children(
@@ -636,6 +652,17 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 		))
 	}
 
+	sessionTableFunc := func(ctx context.Context, input *SessionTableInput) (*SessionTableOutput, error) {
+		return &SessionTableOutput{Component: table}, nil
+	}
+	if b.sessionTableHook != nil {
+		sessionTableFunc = b.sessionTableHook(sessionTableFunc)
+	}
+	sessionTableoutput, err := sessionTableFunc(ctx.R.Context(), &SessionTableInput{})
+	if err != nil {
+		return r, err
+	}
+
 	body := web.Scope().VSlot("{locals: xlocals}").Init("{dialog:true}").Children(
 		v.VDialog().Attr("v-model", "xlocals.dialog").Width("60%").MaxWidth(828).Scrollable(true).Children(
 			v.VCard().Children(
@@ -645,7 +672,7 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 					v.VBtn("").Size(v.SizeXSmall).Icon("mdi-close").Variant(v.VariantText).Color(v.ColorGreyDarken1).Attr("@click", "xlocals.dialog=false"),
 				),
 				v.VCardText().Class("px-6 pt-0 pb-6").Attr("style", "max-height: 46vh;").ClassIf("mb-6", isPublicUser).Children(
-					table,
+					sessionTableoutput.Component,
 				),
 
 				h.Iff(!isPublicUser && activeCount > 1, func() h.HTMLComponent {
