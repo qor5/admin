@@ -215,14 +215,17 @@ func (b *Builder) runSwitchLocaleFunc(ctx *web.EventContext) (r h.HTMLComponent)
 		id         = ctx.Param(presets.ParamID)
 	)
 	if fromImg != "" {
-		btn = VBtn("").Children(
+		btn = VBtn("").Class("pa-0").Children(
 			h.Div(
 				h.RawHTML(fromImg),
 				VIcon("mdi-menu-down"),
 			).Class("d-flex ga-2"),
 		).Attr("v-bind", "plaid().vue.mergeProps(menu,tooltip)").Size(SizeSmall).Variant(VariantText)
 	} else {
-		btn = VChip(h.Text(MustGetTranslation(ctx.R, b.GetLocaleLabel(fromLocale)))).Color(ColorSuccess).Variant(VariantFlat).Label(true).Size(SizeXSmall).Attr("v-bind", "plaid().vue.mergeProps(menu,tooltip)")
+		btn = VChip(
+			h.Span(MustGetTranslation(ctx.R, b.GetLocaleLabel(fromLocale))).Attr("style", "max-width: 80px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"),
+		).Color(ColorSuccess).Variant(VariantFlat).Label(true).Size(SizeXSmall).Attr("v-bind", "plaid().vue.mergeProps(menu,tooltip)")
+
 	}
 	for _, locale := range allLocales {
 		if locale == fromLocale {
@@ -247,7 +250,7 @@ func (b *Builder) runSwitchLocaleFunc(ctx *web.EventContext) (r h.HTMLComponent)
 				web.Slot(
 					btn,
 				).Name("activator").Scope(`{props:tooltip}`),
-			).Location(LocationBottom).Text(MustGetTranslation(ctx.R, "Location")),
+			).Location(LocationBottom).Text(MustGetTranslation(ctx.R, b.GetLocaleLabel(fromLocale))),
 		).Name("activator").Scope(`{props:menu}`),
 		VList(
 			localsListItems...,
