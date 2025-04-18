@@ -1221,6 +1221,10 @@ func (b *Builder) WrapNotFoundHandler(w func(in http.Handler) (out http.Handler)
 	b.notFoundHandler = w(b.notFoundHandler)
 }
 
+func (b *Builder) NotFoundHandler() http.Handler {
+	return b.notFoundHandler
+}
+
 func (b *Builder) AddWrapHandler(key string, f func(in http.Handler) (out http.Handler)) {
 	b.wrapHandlers[key] = f
 }
