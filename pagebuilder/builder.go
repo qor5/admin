@@ -123,10 +123,34 @@ const (
 	PageBuilderPreviewCard = "PageBuilderPreviewCard"
 
 	WrapHandlerKey = "pageBuilderWrapHandlerKey"
+
+	notFoundHandlerKey = "pageBuilderNotFoundHandlerKey"
 )
 
 func New(prefix string, db *gorm.DB, b *presets.Builder) *Builder {
 	return newBuilder(prefix, db, b)
+}
+
+type notFoundResponseWriter struct {
+	http.ResponseWriter
+	IfNotFound func(w http.ResponseWriter)
+	statusCode int
+}
+
+func (rw *notFoundResponseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	if code == http.StatusNotFound {
+		rw.IfNotFound(rw.ResponseWriter)
+		return
+	}
+	rw.ResponseWriter.WriteHeader(code)
+}
+
+func (rw *notFoundResponseWriter) Write(b []byte) (int, error) {
+	if rw.statusCode == http.StatusNotFound {
+		return 0, nil
+	}
+	return rw.ResponseWriter.Write(b)
 }
 
 func newBuilder(prefix string, db *gorm.DB, b *presets.Builder) *Builder {
@@ -152,6 +176,16 @@ func newBuilder(prefix string, db *gorm.DB, b *presets.Builder) *Builder {
 		URIPrefix(prefix).
 		I18n(b.GetI18n()).
 		DetailLayoutFunc(r.pageEditorLayout)
+	r.ps.AddWrapHandler(notFoundHandlerKey, func(in http.Handler) (out http.Handler) {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			in.ServeHTTP(&notFoundResponseWriter{
+				ResponseWriter: w,
+				IfNotFound: func(w http.ResponseWriter) {
+					b.NotFoundHandler().ServeHTTP(w, req)
+				},
+			}, req)
+		})
+	})
 	r.ps.Permission(b.GetPermission())
 	b.AddWrapHandler(WrapHandlerKey, func(in http.Handler) (out http.Handler) {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {

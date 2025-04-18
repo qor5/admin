@@ -150,6 +150,20 @@ func TestPageBuilder(t *testing.T) {
 			},
 		},
 		{
+			Name:  "Page Builder Detail editor(not found)",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().PageURL("/page_builder/pages/10_2024-05-21-v01_InternationalNotFound").
+					Query("containerDataID", "list-content_10_10International").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{
+				`Sorry, the requested page cannot be found. Please check the URL.`,
+			},
+		},
+		{
 			Name:  "Page New Title Empty",
 			Debug: true,
 			ReqFunc: func() *http.Request {

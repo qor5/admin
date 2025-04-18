@@ -1,13 +1,18 @@
 package presets
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/qor5/web/v3"
 )
 
-var ErrRecordNotFound = errors.New("record not found")
+var ErrRecordNotFound = &errPageRender{
+	Reason: "record not found",
+	PageRenderFunc: func(ctx *web.EventContext) (r web.PageResponse, err error) {
+		ctx.W.WriteHeader(http.StatusNotFound)
+		return
+	},
+}
 
 type PageRenderIface interface {
 	Render(ctx *web.EventContext) (r web.PageResponse, err error)
