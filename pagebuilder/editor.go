@@ -498,6 +498,9 @@ func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig
 		var innerPr web.PageResponse
 		innerPr, err = in(ctx)
 		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				err = presets.ErrRecordNotFound
+			}
 			panic(err)
 		}
 		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, "Page Builder")
