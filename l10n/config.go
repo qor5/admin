@@ -23,6 +23,8 @@ const (
 	SlugLocaleCode  = "locale_code"
 )
 
+type SwitchLocaleKey struct{}
+
 func localeListFunc(db *gorm.DB, lb *Builder) func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		id, err := reflectutils.Get(obj, "ID")
@@ -233,8 +235,16 @@ func (b *Builder) runSwitchLocaleFunc(ctx *web.EventContext) (r h.HTMLComponent)
 		}
 		clickEvent := web.Plaid().Query(b.queryName, locale).Go()
 		if id != "" {
-			uri := strings.TrimSuffix(ctx.R.URL.Path, "/"+id)
-			clickEvent = web.Plaid().URL(uri).PushState(true).FieldValue(b.queryName, locale).Go()
+			originPath := ctx.R.URL.Path
+			val := ctx.ContextValue(SwitchLocaleKey{})
+			if val != nil {
+				clickEvent = web.Plaid().URL(val).PushState(true).FieldValue(b.queryName, locale).Go()
+			} else {
+				uri := strings.TrimSuffix(originPath, "/"+id)
+				if uri != originPath {
+					clickEvent = web.Plaid().URL(uri).PushState(true).FieldValue(b.queryName, locale).Go()
+				}
+			}
 		}
 		img := b.GetLocaleImg(locale)
 		localsListItems = append(localsListItems, VListItem(
