@@ -34,7 +34,7 @@ type (
 	ModelBuilder struct {
 		name            string
 		mb              *presets.ModelBuilder
-		editor          *presets.ModelBuilder
+		editor          *presets.CustomBuilder
 		db              *gorm.DB
 		builder         *Builder
 		preview         http.Handler
@@ -48,7 +48,7 @@ func (b *ModelBuilder) editorURLWithSlug(ps string) string {
 }
 
 func (b *ModelBuilder) editorURL() string {
-	return fmt.Sprintf("%s/%s", b.builder.prefix, b.editor.Info().URIName())
+	return fmt.Sprintf("%s/%s", b.builder.prefix, b.mb.Info().URIName())
 }
 
 func (b *ModelBuilder) getContainerBuilders() (cons []*ContainerBuilder) {
@@ -188,7 +188,7 @@ func (b *ModelBuilder) addContainerToPage(ctx *web.EventContext, pageID int, con
 		}
 		modelID = reflectutils.MustGet(model, "ID").(uint)
 		displayName := modelName
-		if b.builder.ps.GetI18n() != nil {
+		if b.builder.pb.GetI18n() != nil {
 			displayName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, modelName)
 		}
 		container := Container{

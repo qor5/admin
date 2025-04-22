@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"path"
 	"reflect"
-	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -79,10 +78,10 @@ type (
 
 type Builder struct {
 	prefix                        string
+	pb                            *presets.Builder
 	wb                            *web.Builder
 	db                            *gorm.DB
 	containerBuilders             []*ContainerBuilder
-	ps                            *presets.Builder
 	models                        []*ModelBuilder
 	templates                     []*TemplateBuilder
 	templateModel                 *presets.ModelBuilder
@@ -165,42 +164,16 @@ func newBuilder(prefix string, db *gorm.DB, b *presets.Builder) *Builder {
 		expendContainers:  true,
 		pageEnabled:       true,
 		previewContainer:  true,
+		pb:                b,
 	}
 	r.templateInstall = r.defaultTemplateInstall
 	r.categoryInstall = r.defaultCategoryInstall
 	r.pageInstall = r.defaultPageInstall
 	r.pageLayoutFunc = defaultPageLayoutFunc
-	r.ps = presets.New().
-		BrandTitle("Page Builder").
-		DataOperator(gorm2op.DataOperator(db)).
-		URIPrefix(prefix).
-		I18n(b.GetI18n()).
-		DetailLayoutFunc(r.pageEditorLayout)
-	r.ps.AddWrapHandler(notFoundHandlerKey, func(in http.Handler) (out http.Handler) {
-		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			in.ServeHTTP(&notFoundResponseWriter{
-				ResponseWriter: w,
-				IfNotFound: func(w http.ResponseWriter) {
-					b.NotFoundHandler().ServeHTTP(w, req)
-				},
-			}, req)
-		})
-	})
-	r.ps.Permission(b.GetPermission())
-	b.AddWrapHandler(WrapHandlerKey, func(in http.Handler) (out http.Handler) {
-		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			if strings.HasPrefix(req.RequestURI, r.ps.GetURIPrefix()) && strings.HasSuffix(req.RequestURI, "/preview") {
-				r.ServeHTTP(w, req)
-				return
-			}
-			in.ServeHTTP(w, req)
-		})
-	})
 	return r
 }
 
 func (b *Builder) Prefix(v string) (r *Builder) {
-	b.ps.URIPrefix(v)
 	b.prefix = v
 	return b
 }
@@ -320,7 +293,7 @@ func (b *Builder) EditorUpdateDifferent(v bool) (r *Builder) {
 }
 
 func (b *Builder) GetPresetsBuilder() (r *presets.Builder) {
-	return b.ps
+	return b.pb
 }
 
 func (b *Builder) PublishBtnColor(v string) (r *Builder) {
@@ -366,7 +339,6 @@ func (b *Builder) DisabledNormalContainersGroup(v bool) (r *Builder) {
 func (b *Builder) Model(mb *presets.ModelBuilder) (r *ModelBuilder) {
 	r = &ModelBuilder{
 		mb:      mb,
-		editor:  b.ps.Model(mb.NewModel()).URIName(mb.Info().URIName()),
 		builder: b,
 		db:      b.db,
 	}
@@ -374,12 +346,10 @@ func (b *Builder) Model(mb *presets.ModelBuilder) (r *ModelBuilder) {
 	r.setName()
 	r.registerFuncs()
 	r.configDuplicate(r.mb)
-	r.configDuplicate(r.editor)
 	return r
 }
 
 func (b *Builder) ModelInstall(pb *presets.Builder, mb *presets.ModelBuilder) (err error) {
-	defer b.ps.Build()
 
 	r := b.Model(mb)
 	b.useAllPlugin(mb, r.name)
@@ -424,22 +394,31 @@ func (b *Builder) configPageSaver(pb *presets.Builder) (mb *presets.ModelBuilder
 }
 
 func (b *Builder) Install(pb *presets.Builder) (err error) {
-	defer b.ps.Build()
-	b.ps.I18n(pb.GetI18n())
+	var r *ModelBuilder
+
 	if b.pageEnabled {
-		var r *ModelBuilder
 		r = b.Model(b.configPageSaver(pb))
 		b.configEditor(r)
 		b.installAsset(pb)
 		b.configTemplateAndPage(pb, r)
-		b.configSharedContainer(pb, r)
 		b.configDetail(r)
 		categoryM := pb.Model(&Category{}).URIName("page_categories").Label("Page Categories")
 		if err = b.categoryInstall(pb, categoryM); err != nil {
 			return
 		}
 	}
+	if b.templateEnabled {
+		var pm *presets.ModelBuilder
+		if r != nil {
+			pm = r.mb
+		}
+		err = b.templateInstall(pb, pm)
+		if err != nil {
+			panic(err)
+		}
+	}
 	b.configDemoContainer(pb)
+	b.configSharedContainer(pb)
 	b.preparePlugins()
 	for _, t := range b.templates {
 		t.Install()
@@ -451,9 +430,17 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 }
 
 func (b *Builder) configEditor(m *ModelBuilder) {
-	b.useAllPlugin(m.editor, m.name)
-	md := m.editor.Detailing().Drawer(false)
-	md.PageFunc(b.Editor(m))
+	mountedUri := strings.TrimPrefix(fmt.Sprintf("%s/{id}", m.editorURL()), "/")
+	m.editor = presets.NewCustomPage(b.pb).Menu(func(ctx *web.EventContext) h.HTMLComponent {
+		return nil
+	}).Body(func(ctx *web.EventContext) h.HTMLComponent {
+		return b.pageEditorLayout(ctx, m)
+	}).PageTitleFunc(func(ctx *web.EventContext) string {
+		return m.mb.Info().LabelName(ctx, false)
+	})
+	m.registerCustomFuncs()
+	b.pb.HandleCustomPage(mountedUri, m.editor)
+
 }
 
 func (b *Builder) configDetail(m *ModelBuilder) {
@@ -487,12 +474,7 @@ func (b *Builder) configTemplateAndPage(pb *presets.Builder, r *ModelBuilder) {
 	if err != nil {
 		panic(err)
 	}
-	if b.templateEnabled {
-		err = b.templateInstall(pb, pm)
-		if err != nil {
-			panic(err)
-		}
-	}
+
 	b.configPublish(r)
 	b.useAllPlugin(pm, r.name)
 	b.seoDisableEditOnline(pm)
@@ -565,7 +547,6 @@ func (b *Builder) seoDisableEditOnline(pm *presets.ModelBuilder) {
 func (b *Builder) preparePlugins() {
 	l10nB := b.l10n
 	// activityB := b.ab
-	publisher := b.publisher
 	if l10nB != nil {
 		l10nB.Activity(b.ab)
 	}
@@ -585,7 +566,6 @@ func (b *Builder) preparePlugins() {
 	if b.mediaBuilder == nil {
 		b.mediaBuilder = media.New(b.db)
 	}
-	b.ps.Use(b.mediaBuilder, publisher)
 }
 
 func (b *Builder) configDetailLayoutFunc(
@@ -747,12 +727,14 @@ const (
 	templateSelectedID = "TemplateSelectedID"
 )
 
-func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
+func (b *Builder) configSharedContainer(pb *presets.Builder) {
 	db := b.db
 
 	pm := pb.Model(&Container{}).URIName("shared_containers").Label("Shared Containers")
 
-	pm.RegisterEventFunc(republishRelatedOnlinePagesEvent, republishRelatedOnlinePages(r.mb.Info().ListingHref()))
+	pm.RegisterEventFunc(republishRelatedOnlinePagesEvent, b.republishRelatedOnlinePages)
+	pm.RegisterEventFunc(RenameContainerDialogEvent, b.renameContainerDialog)
+	pm.RegisterEventFunc(RenameContainerFromDialogEvent, b.renameContainerFromDialog)
 
 	listing := pm.Listing("DisplayName").SearchColumns("display_name").NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
 		return nil
@@ -788,7 +770,6 @@ func (b *Builder) configSharedContainer(pb *presets.Builder, r *ModelBuilder) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		return VListItem().PrependIcon("mdi-pencil-outline").Title(msgr.Rename).Attr("@click",
 			web.Plaid().
-				URL(r.mb.Info().ListingHref()).
 				EventFunc(RenameContainerDialogEvent).
 				Query(paramContainerID, c.PrimarySlug()).
 				Query(paramContainerName, c.DisplayName).
@@ -829,7 +810,7 @@ func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBui
 	listing.Field("ModelName").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*DemoContainer)
 		modelName := p.ModelName
-		if b.ps.GetI18n() != nil {
+		if pb.GetI18n() != nil {
 			modelName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, modelName)
 		}
 
@@ -1121,7 +1102,7 @@ func (b *ContainerBuilder) Install() {
 func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 	b.model = m
 
-	mb := b.builder.ps.Model(m)
+	mb := b.builder.pb.Model(m).InMenu(false)
 	mb.WrapVerifier(func(_ func() *perm.Verifier) func() *perm.Verifier {
 		return func() *perm.Verifier {
 			v := mb.GetPresetsBuilder().GetVerifier().Spawn()
@@ -1358,28 +1339,29 @@ func (b *ContainerBuilder) firstOrCreate(localeCodes []string) (err error) {
 	})
 }
 
-func republishRelatedOnlinePages(pageURL string) web.EventFunc {
-	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		ids := strings.Split(ctx.R.FormValue("ids"), ",")
-		msgr := i18n.MustGetModuleMessages(ctx.R, publish.I18nPublishKey, Messages_en_US).(*publish.Messages)
-		for index, id := range ids {
-			statusVar := fmt.Sprintf(`republish_status_%s`, strings.Replace(id, "-", "_", -1))
-			plaid := web.Plaid().
-				URL(pageURL).
-				EventFunc(publish.EventRepublish).
-				Query("id", id).
-				Query(publish.ParamScriptAfterPublish, fmt.Sprintf(`vars.%s = "done"`, statusVar)).
-				Query("status_var", statusVar)
-			if index == len(ids)-1 {
-				plaid = plaid.ThenScript(presets.ShowSnackbarScript(msgr.SuccessfullyPublish, ColorSuccess))
-			}
-			web.AppendRunScripts(&r,
-				plaid.Go(),
-				fmt.Sprintf(`vars.%s = "pending"`, statusVar),
-			)
-		}
-		return r, nil
+func (b *Builder) republishRelatedOnlinePages(ctx *web.EventContext) (r web.EventResponse, err error) {
+	ids := strings.Split(ctx.R.FormValue("ids"), ",")
+	if len(ids) == 0 {
+		return
 	}
+	msgr := i18n.MustGetModuleMessages(ctx.R, publish.I18nPublishKey, Messages_en_US).(*publish.Messages)
+	for index, id := range ids {
+		statusVar := fmt.Sprintf(`republish_status_%s`, strings.Replace(id, "-", "_", -1))
+		plaid := web.Plaid().
+			URL("").
+			EventFunc(publish.EventRepublish).
+			Query("id", id).
+			Query(publish.ParamScriptAfterPublish, fmt.Sprintf(`vars.%s = "done"`, statusVar)).
+			Query("status_var", statusVar)
+		if index == len(ids)-1 {
+			plaid = plaid.ThenScript(presets.ShowSnackbarScript(msgr.SuccessfullyPublish, ColorSuccess))
+		}
+		web.AppendRunScripts(&r,
+			plaid.Go(),
+			fmt.Sprintf(`vars.%s = "pending"`, statusVar),
+		)
+	}
+	return r, nil
 }
 
 func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -1392,10 +1374,6 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			mb.preview.ServeHTTP(w, r)
 			return
 		}
-		if r.RequestURI == mb.editor.Info().ListingHref() {
-			http.Redirect(w, r, mb.mb.Info().ListingHref(), http.StatusFound)
-			return
-		}
 	}
 	if b.images != nil {
 		if strings.Index(r.RequestURI, path.Join(b.prefix, b.imagesPrefix)) >= 0 {
@@ -1403,13 +1381,7 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	pattern := fmt.Sprintf("^%s/[\\w-]+(-[\\w-]+)?$", b.prefix)
-	ok, _ := regexp.MatchString(pattern, r.RequestURI)
-	if ok {
-		http.Redirect(w, r, "/", http.StatusFound)
-		return
-	}
-	b.ps.ServeHTTP(w, r)
+	b.pb.ServeHTTP(w, r)
 }
 
 func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {

@@ -3,6 +3,7 @@ package pagebuilder
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
@@ -91,100 +92,106 @@ func (b *Builder) emptyEdit(ctx *web.EventContext) h.HTMLComponent {
 	)
 }
 
-func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
-	return func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		var (
-			deviceToggle, versionComponent       h.HTMLComponent
-			editContainerDrawer, navigatorDrawer h.HTMLComponent
-			tabContent                           web.PageResponse
-			pageAppbarContent                    []h.HTMLComponent
-			exitHref                             string
-			isStag                               bool
+func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTMLComponent) {
+	var (
+		deviceToggle, versionComponent       h.HTMLComponent
+		editContainerDrawer, navigatorDrawer h.HTMLComponent
+		tabContent                           web.PageResponse
+		pageAppbarContent                    []h.HTMLComponent
+		exitHref                             string
+		isStag                               bool
 
-			containerDataID = ctx.Param(paramContainerDataID)
-			obj             interface{}
-			msgr            = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-			title           string
-		)
-		if m.mb.Info().Verifier().Do(presets.PermGet).WithReq(ctx.R).IsAllowed() != nil {
-			r.Body = h.Text(perm.PermissionDenied.Error())
+		containerDataID = ctx.Param(paramContainerDataID)
+		obj             interface{}
+		msgr            = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		title           string
+		err             error
+	)
+	defer func() {
+		if err != nil {
+			body = h.Div().Attr("v-on-mounted", fmt.Sprintf(`() => {%s}`, presets.ShowSnackbarScript(err.Error(), ColorError)))
 			return
 		}
-		if obj, err = m.pageBuilderModel(ctx); err != nil {
-			return
-		}
+	}()
+	if m.mb.Info().Verifier().Do(presets.PermGet).WithReq(ctx.R).IsAllowed() != nil {
+		return h.Text(perm.PermissionDenied.Error())
+	}
+	if obj, err = m.pageBuilderModel(ctx); err != nil {
+		return
+	}
 
-		if m.tb == nil {
-			title = msgr.PageBuilder
-			exitHref = m.mb.Info().DetailingHref(ctx.Param(presets.ParamID))
-		} else {
-			title = msgr.PageTemplate
-			exitHref = m.mb.Info().ListingHref()
+	if m.tb == nil {
+		title = msgr.PageBuilder
+		exitHref = m.mb.Info().DetailingHref(ctx.Param(presets.ParamID))
+	} else {
+		title = msgr.PageTemplate
+		exitHref = m.mb.Info().ListingHref()
 
-		}
-		if containerDataID != "" {
-			editEvent := web.Plaid().
-				EventFunc(EditContainerEvent).
-				MergeQuery(true).
-				Query(paramContainerDataID, containerDataID).
-				Query(presets.ParamPortalName, pageBuilderRightContentPortal).
-				Query(presets.ParamOverlay, actions.Content).Go()
-			editContainerDrawer = web.RunScript(fmt.Sprintf(`function(){%s}`, editEvent))
-		} else {
-			editContainerDrawer = b.emptyEdit(ctx)
-		}
-		deviceToggle = b.deviceToggle(ctx)
-		if tabContent, err = m.pageContent(ctx); err != nil {
-			return
-		}
-		if p, ok := obj.(publish.StatusInterface); ok {
-			ctx.R.Form.Set(paramStatus, p.EmbedStatus().Status)
-			isStag = p.EmbedStatus().Status == publish.StatusOnline || p.EmbedStatus().Status == publish.StatusOffline
-		}
-		if !isStag && m.mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil {
-			isStag = true
-		}
-		afterLeaveEvent := removeVirtualElement()
-		addOverlay := web.Scope(
-			h.Div().Style("display:none").Attr("v-on-mounted", `({watch})=>{
+	}
+	if containerDataID != "" {
+		editEvent := web.Plaid().
+			EventFunc(EditContainerEvent).
+			MergeQuery(true).
+			Query(paramContainerDataID, containerDataID).
+			Query(presets.ParamPortalName, pageBuilderRightContentPortal).
+			Query(presets.ParamOverlay, actions.Content).Go()
+		editContainerDrawer = web.RunScript(fmt.Sprintf(`function(){%s}`, editEvent))
+	} else {
+		editContainerDrawer = b.emptyEdit(ctx)
+	}
+	deviceToggle = b.deviceToggle(ctx)
+	if tabContent, err = m.pageContent(ctx); err != nil {
+		return
+	}
+	if p, ok := obj.(publish.StatusInterface); ok {
+		ctx.R.Form.Set(paramStatus, p.EmbedStatus().Status)
+		isStag = p.EmbedStatus().Status == publish.StatusOnline || p.EmbedStatus().Status == publish.StatusOffline
+	}
+	if !isStag && m.mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil {
+		isStag = true
+	}
+	afterLeaveEvent := removeVirtualElement()
+	addOverlay := web.Scope(
+		h.Div().Style("display:none").Attr("v-on-mounted", `({watch})=>{
 					watch(() => vars.overlay, (value) => {
 						if(value){xLocals.add=false;}
 						})
 				}`),
-			vx.VXOverlay(
-				m.newContainerContent(ctx),
-			).
-				MaxWidth(665).
-				Attr("ref", "overlay").
-				Attr("@after-leave", fmt.Sprintf("if (!xLocals.add){%s}", afterLeaveEvent)).
-				Attr("v-model", "vars.overlay"),
-		).VSlot("{locals:xLocals}").Init("{add:false}")
-		versionComponent = publish.DefaultVersionComponentFunc(m.editor, publish.VersionComponentConfig{Top: true, DisableListeners: true, DisableDataChangeTracking: true})(obj, &presets.FieldContext{ModelInfo: m.editor.Info()}, ctx)
-		pageAppbarContent = h.Components(
-			h.Div(
-				h.Div().Style("transform:rotateY(180deg)").Class("mr-4").Children(
-					VIcon("mdi-exit-to-app").Attr("@click", fmt.Sprintf(`
+		vx.VXOverlay(
+			m.newContainerContent(ctx),
+		).
+			MaxWidth(665).
+			Attr("ref", "overlay").
+			Attr("@after-leave", fmt.Sprintf("if (!xLocals.add){%s}", afterLeaveEvent)).
+			Attr("v-model", "vars.overlay"),
+	).VSlot("{locals:xLocals}").Init("{add:false}")
+	versionComponent = publish.DefaultVersionComponentFunc(m.mb, publish.VersionComponentConfig{Top: true, DisableListeners: true,
+		DisableDataChangeTracking: true})(obj, &presets.FieldContext{ModelInfo: m.mb.Info()}, ctx)
+	pageAppbarContent = h.Components(
+		h.Div(
+			h.Div().Style("transform:rotateY(180deg)").Class("mr-4").Children(
+				VIcon("mdi-exit-to-app").Attr("@click", fmt.Sprintf(`
 						const last = vars.__history.last();
 						if (last && last.url && last.url === %q) {
 							$event.view.window.history.back();
 							return;
 						}
 						%s`, exitHref, web.GET().URL(exitHref).PushState(true).Go(),
-					)),
-				),
-				VAppBarTitle().Text(title),
-			).Class("d-inline-flex align-center"),
-			h.Div(deviceToggle).Class("text-center d-flex justify-space-between mx-6"),
-			versionComponent,
-			publish.NewListenerModelsDeleted(m.mb, ctx.Param(presets.ParamID)),
-			publish.NewListenerVersionSelected(ctx, m.editor, ctx.Param(presets.ParamID)),
-		)
-		if navigatorDrawer, err = b.renderNavigator(ctx, m); err != nil {
-			return
-		}
-		r.Body = h.Components(
-			h.Div().Style("display:none").
-				Attr("v-on-unmounted", fmt.Sprintf(`({window})=>{
+				)),
+			),
+			VAppBarTitle().Text(title),
+		).Class("d-inline-flex align-center"),
+		h.Div(deviceToggle).Class("text-center d-flex justify-space-between mx-6"),
+		versionComponent,
+		publish.NewListenerModelsDeleted(m.mb, ctx.Param(presets.ParamID)),
+		newListenerVersionSelected(ctx, m.mb, m.editorURL(), ctx.Param(presets.ParamID)),
+	)
+	if navigatorDrawer, err = b.renderNavigator(ctx, m); err != nil {
+		return
+	}
+	body = h.Components(
+		h.Div().Style("display:none").
+			Attr("v-on-unmounted", fmt.Sprintf(`({window})=>{
 				vars.$pbRightDrawerOnMouseLeave = null
 				vars.$pbRightDrawerOnMouseDown = null
 				vars.$pbRightDrawerOnMouseMove = null
@@ -192,7 +199,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 				vars.$PagebuilderResizeFn = null
 				vars.$pbRightThrottleTimer = null
 			}`)).
-				Attr("v-on-mounted", fmt.Sprintf(`({ref, window, computed})=>{
+			Attr("v-on-mounted", fmt.Sprintf(`({ref, window, computed})=>{
 				const rightDrawerExpendMinWidth = 350 + 56 // 56 is the width of the gap, 390 is the actual size
 				const leftDrawerExpendMinWidth = 350
 
@@ -307,31 +314,35 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 					vars.$pbRightDrawerHighlight = isOnLeftBorder(event)
 				}
 			}`)),
-			VAppBar(
+		VAppBar(
+			h.Div(
+				pageAppbarContent...,
+			).Class("page-builder-edit-bar-wrap"),
+		).Elevation(0).Density(DensityCompact).Height(96).Class("align-center border-b"),
+		h.If(!isStag,
+			VNavigationDrawer(
 				h.Div(
-					pageAppbarContent...,
-				).Class("page-builder-edit-bar-wrap"),
-			).Elevation(0).Density(DensityCompact).Height(96).Class("align-center border-b"),
-			h.If(!isStag,
-				VNavigationDrawer(
-					h.Div(
-						web.Portal(navigatorDrawer).Name(pageBuilderLayerContainerPortal),
-					).Attr("v-show", "!vars.$pbLeftDrawerFolded"),
-					web.Slot(
-						VBtn("").
-							Attr(":icon", "vars.$pbLeftIconName").
-							Attr("@click.stop", `() => {
+					web.Portal(navigatorDrawer).Name(pageBuilderLayerContainerPortal),
+				).Attr("v-show", "!vars.$pbLeftDrawerFolded"),
+				web.Slot(
+					VBtn("").
+						Attr("v-if", "locals.isLeftBtnHovering").
+						Attr(":icon", "vars.$pbLeftIconName").
+						Attr("@click.stop", `() => {
 										vars.$pbLeftDrawerFolded = !vars.$pbLeftDrawerFolded
 										vars.$window.localStorage.setItem("$pbLeftDrawerFolded", vars.$pbLeftDrawerFolded ? "1": "0")
 									}`).
-							Size(SizeSmall).
-							Class("pb-drawer-btn drawer-btn-left")).
-						Name("append"),
-				).Location(LocationLeft).
-					Permanent(true).
-					Attr(":width", "vars.$pbLeftDrawerWidth"),
-				VNavigationDrawer(
-					h.Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf(`({el,window}) => {
+						Size(SizeSmall).
+						Attr(web.VAssign("locals", "{isLeftBtnHovering: false}")...).
+						Class("pb-drawer-btn drawer-btn-left")).
+					Name("append"),
+			).Location(LocationLeft).
+				Permanent(true).
+				Attr(":width", "vars.$pbLeftDrawerWidth").
+				Attr("@mouseover", "locals.isLeftBtnHovering = true").
+				Attr("@mouseout", "locals.isLeftBtnHovering = false"),
+			VNavigationDrawer(
+				h.Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf(`({el,window}) => {
 							el.__handleScroll = (event) => {
 								locals.__pageBuilderRightContentScrollTop = event.target.scrollTop;
 							}
@@ -345,38 +356,40 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 						}`)).Attr("v-on-unmounted", `({el}) => {
 							el.parentElement.removeEventListener('scroll', el.__handleScroll);
 						}`),
-					web.Slot(
-						VBtn("").
-							Attr(":icon", "vars.$pbRightIconName").
-							Attr("@mousemove.stop", "()=>{vars.$pbRightDrawerHighlight=false}").
-							Attr("@mousedown.stop", "()=>{vars.$pbRightDrawerHighlight=false}").
-							Attr("@click", `() => {
+				web.Slot(
+					VBtn("").
+						Attr("v-if", "!vars.$pbRightDrawerIsDragging && locals.isRightBtnHovering").
+						Attr(":icon", "vars.$pbRightIconName").
+						Attr("@mousemove.stop", "()=>{vars.$pbRightDrawerHighlight=false}").
+						Attr("@mousedown.stop", "()=>{vars.$pbRightDrawerHighlight=false}").
+						Attr("@click", `() => {
 									vars.$pbRightDrawerFolded = !vars.$pbRightDrawerFolded
 									vars.$window.localStorage.setItem("$pbRightDrawerFolded", vars.$pbRightDrawerFolded ? "1": "0")
 								}`).
-							Size(SizeSmall).
-							Class("pb-drawer-btn drawer-btn-right")).
-						Name("append"),
-					h.Div(
-						web.Portal(editContainerDrawer).Name(pageBuilderRightContentPortal),
-					).Attr("v-show", "!vars.$pbRightDrawerFolded").Attr(":ref", "vars.$pbRightDrawerRefGet"),
-				).Location(LocationRight).
-					Permanent(true).
-					Attr(":class", "['draggable-el',{'border-left-draggable-highlight': vars.$pbRightDrawerHighlight}]").
-					Attr(":width", "vars.$pbRightDrawerWidth").
-					Attr("@mousedown", "vars.$pbRightDrawerOnMouseDown").
-					Attr("@mousemove", "vars.$pbRightDrawerOnMouseMove").
-					Attr("@mouseleave", "vars.$pbRightDrawerOnMouseLeave"),
-			),
-			VMain(
-				addOverlay,
-				vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction(ctx)),
-				tabContent.Body.(h.HTMLComponent),
-			).Attr(web.VAssign("vars", "{overlayEl:$}")...).Class("ma-2"),
-		)
-		r.PageTitle = m.mb.Info().Label()
-		return
-	}
+						Attr(web.VAssign("locals", "{isRightBtnHovering: false}")...).
+						Size(SizeSmall).
+						Class("pb-drawer-btn drawer-btn-right")).
+					Name("append"),
+				h.Div(
+					web.Portal(editContainerDrawer).Name(pageBuilderRightContentPortal),
+				).Attr("v-show", "!vars.$pbRightDrawerFolded").Attr(":ref", "vars.$pbRightDrawerRefGet"),
+			).Location(LocationRight).
+				Permanent(true).
+				Attr(":class", "['draggable-el',{'border-left-draggable-highlight': vars.$pbRightDrawerHighlight}]").
+				Attr(":width", "vars.$pbRightDrawerWidth").
+				Attr("@mousedown", "vars.$pbRightDrawerOnMouseDown").
+				Attr("@mousemove", "vars.$pbRightDrawerOnMouseMove").
+				Attr("@mouseleave", "vars.$pbRightDrawerOnMouseLeave").
+				Attr("@mouseover", "locals.isRightBtnHovering = true").
+				Attr("@mouseout", "locals.isRightBtnHovering = false"),
+		),
+		VMain(
+			addOverlay,
+			vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction(ctx)),
+			tabContent.Body.(h.HTMLComponent),
+		).Attr(web.VAssign("vars", "{overlayEl:$}")...).Class("ma-2"),
+	)
+	return
 }
 
 func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string) {
@@ -484,39 +497,17 @@ const (
 	dialogPortalName = "pagebuilder_DialogPortalName"
 )
 
-func (b *Builder) pageEditorLayout(in web.PageFunc, config *presets.LayoutConfig) (out web.PageFunc) {
-	return func(ctx *web.EventContext) (pr web.PageResponse, err error) {
-		b.ps.InjectAssets(ctx)
-		var innerPr web.PageResponse
-		innerPr, err = in(ctx)
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				err = presets.ErrRecordNotFound
-			}
-			panic(err)
-		}
-		pr.PageTitle = fmt.Sprintf("%s - %s", innerPr.PageTitle, "Page Builder")
-		pr.Body = VLayout(
-
-			web.Portal().Name(presets.RightDrawerPortalName),
-			web.Portal().Name(presets.DialogPortalName),
-			web.Portal().Name(presets.DeleteConfirmPortalName),
-			web.Portal().Name(presets.ListingDialogPortalName),
-			web.Portal().Name(dialogPortalName),
-			web.Portal().Name(addContainerDialogPortal),
-			h.Template(
-				VSnackbar(
-					h.Div().Style("white-space: pre-wrap").Text("{{vars.presetsMessage.message}}"),
-				).
-					Attr("v-model", "vars.presetsMessage.show").
-					Attr(":color", "vars.presetsMessage.color").
-					Timeout(1000),
-			).Attr("v-if", "vars.presetsMessage"),
-			innerPr.Body.(h.HTMLComponent),
-		).Attr("id", "vt-app").
-			Attr(web.VAssign("vars", fmt.Sprintf(`{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false,overlay:false,containerPreview:false,%s:{},presetsMessage: {show: false, color: "", message: ""},pageBuilderContentScroll:{}}`, presets.VarsPresetsDataChanged))...)
-		return
-	}
+func (b *Builder) pageEditorLayout(ctx *web.EventContext, m *ModelBuilder) h.HTMLComponent {
+	return VLayout(
+		web.Portal().Name(presets.RightDrawerPortalName),
+		web.Portal().Name(presets.DialogPortalName),
+		web.Portal().Name(presets.DeleteConfirmPortalName),
+		web.Portal().Name(presets.ListingDialogPortalName),
+		web.Portal().Name(dialogPortalName),
+		web.Portal().Name(addContainerDialogPortal),
+		b.editorBody(ctx, m),
+	).Attr("id", "vt-app").
+		Attr(web.VAssign("vars", fmt.Sprintf(`{presetsRightDrawer: false, presetsDialog: false, dialogPortalName: false,overlay:false,containerPreview:false,%s:{}}`, presets.VarsPresetsDataChanged))...)
 }
 
 func scrollToContainer(containerDataID interface{}) string {
@@ -595,4 +586,34 @@ func removeVirtualElement() string {
 
 func appendVirtualElement() string {
 	return fmt.Sprintf(`vars.el.refs.scrollIframe.appendVirtualElement();`)
+}
+
+func newListenerVersionSelected(evCtx *web.EventContext, mb *presets.ModelBuilder, path, slug string) h.HTMLComponent {
+	event := actions.Edit
+	if mb.HasDetailing() {
+		event = actions.DetailingDrawer
+	}
+	drawerToSlug := web.Plaid().URL(path).EventFunc(event).
+		Query(presets.ParamID, web.Var("payload.slug"))
+	varCurrentActive := evCtx.R.FormValue(presets.ParamVarCurrentActive)
+	if varCurrentActive != "" {
+		drawerToSlug.Query(presets.ParamVarCurrentActive, varCurrentActive)
+	}
+	return web.Listen(publish.NotifVersionSelected(mb), fmt.Sprintf(`
+		if (payload.slug === %q) {
+			return
+		}
+		if (vars.presetsRightDrawer) {
+			%s
+			return
+		}
+		%s
+	`,
+		slug,
+		strings.Join([]string{
+			presets.CloseRightDrawerVarScript,
+			drawerToSlug.Go(),
+		}, ";"),
+		web.Plaid().PushState(true).URL(web.Var(fmt.Sprintf(`%q + "/" + payload.slug`, path))).Go(),
+	))
 }

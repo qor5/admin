@@ -1163,7 +1163,9 @@ func (b *Builder) initMux() {
 		log.Printf("mounted url: %s", routePath)
 		mux.Handle(
 			routePath,
-			b.wrap(nil, cb.defaultLayout),
+			b.wrapInner(func(p *web.PageBuilder) {
+				p.MergeHub(&cb.EventsHub)
+			}, cb.defaultLayout),
 		)
 	}
 	for _, m := range b.models {
@@ -1249,10 +1251,17 @@ func (b *Builder) AddWrapHandler(key string, f func(in http.Handler) (out http.H
 }
 
 func (b *Builder) wrap(m *ModelBuilder, pf web.PageFunc) http.Handler {
+	return b.wrapInner(func(p *web.PageBuilder) {
+		if m != nil {
+			m.registerDefaultEventFuncs()
+			p.MergeHub(&m.EventsHub)
+		}
+	}, pf)
+}
+func (b *Builder) wrapInner(f func(p *web.PageBuilder), pf web.PageFunc) http.Handler {
 	p := b.builder.Page(pf)
-	if m != nil {
-		m.registerDefaultEventFuncs()
-		p.MergeHub(&m.EventsHub)
+	if f != nil {
+		f(p)
 	}
 	p.WrapEventFunc(func(in web.EventFunc) web.EventFunc {
 		return func(ctx *web.EventContext) (r web.EventResponse, err error) {
