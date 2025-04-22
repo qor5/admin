@@ -1192,11 +1192,13 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 			Joins(fmt.Sprintf(`inner join %s on 
         %s.id = %s.page_id
         and %s.version = %s.page_version
-        and %s.locale_code = %s.locale_code`,
+        and %s.locale_code = %s.locale_code
+		and %s.deleted_at is null`,
 				containerTable,
 				pageTable, containerTable,
 				pageTable, containerTable,
 				pageTable, containerTable,
+				containerTable,
 			)).
 			// FIXME: add container locale condition after container supports l10n
 			Where(fmt.Sprintf(`%s.status = ? and %s.model_id = ? and %s.model_name = ?`,
