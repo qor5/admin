@@ -5,21 +5,25 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/oss"
 	"github.com/qor5/x/v3/oss/filesystem"
 	"github.com/qor5/x/v3/perm"
 	"github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
+	"github.com/sunfmin/reflectutils"
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/media/media_library"
-	"github.com/qor5/admin/v3/pagebuilder"
+	pagebuilder "github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
+	"github.com/spf13/cast"
 )
 
 // models
@@ -43,6 +47,19 @@ type (
 	PageProduct struct {
 		gorm.Model
 		Name string
+		publish.Status
+		publish.Schedule
+		publish.Version
+	}
+
+	// Others
+
+	CampaignWithStringID struct {
+		ID string `gorm:"primarykey"`
+
+		Name  string
+		Price int
+
 		publish.Status
 		publish.Schedule
 		publish.Version
@@ -104,8 +121,14 @@ func (p *CampaignTemplate) PrimarySlug() string {
 func (p *CampaignTemplate) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 1 {
-		panic("wrong slug")
+		panic(presets.ErrNotFound("wrong slug"))
 	}
+
+	_, err := cast.ToInt64E(segs[0])
+	if err != nil {
+		panic(presets.ErrNotFound(fmt.Sprintf("wrong slug %q: %v", slug, err)))
+	}
+
 	return map[string]string{
 		presets.ParamID: segs[0],
 	}
@@ -118,11 +141,36 @@ func (p *CampaignProductTemplate) PrimarySlug() string {
 func (p *CampaignProductTemplate) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 1 {
-		panic("wrong slug")
+		panic(presets.ErrNotFound("wrong slug"))
+	}
+
+	_, err := cast.ToInt64E(segs[0])
+	if err != nil {
+		panic(presets.ErrNotFound(fmt.Sprintf("wrong slug %q: %v", slug, err)))
+	}
+
+	return map[string]string{
+		presets.ParamID: segs[0],
+	}
+}
+
+func (p *CampaignWithStringID) PrimarySlug() string {
+	return fmt.Sprintf("%v", p.ID)
+}
+
+func (p *CampaignWithStringID) PrimaryColumnValuesBySlug(slug string) map[string]string {
+	segs := strings.Split(slug, "_")
+	if len(segs) != 1 {
+		panic(presets.ErrNotFound("wrong slug"))
 	}
 	return map[string]string{
 		presets.ParamID: segs[0],
 	}
+}
+
+func (b *CampaignWithStringID) PublishUrl(db *gorm.DB, ctx context.Context, storage oss.StorageInterface) (s string) {
+	b.OnlineUrl = fmt.Sprintf("campaign-with-string-ids/%v/index.html", b.ID)
+	return b.OnlineUrl
 }
 
 func (b *Campaign) GetTitle() string {
@@ -156,7 +204,12 @@ func (p *Campaign) PrimarySlug() string {
 func (p *Campaign) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 2 {
-		panic("wrong slug")
+		panic(presets.ErrNotFound("wrong slug"))
+	}
+
+	_, err := cast.ToInt64E(segs[0])
+	if err != nil {
+		panic(presets.ErrNotFound(fmt.Sprintf("wrong slug %q: %v", slug, err)))
 	}
 
 	return map[string]string{
@@ -181,7 +234,12 @@ func (p *CampaignProduct) PrimarySlug() string {
 func (p *CampaignProduct) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 2 {
-		panic("wrong slug")
+		panic(presets.ErrNotFound("wrong slug"))
+	}
+
+	_, err := cast.ToInt64E(segs[0])
+	if err != nil {
+		panic(presets.ErrNotFound(fmt.Sprintf("wrong slug %q: %v", slug, err)))
 	}
 
 	return map[string]string{
@@ -206,7 +264,12 @@ func (p *PageProduct) PrimarySlug() string {
 func (p *PageProduct) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 2 {
-		panic("wrong slug")
+		panic(presets.ErrNotFound("wrong slug"))
+	}
+
+	_, err := cast.ToInt64E(segs[0])
+	if err != nil {
+		panic(presets.ErrNotFound(fmt.Sprintf("wrong slug %q: %v", slug, err)))
 	}
 
 	return map[string]string{
@@ -233,6 +296,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		&Campaign{}, &CampaignProduct{}, &PageProduct{}, // models
 		&MyContent{}, &CampaignContent{}, &ProductContent{}, &PagesContent{}, // containers
 		&CampaignTemplate{}, &CampaignProductTemplate{},
+		&CampaignWithStringID{},
 	)
 	if err != nil {
 		panic(err)
@@ -419,6 +483,30 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	detail3.Section(productDetail3)
 
 	pageProductModelBuilder.Use(pb)
+
+	mb := b.Model(&CampaignWithStringID{})
+	mb.Editing().Creating().WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			if err = reflectutils.Set(obj, "ID", fmt.Sprintf("ox%v", time.Now().Unix())); err != nil {
+				return
+			}
+			return in(obj, id, ctx)
+		}
+	})
+	dp := mb.Detailing(publish.VersionsPublishBar, "Details").Drawer(true)
+	detailSection := presets.NewSectionBuilder(mb, "Details").
+		ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
+			p := obj.(*CampaignWithStringID)
+			return vx.DetailInfo(
+				vx.DetailColumn(
+					vx.DetailField(vx.OptionalText(p.Name).ZeroLabel("No Name")).Label("Name"),
+					vx.DetailField(vx.OptionalText(fmt.Sprint(p.Price)).ZeroLabel("No Price")).Label("Price"),
+				).Header("PRODUCT INFORMATION"),
+			)
+		}).
+		Editing("Name", "Price")
+	mb.Use(puBuilder)
+	dp.Section(detailSection)
 
 	// use demo container and media etc. plugins
 	b.Use(pb)

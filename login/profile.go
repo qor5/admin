@@ -315,7 +315,7 @@ func (c *ProfileCompo) bellCompo(ctx context.Context, notifCounts []*activity.No
 	icon := v.VIcon("mdi-bell-outline").Size(20).Color("grey-darken-1")
 	return v.VMenu().Children(
 		web.Slot().Name("activator").Scope(`{props}`).Children(
-			v.VBtn("").Attr("v-bind", "props").Size(36).Icon(true).Density(v.DensityCompact).Variant(v.VariantText).Children(
+			v.VBtn("").Attr("v-bind", "props").Size(36).Density(v.DensityCompact).Variant(v.VariantText).Children(
 				h.Iff(unreadCount > 0, func() h.HTMLComponent {
 					return v.VBadge(icon).Content(unreadCount).Dot(true).Color(v.ColorError)
 				}).Else(func() h.HTMLComponent {
@@ -338,7 +338,7 @@ func (c *ProfileCompo) bellCompo(ctx context.Context, notifCounts []*activity.No
 func (c *ProfileCompo) userCardCompo(ctx context.Context, user *Profile, vmodel string) (h.HTMLComponent, error) {
 	_, msgr := c.MustGetEventContext(ctx)
 
-	children := []h.HTMLComponent{}
+	var children []h.HTMLComponent
 	for _, field := range user.Fields {
 		children = append(children, h.Div().Class("d-flex flex-column ga-2").Children(
 			h.Div(
@@ -391,7 +391,7 @@ func (c *ProfileCompo) userCardCompo(ctx context.Context, user *Profile, vmodel 
 	).Go()
 	compo := v.VMenu().CloseOnContentClick(false).Children(
 		web.Slot().Name("activator").Scope(`{props}`).Children(
-			v.VBtn("").Attr("v-bind", "props").Size(16).Icon(true).Density(v.DensityCompact).Variant(v.VariantText).Children(
+			v.VBtn("").Attr("v-bind", "props").Size(16).Density(v.DensityCompact).Variant(v.VariantText).Children(
 				v.VIcon("mdi-chevron-right").Size(16),
 			),
 		),
@@ -514,7 +514,7 @@ func (c *ProfileCompo) switchLanguageCompo(ctx context.Context) h.HTMLComponent 
 	return vx.VXSelect(
 		web.Slot(
 			v.VIcon("").Size(v.SizeSmall).Children(
-				h.Div().Attr("v-html", "selectedItems[0].Icon"),
+				h.Div().Attr("v-html", "selectedItems[0]?.Icon || ''"),
 			).Class("mr-2").Attr("style", "--v-medium-emphasis-opacity:1"),
 		).Name("prepend-inner").Scope("{selectedItems}"),
 		web.Slot(

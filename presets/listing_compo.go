@@ -91,7 +91,7 @@ if (payload && payload.ids && payload.ids.length > 0) {
 }
 `
 
-const ListingCompo_JsScrollToTop = "locals.document.querySelector(`#vt-app > div.v-layout > main`).scrollTop = 0"
+const ListingCompo_JsScrollToTop = "(locals.document?.querySelector(`#vt-app > div.v-layout > main`) || {}).scrollTop = 0"
 
 func (c *ListingCompo) VarCurrentActive() string {
 	return fmt.Sprintf("__current_active_of_%s__", stateful.MurmurHash3(c.CompoID()))

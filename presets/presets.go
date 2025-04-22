@@ -1221,6 +1221,10 @@ func (b *Builder) WrapNotFoundHandler(w func(in http.Handler) (out http.Handler)
 	b.notFoundHandler = w(b.notFoundHandler)
 }
 
+func (b *Builder) NotFoundHandler() http.Handler {
+	return b.notFoundHandler
+}
+
 func (b *Builder) AddWrapHandler(key string, f func(in http.Handler) (out http.Handler)) {
 	b.wrapHandlers[key] = f
 }
@@ -1266,6 +1270,24 @@ func (b *Builder) wrap(m *ModelBuilder, pf web.PageFunc) http.Handler {
 				)
 			}
 			return r, err
+		}
+	})
+
+	p.Wrap(func(in web.PageFunc) web.PageFunc {
+		return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+			defer func() {
+				if v := recover(); v != nil {
+					if render, ok := v.(PageRenderIface); ok {
+						if rerr, ok := v.(error); ok {
+							log.Printf("catch render err: %+v", rerr)
+						}
+						r, err = render.Render(ctx)
+						return
+					}
+					panic(v)
+				}
+			}()
+			return in(ctx)
 		}
 	})
 
