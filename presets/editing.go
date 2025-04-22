@@ -416,7 +416,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 				Query(ParamOverlay, ctx.Param(ParamOverlay)).
 				Go()
 	}
-	return web.Scope(scope.OnChange(onChangeEvent).UseDebounce(500)).VSlot("{dash}").DashInit("{errorMessages:{}}")
+	return web.Scope(scope.OnChange(onChangeEvent).UseDebounce(500)).VSlot("{dash}").DashInit("{errorMessages:{},disabled:{}}")
 }
 
 func (b *EditingBuilder) doValidate(ctx *web.EventContext) (r web.EventResponse, err error) {

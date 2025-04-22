@@ -323,7 +323,6 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 					).Attr("v-show", "!vars.$pbLeftDrawerFolded"),
 					web.Slot(
 						VBtn("").
-							Attr("v-if", "locals.isLeftBtnHovering").
 							Attr(":icon", "vars.$pbLeftIconName").
 							Attr("@click.stop", `() => {
 										vars.$pbLeftDrawerFolded = !vars.$pbLeftDrawerFolded
@@ -334,10 +333,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 						Name("append"),
 				).Location(LocationLeft).
 					Permanent(true).
-					Attr(":width", "vars.$pbLeftDrawerWidth").
-					Attr("@mouseover", "locals.isLeftBtnHovering = true").
-					Attr("@mouseout", "locals.isLeftBtnHovering = false").
-					Attr(web.VAssign("locals", "{isLeftBtnHovering: false}")...),
+					Attr(":width", "vars.$pbLeftDrawerWidth"),
 				VNavigationDrawer(
 					h.Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf(`({el,window}) => {
 							el.__handleScroll = (event) => {
@@ -355,7 +351,6 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 						}`),
 					web.Slot(
 						VBtn("").
-							Attr("v-if", "!vars.$pbRightDrawerIsDragging && locals.isRightBtnHovering").
 							Attr(":icon", "vars.$pbRightIconName").
 							Attr("@mousemove.stop", "()=>{vars.$pbRightDrawerHighlight=false}").
 							Attr("@mousedown.stop", "()=>{vars.$pbRightDrawerHighlight=false}").
@@ -375,10 +370,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 					Attr(":width", "vars.$pbRightDrawerWidth").
 					Attr("@mousedown", "vars.$pbRightDrawerOnMouseDown").
 					Attr("@mousemove", "vars.$pbRightDrawerOnMouseMove").
-					Attr("@mouseleave", "vars.$pbRightDrawerOnMouseLeave").
-					Attr("@mouseover", "locals.isRightBtnHovering = true").
-					Attr("@mouseout", "locals.isRightBtnHovering = false").
-					Attr(web.VAssign("locals", "{isRightBtnHovering: false}")...),
+					Attr("@mouseleave", "vars.$pbRightDrawerOnMouseLeave"),
 			),
 			VMain(
 				addOverlay,

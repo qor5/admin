@@ -429,7 +429,7 @@ type AddressDetail struct {
 func addressHTML(v Address, formKeyPrefix string) string {
 	return fmt.Sprintf(`<div v-show='!dash.visible || dash.visible["%sAddress"]===undefined || dash.visible["%sAddress"]'>
 <div>
-<label class='v-label theme--light text-caption'>Address</label>
+<label class='v-label theme--light text-caption wrapper-field-label'>Address</label>
 
 <v-card :variant='"outlined"' class='mx-0 mt-1 mb-4 px-4 pb-0 pt-4'>
 <div v-show='!dash.visible || dash.visible["%sAddress.City"]===undefined || dash.visible["%sAddress.City"]'>
@@ -438,7 +438,7 @@ func addressHTML(v Address, formKeyPrefix string) string {
 
 <div v-show='!dash.visible || dash.visible["%sAddress.Detail"]===undefined || dash.visible["%sAddress.Detail"]'>
 <div>
-<label class='v-label theme--light text-caption'>Detail</label>
+<label class='v-label theme--light text-caption wrapper-field-label'>Detail</label>
 
 <v-card :variant='"outlined"' class='mx-0 mt-1 mb-4 px-4 pb-0 pt-4'>
 <div v-show='!dash.visible || dash.visible["%sAddress.Detail.Address1"]===undefined || dash.visible["%sAddress.Detail.Address1"]'>
