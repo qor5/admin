@@ -83,8 +83,7 @@ type Builder struct {
 	db                            *gorm.DB
 	containerBuilders             []*ContainerBuilder
 	models                        []*ModelBuilder
-	templates                     []*TemplateBuilder
-	templateModel                 *presets.ModelBuilder
+	templateBuilder               *TemplateBuilder
 	l10n                          *l10n.Builder
 	mediaBuilder                  *media.Builder
 	ab                            *activity.Builder
@@ -416,13 +415,16 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 		if err != nil {
 			panic(err)
 		}
+
+		for _, t := range b.models {
+			t.mb.Use(b.templateBuilder)
+		}
+		pb.Use(b.templateBuilder)
 	}
 	b.configDemoContainer(pb)
 	b.configSharedContainer(pb)
 	b.preparePlugins()
-	for _, t := range b.templates {
-		t.Install()
-	}
+
 	for _, t := range b.containerBuilders {
 		t.Install()
 	}
@@ -430,7 +432,7 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 }
 
 func (b *Builder) configEditor(m *ModelBuilder) {
-	mountedUri := strings.TrimPrefix(fmt.Sprintf("%s/{id}", m.editorURL()), "/")
+	mountedUri := m.mountedUrl()
 	m.editor = presets.NewCustomPage(b.pb).Menu(func(ctx *web.EventContext) h.HTMLComponent {
 		return nil
 	}).Body(func(ctx *web.EventContext) h.HTMLComponent {
@@ -999,7 +1001,6 @@ type ContainerBuilder struct {
 	renderFunc   RenderFunc
 	cover        string
 	group        string
-	onlyPages    bool
 }
 
 func (b *Builder) RegisterContainer(name string) (r *ContainerBuilder) {
@@ -1122,11 +1123,6 @@ func (b *ContainerBuilder) Model(m interface{}) *ContainerBuilder {
 	b.configureRelatedOnlinePagesTab()
 	b.uRIName(inflection.Plural(strcase.ToKebab(b.name)))
 	b.warpSaver()
-	return b
-}
-
-func (b *ContainerBuilder) OnlyPages(v bool) *ContainerBuilder {
-	b.onlyPages = v
 	return b
 }
 
@@ -1366,7 +1362,8 @@ func (b *Builder) republishRelatedOnlinePages(ctx *web.EventContext) (r web.Even
 
 func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, mb := range b.models {
-		if strings.Index(r.RequestURI, b.prefix+"/"+mb.mb.Info().URIName()+"/preview") >= 0 {
+		previewURI := path.Join(b.pb.GetURIPrefix(), b.prefix, mb.mb.Info().URIName(), "preview")
+		if strings.Index(r.RequestURI, previewURI) >= 0 {
 			if mb.mb.Info().Verifier().Do(presets.PermGet).WithReq(r).IsAllowed() != nil {
 				_, _ = w.Write([]byte(perm.PermissionDenied.Error()))
 				return
@@ -1376,7 +1373,7 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if b.images != nil {
-		if strings.Index(r.RequestURI, path.Join(b.prefix, b.imagesPrefix)) >= 0 {
+		if strings.Index(r.RequestURI, path.Join(b.pb.GetURIPrefix(), b.prefix, b.imagesPrefix)) >= 0 {
 			b.images.ServeHTTP(w, r)
 			return
 		}
@@ -1564,7 +1561,7 @@ func (b *Builder) GetPageModelBuilder() *ModelBuilder {
 }
 
 func (b *Builder) GetTemplateModel() *presets.ModelBuilder {
-	return b.templateModel
+	return b.templateBuilder.tm.mb
 }
 
 func (b *Builder) Only(vs ...string) *Builder {

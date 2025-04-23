@@ -111,7 +111,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 	var (
 		cons                        []*Container
 		status                      = ctx.Param(paramStatus)
-		isReadonly                  = status != publish.StatusDraft && b.tb == nil
+		isReadonly                  = status != publish.StatusDraft && !b.isTemplate
 		pageID, pageVersion, locale = b.getPrimaryColumnValuesBySlug(ctx)
 		msgr                        = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr                       = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
@@ -662,7 +662,7 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 		listItems []h.HTMLComponent
 	)
 
-	b.db.Select("display_name,model_name,model_id").Where("shared = true AND locale_code = ? and page_model_name = ? ", locale, b.name).Group("display_name,model_name,model_id").Find(&cons)
+	b.db.Select("display_name,model_name,model_id").Where("shared = true AND locale_code = ?  ", locale).Group("display_name,model_name,model_id").Find(&cons)
 
 	for _, con := range cons {
 		listItems = append(listItems, b.renderSharedContainerHover(con.DisplayName, con.ModelName, con.ModelID, ctx, msgr))
@@ -869,7 +869,7 @@ func (b *ModelBuilder) editContainer(ctx *web.EventContext) (r web.EventResponse
 		return
 	}
 
-	r.RunScript = web.Plaid().URL(fmt.Sprintf("/%s", path.Join(b.builder.pb.GetURIPrefix(), data[0]))).
+	r.RunScript = web.Plaid().URL(path.Join(b.builder.pb.GetURIPrefix(), data[0])).
 		EventFunc(actions.Edit).
 		Query(presets.ParamID, data[1]).
 		Query(presets.ParamPortalName, pageBuilderRightContentPortal).

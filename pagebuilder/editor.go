@@ -120,7 +120,7 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 		return
 	}
 
-	if m.tb == nil {
+	if !m.isTemplate {
 		title = msgr.PageBuilder
 		exitHref = m.mb.Info().DetailingHref(ctx.Param(presets.ParamID))
 	} else {
