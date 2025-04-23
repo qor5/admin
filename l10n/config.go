@@ -233,7 +233,7 @@ func (b *Builder) runSwitchLocaleFunc(ctx *web.EventContext) (r h.HTMLComponent)
 		if locale == fromLocale {
 			continue
 		}
-		clickEvent := web.Plaid().Query(b.queryName, locale).Go()
+		clickEvent := web.Plaid().FieldValue(b.queryName, locale).Go()
 		if id != "" {
 			originPath := ctx.R.URL.Path
 			val := ctx.ContextValue(SwitchLocaleKey{})
@@ -254,18 +254,19 @@ func (b *Builder) runSwitchLocaleFunc(ctx *web.EventContext) (r h.HTMLComponent)
 			).Class("d-flex align-center ga-2"),
 		).Attr("@click", clickEvent))
 	}
-	return VMenu(
-		web.Slot(
-			VTooltip(
-				web.Slot(
-					btn,
-				).Name("activator").Scope(`{props:tooltip}`),
-			).Location(LocationBottom).Text(MustGetTranslation(ctx.R, b.GetLocaleLabel(fromLocale))),
-		).Name("activator").Scope(`{props:menu}`),
-		VList(
-			localsListItems...,
-		),
-	)
+	return web.Scope(
+		VMenu(
+			web.Slot(
+				VTooltip(
+					web.Slot(
+						btn,
+					).Name("activator").Scope(`{props:tooltip}`),
+				).Location(LocationBottom).Text(MustGetTranslation(ctx.R, b.GetLocaleLabel(fromLocale))),
+			).Name("activator").Scope(`{props:menu}`),
+			VList(
+				localsListItems...,
+			),
+		)).VSlot("{form}")
 }
 func localizeRowMenuItemFunc(mi *presets.ModelInfo, url string, editExtraParams url.Values) vx.RowMenuItemFunc {
 	return func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
