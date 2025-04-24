@@ -129,28 +129,6 @@ func New(prefix string, db *gorm.DB, b *presets.Builder) *Builder {
 	return newBuilder(prefix, db, b)
 }
 
-type notFoundResponseWriter struct {
-	http.ResponseWriter
-	IfNotFound func(w http.ResponseWriter)
-	statusCode int
-}
-
-func (rw *notFoundResponseWriter) WriteHeader(code int) {
-	rw.statusCode = code
-	if code == http.StatusNotFound {
-		rw.IfNotFound(rw.ResponseWriter)
-		return
-	}
-	rw.ResponseWriter.WriteHeader(code)
-}
-
-func (rw *notFoundResponseWriter) Write(b []byte) (int, error) {
-	if rw.statusCode == http.StatusNotFound {
-		return 0, nil
-	}
-	return rw.ResponseWriter.Write(b)
-}
-
 func newBuilder(prefix string, db *gorm.DB, b *presets.Builder) *Builder {
 	r := &Builder{
 		db:                db,
@@ -1344,7 +1322,6 @@ func (b *Builder) republishRelatedOnlinePages(ctx *web.EventContext) (r web.Even
 	for index, id := range ids {
 		statusVar := fmt.Sprintf(`republish_status_%s`, strings.Replace(id, "-", "_", -1))
 		plaid := web.Plaid().
-			URL("").
 			EventFunc(publish.EventRepublish).
 			Query("id", id).
 			Query(publish.ParamScriptAfterPublish, fmt.Sprintf(`vars.%s = "done"`, statusVar)).

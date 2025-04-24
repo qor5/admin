@@ -3,6 +3,7 @@ package pagebuilder
 import (
 	"cmp"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path"
 	"sort"
@@ -70,7 +71,11 @@ func (b *ModelBuilder) pageBuilderModel(ctx *web.EventContext) (obj interface{},
 		if pageVersion != "" {
 			g.Where("version = ?", pageVersion)
 		}
-		if err = g.First(obj).Error; err != nil {
+		err = g.First(obj).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			panic(presets.ErrNotFound(err.Error()))
+			return
+		} else if err != nil {
 			return
 		}
 		b.setPageBuilderModel(obj, ctx)
@@ -868,8 +873,8 @@ func (b *ModelBuilder) editContainer(ctx *web.EventContext) (r web.EventResponse
 		})
 		return
 	}
-
-	r.RunScript = web.Plaid().URL(path.Join(b.builder.pb.GetURIPrefix(), data[0])).
+	r.RunScript = web.Plaid().
+		URL("/"+strings.TrimLeft(path.Join(b.builder.pb.GetURIPrefix(), data[0]), "/")).
 		EventFunc(actions.Edit).
 		Query(presets.ParamID, data[1]).
 		Query(presets.ParamPortalName, pageBuilderRightContentPortal).
