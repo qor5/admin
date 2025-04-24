@@ -141,7 +141,7 @@ func (s *List) EmbedList() *List {
 
 type (
 	PreviewBuilderInterface interface {
-		PreviewHTML(obj interface{}) string
+		PreviewHTML(obj interface{}, ctx context.Context) string
 		ExistedL10n() bool
 	}
 	PublishModelInterface interface {
