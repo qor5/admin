@@ -855,7 +855,7 @@ func (b *ModelBuilder) configDuplicate(mb *presets.ModelBuilder) {
 	})
 }
 
-func (b *ModelBuilder) PreviewHTML(obj interface{}, ctx context.Context) (r string) {
+func (b *ModelBuilder) PreviewHTML(ctx context.Context, obj interface{}) (r string) {
 	p, ok := obj.(presets.SlugEncoder)
 	if !ok {
 		return

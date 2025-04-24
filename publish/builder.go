@@ -381,7 +381,7 @@ func (*Builder) getPublishContent(ctx context.Context, obj interface{}) (r strin
 	if !ok {
 		return
 	}
-	r = mb.PreviewHTML(obj, ctx)
+	r = mb.PreviewHTML(ctx, obj)
 	return
 }
 
