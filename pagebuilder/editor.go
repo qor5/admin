@@ -107,12 +107,6 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 		title           string
 		err             error
 	)
-	defer func() {
-		if err != nil {
-			body = h.Div().Attr("v-on-mounted", fmt.Sprintf(`() => {%s}`, presets.ShowSnackbarScript(err.Error(), ColorError)))
-			return
-		}
-	}()
 	if m.mb.Info().Verifier().Do(presets.PermGet).WithReq(ctx.R).IsAllowed() != nil {
 		return h.Text(perm.PermissionDenied.Error())
 	}

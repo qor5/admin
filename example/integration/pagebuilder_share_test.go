@@ -180,7 +180,7 @@ func TestPageBuilderShareContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerShareTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/pages").
+					PageURL("/shared_containers").
 					EventFunc(pagebuilder.RenameContainerDialogEvent).
 					Query("containerID", "9_International").
 					Query("containerName", "BrandGrid").
@@ -195,7 +195,7 @@ func TestPageBuilderShareContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerShareTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/pages").
+					PageURL("/shared_containers").
 					EventFunc(pagebuilder.RenameContainerFromDialogEvent).
 					Query("containerID", "9_International").
 					AddField("DisplayName", "Renamed BrandGrid").
