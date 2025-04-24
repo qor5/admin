@@ -1,9 +1,11 @@
 package publish
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"reflect"
+	"slices"
 
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/stateful"
@@ -13,11 +15,13 @@ import (
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
 	"github.com/theplant/relay"
+	"github.com/theplant/relay/gormrelay"
 	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/utils"
 )
 
@@ -357,6 +361,24 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 					params.SQLConditions = append(params.SQLConditions, &con)
 				}
 
+				oldR := ctx.R
+				defer func() {
+					ctx.R = oldR // restore the original request context
+				}()
+				ctx = gorm2op.EventContextAppendRelayOptions(ctx, gormrelay.WithComputed(&gormrelay.Computed[any]{
+					Columns: gormrelay.ComputedColumns(map[string]string{
+						"PublishStatusSortOrder": fmt.Sprintf("CASE WHEN status = '%s' THEN 0 ELSE 1 END", StatusOnline),
+					}),
+					ForScan: gormrelay.DefaultForScan[any],
+				}))
+				ctx = gorm2op.EventContextAppendRelayPaginationMiddlewares(ctx, func(next relay.Pagination[any]) relay.Pagination[any] {
+					return relay.PaginationFunc[any](func(ctx context.Context, req *relay.PaginateRequest[any]) (*relay.Connection[any], error) {
+						req.OrderBys = slices.Concat([]relay.OrderBy{
+							{Field: "PublishStatusSortOrder", Desc: false},
+						}, req.OrderBys)
+						return next.Paginate(ctx, req)
+					})
+				})
 				return in(ctx, params)
 			}
 		})
