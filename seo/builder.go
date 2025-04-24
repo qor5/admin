@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"path"
 	"reflect"
 	"regexp"
 	"sort"
@@ -428,7 +427,7 @@ func (b *Builder) render(obj interface{}, defaultSEOSetting *QorSEOSetting, seo 
 			} else {
 				u.Scheme = "http"
 			}
-			setting.OpenGraphURL = path.Join(u.String(), setting.OpenGraphURL)
+			setting.OpenGraphURL = fmt.Sprintf("%s/%s", u.String(), strings.TrimLeft(setting.OpenGraphURL, "/"))
 		}
 	}
 

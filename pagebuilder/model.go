@@ -855,13 +855,16 @@ func (b *ModelBuilder) configDuplicate(mb *presets.ModelBuilder) {
 	})
 }
 
-func (b *ModelBuilder) PreviewHTML(obj interface{}) (r string) {
+func (b *ModelBuilder) PreviewHTML(obj interface{}, ctx context.Context) (r string) {
 	p, ok := obj.(presets.SlugEncoder)
 	if !ok {
 		return
 	}
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%s", p.PrimarySlug()), nil)
+	evCtx := web.MustGetEventContext(ctx)
+	req.Host = evCtx.R.Host
+	req.URL.Scheme = evCtx.R.URL.Scheme
 	b.preview.ServeHTTP(w, req)
 	r = w.Body.String()
 	return
