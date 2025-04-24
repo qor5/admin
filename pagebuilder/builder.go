@@ -1166,83 +1166,60 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 			return nil, nil
 		}
 
-		pmsgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-
 		id, err := reflectutils.Get(obj, "id")
 		if err != nil {
 			panic(err)
 		}
+		var (
+			containers []*Container
+		)
+		db := b.builder.db
 
-		pages := []*Page{}
-		pageTable := (&Page{}).TableName()
-		containerTable := (&Container{}).TableName()
-		err = b.builder.db.Model(&Page{}).
-			Joins(fmt.Sprintf(`inner join %s on 
-        %s.id = %s.page_id
-        and %s.version = %s.page_version
-        and %s.locale_code = %s.locale_code
-		and %s.deleted_at is null`,
-				containerTable,
-				pageTable, containerTable,
-				pageTable, containerTable,
-				pageTable, containerTable,
-				containerTable,
-			)).
-			// FIXME: add container locale condition after container supports l10n
-			Where(fmt.Sprintf(`%s.status = ? and %s.model_id = ? and %s.model_name = ?`,
-				pageTable,
-				containerTable,
-				containerTable,
-			), publish.StatusOnline, id, b.name).
-			Group(fmt.Sprintf(`%s.id,%s.version,%s.locale_code`, pageTable, pageTable, pageTable)).
-			Find(&pages).
-			Error
-		if err != nil {
-			panic(err)
-		}
-
-		var pageIDs []string
-		var pageListComps h.HTMLComponents
-		for _, p := range pages {
-			pid := p.PrimarySlug()
-			pageIDs = append(pageIDs, pid)
-			statusVar := fmt.Sprintf(`republish_status_%s`, strings.Replace(pid, "-", "_", -1))
-			pageListComps = append(pageListComps, web.Scope(
+		db.Where("model_name = ? and model_id = ? ", b.name, id).Order("page_model_name desc").Find(&containers)
+		var (
+			pageListComps h.HTMLComponents
+			events        []string
+		)
+		for _, c := range containers {
+			modelBuilder := b.builder.getModelBuilderByName(c.PageModelName)
+			modelObj := modelBuilder.mb.NewModel()
+			g := db.Where("id = ? ", c.PageID)
+			if _, ok := modelObj.(publish.VersionInterface); ok {
+				g = db.Where("version = ? ", c.PageVersion)
+			}
+			if _, ok := modelObj.(l10n.LocaleInterface); ok {
+				g = db.Where("locale_code = ? ", c.LocaleCode)
+			}
+			g.First(&modelObj)
+			if modelObj == nil {
+				continue
+			}
+			slug := fmt.Sprint(reflectutils.MustGet(modelObj, "ID"))
+			if p, ok := modelObj.(presets.SlugEncoder); ok {
+				slug = p.PrimarySlug()
+			}
+			pageListComps = append(pageListComps,
 				VListItem(
-					h.Text(fmt.Sprintf("%s (%s)", p.Title, pid)),
+					h.Text(fmt.Sprintf("%s (%s)", c.PageModelName, slug)),
 					VSpacer(),
-					VIcon(fmt.Sprintf(`{{itemLocals.%s}}`, statusVar)),
 				).
 					Density(DensityCompact),
-			).VSlot(" { locals : itemLocals }").Init(fmt.Sprintf(`{%s: ""}`, statusVar)),
 			)
-
-			tab = VTab(h.Text(msgr.RelatedOnlinePages))
-			content = VWindowItem(
-				h.If(len(pages) > 0,
-					VList(pageListComps),
-					h.Div(
-						VSpacer(),
-						VBtn(msgr.RepublishAllRelatedOnlinePages).
-							Color(ColorPrimary).
-							Attr("@click",
-								web.Plaid().
-									EventFunc(presets.OpenConfirmDialog).
-									Query(presets.ConfirmDialogConfirmEvent,
-										web.Plaid().
-											EventFunc(republishRelatedOnlinePagesEvent).
-											Query("ids", strings.Join(pageIDs, ",")).
-											Go(),
-									).
-									Go(),
-							),
-					).Class("d-flex"),
-				).Else(
-					h.Div(h.Text(pmsgr.ListingNoRecordToShow)).Class("text-center grey--text text--darken-2 mt-8"),
-				),
-			)
+			events = append(events, web.Plaid().URL(modelBuilder.mb.Info().ListingHref()).EventFunc(publish.EventRepublish).Query(presets.ParamID, slug).Go())
 		}
+		tab = VTab(h.Text(msgr.RelatedOnlinePages))
+		content = VWindowItem(
+			VList(pageListComps),
+			h.Div(
+				VSpacer(),
+				VBtn(msgr.RepublishAllRelatedOnlinePages).
+					Color(ColorPrimary).
+					Attr("@click",
+						strings.Join(events, ";"),
+				),
+			).Class("d-flex"),
+		)
 		return
 	})
 }
@@ -1522,6 +1499,14 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 func (b *Builder) GetModelBuilder(mb *presets.ModelBuilder) *ModelBuilder {
 	for _, modelBuilder := range b.models {
 		if modelBuilder.mb == mb {
+			return modelBuilder
+		}
+	}
+	return nil
+}
+func (b *Builder) getModelBuilderByName(name string) *ModelBuilder {
+	for _, modelBuilder := range b.models {
+		if modelBuilder.name == name {
 			return modelBuilder
 		}
 	}
