@@ -139,7 +139,7 @@ func TestPageBuilder(t *testing.T) {
 			},
 		},
 		{
-			Name:  "Page Builder Detail editor",
+			Name:  "Page Builder Detail Editor",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
