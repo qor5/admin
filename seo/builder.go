@@ -419,16 +419,6 @@ func (b *Builder) render(obj interface{}, defaultSEOSetting *QorSEOSetting, seo 
 			variables[varName] = varFunc(obj, &setting, req)
 		}
 		setting = replaceVariables(setting, variables)
-		if setting.OpenGraphURL != "" && !isAbsoluteURL(setting.OpenGraphURL) {
-			var u url.URL
-			u.Host = req.Host
-			if req.URL.Scheme != "" {
-				u.Scheme = req.URL.Scheme
-			} else {
-				u.Scheme = "http"
-			}
-			setting.OpenGraphURL = fmt.Sprintf("%s/%s", u.String(), strings.TrimLeft(setting.OpenGraphURL, "/"))
-		}
 	}
 
 	metaProperties := map[string]string{}
