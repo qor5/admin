@@ -367,7 +367,7 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 				}()
 				ctx = gorm2op.EventContextAppendRelayOptions(ctx, gormrelay.WithComputed(&gormrelay.Computed[any]{
 					Columns: gormrelay.ComputedColumns(map[string]string{
-						"PublishStatusSortOrder": fmt.Sprintf("CASE WHEN status = '%s' THEN 0 ELSE 1 END", StatusOnline),
+						"PublishStatusSortOrder": fmt.Sprintf("CASE WHEN status = '%s' THEN 0 WHEN status = '%s' THEN 2 ELSE 1 END", StatusOnline, StatusOffline),
 					}),
 					ForScan: gormrelay.DefaultForScan[any],
 				}))
@@ -511,11 +511,6 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 				SQLCondition: ``,
 			},
 			{
-				Key:          "online_versions",
-				Invisible:    true,
-				SQLCondition: fmt.Sprintf(`status = '%s'`, StatusOnline),
-			},
-			{
 				Key:          "named_versions",
 				Invisible:    true,
 				SQLCondition: `version <> version_name`,
@@ -533,11 +528,6 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 				Label: msgr.FilterTabAllVersions,
 				ID:    "all",
 				Query: url.Values{"all": []string{"1"}, "select_id": []string{selected}},
-			},
-			{
-				Label: msgr.FilterTabOnlineVersion,
-				ID:    "online_versions",
-				Query: url.Values{"online_versions": []string{"1"}, "select_id": []string{selected}},
 			},
 			{
 				Label: msgr.FilterTabNamedVersions,
