@@ -227,7 +227,6 @@ func (b *Builder) runSwitchLocaleFunc(ctx *web.EventContext) (r h.HTMLComponent)
 		btn = VChip(
 			h.Span(MustGetTranslation(ctx.R, b.GetLocaleLabel(fromLocale))).Attr("style", "max-width: 80px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"),
 		).Color(ColorSuccess).Variant(VariantFlat).Label(true).Size(SizeXSmall).Attr("v-bind", "plaid().vue.mergeProps(menu,tooltip)")
-
 	}
 	for _, locale := range allLocales {
 		if locale == fromLocale {
@@ -268,6 +267,7 @@ func (b *Builder) runSwitchLocaleFunc(ctx *web.EventContext) (r h.HTMLComponent)
 			),
 		)).VSlot("{form}")
 }
+
 func localizeRowMenuItemFunc(mi *presets.ModelInfo, url string, editExtraParams url.Values) vx.RowMenuItemFunc {
 	return func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
 		if mi.Verifier().Do(presets.PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {

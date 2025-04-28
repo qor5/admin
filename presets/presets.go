@@ -808,6 +808,7 @@ func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse
 
 	return
 }
+
 func (b *Builder) defaultToolBar(ctx *web.EventContext) h.HTMLComponent {
 	return VContainer(
 		VRow(
@@ -827,6 +828,7 @@ func (b *Builder) defaultToolBar(ctx *web.EventContext) h.HTMLComponent {
 		).Attr("align", "center").Attr("justify", "center"),
 	)
 }
+
 func (b *Builder) AppBarNav() h.HTMLComponent {
 	return VAppBarNavIcon().Attr("icon", "mdi-menu").
 		Class("text-grey-darken-1 menu-control-icon").

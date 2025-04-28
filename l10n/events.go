@@ -158,7 +158,7 @@ func localizeToConfirmation(db *gorm.DB, lb *Builder, mb *presets.ModelBuilder) 
 			existLocales = append(existLocales, vo.Index(i).Elem().FieldByName("LocaleCode").String())
 		}
 		toLocales := lb.GetSupportLocaleCodesFromRequest(ctx.R)
-		var selectLocales = make([]SelectLocale, 0)
+		selectLocales := make([]SelectLocale, 0)
 		for _, locale := range toLocales {
 			if locale == fromLocale {
 				continue
