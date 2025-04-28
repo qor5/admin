@@ -1181,6 +1181,9 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 			pageListComps h.HTMLComponents
 			events        []string
 		)
+
+		processed := make(map[string]bool)
+
 		for _, c := range containers {
 			modelBuilder := b.builder.getModelBuilderByName(c.PageModelName)
 			modelObj := modelBuilder.mb.NewModel()
@@ -1199,14 +1202,21 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 			if p, ok := modelObj.(presets.SlugEncoder); ok {
 				slug = p.PrimarySlug()
 			}
-			pageListComps = append(pageListComps,
-				VListItem(
-					h.Text(fmt.Sprintf("%s (%s)", c.PageModelName, slug)),
-					VSpacer(),
-				).
-					Density(DensityCompact),
-			)
-			events = append(events, web.Plaid().URL(modelBuilder.mb.Info().ListingHref()).EventFunc(publish.EventRepublish).Query(presets.ParamID, slug).Go())
+
+			key := fmt.Sprintf("%s:%s", c.PageModelName, slug)
+
+			if !processed[key] {
+				pageListComps = append(pageListComps,
+					VListItem(
+						h.Text(fmt.Sprintf("%s (%s)", c.PageModelName, slug)),
+						VSpacer(),
+					).
+						Density(DensityCompact),
+				)
+				events = append(events, web.Plaid().URL(modelBuilder.mb.Info().ListingHref()).EventFunc(publish.EventRepublish).Query(presets.ParamID, slug).Go())
+
+				processed[key] = true
+			}
 		}
 		tab = VTab(h.Text(msgr.RelatedOnlinePages))
 		content = VWindowItem(
@@ -1217,7 +1227,7 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 					Color(ColorPrimary).
 					Attr("@click",
 						strings.Join(events, ";"),
-				),
+					),
 			).Class("d-flex"),
 		)
 		return
@@ -1504,6 +1514,7 @@ func (b *Builder) GetModelBuilder(mb *presets.ModelBuilder) *ModelBuilder {
 	}
 	return nil
 }
+
 func (b *Builder) getModelBuilderByName(name string) *ModelBuilder {
 	for _, modelBuilder := range b.models {
 		if modelBuilder.name == name {
