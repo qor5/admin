@@ -903,7 +903,7 @@ func (b *ModelBuilder) newContainerContent(ctx *web.EventContext) h.HTMLComponen
 				).Align(Center).Justify(Center).Attr("style", "height:420px"),
 			).Class(W100, "py-0"),
 		).Class(W50).Color(ColorGreyLighten3),
-	).Class("d-inline-flex").Width(665).Height(460)
+	).Class("d-inline-flex").Width(665).MinHeight(460).Height("65vh")
 }
 
 func (b *ModelBuilder) EventMiddleware(v eventMiddlewareFunc) *ModelBuilder {

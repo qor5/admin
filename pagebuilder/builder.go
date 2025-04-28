@@ -1189,12 +1189,12 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 			modelObj := modelBuilder.mb.NewModel()
 			g := db.Where("id = ? ", c.PageID)
 			if _, ok := modelObj.(publish.VersionInterface); ok {
-				g = db.Where("version = ? ", c.PageVersion)
+				g = g.Where("version = ? ", c.PageVersion)
 			}
 			if _, ok := modelObj.(l10n.LocaleInterface); ok {
-				g = db.Where("locale_code = ? ", c.LocaleCode)
+				g = g.Where("locale_code = ? ", c.LocaleCode)
 			}
-			g.First(&modelObj)
+			g.First(modelObj)
 			if modelObj == nil {
 				continue
 			}
