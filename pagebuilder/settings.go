@@ -219,6 +219,7 @@ func detailPageEditor(dp *presets.DetailingBuilder, mb *presets.ModelBuilder, b 
 			complete := presets.SelectField(obj, field, ctx).
 				Multiple(false).Chips(false).
 				Label(msgr.Category).
+				Clearable(true).
 				Items(categories).ItemTitle("Path").ItemValue("ID")
 			if p.CategoryID > 0 {
 				complete.Attr(presets.VFieldError(field.FormKey, p.CategoryID, field.Errors)...)
