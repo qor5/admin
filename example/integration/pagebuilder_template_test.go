@@ -224,6 +224,32 @@ func TestPageBuilderTemplate(t *testing.T) {
 		},
 
 		{
+			Name:  "Template Editor with invalid slug",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderTemplateData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/page_templates/1_International_invalid").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"Sorry, the requested page cannot be found. Please check the URL."},
+		},
+
+		{
+			Name:  "Template Editor with invalid id in slug",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderTemplateData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/page_templates/a_International").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"Sorry, the requested page cannot be found. Please check the URL."},
+		},
+
+		{
 			Name:  "Template Editor add container",
 			Debug: true,
 			ReqFunc: func() *http.Request {

@@ -34,7 +34,7 @@ func (s *QorSEOSetting) PrimarySlug() string {
 func (s *QorSEOSetting) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 2 {
-		panic("wrong slug")
+		panic(presets.ErrNotFound("wrong slug"))
 	}
 	return map[string]string{
 		"name":              segs[0],

@@ -7,10 +7,12 @@ import (
 	"strings"
 
 	"github.com/qor5/web/v3"
+	"github.com/spf13/cast"
 	"github.com/sunfmin/reflectutils"
 	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/l10n"
+	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/admin/v3/seo"
 )
@@ -67,36 +69,43 @@ func primarySlugWithoutVersion(v interface{}) string {
 
 func primaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
-	if len(segs) == 2 {
-		return map[string]string{
-			"id":                segs[0],
-			publish.SlugVersion: segs[1],
-		}
+	if len(segs) != 2 && len(segs) != 3 {
+		panic(presets.ErrNotFound("wrong slug"))
 	}
-	if len(segs) != 3 {
-		panic("wrong slug")
+
+	_, err := cast.ToInt64E(segs[0])
+	if err != nil {
+		panic(presets.ErrNotFound(fmt.Sprintf("wrong slug %q: %v", slug, err)))
 	}
-	return map[string]string{
+
+	m := map[string]string{
 		"id":                segs[0],
 		publish.SlugVersion: segs[1],
-		l10n.SlugLocaleCode: segs[2],
 	}
+	if len(segs) > 2 {
+		m[l10n.SlugLocaleCode] = segs[2]
+	}
+	return m
 }
 
 func primaryColumnValuesBySlugWithoutVersion(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
-	if len(segs) == 1 {
-		return map[string]string{
-			"id": segs[0],
-		}
+	if len(segs) != 1 && len(segs) != 2 {
+		panic(presets.ErrNotFound("wrong slug"))
 	}
-	if len(segs) != 2 {
-		panic("wrong slug")
+
+	_, err := cast.ToInt64E(segs[0])
+	if err != nil {
+		panic(presets.ErrNotFound(fmt.Sprintf("wrong slug %q: %v", slug, err)))
 	}
-	return map[string]string{
-		"id":                segs[0],
-		l10n.SlugLocaleCode: segs[1],
+
+	m := map[string]string{
+		"id": segs[0],
 	}
+	if len(segs) == 2 {
+		m[l10n.SlugLocaleCode] = segs[1]
+	}
+	return m
 }
 
 func (p *Page) PrimarySlug() string {
