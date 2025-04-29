@@ -251,10 +251,13 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		}, nil
 	}).AutoMigrate()
 
-	puBuilder := publish.New(db, storage).StatusDisablementCheckFunc(func(ctx *web.EventContext, obj any) (disabledRename bool, disabledDelete bool) {
+	puBuilder := publish.New(db, storage).DisablementCheckFunc(func(ctx *web.EventContext, obj any) *publish.Disablement {
 		status := obj.(publish.StatusInterface).EmbedStatus().Status
 		disabled := status == publish.StatusOnline
-		return disabled, disabled
+		return &publish.Disablement{
+			DisabledRename: disabled,
+			DisabledDelete: disabled,
+		}
 	})
 	if b.GetPermission() == nil {
 		b.Permission(
