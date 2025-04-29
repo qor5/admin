@@ -70,10 +70,12 @@ func (b *Builder) Activity(v *activity.Builder) (r *Builder) {
 	b.ab = v
 	return b
 }
+
 func (b *Builder) StatusDisablementCheckFunc(v StatusDisablementCheckFunc) (r *Builder) {
 	b.statusDisablementCheckFunc = v
 	return b
 }
+
 func (b *Builder) WrapStatusDisablementCheckFunc(w func(StatusDisablementCheckFunc) StatusDisablementCheckFunc) (r *Builder) {
 	b.statusDisablementCheckFunc = w(b.statusDisablementCheckFunc)
 	return b
