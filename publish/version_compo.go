@@ -420,8 +420,7 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 
 		id := obj.(presets.SlugEncoder).PrimarySlug()
 		versionName := obj.(VersionInterface).EmbedVersion().VersionName
-		status := obj.(StatusInterface).EmbedStatus().Status
-		disable := status == StatusOnline || status == StatusOffline
+		disable := pb.statusDisablementCheckFunc(ctx, obj)
 		verifier := mb.Info().Verifier()
 		deniedUpdate := DeniedDo(verifier, obj, ctx.R, presets.PermUpdate)
 		deniedDelete := DeniedDo(verifier, obj, ctx.R, presets.PermDelete)
