@@ -31,7 +31,12 @@ type (
 	PublishFunc   func(ctx context.Context, record any) error
 	UnPublishFunc func(ctx context.Context, record any) error
 
-	StatusDisablementCheckFunc func(ctx *web.EventContext, obj any) (disabledRename bool, disabledDelete bool)
+	Disablement struct {
+		DisabledRename bool
+		DisabledDelete bool
+	}
+
+	DisablementCheckFunc func(ctx *web.EventContext, obj any) *Disablement
 )
 
 type Builder struct {
@@ -45,9 +50,9 @@ type Builder struct {
 	versionPublishModels    map[string]interface{}
 	listPublishModels       map[string]interface{}
 
-	publish                    PublishFunc
-	unpublish                  UnPublishFunc
-	statusDisablementCheckFunc StatusDisablementCheckFunc
+	publish              PublishFunc
+	unpublish            UnPublishFunc
+	disablementCheckFunc DisablementCheckFunc
 }
 
 type ContextValueFunc func(ctx context.Context) context.Context
@@ -62,7 +67,7 @@ func New(db *gorm.DB, storage oss.StorageInterface) *Builder {
 	}
 	b.publish = b.defaultPublish
 	b.unpublish = b.defaultUnPublish
-	b.statusDisablementCheckFunc = b.defaultDisableByStatus
+	b.disablementCheckFunc = b.defaultDisableByStatus
 	return b
 }
 
@@ -71,13 +76,13 @@ func (b *Builder) Activity(v *activity.Builder) (r *Builder) {
 	return b
 }
 
-func (b *Builder) StatusDisablementCheckFunc(v StatusDisablementCheckFunc) (r *Builder) {
-	b.statusDisablementCheckFunc = v
+func (b *Builder) DisablementCheckFunc(v DisablementCheckFunc) (r *Builder) {
+	b.disablementCheckFunc = v
 	return b
 }
 
-func (b *Builder) WrapStatusDisablementCheckFunc(w func(StatusDisablementCheckFunc) StatusDisablementCheckFunc) (r *Builder) {
-	b.statusDisablementCheckFunc = w(b.statusDisablementCheckFunc)
+func (b *Builder) WrapDisablementCheckFunc(w func(DisablementCheckFunc) DisablementCheckFunc) (r *Builder) {
+	b.disablementCheckFunc = w(b.disablementCheckFunc)
 	return b
 }
 
@@ -679,8 +684,11 @@ func (b *Builder) FullUrl(ctx context.Context, uri string) (string, error) {
 	return strings.TrimSuffix(b.storage.GetEndpoint(ctx), "/") + "/" + strings.Trim(s, "/"), nil
 }
 
-func (b *Builder) defaultDisableByStatus(_ *web.EventContext, obj any) (bool, bool) {
+func (b *Builder) defaultDisableByStatus(_ *web.EventContext, obj any) *Disablement {
 	status := obj.(StatusInterface).EmbedStatus().Status
 	disabled := status == StatusOnline || status == StatusOffline
-	return disabled, disabled
+	return &Disablement{
+		DisabledRename: disabled,
+		DisabledDelete: disabled,
+	}
 }
