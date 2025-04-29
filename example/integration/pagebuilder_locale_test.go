@@ -95,7 +95,6 @@ func TestPageBuilderVersion(t *testing.T) {
 				return req
 			},
 			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {
-
 				var (
 					pages      []pagebuilder.Page
 					categories []pagebuilder.Category

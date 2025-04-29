@@ -60,7 +60,7 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/list-content-with-images").
+					PageURL("/list-content-with-images").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
@@ -74,7 +74,7 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/list-content-lites").
+					PageURL("/list-content-lites").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
@@ -88,7 +88,7 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/list-content-lites").
+					PageURL("/list-content-lites").
 					EventFunc(actions.AddRowEvent).
 					Query(presets.ParamID, "1").
 					Query("listEditor_AddRowFormKey", "Items").
@@ -103,7 +103,7 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/contact-forms").
+					PageURL("/contact-forms").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
@@ -117,7 +117,7 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/in-numbers").
+					PageURL("/in-numbers").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
@@ -131,7 +131,7 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/list-contents").
+					PageURL("/list-contents").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
@@ -145,7 +145,7 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/images").
+					PageURL("/images").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
@@ -159,7 +159,7 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/images").
+					PageURL("/images").
 					EventFunc(actions.Validate).
 					Query(presets.ParamID, "1").
 					AddField("Image.Description", "").
@@ -175,7 +175,7 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/images").
+					PageURL("/images").
 					EventFunc(actions.Update).
 					Query(presets.ParamID, "1").
 					AddField("Image.Description", "").
@@ -192,7 +192,7 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/footers").
+					PageURL("/footers").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
@@ -206,7 +206,7 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/brand-grids").
+					PageURL("/brand-grids").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
@@ -220,7 +220,7 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/video-banners").
+					PageURL("/video-banners").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
@@ -234,7 +234,7 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/page-titles").
+					PageURL("/page-titles").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
@@ -248,7 +248,7 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/headings").
+					PageURL("/headings").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
@@ -262,7 +262,7 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/headers").
+					PageURL("/headers").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
