@@ -1076,7 +1076,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 				return req
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"2025-04-16-v01", "Offline"},
-			ExpectPortalUpdate0NotContains:     []string{`<v-btn :disabled='true' :prepend-icon='"mdi-rename-box"`},
+			ExpectPortalUpdate0NotContains:     []string{`<v-btn :disabled='true' :prepend-icon='"mdi-rename-box"`, `<v-btn :disabled='true' :prepend-icon='"mdi-delete"' `},
 		},
 	}
 	for _, c := range cases {

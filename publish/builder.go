@@ -31,7 +31,7 @@ type (
 	PublishFunc   func(ctx context.Context, record any) error
 	UnPublishFunc func(ctx context.Context, record any) error
 
-	StatusDisablementCheckFunc func(ctx *web.EventContext, obj any) bool
+	StatusDisablementCheckFunc func(ctx *web.EventContext, obj any) (disabledRename bool, disabledDelete bool)
 )
 
 type Builder struct {
@@ -677,7 +677,8 @@ func (b *Builder) FullUrl(ctx context.Context, uri string) (string, error) {
 	return strings.TrimSuffix(b.storage.GetEndpoint(ctx), "/") + "/" + strings.Trim(s, "/"), nil
 }
 
-func (b *Builder) defaultDisableByStatus(_ *web.EventContext, obj any) bool {
+func (b *Builder) defaultDisableByStatus(_ *web.EventContext, obj any) (bool, bool) {
 	status := obj.(StatusInterface).EmbedStatus().Status
-	return status == StatusOnline || status == StatusOffline
+	disabled := status == StatusOnline || status == StatusOffline
+	return disabled, disabled
 }
