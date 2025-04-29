@@ -833,32 +833,6 @@ func (b *Builder) AppBarNav() h.HTMLComponent {
 		Attr("@click", "vars.navDrawer = !vars.navDrawer").Density(DensityCompact)
 }
 
-func (b *Builder) defaultToolBar(ctx *web.EventContext) h.HTMLComponent {
-	return VContainer(
-		VRow(
-			VCol(b.RunBrandFunc(ctx)).Cols(5),
-			VCol(
-				b.RunSwitchLocalCodeFunc(ctx),
-				// VBtn("").Children(
-				//	languageSwitchIcon,
-				//	VIcon("mdi-menu-down"),
-				// ).Attr("variant", "plain").
-				//	Attr("icon", ""),
-			).Cols(5).Class("py-0 d-flex justify-end pl-0 pr-2"),
-			VDivider().Attr("vertical", true).Class("i18n-divider"),
-			VCol(
-				b.AppBarNav(),
-			).Cols(2).Class("position-relative"),
-		).Attr("align", "center").Attr("justify", "center"),
-	)
-}
-
-func (b *Builder) AppBarNav() h.HTMLComponent {
-	return VAppBarNavIcon().Attr("icon", "mdi-menu").
-		Class("text-grey-darken-1 menu-control-icon").
-		Attr("@click", "vars.navDrawer = !vars.navDrawer").Density(DensityCompact)
-}
-
 func (b *Builder) defaultLeftMenuComp(ctx *web.EventContext) h.HTMLComponent {
 	// call CreateMenus before in(ctx) to fill the menuGroupName for modelBuilders first
 	menu := b.menuOrder.CreateMenus(ctx)
