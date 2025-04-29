@@ -1187,7 +1187,7 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 		for _, c := range containers {
 			modelBuilder := b.builder.getModelBuilderByName(c.PageModelName)
 			modelObj := modelBuilder.mb.NewModel()
-			g := db.Where("id = ? ", c.PageID)
+			g := db.Where("id = ? and status = ? ", c.PageID, publish.StatusOnline)
 			if _, ok := modelObj.(publish.VersionInterface); ok {
 				g = g.Where("version = ? ", c.PageVersion)
 			}
@@ -1199,6 +1199,9 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 				continue
 			}
 			slug := fmt.Sprint(reflectutils.MustGet(modelObj, "ID"))
+			if slug == "0" {
+				continue
+			}
 			if p, ok := modelObj.(presets.SlugEncoder); ok {
 				slug = p.PrimarySlug()
 			}
