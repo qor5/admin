@@ -56,7 +56,10 @@ type (
 	// Others
 
 	CampaignWithStringID struct {
-		ID string `gorm:"primarykey"`
+		ID        string `gorm:"primarykey"`
+		CreatedAt time.Time
+		UpdatedAt time.Time
+		DeletedAt gorm.DeletedAt `gorm:"index"`
 
 		Name  string
 		Price int
@@ -248,7 +251,11 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		}, nil
 	}).AutoMigrate()
 
-	puBuilder := publish.New(db, storage)
+	puBuilder := publish.New(db, storage).StatusDisablementCheckFunc(func(ctx *web.EventContext, obj any) (disabledRename bool, disabledDelete bool) {
+		status := obj.(publish.StatusInterface).EmbedStatus().Status
+		disabled := status == publish.StatusOnline
+		return disabled, disabled
+	})
 	if b.GetPermission() == nil {
 		b.Permission(
 			perm.New().Policies(

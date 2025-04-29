@@ -1041,6 +1041,21 @@ func TestPageBuilderCampaign(t *testing.T) {
 			},
 			ExpectRunScriptContainsInOrder: []string{"Successfully Publish"},
 		},
+		{
+			Name:  "Campaign With String ID Version List Dialog",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderPageData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/campaign-with-string-ids-version-list-dialog").
+					EventFunc(actions.OpenListingDialog).
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"2025-04-16-v01", "Offline"},
+			ExpectPortalUpdate0NotContains:     []string{`<v-btn :disabled='true' :prepend-icon='"mdi-rename-box"`, `<v-btn :disabled='true' :prepend-icon='"mdi-delete"' `},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
