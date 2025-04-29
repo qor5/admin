@@ -25,7 +25,9 @@ INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, t
 										(12, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, '003', '003', 0, '{"OpenGraphImageFromMediaLibrary":{"ID":0,"Url":"","VideoLink":"","FileName":"","Description":""}}', 'online', '', null, null, null, null, '2025-04-15-v01', '2025-04-15-v01', '', 'International');
 INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, seo, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code) VALUES 
 										(12, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, '003', '003', 0, '{"OpenGraphImageFromMediaLibrary":{"ID":0,"Url":"","VideoLink":"","FileName":"","Description":""}}', 'online', '', null, null, null, null, '2025-04-15-v02', '2025-04-15-v02', '', 'International');
-SELECT setval('page_builder_pages_id_seq', 12, true);
+INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, seo, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code) VALUES 
+										(13, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, '003', '003', 0, '{"OpenGraphImageFromMediaLibrary":{"ID":0,"Url":"","VideoLink":"","FileName":"","Description":""}}', 'offline', '', null, null, null, null, '2025-04-15-v02', '2025-04-15-v02', '', 'International');
+SELECT setval('page_builder_pages_id_seq', 13, true);
 
 INSERT INTO public.page_builder_containers (id,created_at, updated_at, deleted_at, page_id, page_version, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id,page_model_name) VALUES 
 										   (9,'2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', null, 10, '2024-05-21-v01', 'BrandGrid', 10, 1, false, false, 'BrandGrid1', 'International', 0,'pages'),
@@ -33,8 +35,9 @@ INSERT INTO public.page_builder_containers (id,created_at, updated_at, deleted_a
 										   (11,'2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', null, 10, '2024-05-21-v01', 'Header', 10, 2, true, false, 'Header', 'International', 0,'pages'),
 										   (12,'2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', null, 11, '2025-04-15-v01', 'Header', 10, 2, true, false, 'Header', 'International', 0,'pages'),
 										   (13,'2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', null, 12, '2025-04-15-v01', 'Header', 10, 2, true, false, 'Header', 'International', 0,'pages') ,
-										   (14,'2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', 12, '2025-04-15-v02', 'Header', 10, 2, true, false, 'Header', 'International', 0,'pages')  ;
-SELECT setval('page_builder_containers_id_seq', 14, true);
+										   (14,'2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', 12, '2025-04-15-v02', 'Header', 10, 2, true, false, 'Header', 'International', 0,'pages'),
+										   (15,'2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', 13, '2025-04-15-v02', 'Header', 10, 2, true, false, 'Header', 'International', 0,'pages')  ;
+SELECT setval('page_builder_containers_id_seq', 15, true);
 
 INSERT INTO public.container_brand_grids (id, add_top_space, add_bottom_space, anchor_id, brands) VALUES (10, false, false, '', 'null');
 SELECT setval('container_brand_grids_id_seq', 10, true);
@@ -284,7 +287,7 @@ func TestPageBuilderShareContainer(t *testing.T) {
 				return req
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Related Online Pages", "11_2025-04-15-v01_International", "12_2025-04-15-v01_International"},
-			ExpectPortalUpdate0NotContains:     []string{"12_2025-04-15-v02_International"},
+			ExpectPortalUpdate0NotContains:     []string{"12_2025-04-15-v02_International", "13_2025-04-15-v02_International"},
 		},
 	}
 	for _, c := range cases {
