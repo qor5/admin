@@ -70,7 +70,7 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 
 	ed.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		u := obj.(*models.User)
-		if u.Account == "" {
+		if u.OAuthProvider == "" && u.Account == "" {
 			err.FieldError("Account", "Email is required")
 		}
 		return
