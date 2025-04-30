@@ -16,10 +16,10 @@ import (
 type MenuOrderBuilder struct {
 	p *Builder
 	// string or *MenuGroupBuilder
-	order    []interface{}
-	modelMap map[string]*ModelBuilder
+	order             []interface{}
+	modelMap          map[string]*ModelBuilder
 	menuComponentFunc func(menus []h.HTMLComponent, menuGroupSelected, menuItemSelected string) h.HTMLComponent
-	once     sync.Once
+	once              sync.Once
 }
 
 type menuOrderItem struct {
