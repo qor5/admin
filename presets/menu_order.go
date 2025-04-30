@@ -3,6 +3,7 @@ package presets
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
@@ -15,11 +16,10 @@ import (
 type MenuOrderBuilder struct {
 	p *Builder
 	// string or *MenuGroupBuilder
-	order []interface{}
-
+	order    []interface{}
 	modelMap map[string]*ModelBuilder
-
 	menuComponentFunc func(menus []h.HTMLComponent, menuGroupSelected, menuItemSelected string) h.HTMLComponent
+	once     sync.Once
 }
 
 type menuOrderItem struct {
@@ -100,10 +100,12 @@ func (b *MenuOrderBuilder) CreateMenus(ctx *web.EventContext) h.HTMLComponent {
 }
 
 func (b *MenuOrderBuilder) initializeModelMap() {
-	b.modelMap = make(map[string]*ModelBuilder)
-	for _, m := range b.p.models {
-		b.modelMap[m.uriName] = m
-	}
+	b.once.Do(func() {
+		b.modelMap = make(map[string]*ModelBuilder)
+		for _, m := range b.p.models {
+			b.modelMap[m.uriName] = m
+		}
+	})
 }
 
 func (b *MenuOrderBuilder) buildOrderedMenus(ctx *web.EventContext, inOrderMap map[string]menuOrderItem) []h.HTMLComponent {
