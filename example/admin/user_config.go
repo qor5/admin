@@ -303,7 +303,6 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 				}
 				return in(obj, id, ctx)
 			})
-
 		}
 	})
 
