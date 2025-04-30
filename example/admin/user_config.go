@@ -12,20 +12,21 @@ import (
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/role"
-	"github.com/sunfmin/reflectutils"
 
-	"github.com/qor5/admin/v3/activity"
-	"github.com/qor5/admin/v3/example/models"
-	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/web/v3"
+	h "github.com/theplant/htmlgo"
+	"gorm.io/gorm"
+
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/login"
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
-	h "github.com/theplant/htmlgo"
-	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/example/models"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/publish"
 )
 
 func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher *publish.Builder, loginSessionBuilder *plogin.SessionBuilder) {
@@ -183,10 +184,13 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 	})
 
 	ed.Field("Account").Label("Email").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		return VTextField().Attr(web.VField(field.Name, field.Value(obj))...).Label(field.Label).ErrorMessages(field.Errors...)
+		return vx.VXField().Attr(web.VField(field.Name, field.Value(obj))...).Label(field.Label).ErrorMessages(field.Errors...)
 	}).SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
 		u := obj.(*models.User)
 		email := ctx.R.FormValue(field.Name)
+		if email == "" {
+			return
+		}
 		u.Account = email
 		u.OAuthIdentifier = email
 		return nil
@@ -239,10 +243,9 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 				})
 			}
 
-			return VAutocomplete().Label(field.Label).Chips(true).
+			return vx.VXSelect().Label(field.Label).Chips(true).
 				Items(allRoleItems).ItemTitle("text").ItemValue("value").
-				Multiple(true).Attr(web.VField(field.Name, values)...).
-				ErrorMessages(field.Errors...).
+				Multiple(true).Attr(presets.VFieldError(field.Name, values, field.Errors)...).
 				Disabled(field.Disabled)
 		}).
 		SetterFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) (err error) {
@@ -264,21 +267,13 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 					Model: gorm.Model{ID: uint(uid)},
 				})
 			}
-
-			if u.ID == 0 {
-				err = reflectutils.Set(obj, field.Name, roles)
-			} else {
-				err = db.Model(u).Association(field.Name).Replace(roles)
-			}
-			if err != nil {
-				return
-			}
+			u.Roles = roles
 			return
 		})
 
 	ed.Field("Status").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return VSelect().Attr(web.VField(field.Name, field.Value(obj))...).
+			return vx.VXSelect().Attr(presets.VFieldError(field.Name, field.Value(obj), field.Errors)...).
 				Label(field.Label).
 				Items([]string{"active", "inactive"})
 		})
@@ -298,7 +293,16 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 			if u.RegistrationDate.IsZero() {
 				u.RegistrationDate = time.Now()
 			}
-			return in(obj, id, ctx)
+			return db.Transaction(func(tx *gorm.DB) (dbErr error) {
+				ctx.WithContextValue(gorm2op.CtxKeyDB{}, tx)
+				defer ctx.WithContextValue(gorm2op.CtxKeyDB{}, nil)
+				if id != "" {
+					if dbErr = tx.Model(u).Association("Roles").Replace(u.Roles); dbErr != nil {
+						return
+					}
+				}
+				return in(obj, id, ctx)
+			})
 		}
 	})
 
