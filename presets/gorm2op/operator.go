@@ -76,8 +76,9 @@ func (op *DataOperatorBuilder) Search(evCtx *web.EventContext, params *presets.S
 			return nil, errors.New("RelayPagination is required")
 		}
 
+		opts, _ := ctx.Value(ctxKeyRelayOptions{}).([]gormrelay.Option[any])
 		p = relay.New(
-			gormrelay.NewOffsetAdapter[any](wh),
+			gormrelay.NewOffsetAdapter(wh, opts...),
 			relay.EnsureLimits[any](presets.PerPageDefault, presets.PerPageMax),
 		)
 		req = &relay.PaginateRequest[any]{
@@ -97,6 +98,10 @@ func (op *DataOperatorBuilder) Search(evCtx *web.EventContext, params *presets.S
 		ctx = relay.WithSkip(ctx, relay.Skip{Edges: true})
 	}
 
+	mws, _ := ctx.Value(ctxKeyRelayPaginationMiddlewares{}).([]relay.PaginationMiddleware[any])
+	if len(mws) > 0 {
+		p = relay.Wrap(p, mws...)
+	}
 	resp, err := p.Paginate(ctx, req)
 	if err != nil {
 		return
