@@ -17,6 +17,7 @@ import (
 	"github.com/theplant/relay"
 	"github.com/theplant/relay/gormrelay"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/l10n"
@@ -303,6 +304,8 @@ func DefaultVersionBar(db *gorm.DB) presets.ObjectComponentFunc {
 	}
 }
 
+var VersionListDialogStatusSortOrderComputedField = "PublishStatusSortOrder"
+
 func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm *presets.ModelBuilder) {
 	// actually, VersionListDialog is a listing
 	// use this URL : URLName-version-list-dialog
@@ -373,16 +376,17 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 				defer func() {
 					ctx.R = oldR // restore the original request context
 				}()
-				ctx = gorm2op.EventContextAppendRelayOptions(ctx, gormrelay.WithComputed(&gormrelay.Computed[any]{
-					Columns: gormrelay.ComputedColumns(map[string]string{
-						"PublishStatusSortOrder": fmt.Sprintf("CASE WHEN status = '%s' THEN 0 WHEN status = '%s' THEN 2 ELSE 1 END", StatusOnline, StatusOffline),
-					}),
-					ForScan: gormrelay.DefaultForScan[any],
-				}))
+				ctx = gorm2op.EventContextWithRelayComputedHook(ctx, func(computed *gormrelay.Computed[any]) *gormrelay.Computed[any] {
+					computed.Columns[VersionListDialogStatusSortOrderComputedField] = clause.Column{
+						Name: fmt.Sprintf("(CASE WHEN status = '%s' THEN 0 WHEN status = '%s' THEN 2 ELSE 1 END)", StatusOnline, StatusOffline),
+						Raw:  true,
+					}
+					return computed
+				})
 				ctx = gorm2op.EventContextAppendRelayPaginationMiddlewares(ctx, func(next relay.Pagination[any]) relay.Pagination[any] {
 					return relay.PaginationFunc[any](func(ctx context.Context, req *relay.PaginateRequest[any]) (*relay.Connection[any], error) {
 						req.OrderBys = slices.Concat([]relay.OrderBy{
-							{Field: "PublishStatusSortOrder", Desc: false},
+							{Field: VersionListDialogStatusSortOrderComputedField, Desc: false},
 						}, req.OrderBys)
 						return next.Paginate(ctx, req)
 					})
