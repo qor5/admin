@@ -319,21 +319,17 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 					).Attr("v-show", "!vars.$pbLeftDrawerFolded"),
 					web.Slot(
 						VBtn("").
-							Attr("v-if", "locals.isLeftBtnHovering").
 							Attr(":icon", "vars.$pbLeftIconName").
 							Attr("@click.stop", `() => {
 										vars.$pbLeftDrawerFolded = !vars.$pbLeftDrawerFolded
 										vars.$window.localStorage.setItem("$pbLeftDrawerFolded", vars.$pbLeftDrawerFolded ? "1": "0")
 									}`).
 							Size(SizeSmall).
-							Attr(web.VAssign("locals", "{isLeftBtnHovering: false}")...).
 							Class("pb-drawer-btn drawer-btn-left")).
 						Name("append"),
 				).Location(LocationLeft).
 					Permanent(true).
-					Attr(":width", "vars.$pbLeftDrawerWidth").
-					Attr("@mouseover", "locals.isLeftBtnHovering = true").
-					Attr("@mouseout", "locals.isLeftBtnHovering = false"),
+					Attr(":width", "vars.$pbLeftDrawerWidth"),
 				VNavigationDrawer(
 					h.Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf(`({el,window}) => {
 							el.__handleScroll = (event) => {
@@ -351,7 +347,6 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 						}`),
 					web.Slot(
 						VBtn("").
-							Attr("v-if", "!vars.$pbRightDrawerIsDragging && locals.isRightBtnHovering").
 							Attr(":icon", "vars.$pbRightIconName").
 							Attr("@mousemove.stop", "()=>{vars.$pbRightDrawerHighlight=false}").
 							Attr("@mousedown.stop", "()=>{vars.$pbRightDrawerHighlight=false}").
@@ -359,7 +354,6 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 									vars.$pbRightDrawerFolded = !vars.$pbRightDrawerFolded
 									vars.$window.localStorage.setItem("$pbRightDrawerFolded", vars.$pbRightDrawerFolded ? "1": "0")
 								}`).
-							Attr(web.VAssign("locals", "{isRightBtnHovering: false}")...).
 							Size(SizeSmall).
 							Class("pb-drawer-btn drawer-btn-right")).
 						Name("append"),
@@ -372,9 +366,7 @@ func (b *Builder) Editor(m *ModelBuilder) web.PageFunc {
 					Attr(":width", "vars.$pbRightDrawerWidth").
 					Attr("@mousedown", "vars.$pbRightDrawerOnMouseDown").
 					Attr("@mousemove", "vars.$pbRightDrawerOnMouseMove").
-					Attr("@mouseleave", "vars.$pbRightDrawerOnMouseLeave").
-					Attr("@mouseover", "locals.isRightBtnHovering = true").
-					Attr("@mouseout", "locals.isRightBtnHovering = false"),
+					Attr("@mouseleave", "vars.$pbRightDrawerOnMouseLeave"),
 			),
 			VMain(
 				addOverlay,

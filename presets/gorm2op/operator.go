@@ -16,6 +16,7 @@ import (
 	"github.com/theplant/relay/gormrelay"
 	"gorm.io/gorm"
 
+	"github.com/qor5/admin/v3/common"
 	"github.com/qor5/admin/v3/presets"
 )
 
@@ -29,7 +30,20 @@ func DataOperator(db *gorm.DB) (r *DataOperatorBuilder) {
 type (
 	ctxKeyDBForRelay struct{}
 	CtxKeyDB         struct{}
+	ctxKeyHook       struct{}
 )
+
+func WithHook(ctx context.Context, hooks ...common.Hook[*gorm.DB]) context.Context {
+	previousHook, _ := ctx.Value(ctxKeyHook{}).(common.Hook[*gorm.DB])
+	hook := common.ChainHookWith(previousHook, hooks...)
+	return context.WithValue(ctx, ctxKeyHook{}, hook)
+}
+
+func EventContextWithHook(ctx *web.EventContext, hooks ...common.Hook[*gorm.DB]) *web.EventContext {
+	previousHook, _ := ctx.ContextValue(ctxKeyHook{}).(common.Hook[*gorm.DB])
+	hook := common.ChainHookWith(previousHook, hooks...)
+	return ctx.WithContextValue(ctxKeyHook{}, hook)
+}
 
 type DataOperatorBuilder struct {
 	db *gorm.DB
@@ -58,6 +72,11 @@ func (op *DataOperatorBuilder) Search(evCtx *web.EventContext, params *presets.S
 		wh = wh.Where(strings.ReplaceAll(cond.Query, " ILIKE ", " "+ilike+" "), cond.Args...)
 	}
 
+	hook, _ := evCtx.ContextValue(ctxKeyHook{}).(common.Hook[*gorm.DB])
+	if hook != nil {
+		wh = hook(wh.Session(&gorm.Session{}))
+	}
+
 	var p relay.Pagination[any]
 	var req *relay.PaginateRequest[any]
 	ctx := evCtx.R.Context()
@@ -76,8 +95,10 @@ func (op *DataOperatorBuilder) Search(evCtx *web.EventContext, params *presets.S
 			return nil, errors.New("RelayPagination is required")
 		}
 
+		opts, _ := ctx.Value(ctxKeyRelayOptions{}).([]gormrelay.Option[any])
+		opts = appendWithComputedIfHasHook(ctx, opts)
 		p = relay.New(
-			gormrelay.NewOffsetAdapter[any](wh),
+			gormrelay.NewOffsetAdapter(wh, opts...),
 			relay.EnsureLimits[any](presets.PerPageDefault, presets.PerPageMax),
 		)
 		req = &relay.PaginateRequest[any]{
@@ -97,6 +118,10 @@ func (op *DataOperatorBuilder) Search(evCtx *web.EventContext, params *presets.S
 		ctx = relay.WithSkip(ctx, relay.Skip{Edges: true})
 	}
 
+	mws, _ := ctx.Value(ctxKeyRelayPaginationMiddlewares{}).([]relay.PaginationMiddleware[any])
+	if len(mws) > 0 {
+		p = relay.Wrap(p, mws...)
+	}
 	resp, err := p.Paginate(ctx, req)
 	if err != nil {
 		return
@@ -154,7 +179,7 @@ func (op *DataOperatorBuilder) Fetch(obj interface{}, id string, ctx *web.EventC
 
 func (op *DataOperatorBuilder) getDB(ctx *web.EventContext) *gorm.DB {
 	if ctx.R != nil {
-		db, ok := ctx.ContextValue(ctxKeyDBForRelay{}).(*gorm.DB)
+		db, ok := ctx.ContextValue(CtxKeyDB{}).(*gorm.DB)
 		if ok {
 			return db
 		}
