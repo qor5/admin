@@ -154,6 +154,7 @@ func (b *Builder) Prefix(v string) (r *Builder) {
 	b.prefix = v
 	return b
 }
+
 func (b *Builder) GetURIPrefix() string {
 	return b.prefix
 }
@@ -330,7 +331,6 @@ func (b *Builder) Model(mb *presets.ModelBuilder) (r *ModelBuilder) {
 }
 
 func (b *Builder) ModelInstall(pb *presets.Builder, mb *presets.ModelBuilder) (err error) {
-
 	r := b.Model(mb)
 	b.useAllPlugin(mb, r.name)
 	// register model editors page
@@ -423,7 +423,6 @@ func (b *Builder) configEditor(m *ModelBuilder) {
 	})
 	m.registerCustomFuncs()
 	b.pb.HandleCustomPage(mountedUri, m.editor)
-
 }
 
 func (b *Builder) configDetail(m *ModelBuilder) {
@@ -1174,9 +1173,7 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 		if err != nil {
 			panic(err)
 		}
-		var (
-			containers []*Container
-		)
+		var containers []*Container
 		db := b.builder.db
 
 		db.Where("model_name = ? and model_id = ? ", b.name, id).Order("page_model_name desc").Find(&containers)

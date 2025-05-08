@@ -50,6 +50,7 @@ func (b *ModelBuilder) editorURLWithSlug(ps string) string {
 func (b *ModelBuilder) mountedUrl() string {
 	return strings.TrimLeft(path.Join(b.builder.prefix, b.mb.Info().URIName(), "{id}"), "/")
 }
+
 func (b *ModelBuilder) editorURL() string {
 	return path.Join(b.builder.pb.GetURIPrefix(), b.builder.prefix, b.mb.Info().URIName())
 }

@@ -461,7 +461,6 @@ func (b *TemplateBuilder) getTemplateNameDescription(obj interface{}, ctx *web.E
 }
 
 func (b *TemplateBuilder) ModelInstall(_ *presets.Builder, mb *presets.ModelBuilder) error {
-
 	b.configModelWithTemplate(mb)
 	b.registerFunctions(mb)
 	return nil

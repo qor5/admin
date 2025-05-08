@@ -1258,6 +1258,7 @@ func (b *Builder) wrap(m *ModelBuilder, pf web.PageFunc) http.Handler {
 		}
 	}, pf)
 }
+
 func (b *Builder) wrapInner(f func(p *web.PageBuilder), pf web.PageFunc) http.Handler {
 	p := b.builder.Page(pf)
 	if f != nil {

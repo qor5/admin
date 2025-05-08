@@ -34,6 +34,7 @@ func (b *ModelBuilder) registerFuncs() {
 	b.eventMiddleware = b.defaultWrapEvent
 	b.preview = web.Page(b.previewContent)
 }
+
 func (b *ModelBuilder) registerCustomFuncs() {
 	b.editor.RegisterEventFunc(ShowSortedContainerDrawerEvent, b.eventMiddleware(b.showSortedContainerDrawer))
 	b.editor.RegisterEventFunc(AddContainerEvent, b.eventMiddleware(b.addContainer))
@@ -504,8 +505,8 @@ func (b *Builder) renameContainerDialog(ctx *web.EventContext) (r web.EventRespo
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr    = presets.MustGetMessages(ctx.R)
 		okAction = web.Plaid().
-			ThenScript("locals.renameDialog=false").
-			EventFunc(RenameContainerFromDialogEvent).Query(paramContainerID, paramID).Go()
+				ThenScript("locals.renameDialog=false").
+				EventFunc(RenameContainerFromDialogEvent).Query(paramContainerID, paramID).Go()
 		portalName = dialogPortalName
 	)
 

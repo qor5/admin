@@ -159,8 +159,10 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 			Attr("@after-leave", fmt.Sprintf("if (!xLocals.add){%s}", afterLeaveEvent)).
 			Attr("v-model", "vars.overlay"),
 	).VSlot("{locals:xLocals}").Init("{add:false}")
-	versionComponent = publish.DefaultVersionComponentFunc(m.mb, publish.VersionComponentConfig{Top: true, DisableListeners: true,
-		DisableDataChangeTracking: true})(obj, &presets.FieldContext{ModelInfo: m.mb.Info()}, ctx)
+	versionComponent = publish.DefaultVersionComponentFunc(m.mb, publish.VersionComponentConfig{
+		Top: true, DisableListeners: true,
+		DisableDataChangeTracking: true,
+	})(obj, &presets.FieldContext{ModelInfo: m.mb.Info()}, ctx)
 	pageAppbarContent = h.Components(
 		h.Div(
 			h.Div().Style("transform:rotateY(180deg)").Class("mr-4").Children(
