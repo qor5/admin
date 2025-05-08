@@ -154,6 +154,9 @@ func (b *Builder) Prefix(v string) (r *Builder) {
 	b.prefix = v
 	return b
 }
+func (b *Builder) GetURIPrefix() string {
+	return b.prefix
+}
 
 func (b *Builder) PageStyle(v h.HTMLComponent) (r *Builder) {
 	b.pageStyle = v
