@@ -74,7 +74,6 @@ func EnsureVersionListDisplay(selected string, dislayModels []*examples_admin.Wi
 			// Ensure tabs display
 			"<v-tabs",
 			"active_filter_tab", "f_all", "f_select_id", selected, "All Versions",
-			"active_filter_tab", "f_online_versions", "f_select_id", selected, "Online Versions",
 			"active_filter_tab", "f_named_versions", "f_select_id", selected, "Named Versions",
 			"</v-tabs>",
 			// Ensure columns display

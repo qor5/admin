@@ -410,15 +410,11 @@ func (c *ListingCompo) getOrderBys(colOrderBys []ColOrderBy, orderableFieldMap m
 			})
 		}
 	}
-
-	if len(orderBys) == 0 {
-		if len(c.lb.defaultOrderBys) > 0 {
-			return c.lb.defaultOrderBys
-		}
-		if c.lb.mb.primaryField != "" {
-			return []relay.OrderBy{{Field: c.lb.mb.primaryField, Desc: true}}
-		}
+	primaryOrderBys := c.lb.defaultOrderBys
+	if len(primaryOrderBys) == 0 && c.lb.mb.primaryField != "" {
+		primaryOrderBys = []relay.OrderBy{{Field: c.lb.mb.primaryField, Desc: true}}
 	}
+	orderBys = relay.AppendPrimaryOrderBy(orderBys, primaryOrderBys...)
 	return orderBys
 }
 
