@@ -32,11 +32,8 @@ const (
 
 type (
 	TemplateBuilder struct {
-		mb                 *presets.ModelBuilder
-		tm                 *presets.ModelBuilder
-		model              *ModelBuilder
-		builder            *Builder
-		useDefaultTemplate bool
+		tm      *ModelBuilder
+		builder *Builder
 	}
 	TemplateInterface interface {
 		GetName(ctx *web.EventContext) string
@@ -44,20 +41,13 @@ type (
 	}
 )
 
-func (b *Builder) template(mb *presets.ModelBuilder, tm *presets.ModelBuilder) {
-	b.templates = append(b.templates, &TemplateBuilder{
-		mb:      mb,
-		tm:      tm,
+func (b *Builder) template(tm *presets.ModelBuilder) *TemplateBuilder {
+	r := &TemplateBuilder{
+		tm:      b.Model(tm),
 		builder: b,
-	})
-}
-
-func (b *Builder) RegisterModelBuilderTemplate(mb *presets.ModelBuilder, tm *presets.ModelBuilder) *Builder {
-	if !b.templateEnabled {
-		return b
 	}
-	b.template(mb, tm)
-	return b
+	r.tm.isTemplate = true
+	return r
 }
 
 func (b *Builder) defaultTemplateInstall(pb *presets.Builder, pm *presets.ModelBuilder) (err error) {
@@ -98,14 +88,13 @@ func (b *Builder) defaultTemplateInstall(pb *presets.Builder, pm *presets.ModelB
 	creating.Field("Name").LazyWrapComponentFunc(wrapper)
 	creating.Field("Description").LazyWrapComponentFunc(wrapper)
 
-	b.templateModel = template
-	b.RegisterModelBuilderTemplate(pm, template)
-
+	b.templateBuilder = b.template(template)
+	pm.Use(b.templateBuilder)
 	return
 }
 
-func (b *TemplateBuilder) configList() {
-	listing := b.model.mb.Listing()
+func (b *TemplateBuilder) configList(mb *presets.ModelBuilder) {
+	listing := mb.Listing()
 	oldPageFunc := listing.GetPageFunc()
 	listing.PageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		var pr web.PageResponse
@@ -114,17 +103,16 @@ func (b *TemplateBuilder) configList() {
 		}
 		r.PageTitle = pr.PageTitle
 		ctx.WithContextValue(presets.CtxPageTitleComponent, h.Div(
-			VAppBarTitle(h.Text(b.model.mb.Info().LabelName(ctx, false))),
+			VAppBarTitle(h.Text(mb.Info().LabelName(ctx, false))),
 		).Class(W100, "d-flex align-center"))
 		r.Body = web.Portal(
-			b.templateContent(ctx),
+			b.templateContent(ctx, mb),
 		).Name(PageTemplatePortalName)
 		return
 	})
 }
 
-func (b *TemplateBuilder) configModelWithTemplate() {
-	mb := b.mb
+func (b *TemplateBuilder) configModelWithTemplate(mb *presets.ModelBuilder) {
 	creating := mb.Editing().Creating()
 	filed := creating.GetField(PageTemplateSelectionFiled)
 	if filed != nil && filed.GetCompFunc() == nil {
@@ -159,11 +147,12 @@ func (b *TemplateBuilder) configModelWithTemplate() {
 				}
 				if selectID != "" {
 					var tplID int
-					tplID, _, _ = b.model.primaryColumnValuesBySlug(selectID)
+
+					tplID, _, _ = b.tm.primaryColumnValuesBySlug(selectID)
 					if b.builder.l10n == nil {
 						localeCode = ""
 					}
-					if err = b.builder.GetModelBuilder(b.mb).copyContainersToAnotherPage(b.builder.db, tplID, "", localeCode, int(pageID.(uint)), version, localeCode, b.model.name, b.builder.GetModelBuilder(b.mb).name); err != nil {
+					if err = b.builder.GetModelBuilder(mb).copyContainersToAnotherPage(b.builder.db, tplID, "", localeCode, int(pageID.(uint)), version, localeCode, b.tm.name, b.builder.GetModelBuilder(mb).name); err != nil {
 						panic(err)
 					}
 				}
@@ -172,7 +161,7 @@ func (b *TemplateBuilder) configModelWithTemplate() {
 		})
 		filed.ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return h.Components(
-				web.Listen(NotifTemplateSelected(b.model.mb),
+				web.Listen(NotifTemplateSelected(b.tm.mb),
 					web.Plaid().EventFunc(ReloadSelectedTemplateEvent).FieldValue(ParamTemplateSelectedID, web.Var("payload.slug")).Go(),
 				),
 				web.Portal(b.selectedTemplate(ctx)).Name(TemplateSelectedPortalName),
@@ -181,12 +170,11 @@ func (b *TemplateBuilder) configModelWithTemplate() {
 	}
 }
 
-func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent {
+func (b *TemplateBuilder) templateContent(ctx *web.EventContext, model *presets.ModelBuilder) h.HTMLComponent {
 	var (
 		err            error
 		cardClickEvent string
-		model          = b.model
-		mb             = model.mb
+		mb             = b.tm.mb
 		obj            = mb.NewModel()
 		ml             = mb.Listing()
 		pMsgr          = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
@@ -222,7 +210,7 @@ func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent
 	rows := VRow()
 	if inDialog {
 		cardHeight = dialogIframeCardHeight
-		cardClickEvent, cols = b.getEventCols(inDialog, "")
+		cardClickEvent, cols = b.getEventCols(model, inDialog, "")
 		if page == 1 {
 			rows.AppendChildren(VCol(
 				VCard(
@@ -254,7 +242,7 @@ func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent
 		if ojID, err = reflectutils.Get(obj, "ID"); err != nil {
 			panic(err)
 		}
-		cardClickEvent, cols = b.getEventCols(inDialog, ps)
+		cardClickEvent, cols = b.getEventCols(model, inDialog, ps)
 		if mb.Info().Verifier().Do(presets.PermDelete).WithReq(ctx.R).IsAllowed() == nil {
 			menus = append(menus,
 				VListItem(h.Text(pMsgr.Delete)).Attr("@click", web.Plaid().
@@ -279,7 +267,7 @@ func (b *TemplateBuilder) templateContent(ctx *web.EventContext) h.HTMLComponent
 					VCardItem(
 						VCard(
 							VCardText(
-								h.Iframe().Src(model.PreviewHref(ctx, ps)).
+								h.Iframe().Src(b.tm.PreviewHref(ctx, ps)).
 									Attr("scrolling", "no", "frameborder", "0").
 									Style(`pointer-events: none;transform-origin: 0 0; transform:scale(0.2);width:500%;height:500%`),
 							).Class("pa-0", H100, "bg-"+ColorGreyLighten4),
@@ -399,7 +387,7 @@ func (b *TemplateBuilder) searchComponent(ctx *web.EventContext) h.HTMLComponent
 func (b *TemplateBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponent {
 	var (
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		template = b.model.mb.NewModel()
+		template = b.tm.mb.NewModel()
 		selectID = ctx.Param(ParamTemplateSelectedID)
 		err      error
 		name     string
@@ -424,7 +412,7 @@ func (b *TemplateBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponen
 					EventFunc(OpenTemplateDialogEvent).Go()),
 		VCard(
 			VCardText(
-				h.Iframe().Src(b.model.PreviewHref(ctx, selectID)).
+				h.Iframe().Src(b.tm.PreviewHref(ctx, selectID)).
 					Attr("scrolling", "no", "frameborder", "0").
 					Style(`pointer-events: none;transform-origin: 0 0; transform:scale(0.2);width:500%;height:500%`),
 			).Class("pa-0", H100, "border-xl"),
@@ -443,16 +431,16 @@ func NotifTemplateSelected(mb *presets.ModelBuilder) string {
 	return fmt.Sprintf("pagebuilder_NotifTemplateSelected_%T", mb.NewModel())
 }
 
-func (b *TemplateBuilder) getEventCols(inDialog bool, ps string) (cardClickEvent string, cols int) {
+func (b *TemplateBuilder) getEventCols(mb *presets.ModelBuilder, inDialog bool, ps string) (cardClickEvent string, cols int) {
 	cols = 3
 	if inDialog {
 		cols = 4
-		emit := web.Emit(NotifTemplateSelected(b.model.mb), TemplateSelected{Slug: ps})
+		emit := web.Emit(NotifTemplateSelected(b.tm.mb), TemplateSelected{Slug: ps})
 		cardClickEvent = fmt.Sprintf("%s;vars.pageBuilderSelectTemplateDialog=false;if(!vars.presetsDialog){%s};",
 			emit,
-			web.Plaid().URL(b.mb.Info().ListingHref()).EventFunc(actions.New).FieldValue(ParamTemplateSelectedID, ps).Query(presets.ParamOverlay, actions.Dialog).Go())
+			web.Plaid().URL(mb.Info().ListingHref()).EventFunc(actions.New).FieldValue(ParamTemplateSelectedID, ps).Query(presets.ParamOverlay, actions.Dialog).Go())
 	} else {
-		cardClickEvent = web.Plaid().URL(b.model.editorURLWithSlug(ps)).PushState(true).Go()
+		cardClickEvent = web.Plaid().URL(b.tm.editorURLWithSlug(ps)).PushState(true).Go()
 	}
 	return
 }
@@ -472,25 +460,17 @@ func (b *TemplateBuilder) getTemplateNameDescription(obj interface{}, ctx *web.E
 	return
 }
 
-func (b *TemplateBuilder) Install() {
+func (b *TemplateBuilder) ModelInstall(_ *presets.Builder, mb *presets.ModelBuilder) error {
+	b.configModelWithTemplate(mb)
+	b.registerFunctions(mb)
+	return nil
+}
+
+func (b *TemplateBuilder) Install(pb *presets.Builder) error {
 	builder := b.builder
 	tm := b.tm
-	if tm == nil {
-		tm = builder.templateModel
-	}
-
-	model := builder.GetModelBuilder(tm)
-	if model == nil {
-		model = builder.Model(tm)
-		if _, ok := tm.NewModel().(publish.VersionInterface); ok {
-			panic("error template model")
-		}
-		builder.configEditor(model)
-	}
-	defer builder.useAllPlugin(tm, model.name)
-	b.model = model
-	model.tb = b
-	b.configModelWithTemplate()
-	b.configList()
-	b.registerFunctions()
+	builder.configEditor(tm)
+	b.configList(b.tm.mb)
+	defer builder.useAllPlugin(tm.mb, tm.name)
+	return nil
 }
