@@ -807,7 +807,7 @@ func TestFieldsBuilder(t *testing.T) {
 	for _, c := range toComponentCases {
 		t.Run(c.name, func(t *testing.T) {
 			ctx := &web.EventContext{
-				R: httptest.NewRequest("POST", "/", nil),
+				R: httptest.NewRequest("POST", "/", http.NoBody),
 			}
 			c.setup(ctx)
 			result := fbs.ToComponent(nil, c.obj, ctx)
