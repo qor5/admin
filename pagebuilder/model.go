@@ -283,8 +283,9 @@ func (b *ModelBuilder) renderScrollIframe(comps []h.HTMLComponent, ctx *web.Even
 	}
 
 	if isEditor {
-		input.EditorCss = append(input.EditorCss, h.RawHTML(`<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">`))
-		input.EditorCss = append(input.EditorCss, h.Style(`
+		input.EditorCss = append(input.EditorCss,
+			h.RawHTML(`<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">`),
+			h.Style(`
 .wrapper-shadow {
     display: table;
     /* for IE or lower versions of browers */

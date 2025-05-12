@@ -1136,7 +1136,6 @@ func TestPageBuilder(t *testing.T) {
 					t.Fatalf("Replicate Container Faield %#+v", nextContainer)
 					return
 				}
-				return
 			},
 		},
 		{
@@ -1334,7 +1333,6 @@ func TestPageBuilder(t *testing.T) {
 					t.Fatalf("Containers not copied")
 					return
 				}
-				return
 			},
 		},
 	}

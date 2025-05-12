@@ -777,7 +777,6 @@ func (b *Builder) configSharedContainer(pb *presets.Builder) {
 	if b.l10n != nil {
 		pm.Use(b.l10n)
 	}
-	return
 }
 
 func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBuilder) {
@@ -1262,11 +1261,11 @@ func (b *ContainerBuilder) firstOrCreate(localeCodes []string) (err error) {
 			if vErr = tx.Create(m).Error; vErr != nil {
 				return
 			}
-			slices.Delete(localeCodes, 0, 1)
+			localeCodes = slices.Delete(localeCodes, 0, 1)
 
 		} else {
 			m = cons[0]
-			slices.DeleteFunc(localeCodes, func(s string) bool {
+			localeCodes = slices.DeleteFunc(localeCodes, func(s string) bool {
 				for _, con := range cons {
 					if con.LocaleCode == s {
 						return true
@@ -1305,7 +1304,7 @@ func (b *Builder) republishRelatedOnlinePages(ctx *web.EventContext) (r web.Even
 	}
 	msgr := i18n.MustGetModuleMessages(ctx.R, publish.I18nPublishKey, Messages_en_US).(*publish.Messages)
 	for index, id := range ids {
-		statusVar := fmt.Sprintf(`republish_status_%s`, strings.Replace(id, "-", "_", -1))
+		statusVar := fmt.Sprintf(`republish_status_%s`, strings.ReplaceAll(id, "-", "_"))
 		plaid := web.Plaid().
 			EventFunc(publish.EventRepublish).
 			Query("id", id).

@@ -1234,7 +1234,6 @@ func (b *Builder) notFound(handler http.Handler) http.Handler {
 			// If no other handler wrote to the response, assume 404 and write our custom response.
 			b.notFoundHandler.ServeHTTP(w, r)
 		}
-		return
 	})
 }
 

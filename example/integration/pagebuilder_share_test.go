@@ -134,7 +134,6 @@ func TestPageBuilderShareContainer(t *testing.T) {
 					t.Fatalf("Replicate Container Faield %#+v", nextContainer)
 					return
 				}
-				return
 			},
 		},
 		{
