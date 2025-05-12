@@ -17,13 +17,14 @@ import (
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 
+	"github.com/spf13/cast"
+
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/media/media_library"
-	pagebuilder "github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
-	"github.com/spf13/cast"
 )
 
 // models
@@ -55,7 +56,10 @@ type (
 	// Others
 
 	CampaignWithStringID struct {
-		ID string `gorm:"primarykey"`
+		ID        string `gorm:"primarykey"`
+		CreatedAt time.Time
+		UpdatedAt time.Time
+		DeletedAt gorm.DeletedAt `gorm:"index"`
 
 		Name  string
 		Price int
@@ -310,7 +314,14 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		}, nil
 	}).AutoMigrate()
 
-	puBuilder := publish.New(db, storage)
+	puBuilder := publish.New(db, storage).DisablementCheckFunc(func(ctx *web.EventContext, obj any) *publish.Disablement {
+		status := obj.(publish.StatusInterface).EmbedStatus().Status
+		disabled := status == publish.StatusOnline
+		return &publish.Disablement{
+			DisabledRename: disabled,
+			DisabledDelete: disabled,
+		}
+	})
 	if b.GetPermission() == nil {
 		b.Permission(
 			perm.New().Policies(
