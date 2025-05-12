@@ -1330,7 +1330,7 @@ func (b *Builder) republishRelatedOnlinePages(ctx *web.EventContext) (r web.Even
 func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, mb := range b.models {
 		previewURI := path.Join(b.pb.GetURIPrefix(), b.prefix, mb.mb.Info().URIName(), "preview")
-		if strings.Index(r.RequestURI, previewURI) >= 0 {
+		if strings.Contains(r.RequestURI, previewURI) {
 			if mb.mb.Info().Verifier().Do(presets.PermGet).WithReq(r).IsAllowed() != nil {
 				_, _ = w.Write([]byte(perm.PermissionDenied.Error()))
 				return
@@ -1340,7 +1340,7 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if b.images != nil {
-		if strings.Index(r.RequestURI, path.Join(b.pb.GetURIPrefix(), b.prefix, b.imagesPrefix)) >= 0 {
+		if strings.Contains(r.RequestURI, path.Join(b.pb.GetURIPrefix(), b.prefix, b.imagesPrefix)) {
 			b.images.ServeHTTP(w, r)
 			return
 		}

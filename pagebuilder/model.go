@@ -700,7 +700,7 @@ func (b *ModelBuilder) localizeContainersToAnotherPage(db *gorm.DB, pageID int, 
 	}
 
 	for _, c := range cons {
-		newModelID := c.ModelID
+		var newModelID uint
 		newDisplayName := c.DisplayName
 		if !c.Shared {
 			model := b.builder.ContainerByName(c.ModelName).NewModel()
