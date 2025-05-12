@@ -10,7 +10,6 @@ import (
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
-	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 
@@ -444,22 +443,6 @@ func (b *Builder) localizeCategory(db *gorm.DB, fromCategoryID uint, fromLocale 
 		err = db.Save(&category).Error
 		return
 	}
-	return
-}
-
-func (b *Builder) createModelAfterLocalizeDemoContainer(db *gorm.DB, c *DemoContainer) (err error) {
-	model := b.ContainerByName(c.ModelName).NewModel()
-	if err = db.First(model, "id = ?", c.ModelID).Error; err != nil {
-		return
-	}
-	if err = reflectutils.Set(model, "ID", uint(0)); err != nil {
-		return
-	}
-	if err = db.Create(model).Error; err != nil {
-		return
-	}
-
-	c.ModelID = reflectutils.MustGet(model, "ID").(uint)
 	return
 }
 

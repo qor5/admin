@@ -113,16 +113,11 @@ type Builder struct {
 }
 
 const (
-	// clearTemplateEvent               = "clearTemplateEvent"
 	republishRelatedOnlinePagesEvent = "republish_related_online_pages"
 
 	paramOpenFromSharedContainer = "open_from_shared_container"
 
 	PageBuilderPreviewCard = "PageBuilderPreviewCard"
-
-	WrapHandlerKey = "pageBuilderWrapHandlerKey"
-
-	notFoundHandlerKey = "pageBuilderNotFoundHandlerKey"
 )
 
 func New(prefix string, db *gorm.DB, b *presets.Builder) *Builder {
