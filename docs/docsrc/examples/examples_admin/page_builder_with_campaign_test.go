@@ -115,7 +115,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/campaigns", nil)
+				return httptest.NewRequest("GET", "/campaigns", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"Hello Campaign"},
 		},
@@ -124,7 +124,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/campaigns/1_2024-05-20-v01", nil)
+				return httptest.NewRequest("GET", "/campaigns/1_2024-05-20-v01", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"publish_EventPublish", "CampaignDetail"},
 		},
@@ -133,7 +133,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/campaign-products/1_2024-05-20-v01", nil)
+				return httptest.NewRequest("GET", "/campaign-products/1_2024-05-20-v01", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"publish_EventPublish", "_blank", "ProductDetail"},
 		},
@@ -142,7 +142,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/my-contents?__execute_event__=presets_Edit&id=1&overlay=content&portal_name=pageBuilderRightContentPortal", nil)
+				return httptest.NewRequest("GET", "/my-contents?__execute_event__=presets_Edit&id=1&overlay=content&portal_name=pageBuilderRightContentPortal", http.NoBody)
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
 				if er.UpdatePortals[0].Name != "pageBuilderRightContentPortal" {

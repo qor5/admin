@@ -43,7 +43,7 @@ func TestPageSeoTemplate(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageSEOData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/page_builder/pages/preview?id=10_2024-05-21-v01_International", nil)
+				return httptest.NewRequest("GET", "/page_builder/pages/preview?id=10_2024-05-21-v01_International", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"/system/media_libraries/16/file.og.jpeg"},
 		},
@@ -52,7 +52,7 @@ func TestPageSeoTemplate(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageSEOData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/page_builder/pages/preview?id=11_2024-05-21-v01_International", nil)
+				return httptest.NewRequest("GET", "/page_builder/pages/preview?id=11_2024-05-21-v01_International", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"/system/media_libraries/17/file.og.jpeg"},
 		},
@@ -61,7 +61,7 @@ func TestPageSeoTemplate(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageGlobalSEOData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/page_builder/pages/preview?id=10_2024-05-21-v01_International", nil)
+				return httptest.NewRequest("GET", "/page_builder/pages/preview?id=10_2024-05-21-v01_International", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"/system/media_libraries/18/file.og.jpeg"},
 		},

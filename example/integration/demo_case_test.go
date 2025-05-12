@@ -27,7 +27,7 @@ func TestDemoCase(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				demoCaseData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/demo-cases", nil)
+				return httptest.NewRequest("GET", "/demo-cases", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"Name", "12313"},
 		},

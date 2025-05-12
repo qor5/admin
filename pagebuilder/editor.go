@@ -374,7 +374,7 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 		VMain(
 			addOverlay,
 			vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction(ctx)),
-			tabContent.Body.(h.HTMLComponent),
+			tabContent.Body,
 		).Attr(web.VAssign("vars", "{overlayEl:$}")...).Class("ma-2"),
 	)
 	return

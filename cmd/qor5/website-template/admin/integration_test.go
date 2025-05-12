@@ -52,7 +52,7 @@ func TestAll(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				data.TruncatePut(SqlDB)
-				return httptest.NewRequest("GET", "/admin/pages", nil)
+				return httptest.NewRequest("GET", "/admin/pages", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"My first page"},
 		},

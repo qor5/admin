@@ -52,7 +52,7 @@ func TestFields(t *testing.T) {
 		return h.Text(field.ContextValue("a").(string) + ", " + field.ContextValue("b").(string))
 	})
 
-	r := httptest.NewRequest("GET", "/hello", nil)
+	r := httptest.NewRequest("GET", "/hello", http.NoBody)
 
 	ctx := &web.EventContext{R: r, Flash: vd}
 

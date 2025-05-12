@@ -850,7 +850,7 @@ func (b *ModelBuilder) PreviewHTML(_ context.Context, obj interface{}) (r string
 		return
 	}
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%s", p.PrimarySlug()), nil)
+	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%s", p.PrimarySlug()), http.NoBody)
 	b.preview.ServeHTTP(w, req)
 	r = w.Body.String()
 	return
