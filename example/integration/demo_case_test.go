@@ -49,7 +49,6 @@ func TestDemoCase(t *testing.T) {
 				if m.Name != "test" {
 					t.Fatalf("Create Demo Case Failed: %v", m)
 				}
-				return
 			},
 		},
 		{
@@ -95,7 +94,6 @@ func TestDemoCase(t *testing.T) {
 				if m.FieldData.TextValidate != "12345" {
 					t.Fatalf("Update Demo Case Field Failed: %v", m.FieldData)
 				}
-				return
 			},
 		},
 		{
@@ -134,7 +132,6 @@ func TestDemoCase(t *testing.T) {
 				if m.FieldTextareaData.TextareaValidate != "1234567890" {
 					t.Fatalf("Update Demo Case Field Failed: %v", m.FieldTextareaData)
 				}
-				return
 			},
 		},
 		{
@@ -172,7 +169,6 @@ func TestDemoCase(t *testing.T) {
 				if m.FieldPasswordData.Password != "12345" {
 					t.Fatalf("Update Demo Case Field Failed: %v", m.FieldPasswordData)
 				}
-				return
 			},
 		},
 		{
@@ -210,7 +206,6 @@ func TestDemoCase(t *testing.T) {
 				if m.FieldNumberData.NumberValidate != 20 {
 					t.Fatalf("Update Demo Case Field Failed: %v", m.FieldNumberData)
 				}
-				return
 			},
 		},
 		{
@@ -260,7 +255,6 @@ func TestDemoCase(t *testing.T) {
 				if m.SelectData.NormalSelect != 3 {
 					t.Fatalf("Update Demo Case Field Failed: %v", m.SelectData)
 				}
-				return
 			},
 		},
 		{
@@ -298,7 +292,6 @@ func TestDemoCase(t *testing.T) {
 				if !m.CheckboxData.Checkbox {
 					t.Fatalf("Update Demo Case Field Failed: %v", m.CheckboxData)
 				}
-				return
 			},
 		},
 		{
