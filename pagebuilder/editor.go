@@ -382,7 +382,7 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 
 func (b *Builder) getDevice(ctx *web.EventContext) (device string, style string) {
 	device = ctx.R.FormValue(paramDevice)
-	if len(device) == 0 {
+	if device == "" {
 		device = b.defaultDevice
 	}
 	for _, d := range b.devices {

@@ -558,7 +558,6 @@ func (b *Builder) configDetailLayoutFunc(
 		title = b.GetPageTitle()(ctx)
 		return
 	})
-	return
 }
 
 func versionCount(db *gorm.DB, obj interface{}, id string, localCode string) (count int64) {
@@ -909,7 +908,7 @@ func sharedContainerSearcher(db *gorm.DB) presets.SearchFunc {
 		}
 
 		wh := db.Model(params.Model)
-		if len(params.KeywordColumns) > 0 && len(params.Keyword) > 0 {
+		if len(params.KeywordColumns) > 0 && params.Keyword != "" {
 			var segs []string
 			var args []interface{}
 			for _, c := range params.KeywordColumns {

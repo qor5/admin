@@ -1069,7 +1069,7 @@ func (b *Builder) InjectAssets(ctx *web.EventContext) {
 
 func (b *Builder) InjectExtraAssets(ctx *web.EventContext) {
 	for _, ea := range b.extraAssets {
-		if len(ea.refTag) > 0 {
+		if ea.refTag != "" {
 			ctx.Injector.HeadHTML(ea.refTag)
 			continue
 		}
