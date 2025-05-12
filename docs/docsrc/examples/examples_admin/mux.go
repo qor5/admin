@@ -34,6 +34,7 @@ func SamplesHandler(mux webexamples.Muxer) {
 
 	examples.AddPresetExample(mux, ChangePasswordExample)
 	examples.AddPresetExample(mux, ListingExample)
+	examples.AddPresetExample(mux, ListingWithJoinsExample)
 	examples.AddPresetExample(mux, WorkerExample)
 	examples.AddPresetExample(mux, ActionWorkerExample)
 	examples.AddPresetExample(mux, InternationalizationExample)
