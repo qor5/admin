@@ -74,7 +74,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 		div := h.Div().Class("tagList-bar-warp")
 		confirmDialogPayload := utils.UtilDialogPayloadType{
 			Text:     msgr.Areyousure,
-			OkAction: web.Plaid().EventFunc(web.Var("locals.action")).Query(presets.ParamID, slug).Go(),
+			OkAction: web.Plaid().URL(mb.Info().ListingHref()).EventFunc(web.Var("locals.action")).Query(presets.ParamID, slug).Go(),
 			Msgr:     utilsMsgr,
 		}
 		div.AppendChildren(utils.ConfirmDialog(confirmDialogPayload))
@@ -446,13 +446,12 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 
 		id := obj.(presets.SlugEncoder).PrimarySlug()
 		versionName := obj.(VersionInterface).EmbedVersion().VersionName
-		status := obj.(StatusInterface).EmbedStatus().Status
-		disable := status == StatusOnline || status == StatusOffline
+		disablement := pb.disablementCheckFunc(ctx, obj)
 		verifier := mb.Info().Verifier()
 		deniedUpdate := DeniedDo(verifier, obj, ctx.R, presets.PermUpdate)
 		deniedDelete := DeniedDo(verifier, obj, ctx.R, presets.PermDelete)
 		return h.Td().Children(
-			v.VBtn(msgr.Rename).Disabled(disable || deniedUpdate).PrependIcon("mdi-rename-box").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
+			v.VBtn(msgr.Rename).Disabled(disablement.DisabledRename || deniedUpdate).PrependIcon("mdi-rename-box").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
 				On("click.stop", web.Plaid().
 					URL(listingHref).
 					EventFunc(eventRenameVersionDialog).
@@ -461,7 +460,7 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 					Query(paramVersionName, versionName).
 					Go(),
 				),
-			v.VBtn(pmsgr.Delete).Disabled(disable || deniedDelete).PrependIcon("mdi-delete").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
+			v.VBtn(pmsgr.Delete).Disabled(disablement.DisabledDelete || deniedDelete).PrependIcon("mdi-delete").Size(v.SizeXSmall).Color(v.ColorPrimary).Variant(v.VariantText).
 				On("click.stop", web.Plaid().
 					URL(listingHref).
 					EventFunc(eventDeleteVersionDialog).

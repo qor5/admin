@@ -52,7 +52,7 @@ func TestAll(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				data.TruncatePut(SqlDB)
-				return httptest.NewRequest("GET", "/admin/pages", nil)
+				return httptest.NewRequest("GET", "/admin/pages", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"My first page"},
 		},
@@ -85,7 +85,7 @@ func TestAll(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				data.TruncatePut(SqlDB)
 				req := multipartestutils.NewMultipartBuilder().
-					PageURL("/admin/page_builder/my-headers?__execute_event__=presets_Update&id=1").
+					PageURL("/admin/my-headers?__execute_event__=presets_Update&id=1").
 					AddField("MenuItems[0].Text", "123").
 					AddField("MenuItems[0].Link", "123").
 					AddField("MenuItems[1].Text", "456").

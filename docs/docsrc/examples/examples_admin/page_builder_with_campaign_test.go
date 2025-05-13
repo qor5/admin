@@ -24,12 +24,12 @@ INSERT INTO public.campaigns (id, created_at, updated_at, deleted_at, title, sta
 INSERT INTO public.campaigns (id, created_at, updated_at, deleted_at, title, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version) VALUES (2, '2024-05-19 22:11:53.645941 +00:00', '2024-05-19 22:11:53.645941 +00:00', null, 'UnPublish Campaign', 'online', 'campaigns/2/index.html', null, null, null, null, '2024-05-20-v01', '2024-05-20-v01','');
 INSERT INTO public.campaign_products (id, created_at, updated_at, deleted_at, name, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version) VALUES (1, '2024-05-19 22:11:53.645941 +00:00', '2024-05-19 22:11:53.645941 +00:00', null, 'Hello Product', 'draft', '', null, null, null, null, '2024-05-20-v01', '2024-05-20-v01','');
 INSERT INTO public.my_contents (id,text) values (1,'my-contents');
+INSERT INTO public.my_contents (id,text) values (2,'my-contents-products');
 INSERT INTO public.campaign_contents (id,title,banner) values (1,'campaign-contents','banner');
 INSERT INTO public.product_contents (id,name) values (1,'demo-product-contents');
-INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, page_model_name, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (1, '2024-06-05 07:20:58.435363 +00:00', '2024-06-05 07:20:58.435363 +00:00', null, 1, '2024-05-20-v01', 'campaigns', 'MyContent', 1, 1, false, false, 'MyContent', '', 0);
-INSERT INTO public.campaign_templates (id, created_at, updated_at, deleted_at, name, description) VALUES (1, '2024-08-28 08:54:01.730555 +00:00', '2024-08-28 08:54:01.730555 +00:00', null, '12312', '123132');
-INSERT INTO public.campaign_product_templates (id, created_at, updated_at, deleted_at, title, "desc") VALUES (1, '2024-08-28 08:54:01.730555 +00:00', '2024-08-28 08:54:01.730555 +00:00', null, '12312', '123132');
-`, []string{"campaigns", "campaign_products", "my_contents", "campaign_contents", "product_contents", "page_builder_containers", "campaign_templates", "campaign_product_templates"}))
+INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, page_model_name, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (1, '2024-06-05 07:20:58.435363 +00:00', '2024-06-05 07:20:58.435363 +00:00', null, 1, '2024-05-20-v01', 'campaigns', 'MyContent', 1, 1, true, false, 'MyContent', '', 0);
+INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, page_model_name, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (2, '2024-06-05 07:20:58.435363 +00:00', '2024-06-05 07:20:58.435363 +00:00', null, 1, '2024-05-20-v01', 'campaign-products', 'MyContent', 2, 1, true, false, 'MyContent(Shared2)', '', 0);
+`, []string{"campaigns", "campaign_products", "my_contents", "campaign_contents", "product_contents", "page_builder_containers"}))
 
 var pageBuilderDemoData = gofixtures.Data(gofixtures.Sql(`
 INSERT INTO public.campaigns (id, created_at, updated_at, deleted_at, title, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version) VALUES (1, '2024-05-19 22:11:53.645941 +00:00', '2024-05-19 22:11:53.645941 +00:00', null, 'Hello Campaign', 'draft', '', null, null, null, null, '2024-05-20-v01', '2024-05-20-v01','');
@@ -58,12 +58,9 @@ INSERT INTO public.campaign_with_string_ids (id, name, price, status, online_url
 `, []string{"page_builder_pages", "page_builder_categories", "page_builder_containers", "my_contents", "campaign_with_string_ids"}))
 
 var pageBuilderTemplateData = gofixtures.Data(gofixtures.Sql(`
-INSERT INTO public.campaign_templates (id, created_at, updated_at, deleted_at, name, description) VALUES (1, '2024-08-28 08:54:01.730555 +00:00', '2024-08-28 08:54:01.730555 +00:00', null, '12312', '123132');
-INSERT INTO public.campaign_product_templates (id, created_at, updated_at, deleted_at, title, "desc") VALUES (1, '2024-08-28 08:54:01.730555 +00:00', '2024-08-28 08:54:01.730555 +00:00', null, '12312', '123132');
-INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, page_model_name, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (1, '2024-06-05 07:20:58.435363 +00:00', '2024-06-05 07:20:58.435363 +00:00', null, 1, '', 'campaign-templates', 'MyContent', 1, 1, false, false, 'MyContent', '', 0);
-INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, page_model_name, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (2, '2024-06-05 07:20:58.435363 +00:00', '2024-06-05 07:20:58.435363 +00:00', null, 1, '', 'campaign-product-templates', 'MyContent', 1, 2, false, false, 'MyContent', '', 0);
-INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, page_model_name, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (3, '2024-06-05 07:20:58.435363 +00:00', '2024-06-05 07:20:58.435363 +00:00', null, 1, '', 'campaign-templates', 'CampaignContent', 1, 1, false, false, 'CampaignContent', '', 0);
-INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, page_model_name, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (4, '2024-06-05 07:20:58.435363 +00:00', '2024-06-05 07:20:58.435363 +00:00', null, 1, '', 'campaign-product-templates', 'ProductContent', 1, 2, false, false, 'ProductContent', '', 0);
+INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, page_model_name, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (1, '2024-06-05 07:20:58.435363 +00:00', '2024-06-05 07:20:58.435363 +00:00', null, 1, '', 'templates', 'MyContent', 1, 1, false, false, 'MyContent', '', 0);
+INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, page_model_name, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (2, '2024-06-05 07:20:58.435363 +00:00', '2024-06-05 07:20:58.435363 +00:00', null, 1, '', 'templates', 'CampaignContent', 1, 2, false, false, 'CampaignContent', '', 0);
+INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, page_model_name, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id) VALUES (3, '2024-06-05 07:20:58.435363 +00:00', '2024-06-05 07:20:58.435363 +00:00', null, 1, '', 'templates', 'ProductContent', 1, 3, false, false, 'ProductContent', '', 0);
 INSERT INTO public.my_contents (id,text) values (1,'my-contents');
 INSERT INTO public.campaign_contents (id,title,banner) values (1,'campaign-contents','banner');
 INSERT INTO public.product_contents (id,name) values (1,'demo-product-contents');
@@ -71,23 +68,7 @@ INSERT INTO public.page_builder_templates (id, created_at, updated_at, deleted_a
 VALUES (1, '2024-07-22 01:41:13.206348 +00:00', '2024-07-22 01:41:13.206348 +00:00', null, '123', '456',
         'International');
 
-`, []string{"campaign_templates", "campaign_product_templates", "page_builder_containers", "my_contents", "campaign_contents", "product_contents", "page_builder_templates"}))
-
-var pageBuilderPublicTemplateData = gofixtures.Data(gofixtures.Sql(`
-INSERT INTO public.page_builder_templates (id, created_at, updated_at, deleted_at, name, description, locale_code)
-VALUES (1, '2024-07-22 01:41:13.206348 +00:00', '2024-07-22 01:41:13.206348 +00:00', null, '123', '456','');
-INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, model_name,
-                                            model_id, display_order, shared, hidden, display_name, locale_code,
-                                            localize_from_model_id, page_model_name)
-VALUES (1, '2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', null, 1, '', 'PagesContent', 1, 1,
-        false, false, 'PagesContent', '', 0, 'templates'),
-       (2, '2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', null, 1, '', 'MyContent', 1, 2, false,
-        false, 'MyContent', '', 0, 'templates');
-INSERT INTO public.my_contents (id,text) values (1,'my-contents');
-INSERT INTO public.pages_contents (id,text) values (1,'my-pages-contents');
-
-
-`, []string{"page_builder_templates", "page_builder_containers", "my_contents", "pages_contents"}))
+`, []string{"page_builder_containers", "my_contents", "campaign_contents", "product_contents", "page_builder_templates"}))
 
 func forUnpublishCreateFile(filePath string, content string) {
 	var (
@@ -134,7 +115,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/campaigns", nil)
+				return httptest.NewRequest("GET", "/campaigns", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"Hello Campaign"},
 		},
@@ -143,7 +124,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/campaigns/1_2024-05-20-v01", nil)
+				return httptest.NewRequest("GET", "/campaigns/1_2024-05-20-v01", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"publish_EventPublish", "CampaignDetail"},
 		},
@@ -152,7 +133,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/campaign-products/1_2024-05-20-v01", nil)
+				return httptest.NewRequest("GET", "/campaign-products/1_2024-05-20-v01", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"publish_EventPublish", "_blank", "ProductDetail"},
 		},
@@ -161,7 +142,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/page_builder/my-contents?__execute_event__=presets_Edit&id=1&overlay=content&portal_name=pageBuilderRightContentPortal", nil)
+				return httptest.NewRequest("GET", "/my-contents?__execute_event__=presets_Edit&id=1&overlay=content&portal_name=pageBuilderRightContentPortal", http.NoBody)
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
 				if er.UpdatePortals[0].Name != "pageBuilderRightContentPortal" {
@@ -176,7 +157,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/campaign-contents").
+					PageURL("/campaign-contents").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
 					Query(presets.ParamOverlay, actions.Content).
@@ -218,6 +199,40 @@ func TestPageBuilderCampaign(t *testing.T) {
 			},
 		},
 
+		{
+			Name:  "Campaign add Shared Container",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/campaigns/1_2024-05-20-v01").
+					EventFunc(pagebuilder.AddContainerEvent).
+					Query("modelName", "MyContent").
+					Query("sharedContainer", "true").
+					Query("modelID", "2").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var container pagebuilder.Container
+				if err := TestDB.Order("id desc").First(&container).Error; err != nil {
+					t.Error("containers not add", er)
+				}
+				if container.ModelName != "MyContent" {
+					t.Error("containers not add", container.ModelName)
+				}
+				if container.PageModelName != "campaigns" {
+					t.Error("containers not add for page model name", container.PageModelName)
+				}
+				if container.ModelID != 2 {
+					t.Error("containers not add for model id", container.ModelName)
+				}
+				if container.DisplayName != "MyContent(Shared2)" {
+					t.Error("containers not add for display name", container.DisplayName)
+				}
+			},
+		},
 		{
 			Name:  "Campaign add CampaignContent",
 			Debug: true,
@@ -299,7 +314,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/campaigns/1_2024-05-20-v01").
+					PageURL("/campaigns/1_2024-05-20-v01").
 					EventFunc(publish.EventDuplicateVersion).
 					BuildEventFuncRequest()
 
@@ -400,7 +415,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/campaign-products/1_2024-05-20-v01").
+					PageURL("/campaign-products/1_2024-05-20-v01").
 					EventFunc(publish.EventPublish).
 					Query(presets.ParamID, "1_2024-05-20-v01").
 					BuildEventFuncRequest()
@@ -472,7 +487,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderDemoData.TruncatePut(dbr)
 				return NewMultipartBuilder().
-					PageURL("/page_builder/product-contents").
+					PageURL("/product-contents").
 					EventFunc(actions.Update).
 					Query(presets.ParamID, "1").
 					AddField("Name", "demo-product-contents2").
@@ -509,7 +524,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				return NewMultipartBuilder().
-					PageURL("/page_builder/product-contents").
+					PageURL("/product-contents").
 					EventFunc(actions.Update).
 					Query(presets.ParamID, "1").
 					AddField("Name", "").
@@ -691,8 +706,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 
 				return req
 			},
-			ExpectPageBodyContainsInOrder: []string{"MyContent", "CampaignContent", ".test-ctx"},
-			ExpectPageBodyNotContains:     []string{"ProductContent", "PagesContent"},
+			ExpectPageBodyContainsInOrder: []string{"MyContent", "PagesContent", "CampaignContent", "ProductContent", "MyContent(Shared2)"},
 		},
 		{
 			Name:  "Product Editors Demo Containers List ",
@@ -705,8 +719,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 
 				return req
 			},
-			ExpectPageBodyContainsInOrder: []string{"MyContent", "ProductContent"},
-			ExpectPageBodyNotContains:     []string{"CampaignContent", "PagesContent"},
+			ExpectPageBodyContainsInOrder: []string{"MyContent", "PagesContent", "CampaignContent", "ProductContent", "MyContent(Shared2)"},
 		},
 		{
 			Name:  "Page Editors Demo Containers List ",
@@ -719,8 +732,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 
 				return req
 			},
-			ExpectPageBodyContainsInOrder: []string{"MyContent", "PagesContent"},
-			ExpectPageBodyNotContains:     []string{"CampaignContent", "ProductContent"},
+			ExpectPageBodyContainsInOrder: []string{"MyContent", "PagesContent", "CampaignContent", "ProductContent"},
 		},
 		{
 			Name:  "Page Editors Demo Containers DisabledNormalContainersGroup",
@@ -747,7 +759,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 
 				return req
 			},
-			ExpectPageBodyContainsInOrder: []string{"MyContent", "CampaignContent"},
+			ExpectPageBodyContainsInOrder: []string{"MyContent", "CampaignContent", "MyContent(Shared2)"},
 			ExpectPageBodyNotContains:     []string{`v-list-group :value='"Navigation"'`, `v-list-group :value='"Campaign"'`},
 		},
 
@@ -764,7 +776,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 
 				return req
 			},
-			ExpectRunScriptContainsInOrder: []string{`url("/page_builder/my-contents").eventFunc("presets_Edit").query("id", "1").query("portal_name", "pageBuilderRightContentPortal").query("overlay", "content")`},
+			ExpectRunScriptContainsInOrder: []string{`url("/my-contents").eventFunc("presets_Edit").query("id", "1").query("portal_name", "pageBuilderRightContentPortal").query("overlay", "content")`},
 		},
 		{
 			Name:  "Product Editors Demo Containers List DisabledNormalContainersGroup",
@@ -777,22 +789,8 @@ func TestPageBuilderCampaign(t *testing.T) {
 
 				return req
 			},
-			ExpectPageBodyContainsInOrder: []string{"MyContent", "ProductContent"},
+			ExpectPageBodyContainsInOrder: []string{"MyContent", "ProductContent", "MyContent(Shared2)"},
 			ExpectPageBodyNotContains:     []string{`v-list-group :value='"Navigation"'`, `v-list-group :value='"CampaignProduct"'`},
-		},
-		{
-			Name:  "Campaign Template Editors Containers List ",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				pageBuilderData.TruncatePut(dbr)
-				req := NewMultipartBuilder().
-					PageURL("/page_builder/campaign-templates/1").
-					BuildEventFuncRequest()
-
-				return req
-			},
-			ExpectPageBodyContainsInOrder: []string{"MyContent", "CampaignContent"},
-			ExpectPageBodyNotContains:     []string{"ProductContent", "PagesContent"},
 		},
 		{
 			Name:  "Pages Template Editors Containers List ",
@@ -805,22 +803,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 
 				return req
 			},
-			ExpectPageBodyContainsInOrder: []string{"MyContent", "PagesContent"},
-			ExpectPageBodyNotContains:     []string{"ProductContent", "CampaignContent"},
-		},
-		{
-			Name:  "Product Template Editors Containers List ",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				pageBuilderData.TruncatePut(dbr)
-				req := NewMultipartBuilder().
-					PageURL("/page_builder/campaign-product-templates/1").
-					BuildEventFuncRequest()
-
-				return req
-			},
-			ExpectPageBodyContainsInOrder: []string{"MyContent", "ProductContent"},
-			ExpectPageBodyNotContains:     []string{"CampaignContent", "PagesContent"},
+			ExpectPageBodyContainsInOrder: []string{"MyContent", "PagesContent", "CampaignContent", "ProductContent"},
 		},
 		{
 			Name:  "New Product Without Template",
@@ -871,8 +854,8 @@ func TestPageBuilderCampaign(t *testing.T) {
 				}
 				var containers []pagebuilder.Container
 				TestDB.Where("page_model_name = 'campaigns'").Find(&containers)
-				if len(containers) != 2 {
-					t.Fatalf("wrong number of containers, expected 2, got %d", len(containers))
+				if len(containers) != 3 {
+					t.Fatalf("wrong number of containers, expected 3, got %d", len(containers))
 					return
 				}
 			},
@@ -899,8 +882,8 @@ func TestPageBuilderCampaign(t *testing.T) {
 				}
 				var containers []pagebuilder.Container
 				TestDB.Where("page_model_name = 'campaign-products'").Find(&containers)
-				if len(containers) != 2 {
-					t.Fatalf("wrong number of containers, expected 2, got %d", len(containers))
+				if len(containers) != 3 {
+					t.Fatalf("wrong number of containers, expected 3, got %d", len(containers))
 					return
 				}
 			},
@@ -937,7 +920,7 @@ func TestPageBuilderCampaign(t *testing.T) {
 			Name:  "New Page  Product With Public Template",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				pageBuilderPublicTemplateData.TruncatePut(dbr)
+				pageBuilderTemplateData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/page-products").
 					EventFunc(actions.Update).
@@ -955,14 +938,9 @@ func TestPageBuilderCampaign(t *testing.T) {
 				}
 				var containers []pagebuilder.Container
 				TestDB.Where("page_model_name = 'page-products'").Find(&containers)
-				if len(containers) != 1 {
-					t.Fatalf("wrong number of containers, expected 1, got %d", len(containers))
+				if len(containers) != 3 {
+					t.Fatalf("wrong number of containers, expected 3, got %d", len(containers))
 					return
-				}
-				if containers[0].ModelName != "MyContent" {
-					t.Fatalf("wrong modelName, expected MyContent %s", containers[0].ModelName)
-					return
-
 				}
 			},
 		},
@@ -1062,6 +1040,21 @@ func TestPageBuilderCampaign(t *testing.T) {
 				return req
 			},
 			ExpectRunScriptContainsInOrder: []string{"Successfully Publish"},
+		},
+		{
+			Name:  "Campaign With String ID Version List Dialog",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderPageData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/campaign-with-string-ids-version-list-dialog").
+					EventFunc(actions.OpenListingDialog).
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"2025-04-16-v01", "Offline"},
+			ExpectPortalUpdate0NotContains:     []string{`<v-btn :disabled='true' :prepend-icon='"mdi-rename-box"`, `<v-btn :disabled='true' :prepend-icon='"mdi-delete"' `},
 		},
 	}
 	for _, c := range cases {

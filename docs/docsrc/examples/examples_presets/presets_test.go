@@ -46,7 +46,7 @@ func TestPresetsCommon(t *testing.T) {
 			Name:  "Not Found",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/samples/publish/products", nil)
+				return httptest.NewRequest("GET", "/samples/publish/products", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"page cannot be found"},
 			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {
@@ -62,7 +62,7 @@ func TestPresetsCommon(t *testing.T) {
 			Name:  "Not Found Assets",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/assets/vuetify.min.js.map", nil)
+				return httptest.NewRequest("GET", "/assets/vuetify.min.js.map", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"404 page not found"},
 			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {
@@ -75,7 +75,7 @@ func TestPresetsCommon(t *testing.T) {
 			Name:  "Found",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/customers", nil)
+				return httptest.NewRequest("GET", "/customers", http.NoBody)
 			},
 			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {
 				if w.Code != http.StatusOK {
@@ -90,7 +90,7 @@ func TestPresetsCommon(t *testing.T) {
 		{
 			Name: "javascript content type is still correct",
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/assets/main.js", nil)
+				return httptest.NewRequest("GET", "/assets/main.js", http.NoBody)
 			},
 			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {
 				if w.Code != http.StatusOK {
@@ -105,7 +105,7 @@ func TestPresetsCommon(t *testing.T) {
 		{
 			Name: "Ending slash is redirected",
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/customers/", nil)
+				return httptest.NewRequest("GET", "/customers/", http.NoBody)
 			},
 			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {
 				if w.Code != http.StatusMovedPermanently {
