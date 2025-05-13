@@ -1162,6 +1162,8 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 		}
 
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		pmsgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+
 		id, err := reflectutils.Get(obj, "id")
 		if err != nil {
 			panic(err)
@@ -1173,6 +1175,7 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 		var (
 			pageListComps h.HTMLComponents
 			events        []string
+			hasOnline     bool
 		)
 
 		processed := make(map[string]bool)
@@ -1213,18 +1216,23 @@ func (b *ContainerBuilder) configureRelatedOnlinePagesTab() {
 
 				processed[key] = true
 			}
+			hasOnline = true
 		}
 		tab = VTab(h.Text(msgr.RelatedOnlinePages))
 		content = VWindowItem(
-			VList(pageListComps),
-			h.Div(
-				VSpacer(),
-				VBtn(msgr.RepublishAllRelatedOnlinePages).
-					Color(ColorPrimary).
-					Attr("@click",
-						strings.Join(events, ";"),
-					),
-			).Class("d-flex"),
+			h.If(hasOnline,
+				VList(pageListComps),
+				h.Div(
+					VSpacer(),
+					VBtn(msgr.RepublishAllRelatedOnlinePages).
+						Color(ColorPrimary).
+						Attr("@click",
+							strings.Join(events, ";"),
+						),
+				).Class("d-flex"),
+			).Else(
+				h.Div(h.Text(pmsgr.ListingNoRecordToShow)).Class("text-center grey--text text--darken-2 mt-8"),
+			),
 		)
 		return
 	})
