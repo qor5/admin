@@ -505,8 +505,8 @@ func (b *Builder) renameContainerDialog(ctx *web.EventContext) (r web.EventRespo
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr    = presets.MustGetMessages(ctx.R)
 		okAction = web.Plaid().
-				ThenScript("locals.renameDialog=false").
-				EventFunc(RenameContainerFromDialogEvent).Query(paramContainerID, paramID).Go()
+			ThenScript("locals.renameDialog=false").
+			EventFunc(RenameContainerFromDialogEvent).Query(paramContainerID, paramID).Go()
 		portalName = dialogPortalName
 	)
 
@@ -742,6 +742,7 @@ func (b *ModelBuilder) renameContainer(ctx *web.EventContext) (r web.EventRespon
 		}
 	}
 	web.AppendRunScripts(&r,
+		fmt.Sprintf("vars.__pageBuilderRightContentTitle=%q", name),
 		web.Plaid().EventFunc(ShowSortedContainerDrawerEvent).MergeQuery(true).Query(paramStatus, ctx.Param(paramStatus)).Go(),
 		web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).MergeQuery(true).Go(),
 	)
