@@ -112,6 +112,15 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 					),
 					h.If(containerCount > 0,
 						h.Iframe().Src(previewDevelopUrl).
+							Attr("v-on-mounted", fmt.Sprintf(`({el})=>{
+								el.onload = function() {
+							  	const iframeDoc = el.contentDocument || el.contentWindow.document
+								  const videos = iframeDoc.querySelectorAll('video');
+              					 videos.forEach(video => {
+									video.muted = true
+									})
+								}
+							}`)).
 							Attr("scrolling", "no", "frameborder", "0").
 							Style(`pointer-events: none; 
  -webkit-mask-image: radial-gradient(circle, black 80px, transparent);
