@@ -1104,7 +1104,7 @@ var DefaultNotFoundPageFunc = func(ctx *web.EventContext) (r web.PageResponse, e
 	return
 }
 
-func (_ *Builder) DefaultNotFoundPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
+func (*Builder) DefaultNotFoundPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
 	return DefaultNotFoundPageFunc(ctx)
 }
 
