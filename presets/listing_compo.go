@@ -672,6 +672,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		panic(errors.Wrap(err, "get columns error"))
 	}
 	var dataBody h.HTMLComponent
+	pagination := c.buildDataTableAdditions(ctx, searchParams, searchResult)
 	if c.lb.dataTableFunc == nil {
 		dataTable := vx.DataTable(searchResult.Nodes).Hover(true).HoverClass("cursor-pointer").
 			HeadCellWrapperFunc(c.headCellWrapperFunc(ctx, columns, colOrderBys, orderableFieldMap)).
@@ -689,15 +690,14 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 				panic(err)
 			}
 		}
-		dataBody = dataTable
+		dataBody = h.Components(dataTable, h.Div(pagination).Style("margin-top:26px"))
 	} else {
-		dataBody = c.lb.dataTableFunc(evCtx, searchParams, searchResult)
+		dataBody = c.lb.dataTableFunc(evCtx, searchParams, searchResult, pagination)
 	}
 
 	return h.Components(
 		filterScript,
 		dataBody,
-		c.buildDataTableAdditions(ctx, searchParams, searchResult),
 	)
 }
 
@@ -728,26 +728,25 @@ func (c *ListingCompo) regularPagination(ctx context.Context, searchParams *Sear
 	if searchResult.TotalCount != nil {
 		totalCount = int64(*searchResult.TotalCount)
 	}
-	return h.Div().Style("margin-top:26px").Children(
-		vx.VXTablePagination().
-			Total(totalCount).
-			CurrPage(searchParams.Page).
-			PerPage(searchParams.PerPage).
-			CustomPerPages([]int64{c.lb.perPage}).
-			PerPageText(msgr.PaginationRowsPerPage).
-			NoOffsetPart(true).
-			TotalVisible(5).
-			OnSelectPerPage(stateful.ReloadAction(ctx, c,
-				func(target *ListingCompo) {
-					target.Page = 0
-					target.After, target.Before = nil, nil
-				},
-				stateful.WithAppendFix(`v.compo.per_page = parseInt($event, 10)`),
-			).ThenScript(ListingCompo_JsScrollToTop).Go()).
-			OnSelectPage(stateful.ReloadAction(ctx, c, nil,
-				stateful.WithAppendFix(`v.compo.page = parseInt(value,10);`),
-			).ThenScript(ListingCompo_JsScrollToTop).Go()),
-	)
+	return vx.VXTablePagination().
+		Total(totalCount).
+		CurrPage(searchParams.Page).
+		PerPage(searchParams.PerPage).
+		CustomPerPages([]int64{c.lb.perPage}).
+		PerPageText(msgr.PaginationRowsPerPage).
+		NoOffsetPart(true).
+		TotalVisible(5).
+		OnSelectPerPage(stateful.ReloadAction(ctx, c,
+			func(target *ListingCompo) {
+				target.Page = 0
+				target.After, target.Before = nil, nil
+			},
+			stateful.WithAppendFix(`v.compo.per_page = parseInt($event, 10)`),
+		).ThenScript(ListingCompo_JsScrollToTop).Go()).
+		OnSelectPage(stateful.ReloadAction(ctx, c, nil,
+			stateful.WithAppendFix(`v.compo.page = parseInt(value,10);`),
+		).ThenScript(ListingCompo_JsScrollToTop).Go(),
+		)
 }
 
 func (c *ListingCompo) relayPaginationCompo(ctx context.Context, perPage int, pageInfo relay.PageInfo) h.HTMLComponent {
