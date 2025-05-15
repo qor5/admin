@@ -1095,13 +1095,17 @@ func (b *Builder) getHomePageFunc() web.PageFunc {
 	return b.defaultHomePageFunc
 }
 
-func (b *Builder) DefaultNotFoundPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
+var DefaultNotFoundPageFunc = func(ctx *web.EventContext) (r web.PageResponse, err error) {
 	msgr := MustGetMessages(ctx.R)
 	r.Body = h.Div(
 		h.H1("404").Class("mb-2"),
 		h.Text(msgr.NotFoundPageNotice),
 	).Class("text-center mt-8")
 	return
+}
+
+func (b *Builder) DefaultNotFoundPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
+	return DefaultNotFoundPageFunc(ctx)
 }
 
 func (b *Builder) getNotFoundPageFunc() web.PageFunc {

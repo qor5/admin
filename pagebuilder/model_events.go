@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"encoding/json"
 	"fmt"
+	"log"
 	"path"
 	"sort"
 	"strconv"
@@ -48,7 +49,26 @@ func (b *ModelBuilder) registerFuncs() {
 	b.editor.RegisterEventFunc(ReplicateContainerEvent, b.eventMiddleware(b.replicateContainer))
 	b.editor.RegisterEventFunc(EditContainerEvent, b.eventMiddleware(b.editContainer))
 	b.editor.RegisterEventFunc(UpdateContainerEvent, b.eventMiddleware(b.updateContainer))
-	b.preview = web.Page(b.previewContent)
+
+	preview := web.Page(b.previewContent)
+	preview.Wrap(func(in web.PageFunc) web.PageFunc {
+		return func(ctx *web.EventContext) (r web.PageResponse, err error) {
+			defer func() {
+				if v := recover(); v != nil {
+					if render, ok := v.(presets.PageRenderIface); ok {
+						if rerr, ok := v.(error); ok {
+							log.Printf("catch previewrender err: %+v", rerr)
+						}
+						r, err = render.Render(ctx)
+						return
+					}
+					panic(v)
+				}
+			}()
+			return in(ctx)
+		}
+	})
+	b.preview = preview
 }
 
 func (b *ModelBuilder) setPageBuilderModel(obj interface{}, ctx *web.EventContext) {
