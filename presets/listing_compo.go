@@ -690,7 +690,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 				panic(err)
 			}
 		}
-		dataBody = h.Components(dataTable, h.Div(pagination).Style("margin-top:26px"))
+		dataBody = h.Components(dataTable, h.Div(pagination).Class("mt-6"))
 	} else {
 		dataBody = c.lb.dataTableFunc(evCtx, searchParams, searchResult, pagination)
 	}
@@ -796,7 +796,7 @@ func (c *ListingCompo) relayPaginationCompo(ctx context.Context, perPage int, pa
 		prev,
 		next,
 	)
-	return h.Div().Class("d-flex align-center ga-3 mt-6").Children(
+	return h.Div().Class("d-flex align-center ga-3").Children(
 		VSpacer(),
 		perPageSelect,
 		prevNext,
