@@ -39,6 +39,15 @@ func TestPageSeoTemplate(t *testing.T) {
 
 	cases := []TestCase{
 		{
+			Name:  "Preview Not Found Page",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageSEOData.TruncatePut(dbr)
+				return httptest.NewRequest("GET", "/page_builder/pages/preview?id=", http.NoBody)
+			},
+			ExpectPageBodyContainsInOrder: []string{"404"},
+		},
+		{
 			Name:  "Page Use Customize SEO OpenGraphImage",
 			Debug: true,
 			ReqFunc: func() *http.Request {
