@@ -39,6 +39,15 @@ func TestPageSeoTemplate(t *testing.T) {
 
 	cases := []TestCase{
 		{
+			Name:  "Preview Not Found Page",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageSEOData.TruncatePut(dbr)
+				return httptest.NewRequest("GET", "/page_builder/pages/preview?id=", http.NoBody)
+			},
+			ExpectPageBodyContainsInOrder: []string{"404"},
+		},
+		{
 			Name:  "Page Use Customize SEO OpenGraphImage",
 			Debug: true,
 			ReqFunc: func() *http.Request {
@@ -77,7 +86,7 @@ func TestPageSeoTemplate(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+			EventResponseMatch: func(t *testing.T, _ *TestEventResponse) {
 				var m seo.QorSEOSetting
 				TestDB.Where("name='Global SEO' and locale_code='International'").First(&m)
 				if m.Setting.OpenGraphImageFromMediaLibrary.URL() != "" {
