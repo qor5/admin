@@ -186,6 +186,7 @@ func cfNumber(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTM
 		Type("number").
 		Attr(VFieldError(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)), field.Errors)...).
 		Label(field.Label).
+		Attr(":min", "0").
 		Disabled(field.Disabled)
 }
 
