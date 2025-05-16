@@ -45,7 +45,7 @@ func TestPageBuilderTemplate(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderTemplateData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/page_templates", nil)
+				return httptest.NewRequest("GET", "/page_templates", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"Add Page Template", "123", "456"},
 		},

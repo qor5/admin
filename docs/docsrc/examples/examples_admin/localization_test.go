@@ -38,7 +38,7 @@ func TestLocalization(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				l10nData.TruncatePut(SqlDB)
-				return httptest.NewRequest("GET", "/l10n-models", nil)
+				return httptest.NewRequest("GET", "/l10n-models", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"My model title", "International"},
 		},
@@ -47,7 +47,7 @@ func TestLocalization(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				l10nDataWithChina.TruncatePut(SqlDB)
-				return httptest.NewRequest("GET", "/l10n-models?locale=China", nil)
+				return httptest.NewRequest("GET", "/l10n-models?locale=China", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"中文标题"},
 		},

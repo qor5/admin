@@ -88,7 +88,7 @@ func TestCategory(t *testing.T) {
 		err      error
 		response autocomplete.Response
 	)
-	bytes := runTest(t, httptest.NewRequest("GET", "/complete/categories", nil), handler)
+	bytes := runTest(t, httptest.NewRequest("GET", "/complete/categories", http.NoBody), handler)
 	if err = json.Unmarshal(bytes.Bytes(), &response); err != nil {
 		t.Fatalf("json unmarshal faield :%v", err)
 		return
@@ -114,7 +114,7 @@ func TestUser(t *testing.T) {
 		response autocomplete.Response
 	)
 
-	bytes := runTest(t, httptest.NewRequest("GET", "/complete/users", nil), handler)
+	bytes := runTest(t, httptest.NewRequest("GET", "/complete/users", http.NoBody), handler)
 	if err = json.Unmarshal(bytes.Bytes(), &response); err != nil {
 		t.Fatalf("json unmarshal faield :%v", err)
 		return
@@ -140,7 +140,7 @@ func TestUserSearch(t *testing.T) {
 		response autocomplete.Response
 	)
 
-	bytes := runTest(t, httptest.NewRequest("GET", "/complete/users?search=k", nil), handler)
+	bytes := runTest(t, httptest.NewRequest("GET", "/complete/users?search=k", http.NoBody), handler)
 	if err = json.Unmarshal(bytes.Bytes(), &response); err != nil {
 		t.Fatalf("json unmarshal faield :%v", err)
 		return
@@ -166,7 +166,7 @@ func TestCategoryPage(t *testing.T) {
 		response autocomplete.Response
 	)
 
-	bytes := runTest(t, httptest.NewRequest("GET", "/complete/categories?page=2&pageSize=3", nil), handler)
+	bytes := runTest(t, httptest.NewRequest("GET", "/complete/categories?page=2&pageSize=3", http.NoBody), handler)
 	if err = json.Unmarshal(bytes.Bytes(), &response); err != nil {
 		t.Fatalf("json unmarshal faield :%v", err)
 		return

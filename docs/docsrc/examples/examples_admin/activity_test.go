@@ -71,7 +71,7 @@ func TestActivity(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				activityData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/with-activity-products", nil)
+				return httptest.NewRequest("GET", "/with-activity-products", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"Under Armour Curry 7", "Asics Gel Lyte III", "Air Jordan 4 RM Prowls", "<v-badge", ">1</div>", "</v-badge>"},
 		},
@@ -555,7 +555,7 @@ func TestActivityAdmin(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				activityData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/activity-logs?lang=zh&per_page=10", nil)
+				return httptest.NewRequest("GET", "/activity-logs?lang=zh&per_page=10", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{
 				"操作日志列表",
@@ -571,7 +571,7 @@ func TestActivityAdmin(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				// activityData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/activity-logs?lang=zh&after=eyJJRCI6Mzd9&per_page=10", nil)
+				return httptest.NewRequest("GET", "/activity-logs?lang=zh&after=eyJJRCI6Mzd9&per_page=10", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{
 				"操作日志列表",
@@ -587,7 +587,7 @@ func TestActivityAdmin(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				// activityData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/activity-logs?lang=zh&before=eyJJRCI6MzZ9&per_page=10", nil)
+				return httptest.NewRequest("GET", "/activity-logs?lang=zh&before=eyJJRCI6MzZ9&per_page=10", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{
 				"操作日志列表",
@@ -632,7 +632,7 @@ func TestActivityAdmin(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				// activityData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/activity-logs?lang=zh&before=eyJJRCI6MzZ9&per_page=10", nil)
+				return httptest.NewRequest("GET", "/activity-logs?lang=zh&before=eyJJRCI6MzZ9&per_page=10", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{
 				"操作日志列表",
@@ -648,7 +648,7 @@ func TestActivityAdmin(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				// activityData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/activity-logs?lang=zh&before=eyJJRCI6MTIzfQ&per_page=10", nil)
+				return httptest.NewRequest("GET", "/activity-logs?lang=zh&before=eyJJRCI6MTIzfQ&per_page=10", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{
 				"操作日志列表",
@@ -757,7 +757,7 @@ func TestActivityAdmin(t *testing.T) {
 			},
 			ReqFunc: func() *http.Request {
 				// activityData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/activity-logs?lang=zh", nil)
+				return httptest.NewRequest("GET", "/activity-logs?lang=zh", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{
 				"没有可显示的记录",
@@ -783,7 +783,7 @@ func TestActivityAdmin(t *testing.T) {
 			},
 			ReqFunc: func() *http.Request {
 				// activityData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/activity-logs?lang=zh", nil)
+				return httptest.NewRequest("GET", "/activity-logs?lang=zh", http.NoBody)
 			},
 			ExpectPageBodyNotContains: []string{
 				"没有可显示的记录",
@@ -893,7 +893,7 @@ func TestActivityBeforeCreate(t *testing.T) {
 			Name:  "Index Page",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/activity-logs?lang=zh", nil)
+				return httptest.NewRequest("GET", "/activity-logs?lang=zh", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{
 				"操作日志列表",

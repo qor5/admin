@@ -41,7 +41,7 @@ func TestActivityLogs(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				activityLogsData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/activity-logs", nil)
+				return httptest.NewRequest("GET", "/activity-logs", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"login"},
 		},
@@ -51,7 +51,7 @@ func TestActivityLogs(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				eCDashboardData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/ec-dashboard", nil)
+				return httptest.NewRequest("GET", "/ec-dashboard", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"Statistics", "Order Status", "Pending"},
 		},

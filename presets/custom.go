@@ -12,6 +12,7 @@ type (
 		menus         ComponentFunc
 		pageTitleFunc func(ctx *web.EventContext) string
 		layoutFunc    web.PageFunc
+		web.EventsHub
 	}
 )
 

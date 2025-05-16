@@ -48,7 +48,7 @@ func TestProfileExample(t *testing.T) {
 				return pb
 			},
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/", nil)
+				return httptest.NewRequest("GET", "/", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"ProfileCompo", "https://i.pravatar.cc/300", "admin", "Active", "admin@theplant.jp", "The Plant", "Admin"},
 		},
@@ -98,7 +98,7 @@ func TestProfileExample(t *testing.T) {
 				return pb
 			},
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/", nil)
+				return httptest.NewRequest("GET", "/", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"ProfileCompo", "clicked change password", "Change Password", "Logout"},
 		},
@@ -121,7 +121,7 @@ func TestProfileExample(t *testing.T) {
 				return pb
 			},
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/", nil)
+				return httptest.NewRequest("GET", "/", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"ProfileCompo", "PrependCompos", "ProfileCompoEquals: true"},
 		},
@@ -150,7 +150,7 @@ func TestProfileExample(t *testing.T) {
 				return pb
 			},
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/", nil)
+				return httptest.NewRequest("GET", "/", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"ProfileCompo", "PrependCompos", "ProfileCompoEquals: true"},
 		},
@@ -175,7 +175,7 @@ func TestProfileExample(t *testing.T) {
 				return pb
 			},
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/", nil)
+				return httptest.NewRequest("GET", "/", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"ProfileCompo", "Customize Subtitle"},
 		},

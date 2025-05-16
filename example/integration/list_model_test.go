@@ -28,7 +28,7 @@ func TestListModel(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				listModelData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/list-models", nil)
+				return httptest.NewRequest("GET", "/list-models", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"123", "Online"},
 		},

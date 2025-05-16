@@ -20,7 +20,7 @@ func TestPresetsListingKeywordSearchOff(t *testing.T) {
 			Name:  "Index Page with keyword",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/customers?keyword=thisismykeyword", nil)
+				return httptest.NewRequest("GET", "/customers?keyword=thisismykeyword", http.NoBody)
 			},
 			ExpectPageBodyNotContains: []string{`model-value='"thisismykeyword"'`},
 		},
@@ -43,7 +43,7 @@ func TestPresetsRowMenuIcon(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				detailData.TruncatePut(SqlDB)
-				return httptest.NewRequest("GET", "/customers?__execute_event__=__reload__", nil)
+				return httptest.NewRequest("GET", "/customers?__execute_event__=__reload__", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{`:icon='\"mdi-close\"'\u003e\u003c/v-icon\u003e\n\u003c/template\u003e\n\n\u003cv-list-item-title\u003ewith-icon\u003c/v-list-item-title\u003e`},
 		},
@@ -64,7 +64,7 @@ func TestPresetsListingCustomizationFields(t *testing.T) {
 			Name:  "WrapColumns",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/customers", nil)
+				return httptest.NewRequest("GET", "/customers", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{`min-width: 123px; color: red;`},
 		},
@@ -120,7 +120,7 @@ func TestPresetsListingCustomizationFilters(t *testing.T) {
 			Name:  "DateOptions",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/customers", nil)
+				return httptest.NewRequest("GET", "/customers", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{`StartAt`, "EndAt", "Approved_Start_At", "Cancel1", "Approved_End_At"},
 		},
@@ -128,7 +128,7 @@ func TestPresetsListingCustomizationFilters(t *testing.T) {
 			Name:  "DateOptions Filter Validate",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/customers?f_created.gte=2024-09-13%2000%3A00&f_created.lt=2024-09-12%2000%3A00", nil)
+				return httptest.NewRequest("GET", "/customers?f_created.gte=2024-09-13%2000%3A00&f_created.lt=2024-09-12%2000%3A00", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{`CreatedAt Error`},
 		},

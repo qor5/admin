@@ -3,6 +3,7 @@ package pagebuilder
 import (
 	"cmp"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path"
 	"sort"
@@ -31,8 +32,10 @@ type pageBuilderModelKey struct{}
 
 func (b *ModelBuilder) registerFuncs() {
 	b.eventMiddleware = b.defaultWrapEvent
-	b.mb.RegisterEventFunc(RenameContainerDialogEvent, b.renameContainerDialog)
-	b.mb.RegisterEventFunc(RenameContainerFromDialogEvent, b.renameContainerFromDialog)
+	b.preview = web.Page(b.previewContent)
+}
+
+func (b *ModelBuilder) registerCustomFuncs() {
 	b.editor.RegisterEventFunc(ShowSortedContainerDrawerEvent, b.eventMiddleware(b.showSortedContainerDrawer))
 	b.editor.RegisterEventFunc(AddContainerEvent, b.eventMiddleware(b.addContainer))
 	b.editor.RegisterEventFunc(DeleteContainerConfirmationEvent, b.eventMiddleware(b.deleteContainerConfirmation))
@@ -48,7 +51,6 @@ func (b *ModelBuilder) registerFuncs() {
 	b.editor.RegisterEventFunc(ReplicateContainerEvent, b.eventMiddleware(b.replicateContainer))
 	b.editor.RegisterEventFunc(EditContainerEvent, b.eventMiddleware(b.editContainer))
 	b.editor.RegisterEventFunc(UpdateContainerEvent, b.eventMiddleware(b.updateContainer))
-	b.preview = web.Page(b.previewContent)
 }
 
 func (b *ModelBuilder) setPageBuilderModel(obj interface{}, ctx *web.EventContext) {
@@ -70,7 +72,11 @@ func (b *ModelBuilder) pageBuilderModel(ctx *web.EventContext) (obj interface{},
 		if pageVersion != "" {
 			g.Where("version = ?", pageVersion)
 		}
-		if err = g.First(obj).Error; err != nil {
+		err = g.First(obj).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			panic(presets.ErrNotFound(err.Error()))
+			return
+		} else if err != nil {
 			return
 		}
 		b.setPageBuilderModel(obj, ctx)
@@ -111,7 +117,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 	var (
 		cons                        []*Container
 		status                      = ctx.Param(paramStatus)
-		isReadonly                  = status != publish.StatusDraft && b.tb == nil
+		isReadonly                  = status != publish.StatusDraft && !b.isTemplate
 		pageID, pageVersion, locale = b.getPrimaryColumnValuesBySlug(ctx)
 		msgr                        = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr                       = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
@@ -492,14 +498,13 @@ func (b *ModelBuilder) deleteContainer(ctx *web.EventContext) (r web.EventRespon
 	return
 }
 
-func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
+func (b *Builder) renameContainerDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var (
 		paramID  = ctx.R.FormValue(paramContainerID)
 		name     = ctx.R.FormValue(paramContainerName)
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr    = presets.MustGetMessages(ctx.R)
 		okAction = web.Plaid().
-				URL(b.mb.Info().ListingHref()).
 				ThenScript("locals.renameDialog=false").
 				EventFunc(RenameContainerFromDialogEvent).Query(paramContainerID, paramID).Go()
 		portalName = dialogPortalName
@@ -540,7 +545,7 @@ func (b *ModelBuilder) renameContainerDialog(ctx *web.EventContext) (r web.Event
 
 func (b *ModelBuilder) renderContainerHover(cb *ContainerBuilder, ctx *web.EventContext, msgr *Messages) h.HTMLComponent {
 	containerName := cb.name
-	if b.builder.ps.GetI18n() != nil {
+	if b.builder.pb.GetI18n() != nil {
 		containerName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, cb.name)
 	}
 	addContainerEvent := web.Plaid().EventFunc(AddContainerEvent).
@@ -630,7 +635,7 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 			}
 			groupName := group[0].group
 
-			if b.builder.ps.GetI18n() != nil && groupName != "" {
+			if b.builder.pb.GetI18n() != nil && groupName != "" {
 				groupName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, groupName)
 			}
 			if groupName == "" {
@@ -663,7 +668,7 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 		listItems []h.HTMLComponent
 	)
 
-	b.db.Select("display_name,model_name,model_id").Where("shared = true AND locale_code = ? and page_model_name = ? ", locale, b.name).Group("display_name,model_name,model_id").Find(&cons)
+	b.db.Select("display_name,model_name,model_id").Where("shared = true AND locale_code = ?  ", locale).Group("display_name,model_name,model_id").Find(&cons)
 
 	for _, con := range cons {
 		listItems = append(listItems, b.renderSharedContainerHover(con.DisplayName, con.ModelName, con.ModelID, ctx, msgr))
@@ -681,7 +686,7 @@ func (b *ModelBuilder) renderContainersList(ctx *web.EventContext) (component h.
 	return
 }
 
-func (b *ModelBuilder) renameContainerFromDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
+func (b *Builder) renameContainerFromDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 	var container Container
 	var (
 		paramID     = ctx.R.FormValue(paramContainerID)
@@ -869,7 +874,8 @@ func (b *ModelBuilder) editContainer(ctx *web.EventContext) (r web.EventResponse
 		})
 		return
 	}
-	r.RunScript = web.Plaid().URL(b.builder.prefix+"/"+data[0]).
+	r.RunScript = web.Plaid().
+		URL("/"+strings.TrimLeft(path.Join(b.builder.pb.GetURIPrefix(), data[0]), "/")).
 		EventFunc(actions.Edit).
 		Query(presets.ParamID, data[1]).
 		Query(presets.ParamPortalName, pageBuilderRightContentPortal).

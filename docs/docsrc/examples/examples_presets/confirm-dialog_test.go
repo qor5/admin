@@ -19,7 +19,7 @@ func TestPresetsConfirmDialog(t *testing.T) {
 			Name:  "",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/confirm-dialog", nil)
+				return httptest.NewRequest("GET", "/confirm-dialog", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"Delete File"},
 		},

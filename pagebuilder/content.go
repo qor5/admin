@@ -2,6 +2,7 @@ package pagebuilder
 
 import (
 	"net/url"
+	"path"
 
 	"github.com/qor5/web/v3"
 
@@ -16,7 +17,8 @@ const (
 func (b *ModelBuilder) PreviewHref(_ *web.EventContext, ps string) string {
 	ur := url.Values{}
 	ur.Add(presets.ParamID, ps)
-	return b.builder.prefix + "/" + b.mb.Info().URIName() + "/preview" + "?" + ur.Encode()
+	return path.Join(b.builder.pb.GetURIPrefix(), b.builder.prefix, b.mb.Info().URIName(),
+		"preview") + "?" + ur.Encode()
 }
 
 const previewEmptySvg = `<svg width="120" height="73" viewBox="0 0 120 73" fill="none" xmlns="http://www.w3.org/2000/svg">

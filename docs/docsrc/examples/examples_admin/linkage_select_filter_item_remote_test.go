@@ -31,7 +31,7 @@ func TestLinkageSelectFilter(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				linkageSelectFilterData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/addresses", nil)
+				return httptest.NewRequest("GET", "/addresses", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"西湖区", "拱墅区"},
 		},
@@ -77,7 +77,7 @@ func TestLinkageSelectFilter(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				linkageSelectFilterData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/addresses?f_province_city_district=浙江__1,杭州__3,拱墅区__7", nil)
+				return httptest.NewRequest("GET", "/addresses?f_province_city_district=浙江__1,杭州__3,拱墅区__7", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"拱墅区"},
 			ExpectPageBodyNotContains:     []string{"西湖区"},

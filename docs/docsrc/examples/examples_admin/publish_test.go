@@ -35,7 +35,7 @@ func TestPublish(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				publishData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/with-publish-products", nil)
+				return httptest.NewRequest("GET", "/with-publish-products", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"Hello Product"},
 		},
@@ -59,7 +59,7 @@ func TestPublish(t *testing.T) {
 			},
 			ReqFunc: func() *http.Request {
 				publishData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/with-publish-products", nil)
+				return httptest.NewRequest("GET", "/with-publish-products", http.NoBody)
 			},
 			ExpectPageBodyNotContains: []string{"Hello Product"},
 		},
@@ -68,7 +68,7 @@ func TestPublish(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				publishData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/samples/publish/products", nil)
+				return httptest.NewRequest("GET", "/samples/publish/products", http.NoBody)
 			},
 			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {
 				if w.Header().Get("Content-Type") != "text/html; charset=utf-8" {
@@ -134,7 +134,7 @@ func TestPublish(t *testing.T) {
 			Name:  "List should show tooltip",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/with-publish-products", nil)
+				return httptest.NewRequest("GET", "/with-publish-products", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"will be online at", "Draft", "Online"},
 		},
@@ -161,7 +161,7 @@ func TestPublish(t *testing.T) {
 			Name:  "List should show tooltip",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/with-publish-products", nil)
+				return httptest.NewRequest("GET", "/with-publish-products", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"Online"},
 			ExpectPageBodyNotContains:     []string{"will be"},
@@ -191,7 +191,7 @@ func TestPublish(t *testing.T) {
 			Name:  "List should show tooltip",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/with-publish-products", nil)
+				return httptest.NewRequest("GET", "/with-publish-products", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"will be offline at", "Online", "Offline"},
 		},
@@ -242,7 +242,7 @@ func TestPublish(t *testing.T) {
 			Name:  "List should show tooltip",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/with-publish-products", nil)
+				return httptest.NewRequest("GET", "/with-publish-products", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"will be offline at", "will be online at", "Online", "Next"},
 		},
@@ -287,7 +287,7 @@ func TestPublish(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				publishData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/with-publish-products-version-list-dialog?__execute_event__=publish_eventRenameVersionDialog&id=1_2024-05-20-v01&overlay=dialog&version_name=2024-05-20-v01", nil)
+				return httptest.NewRequest("GET", "/with-publish-products-version-list-dialog?__execute_event__=publish_eventRenameVersionDialog&id=1_2024-05-20-v01&overlay=dialog&version_name=2024-05-20-v01", http.NoBody)
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Rename Version", "Cancel", "OK", "2024-05-20-v01"},
 		},
