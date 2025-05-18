@@ -285,6 +285,12 @@ type SortListItemsEvent struct {
 
 func (*SortListItemsEvent) nested() {}
 
+type MaxItems struct {
+	Limit int
+}
+
+func (*MaxItems) nested() {}
+
 func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *FieldBuilder) {
 	b.nestedFieldsBuilder = fb
 	switch b.rt.Kind() {
@@ -293,6 +299,7 @@ func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *Field
 		var addListItemRowEvent string
 		var removeListItemRowEvent string
 		var sortListItemsEvent string
+		var maxItems int
 		for _, cfg := range cfgs {
 			switch t := cfg.(type) {
 			case *DisplayFieldInSorter:
@@ -303,6 +310,8 @@ func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *Field
 				removeListItemRowEvent = t.Event
 			case *SortListItemsEvent:
 				sortListItemsEvent = t.Event
+			case *MaxItems:
+				maxItems = t.Limit
 			default:
 				panic("unknown nested config")
 			}
@@ -312,7 +321,8 @@ func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *Field
 				DisplayFieldInSorter(displayFieldInSorter).
 				AddListItemRowEvnet(addListItemRowEvent).
 				RemoveListItemRowEvent(removeListItemRowEvent).
-				SortListItemsEvent(sortListItemsEvent)
+				SortListItemsEvent(sortListItemsEvent).
+				MaxItems(maxItems)
 		})
 	default:
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {

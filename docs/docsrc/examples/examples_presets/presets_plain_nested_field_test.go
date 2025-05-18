@@ -33,7 +33,7 @@ func TestPresetsPlainNestedField(t *testing.T) {
 					BuildEventFuncRequest()
 			},
 			ExpectPageBodyNotContains:          []string{`v-card :variant='"outlined"' class='mx-0 mb-2 px-4 pb-0 pt-4'`},
-			ExpectPortalUpdate0ContainsInOrder: []string{`v-btn :variant='"text"' color='primary' id='Items_1' @click='plaid()`},
+			ExpectPortalUpdate0ContainsInOrder: []string{`v-btn :variant='"text"' color='primary' id='Items_1' :disabled='false' @click='plaid()`},
 		},
 		{
 			Name:  "add row",
