@@ -95,6 +95,21 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 
 	formKey := b.fieldContext.FormKey
 	var form h.HTMLComponent
+	
+	deletedIndexes := ContextModifiedIndexesBuilder(ctx)
+	
+	actualItemCount := 0
+	if b.value != nil {
+		totalItems := reflect.ValueOf(b.value).Len()
+		deletedCount := 0
+		for i := 0; i < totalItems; i++ {
+			if deletedIndexes.DeletedContains(b.fieldContext.FormKey, i) {
+				deletedCount++
+			}
+		}
+		actualItemCount = totalItems - deletedCount
+	}
+	
 	if b.value != nil {
 		form = b.fieldContext.NestedFieldsBuilder.ToComponentForEach(b.fieldContext, b.value, ctx, func(obj interface{}, formKey string, content h.HTMLComponent, ctx *web.EventContext) h.HTMLComponent {
 			return VCard(
@@ -120,7 +135,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 	var sorter h.HTMLComponent
 	var sorterData ListSorter
 	if b.value != nil {
-		deletedIndexes := ContextModifiedIndexesBuilder(ctx)
+		// deletedIndexes := ContextModifiedIndexesBuilder(ctx)  // 已在前面声明
 
 		deletedIndexes.SortedForEach(b.value, formKey, func(obj interface{}, i int) {
 			if deletedIndexes.DeletedContains(b.fieldContext.FormKey, i) {
@@ -206,7 +221,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 						Variant(VariantText).
 						Color("primary").
 						Attr("id", addRowBtnId).
-						Disabled(b.maxItems > 0 && reflect.ValueOf(b.value).Len() >= b.maxItems).
+						Disabled(b.maxItems > 0 && actualItemCount >= b.maxItems).
 						Attr("@click", web.Plaid().
 							URL(b.fieldContext.ModelInfo.ListingHref()).
 							EventFunc(b.addListItemRowEvent).
