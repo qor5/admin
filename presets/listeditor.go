@@ -95,9 +95,9 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 
 	formKey := b.fieldContext.FormKey
 	var form h.HTMLComponent
-	
+
 	deletedIndexes := ContextModifiedIndexesBuilder(ctx)
-	
+
 	actualItemCount := 0
 	if b.value != nil {
 		totalItems := reflect.ValueOf(b.value).Len()
@@ -109,7 +109,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 		}
 		actualItemCount = totalItems - deletedCount
 	}
-	
+
 	if b.value != nil {
 		form = b.fieldContext.NestedFieldsBuilder.ToComponentForEach(b.fieldContext, b.value, ctx, func(obj interface{}, formKey string, content h.HTMLComponent, ctx *web.EventContext) h.HTMLComponent {
 			return VCard(
