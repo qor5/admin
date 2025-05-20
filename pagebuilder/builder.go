@@ -297,6 +297,7 @@ func (b *Builder) PreviewContainer(v bool) (r *Builder) {
 	b.previewContainer = v
 	return b
 }
+
 func (b *Builder) DisabledShared(v bool) (r *Builder) {
 	b.disabledShared = v
 	return b
