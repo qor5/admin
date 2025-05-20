@@ -34,6 +34,7 @@ func (b *ModelBuilder) registerFuncs() {
 	b.eventMiddleware = b.defaultWrapEvent
 	b.preview = web.Page(b.previewContent)
 }
+
 func (b *ModelBuilder) registerCustomFuncs() {
 	b.editor.RegisterEventFunc(ShowSortedContainerDrawerEvent, b.eventMiddleware(b.showSortedContainerDrawer))
 	b.editor.RegisterEventFunc(AddContainerEvent, b.eventMiddleware(b.addContainer))
@@ -213,12 +214,14 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 						Query(paramStatus, status).
 						Go(),
 				),
-				VListItem(h.Text(msgr.MarkAsShared)).PrependIcon("mdi-share").Attr("@click",
-					web.Plaid().
-						EventFunc(MarkAsSharedContainerEvent).
-						Query(paramContainerID, web.Var("element.param_id")).
-						Go(),
-				).Attr("v-if", "!element.shared"),
+				h.If(!b.builder.disabledShared,
+					VListItem(h.Text(msgr.MarkAsShared)).PrependIcon("mdi-share").Attr("@click",
+						web.Plaid().
+							EventFunc(MarkAsSharedContainerEvent).
+							Query(paramContainerID, web.Var("element.param_id")).
+							Go(),
+					).Attr("v-if", "!element.shared"),
+				),
 			),
 		),
 	).Attr("v-show", "!element.editShow")
@@ -741,6 +744,7 @@ func (b *ModelBuilder) renameContainer(ctx *web.EventContext) (r web.EventRespon
 		}
 	}
 	web.AppendRunScripts(&r,
+		fmt.Sprintf("vars.__pageBuilderRightContentTitle=%q", name),
 		web.Plaid().EventFunc(ShowSortedContainerDrawerEvent).MergeQuery(true).Query(paramStatus, ctx.Param(paramStatus)).Go(),
 		web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).MergeQuery(true).Go(),
 	)

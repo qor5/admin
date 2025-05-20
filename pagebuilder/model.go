@@ -50,6 +50,7 @@ func (b *ModelBuilder) editorURLWithSlug(ps string) string {
 func (b *ModelBuilder) mountedUrl() string {
 	return strings.TrimLeft(path.Join(b.builder.prefix, b.mb.Info().URIName(), "{id}"), "/")
 }
+
 func (b *ModelBuilder) editorURL() string {
 	return path.Join(b.builder.pb.GetURIPrefix(), b.builder.prefix, b.mb.Info().URIName())
 }
@@ -280,10 +281,16 @@ func (b *ModelBuilder) renderScrollIframe(comps []h.HTMLComponent, ctx *web.Even
 		SeoTags:    seoTags,
 		Obj:        obj,
 	}
-
+	input.EditorCss = append(input.EditorCss,
+		h.Style(`
+.inner-container {
+    pointer-events: none
+}
+`))
 	if isEditor {
-		input.EditorCss = append(input.EditorCss, h.RawHTML(`<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">`))
-		input.EditorCss = append(input.EditorCss, h.Style(`
+		input.EditorCss = append(input.EditorCss,
+			h.RawHTML(`<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">`),
+			h.Style(`
 .wrapper-shadow {
     display: table;
     /* for IE or lower versions of browers */
@@ -305,9 +312,6 @@ func (b *ModelBuilder) renderScrollIframe(comps []h.HTMLComponent, ctx *web.Even
     z-index: 201;
 }
 
-.inner-container {
-    pointer-events: none
-}
 
 .editor-add {
     width: 100%;
@@ -699,7 +703,7 @@ func (b *ModelBuilder) localizeContainersToAnotherPage(db *gorm.DB, pageID int, 
 	}
 
 	for _, c := range cons {
-		newModelID := c.ModelID
+		var newModelID uint
 		newDisplayName := c.DisplayName
 		if !c.Shared {
 			model := b.builder.ContainerByName(c.ModelName).NewModel()
@@ -848,7 +852,7 @@ func (b *ModelBuilder) PreviewHTML(_ context.Context, obj interface{}) (r string
 		return
 	}
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%s", p.PrimarySlug()), nil)
+	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%s", p.PrimarySlug()), http.NoBody)
 	b.preview.ServeHTTP(w, req)
 	r = w.Body.String()
 	return

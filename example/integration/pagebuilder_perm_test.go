@@ -32,7 +32,7 @@ func TestPageBuilderPerm(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/pages/1_2024-05-18-v01_International", nil)
+				return httptest.NewRequest("GET", "/pages/1_2024-05-18-v01_International", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{
 				`Page`, "Category", `SEO`, `Activity`,

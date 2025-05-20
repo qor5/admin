@@ -1067,7 +1067,7 @@ func (b *Builder) InjectAssets(ctx *web.EventContext) {
 
 func (b *Builder) InjectExtraAssets(ctx *web.EventContext) {
 	for _, ea := range b.extraAssets {
-		if len(ea.refTag) > 0 {
+		if ea.refTag != "" {
 			ctx.Injector.HeadHTML(ea.refTag)
 			continue
 		}
@@ -1232,7 +1232,6 @@ func (b *Builder) notFound(handler http.Handler) http.Handler {
 			// If no other handler wrote to the response, assume 404 and write our custom response.
 			b.notFoundHandler.ServeHTTP(w, r)
 		}
-		return
 	})
 }
 
@@ -1256,6 +1255,7 @@ func (b *Builder) wrap(m *ModelBuilder, pf web.PageFunc) http.Handler {
 		}
 	}, pf)
 }
+
 func (b *Builder) wrapInner(f func(p *web.PageBuilder), pf web.PageFunc) http.Handler {
 	p := b.builder.Page(pf)
 	if f != nil {

@@ -60,7 +60,7 @@ func TestPageBuilderShareContainer(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerShareTestData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/shared_containers", nil)
+				return httptest.NewRequest("GET", "/shared_containers", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"Header", "ListContent"},
 		},
@@ -134,7 +134,6 @@ func TestPageBuilderShareContainer(t *testing.T) {
 					t.Fatalf("Replicate Container Faield %#+v", nextContainer)
 					return
 				}
-				return
 			},
 		},
 		{

@@ -87,7 +87,7 @@ func TestPageBuilder(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/pages", nil)
+				return httptest.NewRequest("GET", "/pages", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"ID", "Title", "Live", "12312"},
 		},
@@ -109,7 +109,7 @@ func TestPageBuilder(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/pages/1_2024-05-18-v01_International", nil)
+				return httptest.NewRequest("GET", "/pages/1_2024-05-18-v01_International", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{
 				`Page`, "Category", `SEO`, `Activity`,
@@ -121,7 +121,7 @@ func TestPageBuilder(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/pages/1_2024-05-18-v01_International_invalid", nil)
+				return httptest.NewRequest("GET", "/pages/1_2024-05-18-v01_International_invalid", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{
 				`Sorry, the requested page cannot be found. Please check the URL.`,
@@ -132,7 +132,7 @@ func TestPageBuilder(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/pages/a_2024-05-18-v01_International", nil)
+				return httptest.NewRequest("GET", "/pages/a_2024-05-18-v01_International", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{
 				`Sorry, the requested page cannot be found. Please check the URL.`,
@@ -226,7 +226,7 @@ func TestPageBuilder(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/page_builder/pages/10_2024-05-21-v01_International", nil)
+				return httptest.NewRequest("GET", "/page_builder/pages/10_2024-05-21-v01_International", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"Add Container", "Select an element and change the setting here."},
 		},
@@ -245,7 +245,7 @@ func TestPageBuilder(t *testing.T) {
 			},
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/page_builder/pages/10_2024-05-21-v01_International", nil)
+				return httptest.NewRequest("GET", "/page_builder/pages/10_2024-05-21-v01_International", http.NoBody)
 			},
 			ExpectPageBodyNotContains: []string{"Add Container", "Select an element and change the setting here."},
 		},
@@ -1136,7 +1136,6 @@ func TestPageBuilder(t *testing.T) {
 					t.Fatalf("Replicate Container Faield %#+v", nextContainer)
 					return
 				}
-				return
 			},
 		},
 		{
@@ -1334,7 +1333,6 @@ func TestPageBuilder(t *testing.T) {
 					t.Fatalf("Containers not copied")
 					return
 				}
-				return
 			},
 		},
 	}

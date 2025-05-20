@@ -52,7 +52,7 @@ func TestFields(t *testing.T) {
 		return h.Text(field.ContextValue("a").(string) + ", " + field.ContextValue("b").(string))
 	})
 
-	r := httptest.NewRequest("GET", "/hello", nil)
+	r := httptest.NewRequest("GET", "/hello", http.NoBody)
 
 	ctx := &web.EventContext{R: r, Flash: vd}
 
@@ -386,7 +386,7 @@ func TestFields(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			output := h.MustString(c.toComponentFun(), web.WrapEventContext(context.TODO(), ctx))
 			diff := testingutils.PrettyJsonDiff(c.expect, output)
-			if len(diff) > 0 {
+			if diff != "" {
 				t.Error(c.name, diff)
 				t.Logf("\nexpected: %s\noutput: %s", c.expect, output)
 			}
@@ -807,7 +807,7 @@ func TestFieldsBuilder(t *testing.T) {
 	for _, c := range toComponentCases {
 		t.Run(c.name, func(t *testing.T) {
 			ctx := &web.EventContext{
-				R: httptest.NewRequest("POST", "/", nil),
+				R: httptest.NewRequest("POST", "/", http.NoBody),
 			}
 			c.setup(ctx)
 			result := fbs.ToComponent(nil, c.obj, ctx)
