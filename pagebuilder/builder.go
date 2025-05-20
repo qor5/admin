@@ -105,6 +105,7 @@ type Builder struct {
 	disabledNormalContainersGroup bool
 	previewOpenNewTab             bool
 	previewContainer              bool
+	disabledShared                bool
 	templateInstall               presets.ModelInstallFunc
 	pageInstall                   presets.ModelInstallFunc
 	categoryInstall               presets.ModelInstallFunc
@@ -294,6 +295,10 @@ func (b *Builder) PageEnabled(v bool) (r *Builder) {
 
 func (b *Builder) PreviewContainer(v bool) (r *Builder) {
 	b.previewContainer = v
+	return b
+}
+func (b *Builder) DisabledShared(v bool) (r *Builder) {
+	b.disabledShared = v
 	return b
 }
 

@@ -214,12 +214,14 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 						Query(paramStatus, status).
 						Go(),
 				),
-				VListItem(h.Text(msgr.MarkAsShared)).PrependIcon("mdi-share").Attr("@click",
-					web.Plaid().
-						EventFunc(MarkAsSharedContainerEvent).
-						Query(paramContainerID, web.Var("element.param_id")).
-						Go(),
-				).Attr("v-if", "!element.shared"),
+				h.If(!b.builder.disabledShared,
+					VListItem(h.Text(msgr.MarkAsShared)).PrependIcon("mdi-share").Attr("@click",
+						web.Plaid().
+							EventFunc(MarkAsSharedContainerEvent).
+							Query(paramContainerID, web.Var("element.param_id")).
+							Go(),
+					).Attr("v-if", "!element.shared"),
+				),
 			),
 		),
 	).Attr("v-show", "!element.editShow")
@@ -505,8 +507,8 @@ func (b *Builder) renameContainerDialog(ctx *web.EventContext) (r web.EventRespo
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr    = presets.MustGetMessages(ctx.R)
 		okAction = web.Plaid().
-				ThenScript("locals.renameDialog=false").
-				EventFunc(RenameContainerFromDialogEvent).Query(paramContainerID, paramID).Go()
+			ThenScript("locals.renameDialog=false").
+			EventFunc(RenameContainerFromDialogEvent).Query(paramContainerID, paramID).Go()
 		portalName = dialogPortalName
 	)
 
