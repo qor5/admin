@@ -73,7 +73,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 
 		div := h.Div().Class("tagList-bar-warp")
 		confirmDialogPayload := utils.UtilDialogPayloadType{
-			Text:     msgr.Areyousure,
+			Text:     msgr.ConfirmPublish,
 			OkAction: web.Plaid().URL(mb.Info().ListingHref()).EventFunc(web.Var("locals.action")).Query(presets.ParamID, slug).Go(),
 			Msgr:     utilsMsgr,
 		}

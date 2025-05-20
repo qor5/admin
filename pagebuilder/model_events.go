@@ -744,6 +744,7 @@ func (b *ModelBuilder) renameContainer(ctx *web.EventContext) (r web.EventRespon
 		}
 	}
 	web.AppendRunScripts(&r,
+		fmt.Sprintf("vars.__pageBuilderRightContentTitle=%q", name),
 		web.Plaid().EventFunc(ShowSortedContainerDrawerEvent).MergeQuery(true).Query(paramStatus, ctx.Param(paramStatus)).Go(),
 		web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).MergeQuery(true).Go(),
 	)

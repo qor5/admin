@@ -281,7 +281,12 @@ func (b *ModelBuilder) renderScrollIframe(comps []h.HTMLComponent, ctx *web.Even
 		SeoTags:    seoTags,
 		Obj:        obj,
 	}
-
+	input.EditorCss = append(input.EditorCss,
+		h.Style(`
+.inner-container {
+    pointer-events: none
+}
+`))
 	if isEditor {
 		input.EditorCss = append(input.EditorCss,
 			h.RawHTML(`<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">`),
@@ -307,9 +312,6 @@ func (b *ModelBuilder) renderScrollIframe(comps []h.HTMLComponent, ctx *web.Even
     z-index: 201;
 }
 
-.inner-container {
-    pointer-events: none
-}
 
 .editor-add {
     width: 100%;
