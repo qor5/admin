@@ -497,7 +497,7 @@ func (b *Builder) containerWrapper(r *h.HTMLTagBuilder, ctx *web.EventContext, i
 	}
 	if isEditor {
 		if isReadonly {
-			r.AppendChildren(h.Div().Class("wrapper-shadow")).Class("inner-container")
+			r.AppendChildren(h.Div().Class("wrapper-shadow"))
 		} else {
 			r = h.Div(
 				h.Div().Class("inner-shadow"),
