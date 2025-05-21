@@ -105,6 +105,7 @@ type Builder struct {
 	disabledNormalContainersGroup bool
 	previewOpenNewTab             bool
 	previewContainer              bool
+	disabledShared                bool
 	templateInstall               presets.ModelInstallFunc
 	pageInstall                   presets.ModelInstallFunc
 	categoryInstall               presets.ModelInstallFunc
@@ -294,6 +295,11 @@ func (b *Builder) PageEnabled(v bool) (r *Builder) {
 
 func (b *Builder) PreviewContainer(v bool) (r *Builder) {
 	b.previewContainer = v
+	return b
+}
+
+func (b *Builder) DisabledShared(v bool) (r *Builder) {
+	b.disabledShared = v
 	return b
 }
 
@@ -1021,6 +1027,21 @@ func (b *ContainerBuilder) Install() {
 				return
 			})
 		}
+	})
+	editing.EditingTitleFunc(func(obj interface{}, defaultTitle string, ctx *web.EventContext) h.HTMLComponent {
+		var (
+			modelID    = reflectutils.MustGet(obj, "ID")
+			locale     = ctx.ContextValue(l10n.LocaleCode)
+			localeCode string
+			con        Container
+		)
+
+		if locale != nil {
+			localeCode = locale.(string)
+		}
+		b.builder.db.Where("model_id = ? and model_name = ? and locale_code = ?", modelID, b.name, localeCode).First(&con)
+		return h.Span("{{vars.__pageBuilderRightContentTitle?vars.__pageBuilderRightContentTitle:vars.__pageBuilderRightDefaultContentTitle}}").
+			Attr(web.VAssign("vars", fmt.Sprintf("{__pageBuilderRightContentTitle:%q,__pageBuilderRightDefaultContentTitle:%q}", con.DisplayName, defaultTitle))...)
 	})
 	editing.AppendHiddenFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		if portalName := ctx.Param(presets.ParamPortalName); portalName != pageBuilderRightContentPortal {

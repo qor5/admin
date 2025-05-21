@@ -66,7 +66,7 @@ func TestDemoContainer(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Items", "Add Row"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Items", "Add Item"},
 		},
 		{
 			Name:  "ListContentLite Edit View",
@@ -80,7 +80,7 @@ func TestDemoContainer(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Items", "Add Row", "Background Color", "vx-select"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Items", "Add Item", "Background Color", "vx-select"},
 		},
 		{
 			Name:  "ListContentLite Edit View Add Row",
@@ -123,7 +123,7 @@ func TestDemoContainer(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Heading", "Items", "Add Row"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Heading", "Items", "Add Item"},
 		},
 		{
 			Name:  "ListContent Edit View",
@@ -137,7 +137,7 @@ func TestDemoContainer(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Background Color", "vx-select", "Items", "Add Row", "Link Display Option"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Background Color", "vx-select", "Items", "Add Item", "Link Display Option"},
 		},
 		{
 			Name:  "ImageContainer Edit View",
@@ -212,7 +212,7 @@ func TestDemoContainer(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Brands", "Add Row"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Brands", "Add Item"},
 		},
 		{
 			Name:  "VideoBanner Edit View",
@@ -240,7 +240,7 @@ func TestDemoContainer(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Hero Image", "Choose File", "Navigation Link Text", "Tags", "Add Row"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Hero Image", "Choose File", "Navigation Link Text", "Tags", "Add Item"},
 		},
 		{
 			Name:  "Heading Edit View",
