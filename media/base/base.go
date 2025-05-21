@@ -116,7 +116,7 @@ func (b *Base) Scan(data interface{}) (err error) {
 }
 
 // Value return struct's Value
-func (b *Base) Value() (driver.Value, error) {
+func (b Base) Value() (driver.Value, error) {
 	if b.Delete {
 		return nil, nil
 	}

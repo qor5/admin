@@ -7,9 +7,8 @@ import (
 
 	"github.com/qor5/x/v3/oss/filesystem"
 
-	media_oss "github.com/qor5/admin/v3/media/oss"
-
 	"github.com/qor5/admin/v3/media/media_library"
+	media_oss "github.com/qor5/admin/v3/media/oss"
 
 	"github.com/qor5/web/v3"
 
@@ -55,6 +54,25 @@ func TestMedia(t *testing.T) {
 				return req
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Snipaste_2024-06-14_10-06-12.png"},
+		},
+		{
+			Name:  "LoadImageCropperEvent",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				mediaTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages/1_2024-06-19-v01_International").
+					EventFunc("mediaLibrary_LoadImageCropperEvent").
+					AddField("media_ids", "1").
+					AddField("thumb", "default").
+					AddField("field", "Image").
+					AddField("cfg", `{"Sizes":null,"Max":0,"AllowType":"","BackgroundColor":"","DisableCrop":false,"SimpleIMGURL":false}`).
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{":view-mode='2'"},
 		},
 		{
 			Name:  "MediaLibrary Admin Role List",

@@ -137,7 +137,6 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 		if c.Hidden {
 			vicon = "mdi-eye-off"
 		}
-
 		sorterData.Items = append(sorterData.Items,
 			ContainerSorterItem{
 				Index:           i,
@@ -560,7 +559,7 @@ func (b *ModelBuilder) renderContainerHover(cb *ContainerBuilder, ctx *web.Event
 				).Attr("v-bind", "props", ":active", "isHovering").
 					Class("cursor-pointer").
 					Attr("@click", fmt.Sprintf(`if (isHovering &&!pLocals.creating){%s}`, addContainerEvent)).
-					ActiveColor(ColorPrimary),
+					Color(ColorPrimary),
 			).VSlot("{ locals: pLocals }").Init(`{ creating : false }`),
 		).Name("default").Scope(`{isHovering, props }`),
 	).Attr("@update:model-value", fmt.Sprintf(`(val)=>{if (val){%s} }`,
@@ -589,7 +588,7 @@ func (b *ModelBuilder) renderSharedContainerHover(displayName, modelName string,
 				).Attr("v-bind", "props", ":active", "isHovering").
 					Class("cursor-pointer").
 					Attr("@click", fmt.Sprintf(`if (isHovering &&!pLocals.creating){%s}`, addContainerEvent)).
-					ActiveColor(ColorPrimary),
+					Color(ColorPrimary),
 			).VSlot("{ locals: pLocals }").Init(`{ creating : false }`),
 		).Name("default").Scope(`{isHovering, props }`),
 	).Attr("@update:model-value", fmt.Sprintf(`(val)=>{if (val){%s} }`,
@@ -863,7 +862,7 @@ func (b *ModelBuilder) replicateContainer(ctx *web.EventContext) (r web.EventRes
 
 func (b *ModelBuilder) editContainer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	data := strings.Split(ctx.Param(paramContainerDataID), "_")
-	if len(data) != 4 {
+	if len(data) <= 2 {
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: pageBuilderRightContentPortal,
 			Body: b.builder.emptyEdit(ctx),

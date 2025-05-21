@@ -2,6 +2,7 @@ package examples_admin
 
 import (
 	"net/http"
+	"reflect"
 	"time"
 
 	"github.com/qor5/admin/v3/presets"
@@ -10,8 +11,11 @@ import (
 	v "github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
 	"github.com/theplant/osenv"
+	"github.com/theplant/relay"
+	"github.com/theplant/relay/gormrelay"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
 )
 
@@ -134,3 +138,89 @@ func listingExample(b *presets.Builder, db *gorm.DB, customize func(mb *presets.
 }
 
 // @snippet_end
+
+type PostWithCategory struct {
+	Post
+	Category *Category `gorm:"foreignKey:CategoryID;references:ID"`
+}
+
+func (p *PostWithCategory) TableName() string {
+	return "posts"
+}
+
+func ListingWithJoinsExample(b *presets.Builder, db *gorm.DB) http.Handler {
+	return listingPostWithCategory(b, db, nil)
+}
+
+func listingPostWithCategory(b *presets.Builder, db *gorm.DB, customize func(mb *presets.ModelBuilder)) http.Handler {
+	db.AutoMigrate(&Post{}, &Category{})
+
+	b.DataOperator(gorm2op.DataOperator(db))
+
+	mb := b.Model(&PostWithCategory{})
+
+	eb := mb.Editing("Title", "Body", "Disabled", "Status", "CategoryID")
+	eb.Field("CategoryID").Label("Category").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		categories := []Category{}
+		if err := db.Find(&categories).Error; err != nil {
+			panic(err)
+		}
+		fieldValue := field.Value(obj)
+		if reflect.ValueOf(fieldValue).IsZero() && len(categories) > 0 {
+			fieldValue = categories[0].ID
+		}
+		return v.VAutocomplete().
+			Chips(true).
+			Attr(web.VField(field.Name, fieldValue)...).Label(field.Label).
+			Items(categories).
+			ItemTitle("Name").
+			ItemValue("ID")
+	})
+
+	lb := mb.Listing("ID", "Title", "Body", "Disabled", "Status", "CategoryName")
+
+	lb.RelayPagination(gorm2op.KeysetBasedPagination(true)).
+		OrderableFields([]*presets.OrderableField{
+			{FieldName: "ID"},
+			{FieldName: "CategoryName"},
+		}).
+		DefaultOrderBys(relay.OrderBy{Field: "ID", Desc: true})
+
+	lb.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
+		return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
+			oldR := ctx.R
+			defer func() {
+				ctx.R = oldR // restore the original request context
+			}()
+			ctx = gorm2op.EventContextWithHook(ctx, func(db *gorm.DB) *gorm.DB {
+				return db.Joins("Category")
+			})
+			ctx = gorm2op.EventContextWithRelayComputedHook(ctx, func(computed *gormrelay.Computed[any]) *gormrelay.Computed[any] {
+				computed.Columns["CategoryName"] = clause.Column{
+					Name: `("Category"."name")`,
+					Raw:  true,
+				}
+				return computed
+			})
+			return in(ctx, params)
+		}
+	})
+
+	lb.Field("CategoryName").Label("Category").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
+		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			v := obj.(*PostWithCategory)
+			if v.Category == nil {
+				return h.Td(h.Text("-"))
+			}
+			return h.Td(h.Text(v.Category.Name))
+		}
+	})
+
+	if customize != nil {
+		customize(mb)
+	}
+
+	b.Model(&Category{})
+	// Use m to customize the model, Or config more models here.
+	return b
+}

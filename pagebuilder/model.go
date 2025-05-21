@@ -838,7 +838,7 @@ func (b *ModelBuilder) configDuplicate(mb *presets.ModelBuilder) {
 						return
 					}
 					if p, ok := obj.(*Page); ok {
-						if inerr = b.builder.localizeCategory(tx, p.CategoryID, fromLocale, locale); inerr != nil {
+						if inerr = b.builder.localizeCategory(tx, p.CategoryID, fromLocale, localeCode); inerr != nil {
 							panic(inerr)
 						}
 					}
@@ -855,7 +855,7 @@ func (b *ModelBuilder) configDuplicate(mb *presets.ModelBuilder) {
 	})
 }
 
-func (b *ModelBuilder) PreviewHTML(obj interface{}) (r string) {
+func (b *ModelBuilder) PreviewHTML(_ context.Context, obj interface{}) (r string) {
 	p, ok := obj.(presets.SlugEncoder)
 	if !ok {
 		return

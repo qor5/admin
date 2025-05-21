@@ -1,13 +1,15 @@
 package examples_presets
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
 
-	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
+
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/gorm2op"
 )
 
 var detailData = gofixtures.Data(gofixtures.Sql(`
@@ -837,6 +839,43 @@ func TestPresetsDetailSectionView(t *testing.T) {
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"section-edit-area", "z-index:2"},
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}
+
+func TestPresetsDetailDisableSave(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsDetailDisableSave(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "detail without drawer disable save",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				customerData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers/1").
+					EventFunc("section_edit_DisabledSection").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{fmt.Sprintf("dash.disabled.%s=true", presets.DisabledKeyButtonSave), fmt.Sprintf("dash.disabled.%s=false", presets.DisabledKeyButtonSave), "Savable"},
+		},
+		{
+			Name:  "detail with drawer disable save",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				companyData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/companies/1").
+					EventFunc("section_edit_DisabledSectionCompany").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{fmt.Sprintf("dash.disabled.%s=true", presets.DisabledKeyButtonSave), fmt.Sprintf("dash.disabled.%s=false", presets.DisabledKeyButtonSave), "Savable"},
 		},
 	}
 	for _, c := range cases {

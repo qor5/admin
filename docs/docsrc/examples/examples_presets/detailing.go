@@ -5,14 +5,15 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/actions"
-	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/admin/v3/utils"
 )
 
 // @snippet_begin(PresetsDetailPageTopNotesSample)
@@ -367,5 +368,40 @@ func PresetsUtilsDialog(b *presets.Builder, db *gorm.DB) (
 		return utils.CustomDialog(dialogPayload)
 	})
 
+	return
+}
+
+func PresetsDetailDisableSave(b *presets.Builder, db *gorm.DB) (
+	cust *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	err := db.AutoMigrate(&Company{})
+	if err != nil {
+		panic(err)
+	}
+	cust, cl, ce, dp = PresetsHelloWorld(b, db)
+	dp = cust.Detailing("DisabledSection", "Normal")
+	section := presets.NewSectionBuilder(cust, "DisabledSection").Editing("Name", "Email")
+	section.EditingField("Btn").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return h.Div(
+			vx.VXBtn("Disabled").Attr("@click", fmt.Sprintf("dash.disabled.%s=true", presets.DisabledKeyButtonSave)).Color(ColorSecondary),
+			vx.VXBtn("Savable").Attr("@click", fmt.Sprintf("dash.disabled.%s=false", presets.DisabledKeyButtonSave)).Color(ColorPrimary),
+		).Class("d-flex d-flex-inline ga-4")
+	})
+	normalSec := presets.NewSectionBuilder(cust, "Normal").Editing("Email")
+
+	dp.Section(section, normalSec)
+	mb := b.Model(&Company{})
+	dpc := mb.Detailing("DisabledSectionCompany").Drawer(true)
+	sec := presets.NewSectionBuilder(mb, "DisabledSectionCompany").Editing("Name")
+	sec.EditingField("Btn").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return h.Div(
+			vx.VXBtn("Disabled").Attr("@click", fmt.Sprintf("dash.disabled.%s=true", presets.DisabledKeyButtonSave)).Color(ColorSecondary),
+			vx.VXBtn("Savable").Attr("@click", fmt.Sprintf("dash.disabled.%s=false", presets.DisabledKeyButtonSave)).Color(ColorPrimary),
+		).Class("d-flex d-flex-inline ga-4")
+	})
+	dpc.Section(sec)
 	return
 }

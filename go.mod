@@ -36,7 +36,7 @@ require (
 	github.com/qor5/ui/v3 v3.0.3
 	github.com/qor5/web v1.3.2
 	github.com/qor5/web/v3 v3.0.12-0.20250322025751-d36834ab80b4
-	github.com/qor5/x/v3 v3.0.14-0.20250325110943-e17fccbc3fe0
+	github.com/qor5/x/v3 v3.0.14-0.20250519064729-ef490919bd8e
 	github.com/samber/lo v1.47.0
 	github.com/shurcooL/sanitized_anchor_name v1.0.0
 	github.com/spf13/cast v1.6.0
@@ -48,7 +48,7 @@ require (
 	github.com/theplant/gofixtures v1.1.3
 	github.com/theplant/htmlgo v1.0.3
 	github.com/theplant/osenv v0.0.2
-	github.com/theplant/relay v0.4.0
+	github.com/theplant/relay v0.4.3-0.20250424075128-61850ded6ace
 	github.com/theplant/sliceutils v0.0.0-20200406042209-89153d988eb1
 	github.com/theplant/testenv v0.1.0
 	github.com/theplant/testingutils v0.0.2
@@ -58,8 +58,8 @@ require (
 	github.com/yosssi/gohtml v0.0.0-20201013000340-ee4748c638f4
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
-	golang.org/x/text v0.22.0
+	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0
+	golang.org/x/text v0.23.0
 	google.golang.org/api v0.222.0
 	gorm.io/driver/postgres v1.5.9
 	gorm.io/driver/sqlite v1.5.6
@@ -196,12 +196,12 @@ require (
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.opentelemetry.io/otel/trace v1.34.0 // indirect
 	go4.org v0.0.0-20230225012048-214862532bf5 // indirect
-	golang.org/x/crypto v0.35.0 // indirect
+	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/image v0.23.0 // indirect
 	golang.org/x/net v0.36.0 // indirect
 	golang.org/x/oauth2 v0.26.0 // indirect
-	golang.org/x/sync v0.11.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/sync v0.13.0 // indirect
+	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/time v0.10.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250219182151-9fdb1cabc7b2 // indirect
 	google.golang.org/grpc v1.70.0 // indirect
