@@ -339,7 +339,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 						BeforeScript("xLocals.isFetching=true").
 						EventFunc(actions.Update).
 						Queries(queries).
-						ThenScript("setTimeout(()=>{xLocals.isFetching=false},150)").
+						AfterScript("xLocals.isFetching=false").
 						URL(b.mb.Info().ListingHref()).
 						Go()),
 			).VSlot("{locals:xLocals}").Init("{isFetching:false}")
@@ -416,7 +416,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 				Query(ParamOverlay, ctx.Param(ParamOverlay)).
 				Go()
 	}
-	return web.Scope(scope.OnChange(onChangeEvent).UseDebounce(500)).VSlot("{dash}").DashInit("{errorMessages:{},disabled:{}}")
+	return web.Scope(scope.OnChange(onChangeEvent).UseDebounce(500)).VSlot("{dash}").DashInit("{errorMessages:{}}")
 }
 
 func (b *EditingBuilder) doValidate(ctx *web.EventContext) (r web.EventResponse, err error) {

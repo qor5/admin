@@ -23,7 +23,7 @@ func RunPublisher(ctx context.Context, db *gorm.DB, storage oss.StorageInterface
 	{ // schedule publisher
 		scheduleP := NewSchedulePublishBuilder(publisher)
 
-		for name, model := range publisher.nonVersionPublishModels {
+		for name, model := range NonVersionPublishModels {
 			go RunJob(schedulePublishJobNamePrefix+"-"+name, time.Minute, time.Minute*5, func() {
 				if err := scheduleP.Run(ctx, model); err != nil {
 					log.Printf("schedule publisher error: %v\n", err)
@@ -31,7 +31,7 @@ func RunPublisher(ctx context.Context, db *gorm.DB, storage oss.StorageInterface
 			})
 		}
 
-		for name, model := range publisher.versionPublishModels {
+		for name, model := range VersionPublishModels {
 			go RunJob(schedulePublishJobNamePrefix+"-"+name, time.Minute, time.Minute*5, func() {
 				if err := scheduleP.Run(ctx, model); err != nil {
 					log.Printf("schedule publisher error: %v\n", err)
@@ -42,7 +42,7 @@ func RunPublisher(ctx context.Context, db *gorm.DB, storage oss.StorageInterface
 
 	{ // list publisher
 		listP := NewListPublishBuilder(db, storage)
-		for name, model := range publisher.listPublishModels {
+		for name, model := range ListPublishModels {
 			go RunJob(listPublishJobNamePrefix+"-"+name, time.Minute, time.Minute*5, func() {
 				if err := listP.Run(ctx, model); err != nil {
 					log.Printf("schedule publisher error: %v\n", err)

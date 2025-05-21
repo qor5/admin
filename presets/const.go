@@ -41,7 +41,7 @@ const (
 	ParamSortResultFormKey  = "listEditor_SortResultFormKey"
 )
 
-var PhraseHasPresetsDataChanged = fmt.Sprintf("Object.values(vars.%s || {} ).some(v => v)", VarsPresetsDataChanged)
+var PhraseHasPresetsDataChanged = fmt.Sprintf("Object.values(vars.%s).some(value => value === true)", VarsPresetsDataChanged)
 
 const (
 	setFieldErrorsScript = `	

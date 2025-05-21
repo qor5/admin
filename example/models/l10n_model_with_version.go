@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/qor5/admin/v3/l10n"
-	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/x/v3/oss"
 	"gorm.io/gorm"
@@ -30,7 +29,7 @@ func (lmv *L10nModelWithVersion) PrimarySlug() string {
 func (lmv *L10nModelWithVersion) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 3 {
-		panic(presets.ErrNotFound("wrong slug"))
+		panic("wrong slug")
 	}
 
 	return map[string]string{

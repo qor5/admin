@@ -30,44 +30,29 @@ import (
 type (
 	PublishFunc   func(ctx context.Context, record any) error
 	UnPublishFunc func(ctx context.Context, record any) error
-
-	Disablement struct {
-		DisabledRename bool
-		DisabledDelete bool
-	}
-
-	DisablementCheckFunc func(ctx *web.EventContext, obj any) *Disablement
 )
 
 type Builder struct {
-	db                      *gorm.DB
-	storage                 oss.StorageInterface
-	ab                      *activity.Builder
-	ctxValueProviders       []ContextValueFunc
-	afterInstallFuncs       []func()
-	autoSchedule            bool
-	nonVersionPublishModels map[string]interface{}
-	versionPublishModels    map[string]interface{}
-	listPublishModels       map[string]interface{}
+	db                *gorm.DB
+	storage           oss.StorageInterface
+	ab                *activity.Builder
+	ctxValueProviders []ContextValueFunc
+	afterInstallFuncs []func()
+	autoSchedule      bool
 
-	publish              PublishFunc
-	unpublish            UnPublishFunc
-	disablementCheckFunc DisablementCheckFunc
+	publish   PublishFunc
+	unpublish UnPublishFunc
 }
 
 type ContextValueFunc func(ctx context.Context) context.Context
 
 func New(db *gorm.DB, storage oss.StorageInterface) *Builder {
 	b := &Builder{
-		db:                      db,
-		storage:                 storage,
-		nonVersionPublishModels: make(map[string]interface{}),
-		versionPublishModels:    make(map[string]interface{}),
-		listPublishModels:       make(map[string]interface{}),
+		db:      db,
+		storage: storage,
 	}
 	b.publish = b.defaultPublish
 	b.unpublish = b.defaultUnPublish
-	b.disablementCheckFunc = b.defaultDisableByStatus
 	return b
 }
 
@@ -75,7 +60,6 @@ func (b *Builder) Activity(v *activity.Builder) (r *Builder) {
 	b.ab = v
 	return b
 }
-
 func (b *Builder) WrapStorage(v func(oss.StorageInterface) oss.StorageInterface) (r *Builder) {
 	b.storage = v(b.storage)
 	return b
@@ -100,19 +84,19 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 
 	if model, ok := obj.(VersionInterface); ok {
 		if schedulePublishModel, ok := model.(ScheduleInterface); ok {
-			b.versionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
+			VersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 		}
 
 		b.configVersionAndPublish(pb, m, db)
 	} else {
 		if schedulePublishModel, ok := obj.(ScheduleInterface); ok {
-			b.nonVersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
+			NonVersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 		}
 	}
 
 	if model, ok := obj.(ListInterface); ok {
 		if schedulePublishModel, ok := model.(ScheduleInterface); ok {
-			b.listPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
+			ListPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 		}
 	}
 
@@ -355,7 +339,7 @@ func makeSetVersionSetterFunc(db *gorm.DB) func(presets.SetterFunc) presets.Sett
 func (b *Builder) Install(pb *presets.Builder) error {
 	if b.autoSchedule {
 		defer func() {
-			RunPublisher(context.Background(), b.db, b.storage, b)
+			go RunPublisher(context.Background(), b.db, b.storage, b)
 		}()
 	}
 	pb.FieldDefaults(presets.LIST).
@@ -396,7 +380,7 @@ func (*Builder) getPublishContent(ctx context.Context, obj interface{}) (r strin
 	if !ok {
 		return
 	}
-	r = mb.PreviewHTML(ctx, obj)
+	r = mb.PreviewHTML(obj)
 	return
 }
 
@@ -672,13 +656,4 @@ func (b *Builder) FullUrl(ctx context.Context, uri string) (string, error) {
 		return "", errors.Wrap(err, "get url")
 	}
 	return strings.TrimSuffix(b.storage.GetEndpoint(ctx), "/") + "/" + strings.Trim(s, "/"), nil
-}
-
-func (b *Builder) defaultDisableByStatus(_ *web.EventContext, obj any) *Disablement {
-	status := obj.(StatusInterface).EmbedStatus().Status
-	disabled := status == StatusOnline || status == StatusOffline
-	return &Disablement{
-		DisabledRename: disabled,
-		DisabledDelete: disabled,
-	}
 }

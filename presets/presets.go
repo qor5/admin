@@ -65,7 +65,6 @@ type Builder struct {
 	plugins                               []Plugin
 	notFoundHandler                       http.Handler
 	customBuilders                        []*CustomBuilder
-	toolbarFunc                           func(ctx *web.EventContext) h.HTMLComponent
 }
 
 type AssetFunc func(ctx *web.EventContext)
@@ -123,7 +122,6 @@ func New() *Builder {
 		}
 		b.wrap(nil, b.layoutFunc(b.getNotFoundPageFunc(), b.notFoundPageLayoutConfig)).ServeHTTP(w, r)
 	})
-	b.toolbarFunc = b.defaultToolBar
 
 	stateful.Install(b.builder, b.dc)
 	return b
@@ -288,16 +286,6 @@ func (b *Builder) GetProgressBarColor() string {
 
 func (b *Builder) AssetFunc(v AssetFunc) (r *Builder) {
 	b.assetFunc = v
-	return b
-}
-
-func (b *Builder) ToolBarFunc(f ComponentFunc) (r *Builder) {
-	b.toolbarFunc = f
-	return b
-}
-
-func (b *Builder) WarpToolBarFunc(w func(ComponentFunc) ComponentFunc) (r *Builder) {
-	b.toolbarFunc = w(b.toolbarFunc)
 	return b
 }
 
@@ -809,32 +797,6 @@ func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse
 	return
 }
 
-func (b *Builder) defaultToolBar(ctx *web.EventContext) h.HTMLComponent {
-	return VContainer(
-		VRow(
-			VCol(b.RunBrandFunc(ctx)).Cols(5),
-			VCol(
-				b.RunSwitchLocalCodeFunc(ctx),
-				// VBtn("").Children(
-				//	languageSwitchIcon,
-				//	VIcon("mdi-menu-down"),
-				// ).Attr("variant", "plain").
-				//	Attr("icon", ""),
-			).Cols(5).Class("py-0 d-flex justify-end pl-0 pr-2"),
-			VDivider().Attr("vertical", true).Class("i18n-divider"),
-			VCol(
-				b.AppBarNav(),
-			).Cols(2).Class("position-relative"),
-		).Attr("align", "center").Attr("justify", "center"),
-	)
-}
-
-func (b *Builder) AppBarNav() h.HTMLComponent {
-	return VAppBarNavIcon().Attr("icon", "mdi-menu").
-		Class("text-grey-darken-1 menu-control-icon").
-		Attr("@click", "vars.navDrawer = !vars.navDrawer").Density(DensityCompact)
-}
-
 func (b *Builder) defaultLeftMenuComp(ctx *web.EventContext) h.HTMLComponent {
 	// call CreateMenus before in(ctx) to fill the menuGroupName for modelBuilders first
 	menu := b.menuOrder.CreateMenus(ctx)
@@ -844,13 +806,32 @@ func (b *Builder) defaultLeftMenuComp(ctx *web.EventContext) h.HTMLComponent {
 			b.profileFunc(ctx),
 		).Location("bottom").Class("border-t-sm border-b-0").Elevation(0)
 	}
+	toolbar := VContainer(
+		VRow(
+			VCol(b.RunBrandFunc(ctx)).Cols(7),
+			VCol(
+				b.RunSwitchLocalCodeFunc(ctx),
+				// VBtn("").Children(
+				//	languageSwitchIcon,
+				//	VIcon("mdi-menu-down"),
+				// ).Attr("variant", "plain").
+				//	Attr("icon", ""),
+			).Cols(3).Class("pa-0"),
+			VDivider().Attr("vertical", true).Class("i18n-divider"),
+			VCol(
+				VAppBarNavIcon().Attr("icon", "mdi-menu").
+					Class("text-grey-darken-1 menu-control-icon").
+					Attr("@click", "vars.navDrawer = !vars.navDrawer").Density(DensityCompact),
+			).Cols(2).Class("position-relative"),
+		).Attr("align", "center").Attr("justify", "center"),
+	)
 	return VNavigationDrawer(
 		// b.RunBrandProfileSwitchLanguageDisplayFunc(b.RunBrandFunc(ctx), profile, b.RunSwitchLanguageFunc(ctx), ctx),
 		// b.RunBrandFunc(ctx),
 		// profile,
 		VLayout(
 			VMain(
-				b.toolbarFunc(ctx),
+				toolbar,
 				VCard(
 					menu,
 				).Class("menu-content mt-2 mb-4 ml-4 pr-4").Variant(VariantText),
@@ -892,7 +873,7 @@ func (b *Builder) defaultLayoutCompo(_ *web.EventContext, menu, body h.HTMLCompo
 				Attr(":color", "vars.presetsMessage.color").
 				Attr("style", "bottom: 48px;").
 				Timeout(2000).
-				Location(LocationTop),
+				Location(LocationBottom),
 		).Attr("v-if", "vars.presetsMessage"),
 		VLayout(
 
@@ -1240,10 +1221,6 @@ func (b *Builder) WrapNotFoundHandler(w func(in http.Handler) (out http.Handler)
 	b.notFoundHandler = w(b.notFoundHandler)
 }
 
-func (b *Builder) NotFoundHandler() http.Handler {
-	return b.notFoundHandler
-}
-
 func (b *Builder) AddWrapHandler(key string, f func(in http.Handler) (out http.Handler)) {
 	b.wrapHandlers[key] = f
 }
@@ -1289,24 +1266,6 @@ func (b *Builder) wrap(m *ModelBuilder, pf web.PageFunc) http.Handler {
 				)
 			}
 			return r, err
-		}
-	})
-
-	p.Wrap(func(in web.PageFunc) web.PageFunc {
-		return func(ctx *web.EventContext) (r web.PageResponse, err error) {
-			defer func() {
-				if v := recover(); v != nil {
-					if render, ok := v.(PageRenderIface); ok {
-						if rerr, ok := v.(error); ok {
-							log.Printf("catch render err: %+v", rerr)
-						}
-						r, err = render.Render(ctx)
-						return
-					}
-					panic(v)
-				}
-			}()
-			return in(ctx)
 		}
 	})
 

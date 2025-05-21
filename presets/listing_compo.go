@@ -91,7 +91,7 @@ if (payload && payload.ids && payload.ids.length > 0) {
 }
 `
 
-const ListingCompo_JsScrollToTop = "(locals.document?.querySelector(`#vt-app > div.v-layout > main`) || {}).scrollTop = 0"
+const ListingCompo_JsScrollToTop = "locals.document.querySelector(`#vt-app > div.v-layout > main`).scrollTop = 0"
 
 func (c *ListingCompo) VarCurrentActive() string {
 	return fmt.Sprintf("__current_active_of_%s__", stateful.MurmurHash3(c.CompoID()))
@@ -410,11 +410,15 @@ func (c *ListingCompo) getOrderBys(colOrderBys []ColOrderBy, orderableFieldMap m
 			})
 		}
 	}
-	primaryOrderBys := c.lb.defaultOrderBys
-	if len(primaryOrderBys) == 0 && c.lb.mb.primaryField != "" {
-		primaryOrderBys = []relay.OrderBy{{Field: c.lb.mb.primaryField, Desc: true}}
+
+	if len(orderBys) == 0 {
+		if len(c.lb.defaultOrderBys) > 0 {
+			return c.lb.defaultOrderBys
+		}
+		if c.lb.mb.primaryField != "" {
+			return []relay.OrderBy{{Field: c.lb.mb.primaryField, Desc: true}}
+		}
 	}
-	orderBys = relay.AppendPrimaryOrderBy(orderBys, primaryOrderBys...)
 	return orderBys
 }
 
@@ -672,7 +676,6 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		panic(errors.Wrap(err, "get columns error"))
 	}
 	var dataBody h.HTMLComponent
-	pagination := c.buildDataTableAdditions(ctx, searchParams, searchResult)
 	if c.lb.dataTableFunc == nil {
 		dataTable := vx.DataTable(searchResult.Nodes).Hover(true).HoverClass("cursor-pointer").
 			HeadCellWrapperFunc(c.headCellWrapperFunc(ctx, columns, colOrderBys, orderableFieldMap)).
@@ -690,14 +693,15 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 				panic(err)
 			}
 		}
-		dataBody = h.Components(dataTable, h.Div(pagination).Class("mt-6"))
+		dataBody = dataTable
 	} else {
-		dataBody = c.lb.dataTableFunc(evCtx, searchParams, searchResult, pagination)
+		dataBody = c.lb.dataTableFunc(evCtx, searchParams, searchResult)
 	}
 
 	return h.Components(
 		filterScript,
 		dataBody,
+		c.buildDataTableAdditions(ctx, searchParams, searchResult),
 	)
 }
 
@@ -728,25 +732,26 @@ func (c *ListingCompo) regularPagination(ctx context.Context, searchParams *Sear
 	if searchResult.TotalCount != nil {
 		totalCount = int64(*searchResult.TotalCount)
 	}
-	return vx.VXTablePagination().
-		Total(totalCount).
-		CurrPage(searchParams.Page).
-		PerPage(searchParams.PerPage).
-		CustomPerPages([]int64{c.lb.perPage}).
-		PerPageText(msgr.PaginationRowsPerPage).
-		NoOffsetPart(true).
-		TotalVisible(5).
-		OnSelectPerPage(stateful.ReloadAction(ctx, c,
-			func(target *ListingCompo) {
-				target.Page = 0
-				target.After, target.Before = nil, nil
-			},
-			stateful.WithAppendFix(`v.compo.per_page = parseInt($event, 10)`),
-		).ThenScript(ListingCompo_JsScrollToTop).Go()).
-		OnSelectPage(stateful.ReloadAction(ctx, c, nil,
-			stateful.WithAppendFix(`v.compo.page = parseInt(value,10);`),
-		).ThenScript(ListingCompo_JsScrollToTop).Go(),
-		)
+	return h.Div().Style("margin-top:26px").Children(
+		vx.VXTablePagination().
+			Total(totalCount).
+			CurrPage(searchParams.Page).
+			PerPage(searchParams.PerPage).
+			CustomPerPages([]int64{c.lb.perPage}).
+			PerPageText(msgr.PaginationRowsPerPage).
+			NoOffsetPart(true).
+			TotalVisible(5).
+			OnSelectPerPage(stateful.ReloadAction(ctx, c,
+				func(target *ListingCompo) {
+					target.Page = 0
+					target.After, target.Before = nil, nil
+				},
+				stateful.WithAppendFix(`v.compo.per_page = parseInt($event, 10)`),
+			).ThenScript(ListingCompo_JsScrollToTop).Go()).
+			OnSelectPage(stateful.ReloadAction(ctx, c, nil,
+				stateful.WithAppendFix(`v.compo.page = parseInt(value,10);`),
+			).ThenScript(ListingCompo_JsScrollToTop).Go()),
+	)
 }
 
 func (c *ListingCompo) relayPaginationCompo(ctx context.Context, perPage int, pageInfo relay.PageInfo) h.HTMLComponent {
@@ -796,7 +801,7 @@ func (c *ListingCompo) relayPaginationCompo(ctx context.Context, perPage int, pa
 		prev,
 		next,
 	)
-	return h.Div().Class("d-flex align-center ga-3").Children(
+	return h.Div().Class("d-flex align-center ga-3 mt-6").Children(
 		VSpacer(),
 		perPageSelect,
 		prevNext,

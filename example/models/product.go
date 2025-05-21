@@ -7,10 +7,8 @@ import (
 	"strings"
 
 	"github.com/qor5/admin/v3/media/media_library"
-	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/x/v3/oss"
-	"github.com/spf13/cast"
 	"gorm.io/gorm"
 )
 
@@ -33,12 +31,7 @@ func (p *Product) PrimarySlug() string {
 func (p *Product) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 2 {
-		panic(presets.ErrNotFound("wrong slug"))
-	}
-
-	_, err := cast.ToInt64E(segs[0])
-	if err != nil {
-		panic(presets.ErrNotFound(fmt.Sprintf("wrong slug %q: %v", slug, err)))
+		panic("wrong slug")
 	}
 
 	return map[string]string{

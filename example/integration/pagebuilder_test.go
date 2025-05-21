@@ -96,12 +96,9 @@ func TestPageBuilder(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				req := NewMultipartBuilder().PageURL("/pages").
-					EventFunc(actions.New).
-					BuildEventFuncRequest()
-				return req
+				return httptest.NewRequest("GET", "/pages?__execute_event__=presets_New", nil)
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Template", "Title", `form["CategoryID"]`, `:clearable='true'`, `prefix='/'`},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Template", "Title", `form["CategoryID"]`, `prefix='/'`},
 		},
 
 		{
@@ -117,28 +114,6 @@ func TestPageBuilder(t *testing.T) {
 			ExpectPageBodyNotContains: []string{"_blank"},
 		},
 		{
-			Name:  "Page Builder Detail Page with invalid slug",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/pages/1_2024-05-18-v01_International_invalid", nil)
-			},
-			ExpectPageBodyContainsInOrder: []string{
-				`Sorry, the requested page cannot be found. Please check the URL.`,
-			},
-		},
-		{
-			Name:  "Page Builder Detail Page with invalid id in slug",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/pages/a_2024-05-18-v01_International", nil)
-			},
-			ExpectPageBodyContainsInOrder: []string{
-				`Sorry, the requested page cannot be found. Please check the URL.`,
-			},
-		},
-		{
 			Name:  "Page Builder Detail editor",
 			Debug: true,
 			ReqFunc: func() *http.Request {
@@ -150,20 +125,6 @@ func TestPageBuilder(t *testing.T) {
 			},
 			ExpectPageBodyContainsInOrder: []string{
 				`eventFunc("page_builder_EditContainerEvent").mergeQuery(true).query("containerDataID", vars.containerDataID)`,
-			},
-		},
-		{
-			Name:  "Page Builder Detail editor(not found)",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				pageBuilderContainerTestData.TruncatePut(dbr)
-				req := NewMultipartBuilder().PageURL("/page_builder/pages/10_2024-05-21-v01_InternationalNotFound").
-					Query("containerDataID", "list-content_10_10International").
-					BuildEventFuncRequest()
-				return req
-			},
-			ExpectPageBodyContainsInOrder: []string{
-				`Sorry, the requested page cannot be found. Please check the URL.`,
 			},
 		},
 		{
@@ -781,7 +742,7 @@ func TestPageBuilder(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`"Title":"1234567"`, `"CategoryID":""`, `:clearable='true'`, `"Slug":"12313"`},
+			ExpectPortalUpdate0ContainsInOrder: []string{`"Title":"1234567"`, `"CategoryID":""`, `"Slug":"12313"`},
 		},
 		{
 			Name:  "Page Detail Editing Has Category",
@@ -795,7 +756,7 @@ func TestPageBuilder(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`"Title":"12312"`, `"CategoryID":1`, `:clearable='true'`, `"Slug":"123"`},
+			ExpectPortalUpdate0ContainsInOrder: []string{`"Title":"12312"`, `"CategoryID":1`, `"Slug":"123"`},
 		},
 
 		{

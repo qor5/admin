@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/x/v3/oss"
 	"github.com/theplant/sliceutils"
@@ -36,7 +35,7 @@ func (this *ListModel) PermissionRN() []string {
 func (this *ListModel) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 2 {
-		panic(presets.ErrNotFound("wrong slug"))
+		panic("wrong slug")
 	}
 
 	return map[string]string{

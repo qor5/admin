@@ -27,8 +27,6 @@ const (
 	sectionListFieldDeleteBtnKey = "sectionListDeleteBtn"
 
 	sectionListFieldEditing = "sectionListEditing"
-
-	DisabledKeyButtonSave = "disabledKeyButtonSave"
 )
 
 func NewSectionBuilder(mb *ModelBuilder, name string) (r *SectionBuilder) {
@@ -308,11 +306,6 @@ func (b *SectionBuilder) SaveFunc(v SaveFunc) (r *SectionBuilder) {
 	return b
 }
 
-func (b *SectionBuilder) WrapSaveFunc(w func(in SaveFunc) SaveFunc) (r *SectionBuilder) {
-	b.saver = w(b.saver)
-	return b
-}
-
 func (b *SectionBuilder) WrapSetterFunc(w func(in func(obj interface{}, ctx *web.EventContext) error) func(obj interface{}, ctx *web.EventContext) error) (r *SectionBuilder) {
 	b.setter = w(b.setter)
 	return b
@@ -516,7 +509,7 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 			web.Scope(
 				content,
 			).VSlot("{ form }"),
-		).VSlot("{ dash }").DashInit("{errorMessages:{},disabled:{}}"),
+		).VSlot("{ dash }").DashInit("{errorMessages:{}}"),
 		hiddenComp,
 	).Attr("v-on-mounted", fmt.Sprintf(`()=>{%s}`, initDataChanged)).Class("mb-10")
 }
@@ -537,9 +530,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 			Go())
 
 	disableEditBtn := b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
-	saveBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Save")).PrependIcon("mdi-check").
-		Size(SizeSmall).Variant(VariantFlat).Color(ColorPrimary).
-		Attr(":disabled", fmt.Sprintf("%v || dash.disabled.%v", disableEditBtn, DisabledKeyButtonSave)).
+	saveBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Save")).PrependIcon("mdi-check").Size(SizeSmall).Variant(VariantFlat).Color(ColorPrimary).Disabled(disableEditBtn).
 		Attr("style", "text-transform: none;").
 		Attr("@click", web.Plaid().
 			URL(ctx.R.URL.Path).
@@ -617,7 +608,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 				content,
 				hiddenComp,
 			).VSlot("{ form}").OnChange(onChangeEvent).UseDebounce(500),
-		).VSlot("{ dash }").DashInit("{errorMessages:{},disabled:{}}"),
+		).VSlot("{ dash }").DashInit("{errorMessages:{}}"),
 	).Class("mb-10")
 }
 

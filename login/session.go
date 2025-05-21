@@ -12,7 +12,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/activity"
-	"github.com/qor5/admin/v3/common"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
@@ -73,17 +72,15 @@ type SessionBuilder struct {
 	once              sync.Once
 	calledAutoMigrate atomic.Bool // auto migrate flag
 
-	disableIPCheck      bool
-	lb                  *login.Builder
-	dbPrimitive         *gorm.DB // primitive db
-	db                  *gorm.DB // global db with table prefix scope
-	tablePrefix         string
-	amb                 *activity.ModelBuilder
-	pb                  *presets.Builder
-	isPublicUser        func(user any) bool
-	parseIPFunc         func(ctx context.Context, lang language.Tag, addr string) (string, error)
-	validateSessionHook common.Hook[ValidateSessionFunc]
-	sessionTableHook    common.Hook[SessionTableFunc]
+	disableIPCheck bool
+	lb             *login.Builder
+	dbPrimitive    *gorm.DB // primitive db
+	db             *gorm.DB // global db with table prefix scope
+	tablePrefix    string
+	amb            *activity.ModelBuilder
+	pb             *presets.Builder
+	isPublicUser   func(user any) bool
+	parseIPFunc    func(ctx context.Context, lang language.Tag, addr string) (string, error)
 }
 
 func NewSessionBuilder(lb *login.Builder, db *gorm.DB) *SessionBuilder {
@@ -144,43 +141,6 @@ func (b *SessionBuilder) DisableIPCheck(disabled bool) *SessionBuilder {
 	return b
 }
 
-func ValidateMaxLifetimeHook(maxLifeTime time.Duration) func(next ValidateSessionFunc) ValidateSessionFunc {
-	return func(next ValidateSessionFunc) ValidateSessionFunc {
-		return func(ctx context.Context, input *ValidateSessionInput) (*ValidateSessionOutput, error) {
-			if input.Session.CreatedAt.Add(maxLifeTime).Before(time.Now()) {
-				return nil, errors.New("login: session lifetime exceeded")
-			}
-			return next(ctx, input)
-		}
-	}
-}
-
-type (
-	ValidateSessionInput struct {
-		Session *LoginSession
-	}
-	ValidateSessionOutput struct{}
-	ValidateSessionFunc   func(ctx context.Context, input *ValidateSessionInput) (*ValidateSessionOutput, error)
-)
-
-func (b *SessionBuilder) WithValidateSessionHook(hooks ...common.Hook[ValidateSessionFunc]) *SessionBuilder {
-	b.validateSessionHook = common.ChainHookWith(b.validateSessionHook, hooks...)
-	return b
-}
-
-type (
-	SessionTableInput  struct{}
-	SessionTableOutput struct {
-		Component h.HTMLComponent
-	}
-	SessionTableFunc func(ctx context.Context, input *SessionTableInput) (*SessionTableOutput, error)
-)
-
-func (b *SessionBuilder) WithSessionTableHook(hooks ...common.Hook[SessionTableFunc]) *SessionBuilder {
-	b.sessionTableHook = common.ChainHookWith(b.sessionTableHook, hooks...)
-	return b
-}
-
 func (b *SessionBuilder) GetLoginBuilder() *login.Builder {
 	return b.lb
 }
@@ -233,14 +193,13 @@ func (b *SessionBuilder) CreateSession(r *http.Request, uid string) error {
 func (b *SessionBuilder) ExtendSession(r *http.Request, uid string, oldToken, newToken string) error {
 	newTokenHash := getStringHash(newToken, LoginTokenHashLen)
 	oldTokenHash := getStringHash(oldToken, LoginTokenHashLen)
-	now := b.db.NowFunc()
 	result := b.db.Model(&LoginSession{}).
-		Where("user_id = ? and token_hash = ? and expired_at > ?", uid, oldTokenHash, now).
+		Where("user_id = ? and token_hash = ?", uid, oldTokenHash).
 		Updates(map[string]any{
 			"token_hash":      newTokenHash,
 			"last_token_hash": oldTokenHash,
-			"extended_at":     now,
-			"expired_at":      now.Add(time.Duration(b.lb.GetSessionMaxAge()) * time.Second),
+			"extended_at":     b.db.NowFunc(),
+			"expired_at":      b.db.NowFunc().Add(time.Duration(b.lb.GetSessionMaxAge()) * time.Second),
 		})
 	if result.Error != nil {
 		return errors.Wrap(result.Error, "failed to extend session")
@@ -305,44 +264,32 @@ func (b *SessionBuilder) ExpireSession(uid, tokenHash string) error {
 	return nil
 }
 
-func (b *SessionBuilder) IsSessionValid(r *http.Request, uid string) error {
+func (b *SessionBuilder) IsSessionValid(r *http.Request, uid string) (valid bool, err error) {
 	token := login.GetSessionToken(b.lb, r)
 	if token == "" {
-		return errors.New("login: token not found")
+		return false, nil
 	}
 	tokenHash := getStringHash(token, LoginTokenHashLen)
 	sess := LoginSession{}
-	if err := b.db.Where(
+	if err = b.db.Where(
 		"user_id = ? and (token_hash = ? OR (last_token_hash = ? AND extended_at > ?))",
 		uid, tokenHash, tokenHash, b.db.NowFunc().Add(-GracePeriodAfterExtend),
 	).First(&sess).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("login: session not found")
+		if err != gorm.ErrRecordNotFound {
+			return false, errors.Wrap(err, "login: failed to find session")
 		}
-		return errors.Wrap(err, "login: failed to find session")
+		return false, nil
 	}
-
-	validate := func(ctx context.Context, input *ValidateSessionInput) (*ValidateSessionOutput, error) {
-		if input.Session.ExpiredAt.Before(b.db.NowFunc()) {
-			return nil, errors.New("login: session expired")
+	if sess.ExpiredAt.Before(b.db.NowFunc()) {
+		return false, nil
+	}
+	// IP check
+	if !b.disableIPCheck {
+		if sess.IP != ip(r) {
+			return false, nil
 		}
-		// IP check
-		if !b.disableIPCheck {
-			currentIP := ip(r)
-			if input.Session.IP != currentIP {
-				return nil, errors.Errorf("login: IP mismatch: %v != %v", input.Session.IP, currentIP)
-			}
-		}
-		return &ValidateSessionOutput{}, nil
 	}
-	if b.validateSessionHook != nil {
-		validate = b.validateSessionHook(validate)
-	}
-	if _, err := validate(r.Context(), &ValidateSessionInput{Session: &sess}); err != nil {
-		return err
-	}
-
-	return nil
+	return true, nil
 }
 
 func (b *SessionBuilder) UpdateSessionLastActivedAt(r *http.Request, uid string) error {
@@ -383,9 +330,8 @@ func (b *SessionBuilder) validateSessionToken() func(next http.Handler) http.Han
 
 			uid := presets.MustObjectID(user)
 
-			err := b.IsSessionValid(r, uid)
-			if err != nil {
-				log.Printf("login: session invalid: %v", err)
+			valid, err := b.IsSessionValid(r, uid)
+			if err != nil || !valid {
 				if r.URL.Path == b.lb.LogoutURL {
 					next.ServeHTTP(w, r)
 					return
@@ -634,7 +580,6 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 		}
 		tableHeaders[i].Width = fmt.Sprintf("%d%%", percent)
 	}
-
 	table := v.VDataTable().Headers(tableHeaders).Items(wrappers).ItemsPerPage(-1).HideDefaultFooter(true)
 	if !isPublicUser {
 		table = table.Children(web.Slot().Name("item.Action").Scope("{ item }").Children(
@@ -652,17 +597,6 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 		))
 	}
 
-	sessionTableFunc := func(ctx context.Context, input *SessionTableInput) (*SessionTableOutput, error) {
-		return &SessionTableOutput{Component: table}, nil
-	}
-	if b.sessionTableHook != nil {
-		sessionTableFunc = b.sessionTableHook(sessionTableFunc)
-	}
-	sessionTableoutput, err := sessionTableFunc(ctx.R.Context(), &SessionTableInput{})
-	if err != nil {
-		return r, err
-	}
-
 	body := web.Scope().VSlot("{locals: xlocals}").Init("{dialog:true}").Children(
 		v.VDialog().Attr("v-model", "xlocals.dialog").Width("60%").MaxWidth(828).Scrollable(true).Children(
 			v.VCard().Children(
@@ -672,7 +606,7 @@ func (b *SessionBuilder) handleEventLoginSessionsDialog(ctx *web.EventContext) (
 					v.VBtn("").Size(v.SizeXSmall).Icon("mdi-close").Variant(v.VariantText).Color(v.ColorGreyDarken1).Attr("@click", "xlocals.dialog=false"),
 				),
 				v.VCardText().Class("px-6 pt-0 pb-6").Attr("style", "max-height: 46vh;").ClassIf("mb-6", isPublicUser).Children(
-					sessionTableoutput.Component,
+					table,
 				),
 
 				h.Iff(!isPublicUser && activeCount > 1, func() h.HTMLComponent {
