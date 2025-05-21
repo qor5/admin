@@ -8,6 +8,7 @@ type Messages struct {
 	Description                   string
 	Keywords                      string
 	OpenGraphInformation          string
+	OpenGraphPreview              string
 	OpenGraphTitle                string
 	OpenGraphDescription          string
 	OpenGraphURL                  string
@@ -28,6 +29,7 @@ var Messages_en_US = &Messages{
 	Description:                   "Description",
 	Keywords:                      "Keywords",
 	OpenGraphInformation:          "Open Graph Information",
+	OpenGraphPreview:              "Open Graph Preview",
 	OpenGraphTitle:                "Open Graph Title",
 	OpenGraphDescription:          "Open Graph Description",
 	OpenGraphURL:                  "Open Graph URL",
@@ -48,6 +50,7 @@ var Messages_zh_CN = &Messages{
 	Description:                   "描述",
 	Keywords:                      "关键词",
 	OpenGraphInformation:          "OG 信息",
+	OpenGraphPreview:              "OG 预览",
 	OpenGraphTitle:                "OG 标题",
 	OpenGraphDescription:          "OG 描述",
 	OpenGraphURL:                  "OG 链接",
