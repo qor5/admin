@@ -385,7 +385,7 @@ func (b *Builder) vSeoReadonly(obj interface{}, fieldPrefix, locale string, seo 
 
 	return h.Components(
 		h.Div(
-			h.Span(msgr.SEOPreview).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
+			h.Span(msgr.SearchResultPreview).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
 		),
 		VCard(
 			VCardText(
@@ -394,6 +394,18 @@ func (b *Builder) vSeoReadonly(obj interface{}, fieldPrefix, locale string, seo 
 				h.Div(h.Span(setting.Description)).Class("text-body-2 mt-2"),
 			).Class("pa-0"),
 		).Class("pa-6", "mt-2").Color(ColorPrimaryLighten2),
+		h.Div(
+			h.Span(msgr.Basic).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
+		).Class("mt-6"),
+		h.Div(
+			VXLabel(
+				h.Span(msgr.Title).
+					Style("line-height:20px; font-size:14px; font-weight:500;color:rgb(var(--v-theme-on-surface))"),
+			).Tooltip("1"),
+			h.Div(
+				h.Span(setting.Title),
+			).Class(""),
+		).Class("mt-4"),
 		h.Div(
 			h.Span(msgr.OpenGraphInformation).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
 		).Class("mt-7"),
