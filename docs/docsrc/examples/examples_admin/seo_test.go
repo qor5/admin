@@ -62,7 +62,7 @@ func TestSEOExampleBasic(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`<v-img :src=`},
+			ExpectPortalUpdate0ContainsInOrder: []string{`http://www.text.jpg`},
 		},
 		{
 			Name:  "SEO Detail Without OpenGraphImageURL",
@@ -76,7 +76,7 @@ func TestSEOExampleBasic(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0NotContains: []string{`<v-img :src=`},
+			ExpectPortalUpdate0NotContains: []string{`http://www.text.jpg`},
 		},
 	}
 
