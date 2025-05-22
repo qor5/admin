@@ -8,7 +8,6 @@ type Messages struct {
 	Description                   string
 	Keywords                      string
 	OpenGraphInformation          string
-	OpenGraphPreview              string
 	OpenGraphTitle                string
 	OpenGraphDescription          string
 	OpenGraphURL                  string
@@ -18,7 +17,6 @@ type Messages struct {
 	OpenGraphMetadata             string
 	Seo                           string
 	Customize                     string
-	SearchResultPreview           string
 	BlankOpenGraphInformationTips string
 }
 
@@ -29,7 +27,6 @@ var Messages_en_US = &Messages{
 	Description:                   "Description",
 	Keywords:                      "Keywords",
 	OpenGraphInformation:          "Open Graph Information",
-	OpenGraphPreview:              "Open Graph Preview",
 	OpenGraphTitle:                "Open Graph Title",
 	OpenGraphDescription:          "Open Graph Description",
 	OpenGraphURL:                  "Open Graph URL",
@@ -39,7 +36,6 @@ var Messages_en_US = &Messages{
 	OpenGraphMetadata:             "Open Graph Metadata",
 	Seo:                           "SEO",
 	Customize:                     "Customize",
-	SearchResultPreview:           "Search Result Preview",
 	BlankOpenGraphInformationTips: `The "Open Graph Information" are blank. The default values will be used on the page.`,
 }
 
@@ -50,7 +46,6 @@ var Messages_zh_CN = &Messages{
 	Description:                   "描述",
 	Keywords:                      "关键词",
 	OpenGraphInformation:          "OG 信息",
-	OpenGraphPreview:              "OG 预览",
 	OpenGraphTitle:                "OG 标题",
 	OpenGraphDescription:          "OG 描述",
 	OpenGraphURL:                  "OG 链接",
@@ -60,6 +55,5 @@ var Messages_zh_CN = &Messages{
 	OpenGraphMetadata:             "OG 元数据",
 	Seo:                           "搜索引擎优化",
 	Customize:                     "自定义",
-	SearchResultPreview:           "搜索结果预览",
 	BlankOpenGraphInformationTips: `"OG 信息"w为空。页面将使用默认值。`,
 }
