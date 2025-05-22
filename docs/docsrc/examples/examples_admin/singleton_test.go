@@ -24,7 +24,7 @@ func TestSingletonExample(t *testing.T) {
 				return pb
 			},
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/with-singleten-products", nil)
+				return httptest.NewRequest("GET", "/with-singleten-products", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"Editing WithSingletenProduct", "Title", `"Title":""`, `:disabled='false'`, `.eventFunc("presets_Update").queries({"id":["1"]})`},
 		},
@@ -43,7 +43,7 @@ func TestSingletonExample(t *testing.T) {
 				return pb
 			},
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/with-singleten-products", nil)
+				return httptest.NewRequest("GET", "/with-singleten-products", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"Editing WithSingletenProduct", "Title", `"Title":""`, `:disabled='true'`},
 		},

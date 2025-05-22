@@ -29,7 +29,7 @@ func TestChangePassword(t *testing.T) {
 			Name:  "index",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/", nil)
+				return httptest.NewRequest("GET", "/", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"Change Password"},
 		},
@@ -37,7 +37,7 @@ func TestChangePassword(t *testing.T) {
 			Name:  "show dialog",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/?__execute_event__=login_openChangePasswordDialog", nil)
+				return httptest.NewRequest("GET", "/?__execute_event__=login_openChangePasswordDialog", http.NoBody)
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Change your password"},
 		},
@@ -113,7 +113,7 @@ func TestPasswordWithVisibleToggle(t *testing.T) {
 			Name:  "password field with visible toggle",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/auth/login", nil)
+				return httptest.NewRequest("GET", "/auth/login", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{`:password-visible-toggle='true'`},
 		},

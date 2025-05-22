@@ -7,6 +7,8 @@ import (
 	"github.com/qor5/x/v3/i18n"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
+
+	"github.com/qor5/admin/v3/presets"
 )
 
 const (
@@ -24,37 +26,41 @@ const (
 	templateDialogWidth  = 700
 )
 
-func (b *TemplateBuilder) registerFunctions() {
-	b.model.mb.RegisterEventFunc(ReloadTemplateContentEvent, b.reloadTemplateContent)
-	b.mb.RegisterEventFunc(OpenTemplateDialogEvent, b.openTemplateDialog)
-	b.mb.RegisterEventFunc(ReloadSelectedTemplateEvent, b.reloadSelectedTemplate)
+func (b *TemplateBuilder) registerFunctions(mb *presets.ModelBuilder) {
+	mb.RegisterEventFunc(ReloadTemplateContentEvent, b.reloadTemplateContent(mb))
+	mb.RegisterEventFunc(OpenTemplateDialogEvent, b.openTemplateDialog(mb))
+	mb.RegisterEventFunc(ReloadSelectedTemplateEvent, b.reloadSelectedTemplate)
 }
 
-func (b *TemplateBuilder) reloadTemplateContent(ctx *web.EventContext) (r web.EventResponse, err error) {
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-		Name: PageTemplatePortalName,
-		Body: b.templateContent(ctx),
-	})
-	return
+func (b *TemplateBuilder) reloadTemplateContent(mb *presets.ModelBuilder) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: PageTemplatePortalName,
+			Body: b.templateContent(ctx, mb),
+		})
+		return
+	}
 }
 
-func (b *TemplateBuilder) openTemplateDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
-	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
-		Name: TemplateSelectDialogPortalName,
-		Body: web.Scope(
-			vx.VXDialog(
-				h.Div().Class("overflow-y-auto").Children(
-					web.Portal(b.templateContent(ctx)).Name(PageTemplatePortalName),
-				).Style(fmt.Sprintf("height:%vpx", templateDialogHeight)),
-			).Width(templateDialogWidth).
-				Title(msgr.CreateFromTemplate).
-				HideFooter(true).
-				Attr("v-model", "vars.pageBuilderSelectTemplateDialog"),
-		).VSlot("{ form }"),
-	})
-	r.RunScript = "setTimeout(function(){ vars.pageBuilderSelectTemplateDialog = true }, 100)"
-	return
+func (b *TemplateBuilder) openTemplateDialog(mb *presets.ModelBuilder) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+			Name: TemplateSelectDialogPortalName,
+			Body: web.Scope(
+				vx.VXDialog(
+					h.Div().Class("overflow-y-auto").Children(
+						web.Portal(b.templateContent(ctx, mb)).Name(PageTemplatePortalName),
+					).Style(fmt.Sprintf("height:%vpx", templateDialogHeight)),
+				).Width(templateDialogWidth).
+					Title(msgr.CreateFromTemplate).
+					HideFooter(true).
+					Attr("v-model", "vars.pageBuilderSelectTemplateDialog"),
+			).VSlot("{ form }"),
+		})
+		r.RunScript = "setTimeout(function(){ vars.pageBuilderSelectTemplateDialog = true }, 100)"
+		return
+	}
 }
 
 func (b *TemplateBuilder) reloadSelectedTemplate(ctx *web.EventContext) (r web.EventResponse, err error) {

@@ -38,7 +38,7 @@ func ErrNotFound(reason string) error {
 		Reason: reason,
 		PageRenderFunc: func(ctx *web.EventContext) (r web.PageResponse, err error) {
 			ctx.W.WriteHeader(http.StatusNotFound)
-			return
+			return DefaultNotFoundPageFunc(ctx)
 		},
 	}
 }
