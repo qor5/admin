@@ -386,7 +386,7 @@ func (b *Builder) vSeoReadonly(obj interface{}, fieldPrefix, locale string, seo 
 		seoFieldPortal(msgr.OpenGraphImageURL, setting.OpenGraphImageURL),
 		h.Div(
 			h.Span(msgr.OpenGraphImage).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
-		).Class("mt-10"),
+		).Class("mt-10 mb-2"),
 		VContainer(
 			VRow(
 				VCol(media.QMediaBox(db).
@@ -414,7 +414,7 @@ func (b *Builder) vSeoReadonly(obj interface{}, fieldPrefix, locale string, seo 
 		).Class("pl-0 pt-2"),
 		h.Div(
 			h.Span(msgr.OpenGraphMetadata).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
-		).Class("mt-4"),
+		).Class("mt-1"),
 		h.Div(
 			h.Pre(
 				GetOpenGraphMetadataString(setting.OpenGraphMetadata),
