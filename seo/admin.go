@@ -445,8 +445,8 @@ func (b *Builder) vSeoReadonly(obj interface{}, fieldPrefix, locale string, seo 
 		).Class("pl-0 pt-2"),
 		h.Div(
 			h.Span(msgr.OpenGraphMetadata).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
-		).Class("mt-10"),
-		h.Text(GetOpenGraphMetadataString(setting.OpenGraphMetadata)),
+		).Class("mt-4"),
+		h.Div(h.Text(GetOpenGraphMetadataString(setting.OpenGraphMetadata))).Class("mt-4 px-3"),
 	)
 }
 
