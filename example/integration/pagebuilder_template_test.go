@@ -508,12 +508,12 @@ func TestPageBuilderTemplate(t *testing.T) {
 				pageBuilderTemplateData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/pages").
-					EventFunc(pagebuilder.OpenTemplateDialogEvent).
+					EventFunc(actions.OpenListingDialog).
 					BuildEventFuncRequest()
 
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"vars.pageBuilderSelectTemplateDialog"},
+			ExpectPortalUpdate0ContainsInOrder: []string{presets.CloseListingDialogVarScript},
 		},
 		{
 			Name:  "Template ReloadSelectedTemplate",
@@ -531,13 +531,13 @@ func TestPageBuilderTemplate(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"123"},
 		},
 		{
-			Name:  "Template ReloadTemplateContent",
+			Name:  "Template Keyword",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderTemplateData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/page_templates").
-					EventFunc(pagebuilder.ReloadTemplateContentEvent).
+					EventFunc(actions.OpenListingDialog).
 					Query("keyword", "012").
 					BuildEventFuncRequest()
 
