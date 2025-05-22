@@ -446,7 +446,9 @@ func (b *Builder) vSeoReadonly(obj interface{}, fieldPrefix, locale string, seo 
 		h.Div(
 			h.Span(msgr.OpenGraphMetadata).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
 		).Class("mt-4"),
-		h.Div(h.Text(GetOpenGraphMetadataString(setting.OpenGraphMetadata))).Class("mt-4 px-3"),
+		h.Div(
+			VXField().Disabled(true).Type("textarea").Attr(web.VField("OpenGraphMetadataString", GetOpenGraphMetadataString(setting.OpenGraphMetadata))...),
+		).Class("mt-4"),
 	)
 }
 
