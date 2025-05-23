@@ -29,10 +29,6 @@ type (
 		tm      *ModelBuilder
 		builder *Builder
 	}
-	TemplateInterface interface {
-		GetName(ctx *web.EventContext) string
-		GetDescription(ctx *web.EventContext) string
-	}
 )
 
 func (b *Builder) template(tm *presets.ModelBuilder) *TemplateBuilder {
@@ -159,7 +155,8 @@ func (b *TemplateBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponen
 		if err = utils.PrimarySluggerWhere(b.builder.db, template, selectID).First(template).Error; err != nil {
 			panic(err)
 		}
-		name, _ = b.getTemplateNameDescription(template, ctx)
+		p := template.(*Template)
+		name = p.Name
 	}
 	return h.Div(
 		h.Div(
@@ -193,21 +190,6 @@ type TemplateSelected struct {
 
 func NotifTemplateSelected(mb *presets.ModelBuilder) string {
 	return fmt.Sprintf("pagebuilder_NotifTemplateSelected_%T", mb.NewModel())
-}
-
-func (b *TemplateBuilder) getTemplateNameDescription(obj interface{}, ctx *web.EventContext) (name, description string) {
-	if p, ok := obj.(TemplateInterface); ok {
-		name = p.GetName(ctx)
-		description = p.GetDescription(ctx)
-		return
-	}
-	if v, err := reflectutils.Get(obj, "Name"); err == nil {
-		name = v.(string)
-	}
-	if v, err := reflectutils.Get(obj, "Description"); err == nil {
-		description = v.(string)
-	}
-	return
 }
 
 func (b *TemplateBuilder) ModelInstall(_ *presets.Builder, mb *presets.ModelBuilder) error {
