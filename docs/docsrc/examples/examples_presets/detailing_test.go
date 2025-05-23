@@ -489,7 +489,7 @@ func TestPresetsDetailListSection(t *testing.T) {
 					Query("id", "1").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"cards", "Add Row", "cards2", "Add Row"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"cards", "Add Item", "cards2", "Add Item"},
 		},
 		{
 			Name:  "click Add Row button",
@@ -504,7 +504,7 @@ func TestPresetsDetailListSection(t *testing.T) {
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Name", "Phone", "Cancel", "Save"},
-			ExpectPortalUpdate0NotContains:     []string{"Add Row"},
+			ExpectPortalUpdate0NotContains:     []string{"Add Item"},
 		},
 		{
 			Name:  "save created section",
@@ -522,7 +522,7 @@ func TestPresetsDetailListSection(t *testing.T) {
 					AddField("__Deleted_CreditCards[0].sectionListEditing", "true").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Name", "terry", "Phone", "188", "Add Row"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Name", "terry", "Phone", "188", "Add Item"},
 			ExpectPortalUpdate0NotContains:     []string{"Cancel", "Save"},
 		},
 		{
@@ -539,7 +539,7 @@ func TestPresetsDetailListSection(t *testing.T) {
 					Query("isCancel", "true").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Add Row"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Add Item"},
 			ExpectPortalUpdate0NotContains:     []string{"Cancel", "Save"},
 		},
 		{
@@ -558,7 +558,7 @@ func TestPresetsDetailListSection(t *testing.T) {
 					AddField("__Deleted_CreditCards[0].sectionListEditing", "true").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Add Row"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Add Item"},
 			ExpectPortalUpdate0NotContains:     []string{"Cancel", "Save", "terry", "188"},
 		},
 		{
@@ -581,7 +581,7 @@ func TestPresetsDetailListSection(t *testing.T) {
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"tom", "199", "Cancel", "Save"},
-			ExpectPortalUpdate0NotContains:     []string{"terry", "188", "Add Row"},
+			ExpectPortalUpdate0NotContains:     []string{"terry", "188", "Add Item"},
 		},
 		{
 			Name:  "reload section, have created but unsaved section",
@@ -601,7 +601,7 @@ func TestPresetsDetailListSection(t *testing.T) {
 					AddField("__Deleted_CreditCards[1].sectionListEditing", "true").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"terry", "188", "Add Row"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"terry", "188", "Add Item"},
 			ExpectPortalUpdate0NotContains:     []string{"Cancel", "Save"},
 		},
 
@@ -626,7 +626,7 @@ func TestPresetsDetailListSection(t *testing.T) {
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"terry", "188", "tom", "199", "Cancel", "Save"},
-			ExpectPortalUpdate0NotContains:     []string{"joy", "177", "Add Row"},
+			ExpectPortalUpdate0NotContains:     []string{"joy", "177", "Add Item"},
 		},
 		{
 			Name:  "click Add Row button 2",
@@ -641,7 +641,7 @@ func TestPresetsDetailListSection(t *testing.T) {
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Name", "Phone", "Cancel", "Save"},
-			ExpectPortalUpdate0NotContains:     []string{"Add Row"},
+			ExpectPortalUpdate0NotContains:     []string{"Add Item"},
 		},
 		{
 			Name:  "save created section 2",
@@ -659,7 +659,7 @@ func TestPresetsDetailListSection(t *testing.T) {
 					AddField("__Deleted_CreditCards2[0].sectionListEditing", "true").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Name", "terry", "Phone", "188", "Add Row"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Name", "terry", "Phone", "188", "Add Item"},
 			ExpectPortalUpdate0NotContains:     []string{"Cancel", "Save"},
 		},
 		{

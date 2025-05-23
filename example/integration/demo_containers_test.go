@@ -60,13 +60,13 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/list-content-with-images").
+					PageURL("/list-content-with-images").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Items", "Add Row"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Items", "Add Item"},
 		},
 		{
 			Name:  "ListContentLite Edit View",
@@ -74,13 +74,13 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/list-content-lites").
+					PageURL("/list-content-lites").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Items", "Add Row", "Background Color", "vx-select"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Items", "Add Item", "Background Color", "vx-select"},
 		},
 		{
 			Name:  "ListContentLite Edit View Add Row",
@@ -88,7 +88,7 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/list-content-lites").
+					PageURL("/list-content-lites").
 					EventFunc(actions.AddRowEvent).
 					Query(presets.ParamID, "1").
 					Query("listEditor_AddRowFormKey", "Items").
@@ -103,7 +103,7 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/contact-forms").
+					PageURL("/contact-forms").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
@@ -117,13 +117,13 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/in-numbers").
+					PageURL("/in-numbers").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Heading", "Items", "Add Row"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Heading", "Items", "Add Item"},
 		},
 		{
 			Name:  "ListContent Edit View",
@@ -131,13 +131,13 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/list-contents").
+					PageURL("/list-contents").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Background Color", "vx-select", "Items", "Add Row", "Link Display Option"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Background Color", "vx-select", "Items", "Add Item", "Link Display Option"},
 		},
 		{
 			Name:  "ImageContainer Edit View",
@@ -145,7 +145,7 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/images").
+					PageURL("/images").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
@@ -159,7 +159,7 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/images").
+					PageURL("/images").
 					EventFunc(actions.Validate).
 					Query(presets.ParamID, "1").
 					AddField("Image.Description", "").
@@ -175,7 +175,7 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/images").
+					PageURL("/images").
 					EventFunc(actions.Update).
 					Query(presets.ParamID, "1").
 					AddField("Image.Description", "").
@@ -192,7 +192,7 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/footers").
+					PageURL("/footers").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
@@ -206,13 +206,13 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/brand-grids").
+					PageURL("/brand-grids").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Brands", "Add Row"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Brands", "Add Item"},
 		},
 		{
 			Name:  "VideoBanner Edit View",
@@ -220,7 +220,7 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/video-banners").
+					PageURL("/video-banners").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
@@ -234,13 +234,13 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/page-titles").
+					PageURL("/page-titles").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Hero Image", "Choose File", "Navigation Link Text", "Tags", "Add Row"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Add Top Space", "vx-checkbox", "Add Bottom Space", "Anchor ID", "vx-field", "Hero Image", "Choose File", "Navigation Link Text", "Tags", "Add Item"},
 		},
 		{
 			Name:  "Heading Edit View",
@@ -248,7 +248,7 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/headings").
+					PageURL("/headings").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()
@@ -262,7 +262,7 @@ func TestDemoContainer(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				demoContainerData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/headers").
+					PageURL("/headers").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
 					BuildEventFuncRequest()

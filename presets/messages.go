@@ -222,7 +222,7 @@ var Messages_en_US = &Messages{
 	NotFoundPageNotice:                         "Sorry, the requested page cannot be found. Please check the URL.",
 	ButtonLabelActionsMenu:                     "Actions",
 	Save:                                       "Save",
-	AddRow:                                     "Add Row",
+	AddRow:                                     "Add Item",
 	CheckboxTrueLabel:                          "YES",
 	CheckboxFalseLabel:                         "NO",
 
@@ -414,7 +414,7 @@ var Messages_ja_JP = &Messages{
 	NotFoundPageNotice:                         "リクエストされたページが見つかりません。URLを確認してください。",
 	ButtonLabelActionsMenu:                     "アクション",
 	Save:                                       "保存する",
-	AddRow:                                     "行の追加",
+	AddRow:                                     "アイテムを追加",
 	CheckboxTrueLabel:                          "選択済み",
 	CheckboxFalseLabel:                         "未選択",
 

@@ -14,8 +14,8 @@ func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *we
 		freeStyleCss = h.Style(strings.Join(input.FreeStyleCss, "\n"))
 	}
 
-	js := "https://the-plant.com/assets/app/container.4f902c4.js"
-	css := "https://the-plant.com/assets/app/container.4f902c4.css"
+	js := "https://the-plant.com/assets/app/container.ebe884e.js"
+	css := "https://the-plant.com/assets/app/container.ebe884e.css"
 	domain := "https://example.qor5.theplant-dev.com"
 
 	head := h.Components(

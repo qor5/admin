@@ -1,13 +1,17 @@
 package pagebuilder
 
 import (
+	"cmp"
 	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
+	"github.com/theplant/relay"
 
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
@@ -26,11 +30,8 @@ const (
 
 type (
 	TemplateBuilder struct {
-		mb                 *presets.ModelBuilder
-		tm                 *presets.ModelBuilder
-		model              *ModelBuilder
-		builder            *Builder
-		useDefaultTemplate bool
+		tm      *ModelBuilder
+		builder *Builder
 	}
 	TemplateInterface interface {
 		GetName(ctx *web.EventContext) string
@@ -38,20 +39,13 @@ type (
 	}
 )
 
-func (b *Builder) template(mb *presets.ModelBuilder, tm *presets.ModelBuilder) {
-	b.templates = append(b.templates, &TemplateBuilder{
-		mb:      mb,
-		tm:      tm,
+func (b *Builder) template(tm *presets.ModelBuilder) *TemplateBuilder {
+	r := &TemplateBuilder{
+		tm:      b.Model(tm),
 		builder: b,
-	})
-}
-
-func (b *Builder) RegisterModelBuilderTemplate(mb *presets.ModelBuilder, tm *presets.ModelBuilder) *Builder {
-	if !b.templateEnabled {
-		return b
 	}
-	b.template(mb, tm)
-	return b
+	r.tm.isTemplate = true
+	return r
 }
 
 func (b *Builder) defaultTemplateInstall(pb *presets.Builder, pm *presets.ModelBuilder) (err error) {
@@ -92,14 +86,13 @@ func (b *Builder) defaultTemplateInstall(pb *presets.Builder, pm *presets.ModelB
 	creating.Field("Name").LazyWrapComponentFunc(wrapper)
 	creating.Field("Description").LazyWrapComponentFunc(wrapper)
 
-	b.templateModel = template
-	b.RegisterModelBuilderTemplate(pm, template)
-
+	b.templateBuilder = b.template(template)
+	pm.Use(b.templateBuilder)
 	return
 }
 
-func (b *TemplateBuilder) configModelWithTemplate() {
-	mb := b.mb
+
+func (b *TemplateBuilder) configModelWithTemplate(mb *presets.ModelBuilder) {
 	creating := mb.Editing().Creating()
 	filed := creating.GetField(PageTemplateSelectionFiled)
 	if filed != nil && filed.GetCompFunc() == nil {
@@ -113,7 +106,7 @@ func (b *TemplateBuilder) configModelWithTemplate() {
 					Color(ColorPrimary).
 					Variant(VariantElevated).
 					Theme("light").Class("ml-2").
-					Attr("@click", web.Plaid().URL(b.model.mb.Info().ListingHref()).EventFunc(actions.OpenListingDialog).Query(presets.ParamOverlay, actions.Dialog).Go()),
+					Attr("@click", web.Plaid().URL(mb.Info().ListingHref()).EventFunc(actions.OpenListingDialog).Query(presets.ParamOverlay, actions.Dialog).Go()),
 			)
 		})
 
@@ -136,11 +129,12 @@ func (b *TemplateBuilder) configModelWithTemplate() {
 				}
 				if selectID != "" {
 					var tplID int
-					tplID, _, _ = b.model.primaryColumnValuesBySlug(selectID)
+
+					tplID, _, _ = b.tm.primaryColumnValuesBySlug(selectID)
 					if b.builder.l10n == nil {
 						localeCode = ""
 					}
-					if err = b.builder.GetModelBuilder(b.mb).copyContainersToAnotherPage(b.builder.db, tplID, "", localeCode, int(pageID.(uint)), version, localeCode, b.model.name, b.builder.GetModelBuilder(b.mb).name); err != nil {
+					if err = b.builder.GetModelBuilder(mb).copyContainersToAnotherPage(b.builder.db, tplID, "", localeCode, int(pageID.(uint)), version, localeCode, b.tm.name, b.builder.GetModelBuilder(mb).name); err != nil {
 						panic(err)
 					}
 				}
@@ -149,7 +143,7 @@ func (b *TemplateBuilder) configModelWithTemplate() {
 		})
 		filed.ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return h.Components(
-				web.Listen(NotifTemplateSelected(b.model.mb),
+				web.Listen(NotifTemplateSelected(b.tm.mb),
 					web.Plaid().EventFunc(ReloadSelectedTemplateEvent).FieldValue(ParamTemplateSelectedID, web.Var("payload.slug")).Go(),
 				),
 				web.Portal(b.selectedTemplate(ctx)).Name(TemplateSelectedPortalName),
@@ -158,10 +152,11 @@ func (b *TemplateBuilder) configModelWithTemplate() {
 	}
 }
 
+
 func (b *TemplateBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponent {
 	var (
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		template = b.model.mb.NewModel()
+		template = b.tm.mb.NewModel()
 		selectID = ctx.Param(ParamTemplateSelectedID)
 		err      error
 		name     string
@@ -181,13 +176,13 @@ func (b *TemplateBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponen
 			PrependIcon("mdi-cached").
 			Attr("@click",
 				web.Plaid().
-					URL(b.model.mb.Info().ListingHref()).
+					URL(b.tm.mb.Info().ListingHref()).
 					Query(templateSelectedID, selectID).
 					Query(presets.ParamOverlay, actions.Dialog).
 					EventFunc(actions.OpenListingDialog).Go()),
 		VCard(
 			VCardText(
-				h.Iframe().Src(b.model.PreviewHref(ctx, selectID)).
+				h.Iframe().Src(b.tm.PreviewHref(ctx, selectID)).
 					Attr("scrolling", "no", "frameborder", "0").
 					Style(`pointer-events: none;transform-origin: 0 0; transform:scale(0.2);width:500%;height:500%`),
 			).Class("pa-0", H100, "border-xl"),
@@ -206,19 +201,6 @@ func NotifTemplateSelected(mb *presets.ModelBuilder) string {
 	return fmt.Sprintf("pagebuilder_NotifTemplateSelected_%T", mb.NewModel())
 }
 
-func (b *TemplateBuilder) getEventCols(inDialog bool, ps string) (cardClickEvent string, cols int) {
-	cols = 3
-	if inDialog {
-		cols = 4
-		emit := web.Emit(NotifTemplateSelected(b.model.mb), TemplateSelected{Slug: ps})
-		cardClickEvent = fmt.Sprintf("%s;vars.pageBuilderSelectTemplateDialog=false;if(!vars.presetsDialog){%s};",
-			emit,
-			web.Plaid().URL(b.mb.Info().ListingHref()).EventFunc(actions.New).FieldValue(ParamTemplateSelectedID, ps).Query(presets.ParamOverlay, actions.Dialog).Go())
-	} else {
-		cardClickEvent = web.Plaid().URL(b.model.editorURLWithSlug(ps)).PushState(true).Go()
-	}
-	return
-}
 
 func (b *TemplateBuilder) getTemplateNameDescription(obj interface{}, ctx *web.EventContext) (name, description string) {
 	if p, ok := obj.(TemplateInterface); ok {
@@ -235,34 +217,25 @@ func (b *TemplateBuilder) getTemplateNameDescription(obj interface{}, ctx *web.E
 	return
 }
 
-func (b *TemplateBuilder) Install() {
+func (b *TemplateBuilder) ModelInstall(_ *presets.Builder, mb *presets.ModelBuilder) error {
+	b.configModelWithTemplate(mb)
+	b.registerFunctions(mb)
+	return nil
+}
+
+func (b *TemplateBuilder) Install(pb *presets.Builder) error {
 	builder := b.builder
 	tm := b.tm
-	if tm == nil {
-		tm = builder.templateModel
-	}
-
-	model := builder.GetModelBuilder(tm)
-	if model == nil {
-		model = builder.Model(tm)
-		if _, ok := tm.NewModel().(publish.VersionInterface); ok {
-			panic("error template model")
-		}
-		builder.configEditor(model)
-	}
-	builder.useAllPlugin(tm, model.name)
-	b.model = model
-	model.tb = b
-	b.configModelWithTemplate()
+	builder.configEditor(tm)
 	b.configList()
-	b.registerFunctions()
+	defer builder.useAllPlugin(tm.mb, tm.name)
+	return nil
 }
 
 func (b *TemplateBuilder) configList() {
 	var (
-		listing = b.model.mb.Listing()
+		listing = b.tm.mb.Listing()
 		config  = &presets.CardDataTableConfig{}
-		model   = b.model
 	)
 	defer listing.DataTableFunc(presets.CardDataTableFunc(listing, config))
 	listing.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
@@ -294,7 +267,7 @@ func (b *TemplateBuilder) configList() {
 	rowMenu.RowMenuItem("Edit").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
 		var (
 			pMsgr = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
-			mb    = b.model.mb
+			mb    = b.tm.mb
 		)
 		if mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil {
 			return nil
@@ -318,7 +291,7 @@ func (b *TemplateBuilder) configList() {
 		if lc.Popup {
 			cardHeight = dialogIframeCardHeight
 		}
-		return h.Iframe().Src(model.PreviewHref(ctx, presets.ObjectID(obj))).
+		return h.Iframe().Src(b.tm.PreviewHref(ctx, presets.ObjectID(obj))).
 			Attr("scrolling", "no", "frameborder", "0").
 			Style(`pointer-events: none;transform-origin: 0 0; transform:scale(0.2);width:500%;height:500%`), cardHeight
 	}
@@ -354,13 +327,13 @@ func (b *TemplateBuilder) configList() {
 			ps = presets.ObjectID(obj)
 		)
 		if lc.Popup {
-			emit := web.Emit(NotifTemplateSelected(b.model.mb), TemplateSelected{Slug: ps})
+			emit := web.Emit(NotifTemplateSelected(b.tm.mb), TemplateSelected{Slug: ps})
 			return fmt.Sprintf("%s;%s;if(!vars.presetsDialog){%s};",
 				emit,
 				presets.CloseListingDialogVarScript,
-				web.Plaid().URL(b.mb.Info().ListingHref()).EventFunc(actions.New).FieldValue(ParamTemplateSelectedID, ps).Query(presets.ParamOverlay, actions.Dialog).Go())
+				web.Plaid().URL(b.tm.mb.Info().ListingHref()).EventFunc(actions.New).FieldValue(ParamTemplateSelectedID, ps).Query(presets.ParamOverlay, actions.Dialog).Go())
 		} else {
-			return web.Plaid().URL(b.model.editorURLWithSlug(ps)).PushState(true).Go()
+			return web.Plaid().URL(b.tm.editorURLWithSlug(ps)).PushState(true).Go()
 		}
 	}
 	config.WrapRows = func(ctx *web.EventContext, searchParams *presets.SearchParams, result *presets.SearchResult, rows *VRowBuilder) *VRowBuilder {
@@ -369,11 +342,11 @@ func (b *TemplateBuilder) configList() {
 			msgr = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		)
 		if lc.Popup {
-			emit := web.Emit(NotifTemplateSelected(b.model.mb), TemplateSelected{Slug: ""})
+			emit := web.Emit(NotifTemplateSelected(b.tm.mb), TemplateSelected{Slug: ""})
 			cardClickEvent := fmt.Sprintf("%s;%s;if(!vars.presetsDialog){%s};",
 				emit,
 				presets.CloseListingDialogVarScript,
-				web.Plaid().URL(b.mb.Info().ListingHref()).EventFunc(actions.New).FieldValue(ParamTemplateSelectedID, "").Query(presets.ParamOverlay, actions.Dialog).Go())
+				web.Plaid().URL(b.tm.mb.Info().ListingHref()).EventFunc(actions.New).FieldValue(ParamTemplateSelectedID, "").Query(presets.ParamOverlay, actions.Dialog).Go())
 			if searchParams.Page == 1 {
 				rows.PrependChildren(
 					VCol(
