@@ -2,6 +2,8 @@ package pagebuilder
 
 import (
 	"github.com/qor5/web/v3"
+
+	"github.com/qor5/admin/v3/presets"
 )
 
 const (
@@ -15,8 +17,8 @@ const (
 	templateDialogWidth = "700"
 )
 
-func (b *TemplateBuilder) registerFunctions() {
-	b.mb.RegisterEventFunc(ReloadSelectedTemplateEvent, b.reloadSelectedTemplate)
+func (b *TemplateBuilder) registerFunctions(mb *presets.ModelBuilder) {
+	mb.RegisterEventFunc(ReloadSelectedTemplateEvent, b.reloadSelectedTemplate)
 }
 
 func (b *TemplateBuilder) reloadSelectedTemplate(ctx *web.EventContext) (r web.EventResponse, err error) {

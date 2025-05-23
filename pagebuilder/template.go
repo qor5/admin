@@ -1,17 +1,13 @@
 package pagebuilder
 
 import (
-	"cmp"
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
-	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
-	"github.com/theplant/relay"
 
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
@@ -91,7 +87,6 @@ func (b *Builder) defaultTemplateInstall(pb *presets.Builder, pm *presets.ModelB
 	return
 }
 
-
 func (b *TemplateBuilder) configModelWithTemplate(mb *presets.ModelBuilder) {
 	creating := mb.Editing().Creating()
 	filed := creating.GetField(PageTemplateSelectionFiled)
@@ -106,7 +101,7 @@ func (b *TemplateBuilder) configModelWithTemplate(mb *presets.ModelBuilder) {
 					Color(ColorPrimary).
 					Variant(VariantElevated).
 					Theme("light").Class("ml-2").
-					Attr("@click", web.Plaid().URL(mb.Info().ListingHref()).EventFunc(actions.OpenListingDialog).Query(presets.ParamOverlay, actions.Dialog).Go()),
+					Attr("@click", web.Plaid().URL(b.tm.mb.Info().ListingHref()).EventFunc(actions.OpenListingDialog).Query(presets.ParamOverlay, actions.Dialog).Go()),
 			)
 		})
 
@@ -151,7 +146,6 @@ func (b *TemplateBuilder) configModelWithTemplate(mb *presets.ModelBuilder) {
 		})
 	}
 }
-
 
 func (b *TemplateBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponent {
 	var (
@@ -201,7 +195,6 @@ func NotifTemplateSelected(mb *presets.ModelBuilder) string {
 	return fmt.Sprintf("pagebuilder_NotifTemplateSelected_%T", mb.NewModel())
 }
 
-
 func (b *TemplateBuilder) getTemplateNameDescription(obj interface{}, ctx *web.EventContext) (name, description string) {
 	if p, ok := obj.(TemplateInterface); ok {
 		name = p.GetName(ctx)
@@ -226,9 +219,9 @@ func (b *TemplateBuilder) ModelInstall(_ *presets.Builder, mb *presets.ModelBuil
 func (b *TemplateBuilder) Install(pb *presets.Builder) error {
 	builder := b.builder
 	tm := b.tm
+	builder.useAllPlugin(tm.mb, tm.name)
 	builder.configEditor(tm)
 	b.configList()
-	defer builder.useAllPlugin(tm.mb, tm.name)
 	return nil
 }
 
@@ -239,7 +232,6 @@ func (b *TemplateBuilder) configList() {
 	)
 	defer listing.DataTableFunc(presets.CardDataTableFunc(listing, config))
 	listing.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
-
 		var (
 			lc   = presets.ListingCompoFromContext(ctx.R.Context())
 			msgr = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
@@ -331,7 +323,7 @@ func (b *TemplateBuilder) configList() {
 			return fmt.Sprintf("%s;%s;if(!vars.presetsDialog){%s};",
 				emit,
 				presets.CloseListingDialogVarScript,
-				web.Plaid().URL(b.tm.mb.Info().ListingHref()).EventFunc(actions.New).FieldValue(ParamTemplateSelectedID, ps).Query(presets.ParamOverlay, actions.Dialog).Go())
+				web.Plaid().EventFunc(actions.New).FieldValue(ParamTemplateSelectedID, ps).Query(presets.ParamOverlay, actions.Dialog).Go())
 		} else {
 			return web.Plaid().URL(b.tm.editorURLWithSlug(ps)).PushState(true).Go()
 		}
@@ -346,7 +338,7 @@ func (b *TemplateBuilder) configList() {
 			cardClickEvent := fmt.Sprintf("%s;%s;if(!vars.presetsDialog){%s};",
 				emit,
 				presets.CloseListingDialogVarScript,
-				web.Plaid().URL(b.tm.mb.Info().ListingHref()).EventFunc(actions.New).FieldValue(ParamTemplateSelectedID, "").Query(presets.ParamOverlay, actions.Dialog).Go())
+				web.Plaid().EventFunc(actions.New).FieldValue(ParamTemplateSelectedID, "").Query(presets.ParamOverlay, actions.Dialog).Go())
 			if searchParams.Page == 1 {
 				rows.PrependChildren(
 					VCol(
