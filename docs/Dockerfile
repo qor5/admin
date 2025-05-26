@@ -1,4 +1,4 @@
-FROM golang:1.22.5-alpine as builder
+FROM golang:1.23-alpine as builder
 RUN apk update && apk add gcc git libc-dev && rm -rf /var/cache/apk/*
 ARG GITHUB_TOKEN
 WORKDIR /qor5
