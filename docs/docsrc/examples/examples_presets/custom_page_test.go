@@ -29,7 +29,7 @@ func TestPresetsCustomPage(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				customPageData.TruncatePut(SqlDB)
-				return httptest.NewRequest("GET", "/custom", nil)
+				return httptest.NewRequest("GET", "/custom", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{`New Custom Page`},
 		},

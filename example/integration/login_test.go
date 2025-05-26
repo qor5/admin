@@ -113,7 +113,7 @@ func TestChangePassword(t *testing.T) {
 			Name:  "View Change Password Page",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/auth/change-password", nil)
+				return httptest.NewRequest("GET", "/auth/change-password", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"Change your password", "Old password", "New password", "zxcvbn.js", "Re-enter new password"},
 		},
