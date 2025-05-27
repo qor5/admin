@@ -1335,6 +1335,20 @@ func TestPageBuilder(t *testing.T) {
 				}
 			},
 		},
+		{
+			Name:  "Page Builder ReloadAddContainersListEvent",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					EventFunc(pagebuilder.ReloadAddContainersListEvent).
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Header", "PageTitle", "Shared"},
+		},
 	}
 
 	for _, c := range cases {
