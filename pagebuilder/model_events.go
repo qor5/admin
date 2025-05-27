@@ -52,6 +52,7 @@ func (b *ModelBuilder) registerCustomFuncs() {
 	b.editor.RegisterEventFunc(ReplicateContainerEvent, b.eventMiddleware(b.replicateContainer))
 	b.editor.RegisterEventFunc(EditContainerEvent, b.eventMiddleware(b.editContainer))
 	b.editor.RegisterEventFunc(UpdateContainerEvent, b.eventMiddleware(b.updateContainer))
+	b.editor.RegisterEventFunc(ReloadAddContainersListEvent, b.eventMiddleware(b.reloadAddContainersList))
 
 	preview := web.Page(b.previewContent)
 	preview.Wrap(func(in web.PageFunc) web.PageFunc {
@@ -528,8 +529,8 @@ func (b *Builder) renameContainerDialog(ctx *web.EventContext) (r web.EventRespo
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr    = presets.MustGetMessages(ctx.R)
 		okAction = web.Plaid().
-				ThenScript("locals.renameDialog=false").
-				EventFunc(RenameContainerFromDialogEvent).Query(paramContainerID, paramID).Go()
+			ThenScript("locals.renameDialog=false").
+			EventFunc(RenameContainerFromDialogEvent).Query(paramContainerID, paramID).Go()
 		portalName = dialogPortalName
 	)
 
@@ -948,6 +949,14 @@ func (b *ModelBuilder) reloadRenderPageOrTemplateBody(ctx *web.EventContext) (r 
 			},
 		),
 	)
+	return
+}
+
+func (b *ModelBuilder) reloadAddContainersList(ctx *web.EventContext) (r web.EventResponse, err error) {
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: pageBuilderAddContainersPortal,
+		Body: b.renderContainersList(ctx),
+	})
 	return
 }
 
