@@ -150,7 +150,7 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 					watch(() => vars.overlay, (value) => {
 						if(value){xLocals.add=false;%s}
 						})
-				}`, web.Plaid().EventFunc(ReloadAddContainersListEvent).Go())),
+				}`, web.Plaid().EventFunc(ReloadAddContainersListEvent).Query(paramStatus, ctx.Param(paramStatus)).Go())),
 		vx.VXOverlay(
 			m.newContainerContent(ctx),
 		).
