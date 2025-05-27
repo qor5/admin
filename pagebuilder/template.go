@@ -386,17 +386,19 @@ func (b *TemplateBuilder) searchComponent(ctx *web.EventContext) h.HTMLComponent
 
 func (b *TemplateBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponent {
 	var (
-		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		template = b.tm.mb.NewModel()
-		selectID = ctx.Param(ParamTemplateSelectedID)
-		err      error
-		name     string
+		msgr        = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		template    = b.tm.mb.NewModel()
+		selectID    = ctx.Param(ParamTemplateSelectedID)
+		err         error
+		name        string
+		previewHref string
 	)
 	if selectID != "" {
 		if err = utils.PrimarySluggerWhere(b.builder.db, template, selectID).First(template).Error; err != nil {
 			panic(err)
 		}
 		name, _ = b.getTemplateNameDescription(template, ctx)
+		previewHref = b.tm.PreviewHref(ctx, selectID)
 	}
 	return h.Div(
 		h.Div(
@@ -412,7 +414,7 @@ func (b *TemplateBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponen
 					EventFunc(OpenTemplateDialogEvent).Go()),
 		VCard(
 			VCardText(
-				h.Iframe().Src(b.tm.PreviewHref(ctx, selectID)).
+				h.Iframe().Src(previewHref).
 					Attr("scrolling", "no", "frameborder", "0").
 					Style(`pointer-events: none;transform-origin: 0 0; transform:scale(0.2);width:500%;height:500%`),
 			).Class("pa-0", H100, "border-xl"),
