@@ -145,13 +145,12 @@ func (b *TemplateBuilder) configModelWithTemplate(mb *presets.ModelBuilder) {
 
 func (b *TemplateBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponent {
 	var (
-		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		template = b.tm.mb.NewModel()
-		selectID = ctx.Param(ParamTemplateSelectedID)
-		err      error
-		name     string
+		msgr        = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		template    = b.tm.mb.NewModel()
+		selectID    = ctx.Param(ParamTemplateSelectedID)
+		err         error
+		name        string
 		previewHref string
-
 	)
 	if selectID != "" {
 		if err = utils.PrimarySluggerWhere(b.builder.db, template, selectID).First(template).Error; err != nil {
@@ -171,6 +170,7 @@ func (b *TemplateBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponen
 			PrependIcon("mdi-cached").
 			Attr("@click",
 				web.Plaid().
+					URL(b.tm.mb.Info().ListingHref()).
 					Query(templateSelectedID, selectID).
 					Query(presets.ParamOverlay, actions.Dialog).
 					EventFunc(actions.OpenListingDialog).Go()),
@@ -212,7 +212,7 @@ func (b *TemplateBuilder) Install(pb *presets.Builder) error {
 
 func (b *TemplateBuilder) configList() {
 	var (
-		listing = b.tm.mb.Listing()
+		listing = b.tm.mb.Listing().SearchColumns("Name")
 		config  = &presets.CardDataTableConfig{}
 	)
 	defer listing.DataTableFunc(presets.CardDataTableFunc(listing, config))
