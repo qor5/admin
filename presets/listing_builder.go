@@ -226,6 +226,7 @@ func (b *ListingBuilder) NewButtonFunc(v ComponentFunc) (r *ListingBuilder) {
 	b.newBtnFunc = v
 	return b
 }
+
 func (b *ListingBuilder) WarpNewButtonFunc(w func(ComponentFunc) ComponentFunc) (r *ListingBuilder) {
 	b.newBtnFunc = w(b.newBtnFunc)
 	return b
