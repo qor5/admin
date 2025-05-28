@@ -40,12 +40,14 @@ func pageValidator(ctx *web.EventContext, p *Page, db *gorm.DB, l10nB *l10n.Buil
 
 	if p.Title == "" {
 		err.FieldError("Title", msgr.InvalidTitleMsg)
+		return
 	}
 
 	if p.Slug != "" {
 		pagePath := path.Clean(p.Slug)
 		if !directoryRe.MatchString(pagePath) {
 			err.FieldError("Slug", msgr.InvalidSlugMsg)
+			return
 		}
 	}
 
