@@ -172,6 +172,8 @@ func (mb *ModelBuilder) newDetailing() (r *DetailingBuilder) {
 	if mb.p.dataOperator != nil {
 		mb.detailing.FetchFunc(mb.p.dataOperator.Fetch)
 	}
+	mb.detailing.Breadcrumb(mb.detailing.defaultBreadcrumbFunc)
+	mb.detailing.PageFunc(mb.detailing.defaultPageFunc)
 	return
 }
 
