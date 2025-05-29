@@ -17,7 +17,6 @@ type Messages struct {
 	OpenGraphMetadata             string
 	Seo                           string
 	Customize                     string
-	SEOPreview                    string
 	BlankOpenGraphInformationTips string
 }
 
@@ -37,7 +36,6 @@ var Messages_en_US = &Messages{
 	OpenGraphMetadata:             "Open Graph Metadata",
 	Seo:                           "SEO",
 	Customize:                     "Customize",
-	SEOPreview:                    "SEO Preview",
 	BlankOpenGraphInformationTips: `The "Open Graph Information" are blank. The default values will be used on the page.`,
 }
 
@@ -57,6 +55,5 @@ var Messages_zh_CN = &Messages{
 	OpenGraphMetadata:             "OG 元数据",
 	Seo:                           "搜索引擎优化",
 	Customize:                     "自定义",
-	SEOPreview:                    "SEO 预览",
 	BlankOpenGraphInformationTips: `"OG 信息"w为空。页面将使用默认值。`,
 }

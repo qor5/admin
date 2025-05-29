@@ -369,42 +369,24 @@ func (b *Builder) vSeoReadonly(obj interface{}, fieldPrefix, locale string, seo 
 		}
 		keywordsComps = append(keywordsComps, h.Span(keyword))
 	}
-	var openGraphInformationComp h.HTMLComponent
-	if setting.OpenGraphURL == "" && setting.OpenGraphTitle == "" && setting.OpenGraphType == "" && setting.OpenGraphDescription == "" && setting.OpenGraphImageURL == "" {
-		openGraphInformationComp = h.Text(msgr.BlankOpenGraphInformationTips)
-	} else {
-		openGraphInformationComp = h.Components(
-			h.If(
-				strings.HasPrefix(setting.OpenGraphImageURL, "http://") ||
-					strings.HasPrefix(setting.OpenGraphImageURL, "https://"),
-				VImg().Src(setting.OpenGraphImageURL).Width(300)),
-			h.Div(h.Span(setting.OpenGraphTitle)).Class("text-subtitle-1 mt-2"),
-			h.Div(h.Span(setting.OpenGraphDescription)).Class("text-body-2 mt-2"),
-			h.Div(h.A().Text(setting.OpenGraphURL).Href(setting.OpenGraphURL)).Class("text-body-2 mt-2"))
-	}
 
 	return h.Components(
 		h.Div(
-			h.Span(msgr.SEOPreview).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
+			h.Span(msgr.Basic).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
 		),
-		VCard(
-			VCardText(
-				h.Span(setting.Title).Class("text-subtitle-1").Class(fmt.Sprintf(`text-%s`, ColorPrimary)),
-				h.Div(keywordsComps...).Class("mt-2").Class(fmt.Sprintf(`text-%s`, ColorPrimary)),
-				h.Div(h.Span(setting.Description)).Class("text-body-2 mt-2"),
-			).Class("pa-0"),
-		).Class("pa-6", "mt-2").Color(ColorPrimaryLighten2),
+		seoFieldPortal(msgr.Title, setting.Title),
+		seoFieldPortal(msgr.Description, setting.Description),
+		seoFieldPortal(msgr.Keywords, setting.Keywords),
 		h.Div(
 			h.Span(msgr.OpenGraphInformation).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
-		).Class("mt-7"),
-		VCard(
-			VCardText(
-				openGraphInformationComp,
-			).Class("pa-0"),
-		).Class("pa-6 mt-2").Color(ColorPrimaryLighten2),
+		).Class("mt-10"),
+		seoFieldPortal(msgr.OpenGraphTitle, setting.OpenGraphTitle),
+		seoFieldPortal(msgr.OpenGraphDescription, setting.OpenGraphDescription),
+		seoFieldPortal(msgr.OpenGraphURL, setting.OpenGraphURL),
+		seoFieldPortal(msgr.OpenGraphImageURL, setting.OpenGraphImageURL),
 		h.Div(
 			h.Span(msgr.OpenGraphImage).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
-		).Class("mt-7"),
+		).Class("mt-10 mb-2"),
 		VContainer(
 			VRow(
 				VCol(media.QMediaBox(db).
@@ -432,8 +414,12 @@ func (b *Builder) vSeoReadonly(obj interface{}, fieldPrefix, locale string, seo 
 		).Class("pl-0 pt-2"),
 		h.Div(
 			h.Span(msgr.OpenGraphMetadata).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
-		).Class("mt-7"),
-		h.Text(GetOpenGraphMetadataString(setting.OpenGraphMetadata)),
+		).Class("mt-1"),
+		h.Div(
+			h.Pre(
+				GetOpenGraphMetadataString(setting.OpenGraphMetadata),
+			).Style("margin: 0; font-family: inherit;"),
+		).Class("mt-4 px-3"),
 	)
 }
 
@@ -491,4 +477,16 @@ func (b *Builder) detailSaver(obj interface{}, ctx *web.EventContext) (err error
 		return
 	}
 	return
+}
+
+func seoFieldPortal(label string, value string) h.HTMLComponent {
+	return h.Div(
+		VXLabel(
+			h.Span(label).
+				Style("line-height:20px; font-size:14px; font-weight:500;"),
+		),
+		h.Div(
+			h.Span(value),
+		).Class("pa-2 px-3 d-flex align-center gap-1"),
+	).Class("mt-4")
 }
