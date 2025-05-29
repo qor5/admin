@@ -100,6 +100,7 @@ func (b *DetailingBuilder) PageFunc(pf web.PageFunc) (r *DetailingBuilder) {
 	b.pageFunc = pf
 	return b
 }
+
 func (b *DetailingBuilder) WrapPageFunc(w func(in web.PageFunc) web.PageFunc) (r *DetailingBuilder) {
 	b.pageFunc = w(b.pageFunc)
 	return b
@@ -502,6 +503,7 @@ func (b *DetailingBuilder) Breadcrumb(f DetailingBreadcrumbFunc) *DetailingBuild
 	b.breadcrumbFunc = f
 	return b
 }
+
 func (b *DetailingBuilder) GetBreadcrumb() DetailingBreadcrumbFunc {
 	return b.breadcrumbFunc
 }
