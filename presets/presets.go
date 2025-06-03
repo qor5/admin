@@ -69,10 +69,6 @@ type Builder struct {
 }
 
 type AssetFunc func(ctx *web.EventContext)
-type (
-	BreadcrumbItemsFuncKey struct{}
-	BreadcrumbItemsFunc    func(ctx *web.EventContext, disableLast bool) (r []h.HTMLComponent)
-)
 
 type extraAsset struct {
 	path        string
@@ -951,10 +947,6 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 		innerPageTitleCompo, ok := ctx.ContextValue(CtxPageTitleComponent).(h.HTMLComponent)
 		if !ok {
 			innerPageTitleCompo = VToolbarTitle(innerPr.PageTitle) // Class("text-h6 font-weight-regular"),
-			breadcrumbFunc, ok := ctx.ContextValue(BreadcrumbItemsFuncKey{}).(BreadcrumbItemsFunc)
-			if ok {
-				innerPageTitleCompo = CreateVXBreadcrumbs(ctx, breadcrumbFunc)
-			}
 		} else {
 			ctx.WithContextValue(CtxPageTitleComponent, nil)
 		}
@@ -1384,18 +1376,4 @@ func redirectSlashes(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
-}
-
-func CreateVXBreadcrumbs(ctx *web.EventContext, f BreadcrumbItemsFunc) h.HTMLComponent {
-	items := f(ctx, true)
-
-	joinedItems := make([]h.HTMLComponent, 0, len(items)*2-1)
-	for i, item := range items {
-		joinedItems = append(joinedItems, item)
-		if i < len(items)-1 {
-			joinedItems = append(joinedItems, VBreadcrumbsDivider(h.Text("»")))
-		}
-	}
-
-	return vuetifyx.VXBreadcrumbs(joinedItems...).Class("pa-0")
 }
