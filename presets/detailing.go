@@ -490,10 +490,19 @@ func (b *DetailingBuilder) defaultBreadcrumbFunc(ctx *web.EventContext, obj any,
 	if titleComp == nil {
 		titleComp = h.Text(title)
 	}
-	return func(ctx *web.EventContext, disabled bool) (r []h.HTMLComponent) {
-		r = []h.HTMLComponent{VBreadcrumbsItem(h.Text(b.mb.Info().LabelName(ctx, false))).Href("javascript:void(0)").Attr("@click", web.Plaid().PushState(true).URL(b.mb.Info().ListingHref()).Go())}
+	return func(ctx *web.EventContext, disableLast bool) (r []h.HTMLComponent) {
+		listingHref := b.mb.Info().ListingHref()
+		r = []h.HTMLComponent{
+			VBreadcrumbsItem(h.Text(b.mb.Info().LabelName(ctx, false))).
+				Href(listingHref).
+				Attr("@click.stop", web.Plaid().PushState(true).URL(listingHref).Go()),
+		}
 		if b.mb.hasDetailing && !b.drawer {
-			r = append(r, VBreadcrumbsItem(titleComp).Href("javascript:void(0)").Attr("@click", web.Plaid().PushState(true).URL(b.mb.Info().DetailingHref(ctx.Param(ParamID))).Go()).Disabled(disabled))
+			detailingHref := b.mb.Info().DetailingHref(ctx.Param(ParamID))
+			r = append(r, VBreadcrumbsItem(titleComp).
+				Href(detailingHref).
+				Attr("@click.stop", web.Plaid().PushState(true).URL(detailingHref).Go()).
+				Disabled(disableLast))
 		}
 		return r
 	}, nil
