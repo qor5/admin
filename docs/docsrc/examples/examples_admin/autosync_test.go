@@ -35,7 +35,7 @@ func TestAutoSyncFrom(t *testing.T) {
 				})
 			},
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/with-slug-products?__execute_event__=presets_New", nil)
+				return httptest.NewRequest("GET", "/with-slug-products?__execute_event__=presets_New", http.NoBody)
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Title", "Title Slug", `form["TitleSlug__AutoSync__"] = (plaid().slug(form["Title"]||"")) === form["TitleSlug"]`, "Auto Sync"},
 		},
@@ -49,7 +49,7 @@ func TestAutoSyncFrom(t *testing.T) {
 				})
 			},
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/with-slug-products?__execute_event__=presets_New", nil)
+				return httptest.NewRequest("GET", "/with-slug-products?__execute_event__=presets_New", http.NoBody)
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Title", "Title Slug", `form["TitleSlug__AutoSync__"] = false`, "Auto Sync"},
 		},
@@ -63,7 +63,7 @@ func TestAutoSyncFrom(t *testing.T) {
 				})
 			},
 			ReqFunc: func() *http.Request {
-				return httptest.NewRequest("GET", "/with-slug-products?__execute_event__=presets_New", nil)
+				return httptest.NewRequest("GET", "/with-slug-products?__execute_event__=presets_New", http.NoBody)
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Title", "Title Slug", `form["TitleSlug__AutoSync__"] = true`, "Auto Sync"},
 		},

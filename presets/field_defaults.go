@@ -267,7 +267,7 @@ func SelectField(obj interface{}, field *FieldContext, ctx *web.EventContext) *v
 	return vuetifyx.VXSelect().
 		Label(field.Label).
 		Disabled(field.Disabled).
-		Attr(VFieldError(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)), field.Errors)...)
+		Attr(VFieldError(field.FormKey, reflectutils.MustGet(obj, field.Name), field.Errors)...)
 }
 
 func ReadonlyText(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXReadonlyFieldBuilder {

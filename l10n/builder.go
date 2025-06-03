@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"path"
 	"slices"
 	"time"
@@ -339,6 +340,8 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 
 			return nil
 		})
+	rmb := m.Listing().RowMenu()
+	rmb.RowMenuItem("Localize").ComponentFunc(localizeRowMenuItemFunc(m.Info(), "", url.Values{}))
 
 	pb.AddWrapHandler(WrapHandlerKey, b.EnsureLocale)
 	pb.AddMenuTopItemFunc(MenuTopItemFunc, runSwitchLocaleFunc(b))
