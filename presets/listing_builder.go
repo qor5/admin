@@ -2,6 +2,7 @@ package presets
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/iancoleman/strcase"
@@ -226,6 +227,11 @@ func (b *ListingBuilder) NewButtonFunc(v ComponentFunc) (r *ListingBuilder) {
 	return b
 }
 
+func (b *ListingBuilder) WarpNewButtonFunc(w func(ComponentFunc) ComponentFunc) (r *ListingBuilder) {
+	b.newBtnFunc = w(b.newBtnFunc)
+	return b
+}
+
 func (b *ListingBuilder) ActionsAsMenu(v bool) (r *ListingBuilder) {
 	b.actionsAsMenu = v
 	return b
@@ -385,13 +391,19 @@ func (b *ListingBuilder) openListingDialog(evCtx *web.EventContext) (r web.Event
 }
 
 func (b *ListingBuilder) deleteConfirmation(evCtx *web.EventContext) (r web.EventResponse, err error) {
-	msgr := b.mb.mustGetMessages(evCtx.R)
-
+	var (
+		msgr    = b.mb.mustGetMessages(evCtx.R)
+		message = msgr.DeleteConfirmationText
+		length  = len(strings.Split(evCtx.Param(ParamID), ","))
+	)
+	if length > 1 {
+		message = msgr.DeleteObjectsConfirmationText(length)
+	}
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: DeleteConfirmPortalName,
 		Body: web.Scope().VSlot("{ locals }").Init(`{deleteConfirmation:true}`).Children(
 			vx.VXDialog(
-				h.Span(msgr.DeleteConfirmationText),
+				h.Span(message),
 			).Title(msgr.DialogTitleDefault).
 				CancelText(msgr.Cancel).
 				OkText(msgr.Delete).
@@ -459,4 +471,26 @@ func CustomizeColumnLabel(mapper func(evCtx *web.EventContext) (map[string]strin
 			return columns, nil
 		}
 	}
+}
+
+func (b *ListingBuilder) defaultNewBtnFunc(ctx *web.EventContext) h.HTMLComponent {
+	if b.mb.Info().Verifier().Do(PermCreate).WithReq(ctx.R).IsAllowed() != nil {
+		return nil
+	}
+	var (
+		lc   = ListingCompoFromContext(ctx.R.Context())
+		msgr = b.mb.mustGetMessages(ctx.R)
+	)
+	onClick := web.Plaid().EventFunc(actions.New)
+	if lc.Popup {
+		onClick.URL(b.mb.Info().ListingHref()).Query(ParamOverlay, actions.Dialog)
+	}
+	if lc.ParentID != "" {
+		onClick.Query(ParamParentID, lc.ParentID)
+	}
+	return v.VBtn(msgr.New).
+		Color(v.ColorPrimary).
+		Variant(v.VariantElevated).
+		Theme("light").Class("ml-2").
+		Attr("@click", onClick.Go())
 }
