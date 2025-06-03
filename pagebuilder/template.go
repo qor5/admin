@@ -88,9 +88,7 @@ func (b *TemplateBuilder) configModelWithTemplate(mb *presets.ModelBuilder) {
 	filed := creating.GetField(PageTemplateSelectionFiled)
 	if filed != nil && filed.GetCompFunc() == nil {
 		mb.Listing().NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
-			var (
-				msgr = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-			)
+			msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 			return h.Components(
 				web.Portal().Name(TemplateSelectDialogPortalName),
 				VBtn(msgr.New).
@@ -145,11 +143,12 @@ func (b *TemplateBuilder) configModelWithTemplate(mb *presets.ModelBuilder) {
 
 func (b *TemplateBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponent {
 	var (
-		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		template = b.tm.mb.NewModel()
-		selectID = ctx.Param(ParamTemplateSelectedID)
-		err      error
-		name     string
+		msgr        = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		template    = b.tm.mb.NewModel()
+		selectID    = ctx.Param(ParamTemplateSelectedID)
+		err         error
+		name        string
+		previewHref string
 	)
 	if selectID != "" {
 		if err = utils.PrimarySluggerWhere(b.builder.db, template, selectID).First(template).Error; err != nil {
@@ -157,6 +156,8 @@ func (b *TemplateBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponen
 		}
 		p := template.(*Template)
 		name = p.Name
+		previewHref = b.tm.PreviewHref(ctx, selectID)
+
 	}
 	return h.Div(
 		h.Div(
@@ -173,7 +174,7 @@ func (b *TemplateBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponen
 					EventFunc(actions.OpenListingDialog).Go()),
 		VCard(
 			VCardText(
-				h.Iframe().Src(b.tm.PreviewHref(ctx, selectID)).
+				h.Iframe().Src(previewHref).
 					Attr("scrolling", "no", "frameborder", "0").
 					Style(`pointer-events: none;transform-origin: 0 0; transform:scale(0.2);width:500%;height:500%`),
 			).Class("pa-0", H100, "border-xl"),
@@ -209,7 +210,7 @@ func (b *TemplateBuilder) Install(pb *presets.Builder) error {
 
 func (b *TemplateBuilder) configList() {
 	var (
-		listing = b.tm.mb.Listing()
+		listing = b.tm.mb.Listing().SearchColumns("Name")
 		config  = &presets.CardDataTableConfig{}
 	)
 	defer listing.DataTableFunc(presets.CardDataTableFunc(listing, config))
@@ -228,10 +229,7 @@ func (b *TemplateBuilder) configList() {
 			Attr("@click", web.Plaid().EventFunc(actions.New).Go())
 	})
 	listing.DialogWidth(templateDialogWidth).Title(func(ctx *web.EventContext, style presets.ListingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error) {
-
-		var (
-			msgr = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		)
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		if ctx.Param(web.EventFuncIDName) == actions.OpenListingDialog {
 			return msgr.CreateFromTemplate, nil, nil
 		}
@@ -284,9 +282,7 @@ func (b *TemplateBuilder) configList() {
 		}
 	}
 	config.Cols = func(ctx *web.EventContext) int {
-		var (
-			lc = presets.ListingCompoFromContext(ctx.R.Context())
-		)
+		lc := presets.ListingCompoFromContext(ctx.R.Context())
 		if lc.Popup {
 			return 4
 		}
@@ -348,19 +344,14 @@ func (b *TemplateBuilder) configList() {
 		return rows
 	}
 	config.WrapRooters = func(ctx *web.EventContext, footers h.HTMLComponents) h.HTMLComponents {
-
-		var (
-			lc = presets.ListingCompoFromContext(ctx.R.Context())
-		)
+		lc := presets.ListingCompoFromContext(ctx.R.Context())
 		if lc.Popup {
 			return nil
 		}
 		return footers
 	}
 	config.RemainingHeight = func(ctx *web.EventContext) string {
-		var (
-			lc = presets.ListingCompoFromContext(ctx.R.Context())
-		)
+		lc := presets.ListingCompoFromContext(ctx.R.Context())
 		if lc.Popup {
 			return "400px"
 		}
