@@ -1397,5 +1397,5 @@ func CreateVXBreadcrumbs(ctx *web.EventContext, f BreadcrumbItemsFunc) h.HTMLCom
 		}
 	}
 
-	return vuetifyx.VXBreadcrumbs(joinedItems...).Class("pa-0")
+	return vuetifyx.VXBreadcrumbs(joinedItems...).Class("pa-0", W100)
 }
