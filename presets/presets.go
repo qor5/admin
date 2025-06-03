@@ -1387,10 +1387,9 @@ func redirectSlashes(next http.Handler) http.Handler {
 }
 
 func CreateVXBreadcrumbs(ctx *web.EventContext, f BreadcrumbItemsFunc) h.HTMLComponent {
-	var items []h.HTMLComponent
-	comps := f(ctx, true)
-	items = append(items, comps...)
-	var joinedItems []h.HTMLComponent
+	items := f(ctx, true)
+
+	joinedItems := make([]h.HTMLComponent, 0, len(items)*2-1)
 	for i, item := range items {
 		joinedItems = append(joinedItems, item)
 		if i < len(items)-1 {
@@ -1398,5 +1397,5 @@ func CreateVXBreadcrumbs(ctx *web.EventContext, f BreadcrumbItemsFunc) h.HTMLCom
 		}
 	}
 
-	return vuetifyx.VXBreadcrumbs(joinedItems...).Class("pa-0")
+	return vuetifyx.VXBreadcrumbs(joinedItems...).Class("pa-0", W100)
 }
