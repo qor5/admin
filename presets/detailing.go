@@ -494,14 +494,12 @@ func (b *DetailingBuilder) defaultBreadcrumbFunc(ctx *web.EventContext, obj any,
 		listingHref := b.mb.Info().ListingHref()
 		r = []h.HTMLComponent{
 			VBreadcrumbsItem(h.Text(b.mb.Info().LabelName(ctx, false))).
-				Href(listingHref).
-				Attr("@click.stop", web.Plaid().PushState(true).URL(listingHref).Go()),
+				Href(listingHref),
 		}
 		if b.mb.hasDetailing && !b.drawer {
 			detailingHref := b.mb.Info().DetailingHref(ctx.Param(ParamID))
 			r = append(r, VBreadcrumbsItem(titleComp).
 				Href(detailingHref).
-				Attr("@click.stop", web.Plaid().PushState(true).URL(detailingHref).Go()).
 				Disabled(disableLast))
 		}
 		return r
