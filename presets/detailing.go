@@ -15,9 +15,8 @@ import (
 )
 
 type (
-	DetailingStyle          string
-	DetailingLayout         string
-	DetailingBreadcrumbFunc func(ctx *web.EventContext, obj any, id string) (BreadcrumbItemsFunc, error)
+	DetailingStyle  string
+	DetailingLayout string
 )
 
 const (
@@ -43,7 +42,6 @@ type DetailingBuilder struct {
 	layouts                  []DetailingLayout
 	idCurrentActiveProcessor IdCurrentActiveProcessor
 	FieldsBuilder
-	breadcrumbFunc DetailingBreadcrumbFunc
 }
 
 type pageTitle interface {
@@ -101,11 +99,6 @@ func (b *DetailingBuilder) PageFunc(pf web.PageFunc) (r *DetailingBuilder) {
 	return b
 }
 
-func (b *DetailingBuilder) WrapPageFunc(w func(in web.PageFunc) web.PageFunc) (r *DetailingBuilder) {
-	b.pageFunc = w(b.pageFunc)
-	return b
-}
-
 func (b *DetailingBuilder) FetchFunc(v FetchFunc) (r *DetailingBuilder) {
 	b.fetcher = v
 	return b
@@ -140,7 +133,10 @@ func (b *DetailingBuilder) AfterTitleCompFunc(v ObjectComponentFunc) (r *Detaili
 }
 
 func (b *DetailingBuilder) GetPageFunc() web.PageFunc {
-	return b.pageFunc
+	if b.pageFunc != nil {
+		return b.pageFunc
+	}
+	return b.defaultPageFunc
 }
 
 func (b *DetailingBuilder) AppendTabsPanelFunc(v TabComponentFunc) (r *DetailingBuilder) {
@@ -257,13 +253,7 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 	for i, layout := range b.layouts {
 		layoutClass[i] = string(layout)
 	}
-	if b.breadcrumbFunc != nil {
-		itemFunc, err := b.breadcrumbFunc(ctx, b.mb.Info(), ctx.Param(ParamID))
-		if err != nil {
-			return r, err
-		}
-		ctx.WithContextValue(BreadcrumbItemsFuncKey{}, itemFunc)
-	}
+
 	r.Body = VContainer().Children(
 		notice,
 		h.Div().Class("d-flex flex-column", strings.Join(layoutClass, ", ")).Children(
@@ -462,60 +452,5 @@ func (b *DetailingBuilder) Section(sections ...*SectionBuilder) *DetailingBuilde
 
 		b.Field(sb.name).Component(sb)
 	}
-	return b
-}
-
-func (b *DetailingBuilder) defaultBreadcrumbFunc(ctx *web.EventContext, obj any, id string) (BreadcrumbItemsFunc, error) {
-	var (
-		msgr      = b.mb.mustGetMessages(ctx.R)
-		titleComp h.HTMLComponent
-		title     = msgr.DetailingObjectTitle(b.mb.Info().LabelName(ctx, true), getPageTitle(obj, id))
-	)
-	if b.titleFunc != nil {
-		style, ok := ctx.ContextValue(ctxKeyDetailingStyle{}).(DetailingStyle)
-		if !ok {
-			style = DetailingStylePage
-		}
-		xtitle, xtitleComp, err := b.titleFunc(ctx, obj, style, title)
-		if err != nil {
-			return nil, err
-		}
-		if xtitleComp != nil {
-			titleComp = xtitleComp
-		}
-		if xtitle != "" {
-			title = xtitle
-		}
-	}
-	if titleComp == nil {
-		titleComp = h.Text(title)
-	}
-	return func(ctx *web.EventContext, disableLast bool) (r []h.HTMLComponent) {
-		listingHref := b.mb.Info().ListingHref()
-		r = []h.HTMLComponent{
-			VBreadcrumbsItem(h.Text(b.mb.Info().LabelName(ctx, false))).
-				Href(listingHref),
-		}
-		if b.mb.hasDetailing && !b.drawer {
-			detailingHref := b.mb.Info().DetailingHref(ctx.Param(ParamID))
-			r = append(r, VBreadcrumbsItem(titleComp).
-				Href(detailingHref).
-				Disabled(disableLast))
-		}
-		return r
-	}, nil
-}
-
-func (b *DetailingBuilder) Breadcrumb(f DetailingBreadcrumbFunc) *DetailingBuilder {
-	b.breadcrumbFunc = f
-	return b
-}
-
-func (b *DetailingBuilder) GetBreadcrumb() DetailingBreadcrumbFunc {
-	return b.breadcrumbFunc
-}
-
-func (b *DetailingBuilder) WrapBreadcrumb(w func(DetailingBreadcrumbFunc) DetailingBreadcrumbFunc) *DetailingBuilder {
-	b.breadcrumbFunc = w(b.breadcrumbFunc)
 	return b
 }
