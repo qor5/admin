@@ -868,10 +868,9 @@ func (b *ModelBuilder) ExistedL10n() bool {
 
 func (b *ModelBuilder) newContainerContent(ctx *web.EventContext) h.HTMLComponent {
 	var (
-		containers = b.renderContainersList(ctx)
-		msgr       = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		title      string
-		svg        string
+		msgr  = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		title string
+		svg   string
 	)
 	if !b.isTemplate {
 		title = msgr.BuildYourPages
@@ -890,7 +889,7 @@ func (b *ModelBuilder) newContainerContent(ctx *web.EventContext) h.HTMLComponen
 		VSheet(
 			VCard(
 				VCardTitle(h.Text(msgr.NewElement)),
-				VCardText(containers),
+				VCardText(web.Portal(b.renderContainersList(ctx)).Name(pageBuilderAddContainersPortal)),
 			).Elevation(0),
 		).Class(W50).Class("pa-4", "overflow-y-auto"),
 		VSheet(

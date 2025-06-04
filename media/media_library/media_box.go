@@ -34,9 +34,10 @@ type MediaBox struct {
 
 // MediaBoxConfig configure MediaBox metas
 type MediaBoxConfig struct {
-	Sizes     map[string]*base.Size
-	Max       uint
-	AllowType string
+	Sizes      map[string]*base.Size
+	Max        uint
+	AllowType  string
+	FileAccept string
 	// the background color of MediaBox
 	BackgroundColor string
 	// disable crop

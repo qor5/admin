@@ -36,6 +36,7 @@ const (
 	ReplicateContainerEvent             = "page_builder_ReplicateContainerEvent"
 	EditContainerEvent                  = "page_builder_EditContainerEvent"
 	UpdateContainerEvent                = "page_builder_UpdateContainerEvent"
+	ReloadAddContainersListEvent        = "page_builder_ReloadAddContainersEvent"
 
 	paramPageID          = "pageID"
 	paramPageVersion     = "pageVersion"
@@ -64,6 +65,10 @@ const (
 	EventDelete = "delete"
 	EventAdd    = "add"
 	EventEdit   = "edit"
+
+	paramIframeEventName  = "iframeEventName"
+	changeDeviceEventName = "change_device"
+	updateBodyEventName   = "update_body"
 )
 
 const (
@@ -145,11 +150,11 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 	}
 	afterLeaveEvent := removeVirtualElement()
 	addOverlay := web.Scope(
-		h.Div().Style("display:none").Attr("v-on-mounted", `({watch})=>{
+		h.Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf(`({watch})=>{
 					watch(() => vars.overlay, (value) => {
-						if(value){xLocals.add=false;}
+						if(value){xLocals.add=false;%s}
 						})
-				}`),
+				}`, web.Plaid().EventFunc(ReloadAddContainersListEvent).Query(paramStatus, ctx.Param(paramStatus)).Go())),
 		vx.VXOverlay(
 			m.newContainerContent(ctx),
 		).

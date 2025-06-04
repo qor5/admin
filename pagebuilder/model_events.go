@@ -52,6 +52,7 @@ func (b *ModelBuilder) registerCustomFuncs() {
 	b.editor.RegisterEventFunc(ReplicateContainerEvent, b.eventMiddleware(b.replicateContainer))
 	b.editor.RegisterEventFunc(EditContainerEvent, b.eventMiddleware(b.editContainer))
 	b.editor.RegisterEventFunc(UpdateContainerEvent, b.eventMiddleware(b.updateContainer))
+	b.editor.RegisterEventFunc(ReloadAddContainersListEvent, b.eventMiddleware(b.reloadAddContainersList))
 
 	preview := web.Page(b.previewContent)
 	preview.Wrap(func(in web.PageFunc) web.PageFunc {
@@ -932,7 +933,10 @@ func (b *ModelBuilder) reloadRenderPageOrTemplateBody(ctx *web.EventContext) (r 
 		data []byte
 		body h.HTMLComponent
 	)
-
+	iframeEventName := ctx.Param(paramIframeEventName)
+	if iframeEventName == "" {
+		iframeEventName = updateBodyEventName
+	}
 	if body, err = b.renderPageOrTemplate(ctx, true, true, true); err != nil {
 		return
 	}
@@ -945,9 +949,18 @@ func (b *ModelBuilder) reloadRenderPageOrTemplateBody(ctx *web.EventContext) (r 
 				Body:            string(data),
 				ContainerDataID: ctx.Param(paramContainerDataID),
 				IsUpdate:        ctx.Param(paramIsUpdate) == "true",
+				EventName:       iframeEventName,
 			},
 		),
 	)
+	return
+}
+
+func (b *ModelBuilder) reloadAddContainersList(ctx *web.EventContext) (r web.EventResponse, err error) {
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: pageBuilderAddContainersPortal,
+		Body: b.renderContainersList(ctx),
+	})
 	return
 }
 
@@ -959,4 +972,5 @@ type notifIframeBodyUpdatedPayload struct {
 	Body            string `json:"body"`
 	ContainerDataID string `json:"containerDataID"`
 	IsUpdate        bool   `json:"isUpdate"`
+	EventName       string `json:"eventName"`
 }

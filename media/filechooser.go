@@ -599,10 +599,14 @@ func (mb *Builder) mediaLibraryTopOperations(clickTabEvent, field, tab, typeVal,
 
 	if mb.fileAccept != "" {
 		fileAccept = mb.fileAccept
+	} else if cfg.FileAccept != "" {
+		fileAccept = cfg.FileAccept
 	} else {
 		fileAccept = "*/*"
 		if cfg.AllowType == media_library.ALLOW_TYPE_IMAGE {
 			fileAccept = "image/*"
+		} else if cfg.AllowType == media_library.ALLOW_TYPE_VIDEO {
+			fileAccept = "video/*"
 		}
 	}
 	changeAllowTypeEvent := web.Plaid().EventFunc(ImageJumpPageEvent).
