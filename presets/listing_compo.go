@@ -869,7 +869,7 @@ func CardDataTableFunc(lb *ListingBuilder, config *CardDataTableConfig) func(ctx
 						),
 					).Class("d-flex align-center").Attr("v-if", "xLocals.select_ids && xLocals.select_ids.length>0"),
 				),
-				h.Div(pagination).ClassIf(W100, (result.TotalCount == nil && searchParams.Page == 1 && !hasNode) || *result.TotalCount == 0),
+				h.Div(pagination).ClassIf(W100, (result.TotalCount == nil && searchParams.Page == 1 && !hasNode) || result.TotalCount != nil && *result.TotalCount == 0),
 			)
 			if config.WrapRooters != nil {
 				footer = config.WrapRooters(ctx, footer)
