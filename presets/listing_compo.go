@@ -745,7 +745,6 @@ func CardDataTableFunc(lb *ListingBuilder, config *CardDataTableConfig) func(ctx
 			if config.WrapMultipleSelectedActions != nil {
 				selectedActions = config.WrapMultipleSelectedActions(ctx, selectedActions)
 			}
-			hasNode := false
 			reflectutils.ForEach(result.Nodes, func(obj interface{}) {
 				var (
 					menus          = lb.rowMenu.listingItemFuncs(ctx)
@@ -754,7 +753,6 @@ func CardDataTableFunc(lb *ListingBuilder, config *CardDataTableConfig) func(ctx
 					clickCardEvent string
 					checkEvent     = fmt.Sprintf(`let arr=xLocals.select_ids;let find_id=%q;arr.includes(find_id)?arr.splice(arr.indexOf(find_id), 1):arr.push(find_id);`, primarySlug)
 				)
-				hasNode = true
 				var opMenuItems []h.HTMLComponent
 				if config.HasSelectionPermission != nil {
 					hasPermission = config.HasSelectionPermission(ctx, obj)
@@ -869,7 +867,7 @@ func CardDataTableFunc(lb *ListingBuilder, config *CardDataTableConfig) func(ctx
 						),
 					).Class("d-flex align-center").Attr("v-if", "xLocals.select_ids && xLocals.select_ids.length>0"),
 				),
-				h.Div(pagination).ClassIf(W100, (result.TotalCount == nil && searchParams.Page == 1 && !hasNode) || *result.TotalCount == 0),
+				h.Div(pagination).ClassIf(W100, (result.TotalCount != nil && *result.TotalCount == 0) || result.PageInfo.StartCursor == nil),
 			)
 			if config.WrapRooters != nil {
 				footer = config.WrapRooters(ctx, footer)
