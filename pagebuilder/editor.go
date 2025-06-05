@@ -110,6 +110,7 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 		msgr            = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		title           string
 		err             error
+		ps              = ctx.Param(presets.ParamID)
 	)
 	if m.mb.Info().Verifier().Do(presets.PermGet).WithReq(ctx.R).IsAllowed() != nil {
 		return h.Text(perm.PermissionDenied.Error())
@@ -166,6 +167,32 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 	versionComponent = publish.DefaultVersionComponentFunc(m.mb, publish.VersionComponentConfig{
 		Top: true, DisableListeners: true,
 		DisableDataChangeTracking: true,
+		WrapActionButtons: func(ctx *web.EventContext, obj interface{}, actionButtons []h.HTMLComponent, phraseHasPresetsDataChanged string) []h.HTMLComponent {
+			if len(actionButtons) < 2 {
+				return actionButtons
+			}
+			var (
+				previewDevelopUrl = m.PreviewHref(ctx, ps)
+			)
+			if p, ok := obj.(publish.StatusInterface); ok {
+				if p.EmbedStatus().Status == publish.StatusOnline {
+					previewDevelopUrl, err = b.publisher.FullUrl(ctx.R.Context(), p.EmbedStatus().OnlineUrl)
+					if err != nil {
+						panic(err)
+					}
+				}
+			}
+			btn := VBtn(msgr.Preview).
+				Attr(":disabled", phraseHasPresetsDataChanged).
+				Href(previewDevelopUrl).
+				Class("ml-2").
+				Class("rounded").
+				Variant(VariantElevated).Color(ColorPrimary).Height(36)
+			if b.previewOpenNewTab {
+				btn.Attr("target", "_blank")
+			}
+			return append([]h.HTMLComponent{btn}, actionButtons...)
+		},
 	})(obj, &presets.FieldContext{ModelInfo: m.mb.Info()}, ctx)
 	pageAppbarContent = h.Components(
 		h.Div(
