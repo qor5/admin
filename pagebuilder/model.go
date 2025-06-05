@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"path"
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -642,8 +643,8 @@ func (b *ModelBuilder) markAsSharedContainer(ctx *web.EventContext) (r web.Event
 	return
 }
 
-func (b *ModelBuilder) copyContainersToNewPageVersion(db *gorm.DB, pageID int, locale, oldPageVersion, newPageVersion, fromModelName, toModelName string) (err error) {
-	return b.copyContainersToAnotherPage(db, pageID, oldPageVersion, locale, pageID, newPageVersion, locale, fromModelName, toModelName)
+func (b *ModelBuilder) copyContainersToNewPageVersion(db *gorm.DB, pageID int, localeCode, parentVersion, version, fromModelName, toModelName string) (err error) {
+	return b.copyContainersToAnotherPage(db, pageID, parentVersion, localeCode, pageID, version, localeCode, fromModelName, toModelName)
 }
 
 func (b *ModelBuilder) copyContainersToAnotherPage(db *gorm.DB, pageID int, pageVersion, locale string, toPageID int, toPageVersion, toPageLocale, fromModelName, toModelName string) (err error) {
@@ -922,6 +923,61 @@ func (b *ModelBuilder) WrapEventMiddleware(w func(eventMiddlewareFunc) eventMidd
 func (b *ModelBuilder) configListing() *ModelBuilder {
 	listing := b.mb.Listing()
 	rowMenu := listing.RowMenu()
+	type ctxKey struct{}
+	listing.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
+		return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
+			result, err = in(ctx, params)
+			if err != nil {
+				return
+			}
+
+			items := b.mb.NewModelSlice()
+			ids := make([]interface{}, 0)
+			reflectutils.ForEach(result.Nodes, func(node interface{}) {
+				ids = append(ids, reflectutils.MustGet(node, "ID"))
+			})
+			// Get locale from context
+			locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
+
+			// Use subquery to find the latest record for each ID, prioritizing draft status
+			subQuery := b.db.Model(b.mb.NewModel()).
+				Select("*, ROW_NUMBER() OVER(PARTITION BY id ORDER BY CASE WHEN status = ? THEN 0 ELSE 1 END, created_at DESC) as row_num", publish.StatusDraft).
+				Where("id IN (?)", ids)
+
+			// Add locale condition if it exists
+			if locale != "" {
+				subQuery = subQuery.Where("locale_code = ?", locale)
+			}
+
+			// Get records with row_num=1 (the latest record for each ID)
+			err = b.db.Table("(?) as sub", subQuery).
+				Where("sub.row_num = ?", 1).
+				Find(items).Error
+			if err != nil {
+				return
+			}
+
+			// Create a map with ID string as key and item as value
+			itemMap := make(map[string]interface{})
+
+			// Use reflection to iterate items and populate the map
+			v := reflect.ValueOf(items)
+			if v.Kind() == reflect.Ptr {
+				v = v.Elem()
+			}
+
+			if v.Kind() == reflect.Slice {
+				for i := 0; i < v.Len(); i++ {
+					item := v.Index(i).Interface()
+					id := fmt.Sprintf("%v", reflectutils.MustGet(item, "ID"))
+					itemMap[id] = item
+				}
+			}
+
+			ctx.WithContextValue(ctxKey{}, itemMap)
+			return
+		}
+	})
 	rowMenu.RowMenuItem("Edit Last Draft").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) (r h.HTMLComponent) {
 		if b.mb.Info().Verifier().Do(presets.PermGet).WithReq(ctx.R).IsAllowed() != nil {
 			return nil
@@ -929,32 +985,42 @@ func (b *ModelBuilder) configListing() *ModelBuilder {
 		if _, ok := obj.(publish.VersionInterface); !ok {
 			return nil
 		}
+
 		var (
-			msgr                   = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-			lastDraftObj           = b.mb.NewModel()
-			modelID, _, localeCode = b.primaryColumnValuesBySlug(id)
+			msgr          = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+			modelID, _, _ = b.primaryColumnValuesBySlug(id)
 		)
 
-		if err := b.db.Where("id = ? AND locale_code = ? and status = ?", modelID, localeCode, publish.StatusDraft).First(&lastDraftObj).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		// Get itemMap from context
+		itemMap, ok := ctx.ContextValue(ctxKey{}).(map[string]interface{})
+		if !ok {
 			return nil
-		} else if err == nil {
+		}
+
+		// Find item corresponding to modelID
+		item, exists := itemMap[fmt.Sprintf("%v", modelID)]
+		if !exists {
+			return nil
+		}
+
+		// Check item status and generate different VListItem based on status
+		if statusObj, ok := item.(publish.StatusInterface); ok && statusObj.EmbedStatus().Status == publish.StatusDraft {
+			// If it's draft status, show edit button
 			return VListItem(
 				VListItemTitle(h.Text(msgr.EditLastDraft)),
 			).PrependIcon("mdi-pencil").Attr("@click", web.Plaid().
 				PushState(true).
-				URL(b.mb.Info().DetailingHref(lastDraftObj.(presets.SlugEncoder).PrimarySlug())).
+				URL(b.mb.Info().DetailingHref(item.(presets.SlugEncoder).PrimarySlug())).
 				Go())
 		} else {
-			if err := b.db.Where("id = ? AND locale_code = ? and status != ?", modelID, localeCode, publish.StatusDraft).Order("created_at DESC").First(&lastDraftObj).Error; err != nil {
-				return nil
-			}
-			item := VListItem(
+			// If it's not draft status, show preview button
+			previewItem := VListItem(
 				VListItemTitle(h.Text(msgr.Preview)),
-			).PrependIcon("mdi-eye").Href(b.PreviewHref(ctx, lastDraftObj.(presets.SlugEncoder).PrimarySlug()))
+			).PrependIcon("mdi-eye").Href(b.PreviewHref(ctx, item.(presets.SlugEncoder).PrimarySlug()))
 			if b.builder.previewOpenNewTab {
-				item.Attr("target", "_blank")
+				previewItem.Attr("target", "_blank")
 			}
-			return item
+			return previewItem
 		}
 	})
 	return b
