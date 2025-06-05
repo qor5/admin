@@ -933,7 +933,10 @@ func (b *ModelBuilder) reloadRenderPageOrTemplateBody(ctx *web.EventContext) (r 
 		data []byte
 		body h.HTMLComponent
 	)
-
+	iframeEventName := ctx.Param(paramIframeEventName)
+	if iframeEventName == "" {
+		iframeEventName = updateBodyEventName
+	}
 	if body, err = b.renderPageOrTemplate(ctx, true, true, true); err != nil {
 		return
 	}
@@ -946,6 +949,7 @@ func (b *ModelBuilder) reloadRenderPageOrTemplateBody(ctx *web.EventContext) (r 
 				Body:            string(data),
 				ContainerDataID: ctx.Param(paramContainerDataID),
 				IsUpdate:        ctx.Param(paramIsUpdate) == "true",
+				EventName:       iframeEventName,
 			},
 		),
 	)
@@ -968,4 +972,5 @@ type notifIframeBodyUpdatedPayload struct {
 	Body            string `json:"body"`
 	ContainerDataID string `json:"containerDataID"`
 	IsUpdate        bool   `json:"isUpdate"`
+	EventName       string `json:"eventName"`
 }
