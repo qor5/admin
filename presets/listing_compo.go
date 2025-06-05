@@ -804,7 +804,6 @@ func CardDataTableFunc(lb *ListingBuilder, config *CardDataTableConfig) func(ctx
 						).Color(ColorGreyLighten5).Height(cardContentHeight),
 					).Class("pa-0"),
 				)
-
 				var card h.HTMLComponent
 				if selectedActions != nil && len(selectedActions) > 0 {
 					card = VHover(
@@ -868,7 +867,7 @@ func CardDataTableFunc(lb *ListingBuilder, config *CardDataTableConfig) func(ctx
 						),
 					).Class("d-flex align-center").Attr("v-if", "xLocals.select_ids && xLocals.select_ids.length>0"),
 				),
-				pagination,
+				h.Div(pagination).ClassIf(W100, (result.TotalCount != nil && *result.TotalCount == 0) || result.PageInfo.StartCursor == nil),
 			)
 			if config.WrapRooters != nil {
 				footer = config.WrapRooters(ctx, footer)
