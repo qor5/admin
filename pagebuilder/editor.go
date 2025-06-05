@@ -171,9 +171,7 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 			if len(actionButtons) < 2 {
 				return actionButtons
 			}
-			var (
-				previewDevelopUrl = m.PreviewHref(ctx, ps)
-			)
+			previewDevelopUrl := m.PreviewHref(ctx, ps)
 			if p, ok := obj.(publish.StatusInterface); ok {
 				if p.EmbedStatus().Status == publish.StatusOnline {
 					previewDevelopUrl, err = b.publisher.FullUrl(ctx.R.Context(), p.EmbedStatus().OnlineUrl)
