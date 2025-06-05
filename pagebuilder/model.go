@@ -918,3 +918,44 @@ func (b *ModelBuilder) WrapEventMiddleware(w func(eventMiddlewareFunc) eventMidd
 	b.eventMiddleware = w(b.eventMiddleware)
 	return b
 }
+
+func (b *ModelBuilder) configListing() *ModelBuilder {
+	listing := b.mb.Listing()
+	rowMenu := listing.RowMenu()
+	rowMenu.RowMenuItem("Edit Last Draft").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) (r h.HTMLComponent) {
+		if b.mb.Info().Verifier().Do(presets.PermGet).WithReq(ctx.R).IsAllowed() != nil {
+			return nil
+		}
+		if _, ok := obj.(publish.VersionInterface); !ok {
+			return nil
+		}
+		var (
+			msgr                   = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+			lastDraftObj           = b.mb.NewModel()
+			modelID, _, localeCode = b.primaryColumnValuesBySlug(id)
+		)
+
+		if err := b.db.Where("id = ? AND locale_code = ? and status = ?", modelID, localeCode, publish.StatusDraft).First(&lastDraftObj).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil
+		} else if err == nil {
+			return VListItem(
+				VListItemTitle(h.Text(msgr.EditLastDraft)),
+			).PrependIcon("mdi-pencil").Attr("@click", web.Plaid().
+				PushState(true).
+				URL(b.mb.Info().DetailingHref(lastDraftObj.(presets.SlugEncoder).PrimarySlug())).
+				Go())
+		} else {
+			if err := b.db.Where("id = ? AND locale_code = ? and status != ?", modelID, localeCode, publish.StatusDraft).Order("created_at DESC").First(&lastDraftObj).Error; err != nil {
+				return nil
+			}
+			item := VListItem(
+				VListItemTitle(h.Text(msgr.Preview)),
+			).PrependIcon("mdi-eye").Href(b.PreviewHref(ctx, lastDraftObj.(presets.SlugEncoder).PrimarySlug()))
+			if b.builder.previewOpenNewTab {
+				item.Attr("target", "_blank")
+			}
+			return item
+		}
+	})
+	return b
+}
