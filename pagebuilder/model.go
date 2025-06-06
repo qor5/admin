@@ -941,7 +941,7 @@ func (b *ModelBuilder) configListing() *ModelBuilder {
 
 			// Use subquery to find the latest record for each ID, prioritizing draft status
 			subQuery := b.db.Model(b.mb.NewModel()).
-				Select("*, ROW_NUMBER() OVER(PARTITION BY id ORDER BY CASE WHEN status = ? THEN 0 ELSE 1 END, created_at DESC) as row_num", publish.StatusDraft).
+				Select("*, ROW_NUMBER() OVER(PARTITION BY id ORDER BY CASE WHEN status = ? THEN 0 WHEN status = ? THEN 1 ELSE 2 END, created_at DESC) as row_num", publish.StatusDraft, publish.StatusOnline).
 				Where("id IN (?)", ids)
 
 			// Add locale condition if it exists
