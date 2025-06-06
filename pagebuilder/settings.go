@@ -89,6 +89,14 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 				copyURL = fmt.Sprintf(`%q`, previewDevelopUrl)
 			}
 		}
+		// Add pauseVideo=1 parameter to previewDevelopUrl for iframe
+		iframeUrlWithVideoPause := previewDevelopUrl
+		if strings.Contains(iframeUrlWithVideoPause, "?") {
+			iframeUrlWithVideoPause += "&pauseVideo=1"
+		} else {
+			iframeUrlWithVideoPause += "?pauseVideo=1"
+		}
+
 		previewComp := h.A(h.Text(previewDevelopUrl)).Href(previewDevelopUrl)
 		if m.builder.previewOpenNewTab {
 			previewComp.Target("_blank")
@@ -111,7 +119,7 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 						).Class("d-flex align-center justify-center", H100, "bg-"+ColorGreyLighten4),
 					),
 					h.If(containerCount > 0,
-						h.Iframe().Src(previewDevelopUrl).
+						h.Iframe().Src(iframeUrlWithVideoPause).
 							Attr("scrolling", "no", "frameborder", "0").
 							Style(`pointer-events: none; 
  -webkit-mask-image: radial-gradient(circle, black 80px, transparent);
