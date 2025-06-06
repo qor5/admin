@@ -1002,9 +1002,15 @@ func (b *ModelBuilder) configListing() *ModelBuilder {
 		if !exists {
 			return nil
 		}
+		statusObj, ok := item.(publish.StatusInterface)
+		if !ok {
+			return nil
+		}
+		status := statusObj.EmbedStatus().Status
+		onlineUrl := statusObj.EmbedStatus().OnlineUrl
 
 		// Check item status and generate different VListItem based on status
-		if statusObj, ok := item.(publish.StatusInterface); ok && statusObj.EmbedStatus().Status == publish.StatusDraft {
+		if status == publish.StatusDraft {
 			// If it's draft status, show edit button
 			return VListItem(
 				VListItemTitle(h.Text(msgr.EditLastDraft)),
@@ -1012,6 +1018,18 @@ func (b *ModelBuilder) configListing() *ModelBuilder {
 				PushState(true).
 				URL(b.mb.Info().DetailingHref(item.(presets.SlugEncoder).PrimarySlug())).
 				Go())
+		} else if status == publish.StatusOnline {
+			fullUrl, err := b.builder.publisher.FullUrl(ctx.R.Context(), onlineUrl)
+			if err != nil {
+				return nil
+			}
+			previewItem := VListItem(
+				VListItemTitle(h.Text(msgr.Preview)),
+			).PrependIcon("mdi-eye").Href(fullUrl)
+			if b.builder.previewOpenNewTab {
+				previewItem.Attr("target", "_blank")
+			}
+			return previewItem
 		} else {
 			// If it's not draft status, show preview button
 			previewItem := VListItem(
