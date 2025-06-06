@@ -29,7 +29,7 @@ require (
 	github.com/qor5/imaging v1.6.4
 	github.com/qor5/web v1.3.2
 	github.com/qor5/web/v3 v3.0.12-0.20250322025751-d36834ab80b4
-	github.com/qor5/x/v3 v3.0.14-0.20250603092146-9d54f70253fc
+	github.com/qor5/x/v3 v3.0.14-0.20250605110503-e8fdf202ebcf
 	github.com/samber/lo v1.47.0
 	github.com/shurcooL/sanitized_anchor_name v1.0.0
 	github.com/spf13/cast v1.6.0
@@ -187,7 +187,7 @@ require (
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/image v0.23.0 // indirect
 	golang.org/x/net v0.38.0 // indirect
-	golang.org/x/oauth2 v0.21.0 // indirect
+	golang.org/x/oauth2 v0.28.0 // indirect
 	golang.org/x/sync v0.13.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
