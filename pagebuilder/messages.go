@@ -44,7 +44,7 @@ type Messages struct {
 	NewElement                string
 	Title                     string
 	Slug                      string
-	EditPage                  string
+	ViewPage                  string
 	ScheduledAt               string
 	OnlineHit                 string
 	NoContentHit              string
@@ -138,7 +138,7 @@ var Messages_en_US = &Messages{
 	NewElement:                "New Element",
 	Title:                     "Title",
 	Slug:                      "Slug",
-	EditPage:                  "Edit Page",
+	ViewPage:                  "View Page",
 	ScheduledAt:               "Scheduled at",
 	OnlineHit:                 "This version cannot be edited once published. To make changes, please duplicate the current version",
 	NoContentHit:              "This page has no content yet, start to edit in page builder",
@@ -229,7 +229,7 @@ var Messages_zh_CN = &Messages{
 	NewElement:                "新的组件",
 	Title:                     "编辑",
 	Slug:                      "Slug",
-	EditPage:                  "编辑页面",
+	ViewPage:                  "查看页面",
 	ScheduledAt:               "安排在",
 	OnlineHit:                 "这个版本发布后不能再编辑。要进行更改，请复制当前版本",
 	NoContentHit:              "这个页面没有内容，在page builder中开始编辑",
@@ -325,7 +325,7 @@ var Messages_ja_JP = &Messages{
 	NewElement:                "新しいコンテナ",
 	Title:                     "タイトル",
 	Slug:                      "スラッグ",
-	EditPage:                  "ページの編集",
+	ViewPage:                  "ページを表示",
 	ScheduledAt:               "公開開始日時",
 	OnlineHit:                 "このバージョンは一度公開されると編集できなくなります。変更を加えるには、現在のバージョンを複製してください",
 	NoContentHit:              "このページにはまだコンテンツがありません。ページビルダーで編集を開始してください",
