@@ -930,7 +930,9 @@ func (b *ModelBuilder) configListing() *ModelBuilder {
 			if err != nil {
 				return
 			}
-
+			if b.isTemplate {
+				return
+			}
 			items := b.mb.NewModelSlice()
 			ids := make([]interface{}, 0)
 			reflectutils.ForEach(result.Nodes, func(node interface{}) {

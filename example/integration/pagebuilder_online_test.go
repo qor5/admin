@@ -35,16 +35,19 @@ var editLastestVersion = gofixtures.Data(gofixtures.Sql(`
 INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, seo, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code) VALUES 
 (1, '2024-05-22 02:54:45.280106 +00:00', '2024-05-22 02:54:57.983233 +00:00', null, 'all_draft', 'draft-page-1', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'draft', '', null, null, null, null, '2024-05-22-v01', '2024-05-22-v01', '', 'International'),
 (1, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, 'all_draft', 'draft-page-1', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'draft', '', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'International'),
-(2, '2024-05-22 02:54:45.280106 +00:00', '2024-05-22 02:54:57.983233 +00:00', null, 'draft_before_online', 'draft-online-page', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'draft', '/index.html', null, null, null, null, '2024-05-22-v01', '2024-05-22-v01', '', 'International'),
-(2, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, 'draft_before_online', 'draft-online-page', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'online', '/index.html', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'International'),
-(3, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, 'online_before_draft', 'draft-online-page-reverse', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'draft', '/index.html', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'International'),
-(3, '2024-05-22 02:54:45.280106 +00:00', '2024-05-22 02:54:57.983233 +00:00', null, 'online_before_draft', 'draft-online-page-reverse', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'online', '/index.html', null, null, null, null, '2024-05-22-v01', '2024-05-22-v01', '', 'International'),
-(4, '2024-05-22 02:54:45.280106 +00:00', '2024-05-22 02:54:57.983233 +00:00', null, 'draft_before_offline', 'draft-offline-page', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'draft', '/index.html', null, null, null, null, '2024-05-22-v01', '2024-05-22-v01', '', 'International'),
-(4, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, 'draft_before_offline', 'draft-offline-page', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'offline', '/index.html', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'International'),
+(2, '2024-05-22 02:54:45.280106 +00:00', '2024-05-22 02:54:57.983233 +00:00', null, 'draft_after_online', 'draft-online-page', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'draft', '/index.html', null, null, null, null, '2024-05-22-v01', '2024-05-22-v01', '', 'International'),
+(2, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, 'draft_after_online', 'draft-online-page', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'online', '/index.html', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'International'),
+(3, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, 'online_after_draft', 'draft-online-page-reverse', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'draft', '/index.html', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'International'),
+(3, '2024-05-22 02:54:45.280106 +00:00', '2024-05-22 02:54:57.983233 +00:00', null, 'online_after_draft', 'draft-online-page-reverse', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'online', '/index.html', null, null, null, null, '2024-05-22-v01', '2024-05-22-v01', '', 'International'),
+(4, '2024-05-22 02:54:45.280106 +00:00', '2024-05-22 02:54:57.983233 +00:00', null, 'draft_after_offline', 'draft-offline-page', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'draft', '/index.html', null, null, null, null, '2024-05-22-v01', '2024-05-22-v01', '', 'International'),
+(4, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, 'draft_after_offline', 'draft-offline-page', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'offline', '/index.html', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'International'),
 (5, '2024-05-22 02:54:45.280106 +00:00', '2024-05-22 02:54:57.983233 +00:00', null, 'all_offline', 'offline-page', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'offline', '/index.html', null, null, null, null, '2024-05-22-v01', '2024-05-22-v01', '', 'International'),
 (5, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, 'all_offline', 'offline-page', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'offline', '/index.html', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'International'),
-(6, '2024-05-21 01:54:45.280106 +00:00', '2024-05-23 03:54:57.983233 +00:00', null, 'just_online', 'online-offline-page', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'online', '/index.html', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'International'),
-(6, '2024-05-22 02:54:45.280106 +00:00', '2024-05-22 02:54:57.983233 +00:00', null, 'just_online', 'online-offline-page', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'offline', '/index.html', null, null, null, null, '2024-05-22-v01', '2024-05-22-v01', '', 'International');`,
+(6, '2024-05-21 01:54:45.280106 +00:00', '2024-05-23 03:54:57.983233 +00:00', null, 'online_after_offline', 'online-offline-page', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'online', '/index.html', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'International'),
+(6, '2024-05-22 02:54:45.280106 +00:00', '2024-05-22 02:54:57.983233 +00:00', null, 'online_after_offline', 'online-offline-page', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'offline', '/index.html', null, null, null, null, '2024-05-22-v01', '2024-05-22-v01', '', 'International'),
+(7, '2024-05-21 01:54:45.280106 +00:00', '2024-05-23 03:54:57.983233 +00:00', null, 'offline_after_online', 'online-offline-page', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'offline', '/index.html', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'International'),
+(7, '2024-05-22 02:54:45.280106 +00:00', '2024-05-22 02:54:57.983233 +00:00', null, 'offline_after_online', 'online-offline-page', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'online', '/index.html', null, null, null, null, '2024-05-22-v01', '2024-05-22-v01', '', 'International')
+;`,
 	[]string{"page_builder_pages"}))
 
 type StorageWithError struct {
@@ -182,13 +185,13 @@ func TestPageBuilderOnline(t *testing.T) {
 			ExpectPageBodyNotContains:     []string{`<v-list-item :prepend-icon='"mdi-pencil"' @click='plaid().vars(vars).locals(locals).form(form).dash(dash).pushState(true).url("/pages/1_2024-05-21-v01_International").go()'>`},
 		},
 		{
-			Name:  "PageBuilder Online Draft Before Online",
+			Name:  "Pages Listing After Online",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				editLastestVersion.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/pages").
-					Query("keyword", "draft_before_online").
+					Query("keyword", "draft_after_online").
 					BuildEventFuncRequest()
 
 				return req
@@ -197,13 +200,13 @@ func TestPageBuilderOnline(t *testing.T) {
 			ExpectPageBodyNotContains:     []string{`<v-list-item :prepend-icon='"mdi-pencil"' @click='plaid().vars(vars).locals(locals).form(form).dash(dash).pushState(true).url("/pages/2_2024-05-21-v01_International").go()'>`},
 		},
 		{
-			Name:  "PageBuilder Online Before Draft",
+			Name:  "Pages Listing  Online After Draft",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				editLastestVersion.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/pages").
-					Query("keyword", "online_before_draft").
+					Query("keyword", "online_after_draft").
 					BuildEventFuncRequest()
 
 				return req
@@ -212,13 +215,13 @@ func TestPageBuilderOnline(t *testing.T) {
 			ExpectPageBodyNotContains:     []string{`<v-list-item :prepend-icon='"mdi-pencil"' @click='plaid().vars(vars).locals(locals).form(form).dash(dash).pushState(true).url("/pages/3_2024-05-22-v01_International").go()'>`},
 		},
 		{
-			Name:  "PageBuilder Draft Before Offline",
+			Name:  "Pages Listing  Draft After Offline",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				editLastestVersion.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/pages").
-					Query("keyword", "draft_before_offline").
+					Query("keyword", "draft_after_offline").
 					BuildEventFuncRequest()
 
 				return req
@@ -227,7 +230,7 @@ func TestPageBuilderOnline(t *testing.T) {
 			ExpectPageBodyNotContains:     []string{`<v-list-item :prepend-icon='"mdi-pencil"' @click='plaid().vars(vars).locals(locals).form(form).dash(dash).pushState(true).url("/pages/4_2024-05-21-v01_International").go()'>`},
 		},
 		{
-			Name:  "PageBuilder All Offline",
+			Name:  "Pages Listing  All Offline",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				editLastestVersion.TruncatePut(dbr)
@@ -242,19 +245,34 @@ func TestPageBuilderOnline(t *testing.T) {
 			ExpectPageBodyNotContains:     []string{`<v-list-item :prepend-icon='"mdi-eye"' href='/page_builder/pages/preview?id=5_2024-05-21-v01_International'>`},
 		},
 		{
-			Name:  "PageBuilder Just Online",
+			Name:  "Pages Listing  Online After Offline",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				editLastestVersion.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/pages").
-					Query("keyword", "just_online").
+					Query("keyword", "online_after_offline").
 					BuildEventFuncRequest()
 
 				return req
 			},
 			ExpectPageBodyContainsInOrder: []string{`index.html`, "Preview"},
 			ExpectPageBodyNotContains:     []string{`<v-list-item :prepend-icon='"mdi-eye"' @click='plaid().vars(vars).locals(locals).form(form).dash(dash).pushState(true).url("/preview?id=6_2024-05-22-v01_International").go()'>`},
+		},
+		{
+			Name:  "Pages Listing  Offline After Online",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				editLastestVersion.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages").
+					Query("keyword", "offline_after_online").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{`index.html`, "Preview"},
+			ExpectPageBodyNotContains:     []string{`<v-list-item :prepend-icon='"mdi-eye"' @click='plaid().vars(vars).locals(locals).form(form).dash(dash).pushState(true).url("/preview?id=7_2024-05-22-v01_International").go()'>`},
 		},
 	}
 
