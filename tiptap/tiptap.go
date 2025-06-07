@@ -3,6 +3,7 @@ package tiptap
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/samber/lo"
 	h "github.com/theplant/htmlgo"
@@ -20,6 +21,7 @@ type TiptapEditorBuilder struct {
 	uniqueKey       string
 	imageGlueExists bool
 	label           string
+	classList       []string
 	disabled        bool
 	errorMessages   []string
 }
@@ -31,6 +33,11 @@ func TiptapEditor(db *gorm.DB, uniqueKey string) (r *TiptapEditorBuilder) {
 		uniqueKey: uniqueKey,
 	}
 	return
+}
+
+func (b *TiptapEditorBuilder) Class(v ...string) (r *TiptapEditorBuilder) {
+	b.classList = append(b.classList, v...)
+	return b
 }
 
 func (b *TiptapEditorBuilder) Label(v string) (r *TiptapEditorBuilder) {
@@ -45,11 +52,28 @@ func (b *TiptapEditorBuilder) ErrorMessages(v ...string) (r *TiptapEditorBuilder
 }
 
 func (b *TiptapEditorBuilder) Attr(vs ...any) (r *TiptapEditorBuilder) {
+	// check if class attribute is set
+	for i := 0; i < len(vs)-1; i += 2 {
+		if k, ok := vs[i].(string); ok && k == "class" {
+			if v, ok := vs[i+1].(string); ok {
+				// split class string and add to classList
+				classes := strings.Fields(v)
+				b.classList = append(b.classList, classes...)
+			}
+		}
+	}
 	b.editor.Attr(vs...)
 	return b
 }
 
 func (b *TiptapEditorBuilder) SetAttr(k string, v interface{}) {
+	// if set class attribute, add to classList
+	if k == "class" {
+		if classStr, ok := v.(string); ok {
+			classes := strings.Fields(classStr)
+			b.classList = append(b.classList, classes...)
+		}
+	}
 	b.editor.SetAttr(k, v)
 }
 
@@ -148,7 +172,20 @@ func (b *TiptapEditorBuilder) MarshalHTML(ctx context.Context) ([]byte, error) {
 	if len(b.errorMessages) > 0 && !b.disabled {
 		b.editor.Attr("style", "border: 1px solid rgb(var(--v-theme-error));")
 	} else {
-		b.editor.Attr("class", "border-thin")
+		b.Class("border-thin")
+	}
+
+	if len(b.classList) > 0 {
+		// remove duplicate classes
+		classMap := make(map[string]bool)
+		var uniqueClasses []string
+		for _, class := range b.classList {
+			if !classMap[class] {
+				classMap[class] = true
+				uniqueClasses = append(uniqueClasses, class)
+			}
+		}
+		b.editor.Attr("class", strings.Join(uniqueClasses, " "))
 	}
 
 	r := h.Div().Class("d-flex flex-column ga-1").Children(
