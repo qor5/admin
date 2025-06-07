@@ -233,6 +233,52 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 				vars.$PagebuilderResizeFn()
 				window.addEventListener('resize', vars.$PagebuilderResizeFn)
 
+				// common left drawer control function
+				vars.$pbLeftDrawerControl = (action = 'toggle') => {
+					switch(action) {
+						case 'show':
+							if (vars.$pbLeftDrawerFolded) {
+								vars.$pbLeftDrawerFolded = false
+								vars.$window.localStorage.setItem("$pbLeftDrawerFolded", "0")
+							}
+							break
+						case 'hide':
+							if (!vars.$pbLeftDrawerFolded) {
+								vars.$pbLeftDrawerFolded = true
+								vars.$window.localStorage.setItem("$pbLeftDrawerFolded", "1")
+							}
+							break
+						case 'toggle':
+						default:
+							vars.$pbLeftDrawerFolded = !vars.$pbLeftDrawerFolded
+							vars.$window.localStorage.setItem("$pbLeftDrawerFolded", vars.$pbLeftDrawerFolded ? "1": "0")
+							break
+					}
+				}
+
+				// 通用的右侧drawer控制函数
+				vars.$pbRightDrawerControl = (action = 'toggle') => {
+					switch(action) {
+						case 'show':
+							if (vars.$pbRightDrawerFolded) {
+								vars.$pbRightDrawerFolded = false
+								vars.$window.localStorage.setItem("$pbRightDrawerFolded", "0")
+							}
+							break
+						case 'hide':
+							if (!vars.$pbRightDrawerFolded) {
+								vars.$pbRightDrawerFolded = true
+								vars.$window.localStorage.setItem("$pbRightDrawerFolded", "1")
+							}
+							break
+						case 'toggle':
+						default:
+							vars.$pbRightDrawerFolded = !vars.$pbRightDrawerFolded
+							vars.$window.localStorage.setItem("$pbRightDrawerFolded", vars.$pbRightDrawerFolded ? "1": "0")
+							break
+					}
+				}
+
 				function addInlineStyle(css) {
 					const style = window.document.createElement('style');
 					style.type = 'text/css';
@@ -327,10 +373,7 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 				web.Slot(
 					VBtn("").
 						Attr(":icon", "vars.$pbLeftIconName").
-						Attr("@click.stop", `() => {
-										vars.$pbLeftDrawerFolded = !vars.$pbLeftDrawerFolded
-										vars.$window.localStorage.setItem("$pbLeftDrawerFolded", vars.$pbLeftDrawerFolded ? "1": "0")
-									}`).
+						Attr("@click.stop", "vars.$pbLeftDrawerControl('toggle')").
 						Size(SizeSmall).
 						Class("pb-drawer-btn drawer-btn-left")).
 					Name("append"),
@@ -352,16 +395,14 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 						}`)).Attr("v-on-unmounted", `({el}) => {
 							el.parentElement.removeEventListener('scroll', el.__handleScroll);
 						}`),
+
 				web.Slot(
 					VBtn("").
 						Attr("v-if", "!vars.$pbRightDrawerIsDragging").
 						Attr(":icon", "vars.$pbRightIconName").
 						Attr("@mousemove.stop", "()=>{vars.$pbRightDrawerHighlight=false}").
 						Attr("@mousedown.stop", "()=>{vars.$pbRightDrawerHighlight=false}").
-						Attr("@click", `() => {
-									vars.$pbRightDrawerFolded = !vars.$pbRightDrawerFolded
-									vars.$window.localStorage.setItem("$pbRightDrawerFolded", vars.$pbRightDrawerFolded ? "1": "0")
-								}`).
+						Attr("@click", "vars.$pbRightDrawerControl('toggle')").
 						Size(SizeSmall).
 						Class("pb-drawer-btn drawer-btn-right")).
 					Name("append"),
@@ -533,6 +574,7 @@ type (
 		ContainerId     string `json:"container_id"`
 		DisplayName     string `json:"display_name"`
 		ModelName       string `json:"model_name"`
+		ShowRightDrawer bool   `json:"show_right_drawer"`
 		isFirst         bool
 		isEnd           bool
 	}
@@ -546,6 +588,7 @@ func (b *postMessageBody) postMessage(msgType string) string {
 		return ""
 	}
 	b.MsgType = msgType
+	b.ShowRightDrawer = (msgType == EventEdit)
 	return fmt.Sprintf(`
 const {top, left, width, height} = event.target.getBoundingClientRect();
 const data= %s;
