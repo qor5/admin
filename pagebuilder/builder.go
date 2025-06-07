@@ -1407,7 +1407,7 @@ func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
 		Go()
 	return fmt.Sprintf(`
 function(e){
-	const { msg_type,container_data_id, container_id,display_name,rect } = e.data
+	const { msg_type,container_data_id, container_id,display_name,rect,show_right_drawer } = e.data
 	if (!msg_type || !container_data_id.split) {
 		return
 	} 
@@ -1416,6 +1416,12 @@ function(e){
 		console.log(arr);
 		return
 	}
+	
+	// deal with right drawer
+	if (show_right_drawer && vars.$pbRightDrawerControl) {
+		vars.$pbRightDrawerControl('show');
+	}
+	
     switch (msg_type) {
 	  case '%s':
 		%s;
