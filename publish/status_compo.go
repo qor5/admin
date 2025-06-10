@@ -10,10 +10,11 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 
-	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
+
+	"github.com/qor5/admin/v3/presets"
 )
 
 func draftCountFunc(_ *presets.ModelBuilder, db *gorm.DB) presets.FieldComponentFunc {
@@ -143,7 +144,7 @@ func liveChip(status string, isScheduled bool, msgr *Messages, forceMarked bool)
 		),
 		h.Span(label),
 		h.If(isScheduled, VIcon("mdi-menu-right").Size(SizeSmall).Class("ml-1")),
-	).Color(color).Density(DensityProminent).Tile(true).Class("px-1")
+	).Color(color).Density(DensityComfortable).Tile(true).Class("px-1")
 	if !isScheduled {
 		return chip
 	}

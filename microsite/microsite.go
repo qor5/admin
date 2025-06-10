@@ -14,8 +14,10 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/mholt/archiver/v4"
 	"github.com/qor5/admin/v3/microsite/utils"
+	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/publish"
 	"github.com/qor5/x/v3/oss"
+	"github.com/spf13/cast"
 	"gorm.io/gorm"
 )
 
@@ -40,10 +42,15 @@ func (this *MicroSite) PrimarySlug() string {
 	return fmt.Sprintf("%v_%v", this.ID, this.Version.Version)
 }
 
-func (this *MicroSite) PrimaryColumnValuesBySlug(slug string) map[string]string {
+func (*MicroSite) PrimaryColumnValuesBySlug(slug string) map[string]string {
 	segs := strings.Split(slug, "_")
 	if len(segs) != 2 {
-		panic("wrong slug")
+		panic(presets.ErrNotFound("wrong slug"))
+	}
+
+	_, err := cast.ToInt64E(segs[0])
+	if err != nil {
+		panic(presets.ErrNotFound(fmt.Sprintf("wrong slug %q: %v", slug, err)))
 	}
 
 	return map[string]string{
@@ -168,7 +175,7 @@ func (this *MicroSite) GetUnPublishActions(ctx context.Context, db *gorm.DB, sto
 	return
 }
 
-func (this *MicroSite) UnArchiveAndPublish(getPath func(string) string, fileName string, f io.Reader, storage oss.StorageInterface) (filesList []string, err error) {
+func (*MicroSite) UnArchiveAndPublish(getPath func(string) string, fileName string, f io.Reader, storage oss.StorageInterface) (filesList []string, err error) {
 	format, reader, err := archiver.Identify(fileName, f)
 	if err != nil {
 		if err == archiver.ErrNoMatch {

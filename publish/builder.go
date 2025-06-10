@@ -30,34 +30,59 @@ import (
 type (
 	PublishFunc   func(ctx context.Context, record any) error
 	UnPublishFunc func(ctx context.Context, record any) error
+
+	Disablement struct {
+		DisabledRename bool
+		DisabledDelete bool
+	}
+
+	DisablementCheckFunc func(ctx *web.EventContext, obj any) *Disablement
 )
 
 type Builder struct {
-	db                *gorm.DB
-	storage           oss.StorageInterface
-	ab                *activity.Builder
-	ctxValueProviders []ContextValueFunc
-	afterInstallFuncs []func()
-	autoSchedule      bool
+	db                      *gorm.DB
+	storage                 oss.StorageInterface
+	ab                      *activity.Builder
+	ctxValueProviders       []ContextValueFunc
+	afterInstallFuncs       []func()
+	autoSchedule            bool
+	nonVersionPublishModels map[string]interface{}
+	versionPublishModels    map[string]interface{}
+	listPublishModels       map[string]interface{}
 
-	publish   PublishFunc
-	unpublish UnPublishFunc
+	publish              PublishFunc
+	unpublish            UnPublishFunc
+	disablementCheckFunc DisablementCheckFunc
 }
 
 type ContextValueFunc func(ctx context.Context) context.Context
 
 func New(db *gorm.DB, storage oss.StorageInterface) *Builder {
 	b := &Builder{
-		db:      db,
-		storage: storage,
+		db:                      db,
+		storage:                 storage,
+		nonVersionPublishModels: make(map[string]interface{}),
+		versionPublishModels:    make(map[string]interface{}),
+		listPublishModels:       make(map[string]interface{}),
 	}
 	b.publish = b.defaultPublish
 	b.unpublish = b.defaultUnPublish
+	b.disablementCheckFunc = b.defaultDisableByStatus
 	return b
 }
 
 func (b *Builder) Activity(v *activity.Builder) (r *Builder) {
 	b.ab = v
+	return b
+}
+
+func (b *Builder) DisablementCheckFunc(v DisablementCheckFunc) (r *Builder) {
+	b.disablementCheckFunc = v
+	return b
+}
+
+func (b *Builder) WrapDisablementCheckFunc(w func(DisablementCheckFunc) DisablementCheckFunc) (r *Builder) {
+	b.disablementCheckFunc = w(b.disablementCheckFunc)
 	return b
 }
 
@@ -85,19 +110,19 @@ func (b *Builder) ModelInstall(pb *presets.Builder, m *presets.ModelBuilder) err
 
 	if model, ok := obj.(VersionInterface); ok {
 		if schedulePublishModel, ok := model.(ScheduleInterface); ok {
-			VersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
+			b.versionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 		}
 
 		b.configVersionAndPublish(pb, m, db)
 	} else {
 		if schedulePublishModel, ok := obj.(ScheduleInterface); ok {
-			NonVersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
+			b.nonVersionPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 		}
 	}
 
 	if model, ok := obj.(ListInterface); ok {
 		if schedulePublishModel, ok := model.(ScheduleInterface); ok {
-			ListPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
+			b.listPublishModels[m.Info().URIName()] = reflect.ValueOf(schedulePublishModel).Elem().Interface()
 		}
 	}
 
@@ -340,7 +365,7 @@ func makeSetVersionSetterFunc(db *gorm.DB) func(presets.SetterFunc) presets.Sett
 func (b *Builder) Install(pb *presets.Builder) error {
 	if b.autoSchedule {
 		defer func() {
-			go RunPublisher(context.Background(), b.db, b.storage, b)
+			RunPublisher(context.Background(), b.db, b.storage, b)
 		}()
 	}
 	pb.FieldDefaults(presets.LIST).
@@ -371,7 +396,7 @@ func (b *Builder) WithContextValues(ctx context.Context) context.Context {
 	return ctx
 }
 
-func (b *Builder) getPublishContent(ctx context.Context, obj interface{}) (r string, err error) {
+func (*Builder) getPublishContent(ctx context.Context, obj interface{}) (r string, err error) {
 	var (
 		mb PreviewBuilderInterface
 		ok bool
@@ -381,11 +406,11 @@ func (b *Builder) getPublishContent(ctx context.Context, obj interface{}) (r str
 	if !ok {
 		return
 	}
-	r = mb.PreviewHTML(obj)
+	r = mb.PreviewHTML(ctx, obj)
 	return
 }
 
-func (b *Builder) getObjectLiveUrl(ctx context.Context, db *gorm.DB, obj interface{}) (url string) {
+func (*Builder) getObjectLiveUrl(ctx context.Context, db *gorm.DB, obj interface{}) (url string) {
 	builder := ctx.Value(utils.GetObjectName(obj))
 	mb, ok := builder.(PreviewBuilderInterface)
 	if !ok {
@@ -657,4 +682,13 @@ func (b *Builder) FullUrl(ctx context.Context, uri string) (string, error) {
 		return "", errors.Wrap(err, "get url")
 	}
 	return strings.TrimSuffix(b.storage.GetEndpoint(ctx), "/") + "/" + strings.Trim(s, "/"), nil
+}
+
+func (b *Builder) defaultDisableByStatus(_ *web.EventContext, obj any) *Disablement {
+	status := obj.(StatusInterface).EmbedStatus().Status
+	disabled := status == StatusOnline || status == StatusOffline
+	return &Disablement{
+		DisabledRename: disabled,
+		DisabledDelete: disabled,
+	}
 }

@@ -90,6 +90,19 @@ type FieldBuilder struct {
 	nestedFieldsBuilder *FieldsBuilder
 	tabFieldsBuilders   *TabsFieldBuilder
 	plugins             []FieldPlugin
+
+	hideLabel         bool
+	usePlainFieldBody bool
+}
+
+func (fb *FieldBuilder) HideLabel() *FieldBuilder {
+	fb.hideLabel = true
+	return fb
+}
+
+func (fb *FieldBuilder) PlainFieldBody() *FieldBuilder {
+	fb.usePlainFieldBody = true
+	return fb
 }
 
 type FieldComponentInterface interface {
@@ -200,10 +213,17 @@ func (b *FieldBuilder) LazyWrapComponentFunc(w func(in FieldComponentFunc) Field
 }
 
 func (b *FieldBuilder) lazyCompFunc() FieldComponentInterface {
+	var fn FieldComponentFunc
+
 	if b.lazyWrapCompFunc == nil {
-		return b.GetCompFunc()
+		fn = b.GetCompFunc()
+	} else {
+		fn = b.lazyWrapCompFunc(b.comp.FieldComponent)
 	}
-	return b.lazyWrapCompFunc(b.comp.FieldComponent)
+
+	return FieldComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		return fn(obj, field, ctx)
+	})
 }
 
 func (b *FieldBuilder) SetterFunc(v FieldSetterFunc) (r *FieldBuilder) {
@@ -245,7 +265,7 @@ type DisplayFieldInSorter struct {
 	Field string
 }
 
-func (i *DisplayFieldInSorter) nested() {}
+func (*DisplayFieldInSorter) nested() {}
 
 type AddListItemRowEvent struct {
 	Event string
@@ -265,6 +285,12 @@ type SortListItemsEvent struct {
 
 func (*SortListItemsEvent) nested() {}
 
+type MaxItems struct {
+	Limit int
+}
+
+func (*MaxItems) nested() {}
+
 func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *FieldBuilder) {
 	b.nestedFieldsBuilder = fb
 	switch b.rt.Kind() {
@@ -273,6 +299,7 @@ func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *Field
 		var addListItemRowEvent string
 		var removeListItemRowEvent string
 		var sortListItemsEvent string
+		var maxItems int
 		for _, cfg := range cfgs {
 			switch t := cfg.(type) {
 			case *DisplayFieldInSorter:
@@ -283,6 +310,8 @@ func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *Field
 				removeListItemRowEvent = t.Event
 			case *SortListItemsEvent:
 				sortListItemsEvent = t.Event
+			case *MaxItems:
+				maxItems = t.Limit
 			default:
 				panic("unknown nested config")
 			}
@@ -292,7 +321,8 @@ func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *Field
 				DisplayFieldInSorter(displayFieldInSorter).
 				AddListItemRowEvnet(addListItemRowEvent).
 				RemoveListItemRowEvent(removeListItemRowEvent).
-				SortListItemsEvent(sortListItemsEvent)
+				SortListItemsEvent(sortListItemsEvent).
+				MaxItems(maxItems)
 		})
 	default:
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -304,8 +334,9 @@ func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *Field
 			modifiedIndexes := ContextModifiedIndexesBuilder(ctx)
 			body := b.nestedFieldsBuilder.toComponentWithFormValueKey(field.ModelInfo, val, field.FormKey, modifiedIndexes, ctx)
 			return h.Div(
-				h.Label(field.Label).Class("v-label theme--light text-caption"),
-				v.VCard(body).Variant("outlined").Class("mx-0 mt-1 mb-4 px-4 pb-0 pt-4"),
+				h.If(!b.hideLabel, h.Label(field.Label).Class("v-label theme--light text-caption wrapper-field-label")),
+				h.If(b.usePlainFieldBody, body),
+				h.If(!b.usePlainFieldBody, v.VCard(body).Variant("outlined").Class("mx-0 mt-1 mb-4 px-4 pb-0 pt-4")),
 			)
 		})
 	}
@@ -474,7 +505,7 @@ func (b *FieldsBuilder) SetObjectFields(fromObj interface{}, toObj interface{}, 
 	return
 }
 
-func (b *FieldsBuilder) setToObjNilOrDelete(toObj interface{}, formKey string, f *FieldBuilder, modifiedIndexes *ModifiedIndexesBuilder, removeDeletedAndSort bool) {
+func (*FieldsBuilder) setToObjNilOrDelete(toObj interface{}, formKey string, f *FieldBuilder, modifiedIndexes *ModifiedIndexesBuilder, removeDeletedAndSort bool) {
 	if !removeDeletedAndSort {
 		if modifiedIndexes.deletedValues != nil && modifiedIndexes.deletedValues[formKey] != nil {
 			for _, idx := range modifiedIndexes.deletedValues[formKey] {
@@ -509,7 +540,7 @@ func (b *FieldsBuilder) setToObjNilOrDelete(toObj interface{}, formKey string, f
 	}
 }
 
-func (b *FieldsBuilder) setWithChildFromObjs(
+func (*FieldsBuilder) setWithChildFromObjs(
 	fromObj interface{},
 	formKey string,
 	f *FieldBuilder,

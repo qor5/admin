@@ -45,7 +45,7 @@ func TestPageBuilderTemplate(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderTemplateData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/page_templates", nil)
+				return httptest.NewRequest("GET", "/page_templates", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"Add Page Template", "123", "456"},
 		},
@@ -221,6 +221,32 @@ func TestPageBuilderTemplate(t *testing.T) {
 				return req
 			},
 			ExpectPageBodyContainsInOrder: []string{"ListContent", "Header"},
+		},
+
+		{
+			Name:  "Template Editor with invalid slug",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderTemplateData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/page_templates/1_International_invalid").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"Sorry, the requested page cannot be found. Please check the URL."},
+		},
+
+		{
+			Name:  "Template Editor with invalid id in slug",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderTemplateData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/page_templates/a_International").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"Sorry, the requested page cannot be found. Please check the URL."},
 		},
 
 		{
@@ -482,12 +508,12 @@ func TestPageBuilderTemplate(t *testing.T) {
 				pageBuilderTemplateData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/pages").
-					EventFunc(pagebuilder.OpenTemplateDialogEvent).
+					EventFunc(actions.OpenListingDialog).
 					BuildEventFuncRequest()
 
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"vars.pageBuilderSelectTemplateDialog"},
+			ExpectPortalUpdate0ContainsInOrder: []string{presets.CloseListingDialogVarScript},
 		},
 		{
 			Name:  "Template ReloadSelectedTemplate",
@@ -505,13 +531,13 @@ func TestPageBuilderTemplate(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"123"},
 		},
 		{
-			Name:  "Template ReloadTemplateContent",
+			Name:  "Template Keyword",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderTemplateData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/page_templates").
-					EventFunc(pagebuilder.ReloadTemplateContentEvent).
+					EventFunc(actions.OpenListingDialog).
 					Query("keyword", "012").
 					BuildEventFuncRequest()
 

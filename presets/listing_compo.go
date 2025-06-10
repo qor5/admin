@@ -13,6 +13,7 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/stateful"
 	"github.com/samber/lo"
+	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
 	"github.com/theplant/relay"
 
@@ -91,7 +92,7 @@ if (payload && payload.ids && payload.ids.length > 0) {
 }
 `
 
-const ListingCompo_JsScrollToTop = "locals.document.querySelector(`#vt-app > div.v-layout > main`).scrollTop = 0"
+const ListingCompo_JsScrollToTop = "(locals.document?.querySelector(`#vt-app > div.v-layout > main`) || {}).scrollTop = 0"
 
 func (c *ListingCompo) VarCurrentActive() string {
 	return fmt.Sprintf("__current_active_of_%s__", stateful.MurmurHash3(c.CompoID()))
@@ -164,7 +165,7 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 			).Class("px-2"),
 			h.Div(
 				c.toolbarSearch(ctx),
-			),
+			).Class("mb-n2"),
 			VCardText().Class("list-table-wrap").Children(
 				c.dataTable(ctx),
 			),
@@ -410,15 +411,11 @@ func (c *ListingCompo) getOrderBys(colOrderBys []ColOrderBy, orderableFieldMap m
 			})
 		}
 	}
-
-	if len(orderBys) == 0 {
-		if len(c.lb.defaultOrderBys) > 0 {
-			return c.lb.defaultOrderBys
-		}
-		if c.lb.mb.primaryField != "" {
-			return []relay.OrderBy{{Field: c.lb.mb.primaryField, Desc: true}}
-		}
+	primaryOrderBys := c.lb.defaultOrderBys
+	if len(primaryOrderBys) == 0 && c.lb.mb.primaryField != "" {
+		primaryOrderBys = []relay.OrderBy{{Field: c.lb.mb.primaryField, Desc: true}}
 	}
+	orderBys = relay.AppendPrimaryOrderBy(orderBys, primaryOrderBys...)
 	return orderBys
 }
 
@@ -675,29 +672,218 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 	if err != nil {
 		panic(errors.Wrap(err, "get columns error"))
 	}
+	var dataBody h.HTMLComponent
+	pagination := c.buildDataTableAdditions(ctx, searchParams, searchResult)
+	if c.lb.dataTableFunc == nil {
+		dataTable := vx.DataTable(searchResult.Nodes).Hover(true).HoverClass("cursor-pointer").
+			HeadCellWrapperFunc(c.headCellWrapperFunc(ctx, columns, colOrderBys, orderableFieldMap)).
+			RowWrapperFunc(c.rowWrapperFunc(evCtx)).
+			RowMenuHead(btnConfigColumns).
+			RowMenuItemFuncs(c.lb.RowMenu().listingItemFuncs(evCtx)...).
+			CellWrapperFunc(c.cellWrapperFunc(evCtx))
 
-	dataTable := vx.DataTable(searchResult.Nodes).Hover(true).HoverClass("cursor-pointer").
-		HeadCellWrapperFunc(c.headCellWrapperFunc(ctx, columns, colOrderBys, orderableFieldMap)).
-		RowWrapperFunc(c.rowWrapperFunc(evCtx)).
-		RowMenuHead(btnConfigColumns).
-		RowMenuItemFuncs(c.lb.RowMenu().listingItemFuncs(evCtx)...).
-		CellWrapperFunc(c.cellWrapperFunc(evCtx))
+		c.setupBulkActions(ctx, dataTable)
+		c.setupColumns(dataTable, columns)
 
-	c.setupBulkActions(ctx, dataTable)
-	c.setupColumns(dataTable, columns)
-
-	if c.lb.tableProcessor != nil {
-		dataTable, err = c.lb.tableProcessor(evCtx, dataTable)
-		if err != nil {
-			panic(err)
+		if c.lb.tableProcessor != nil {
+			dataTable, err = c.lb.tableProcessor(evCtx, dataTable)
+			if err != nil {
+				panic(err)
+			}
 		}
+		dataBody = h.Components(dataTable, h.Div(pagination).Class("mt-6"))
+	} else {
+		dataBody = c.lb.dataTableFunc(evCtx, searchParams, searchResult, pagination)
 	}
 
 	return h.Components(
 		filterScript,
-		dataTable,
-		c.buildDataTableAdditions(ctx, searchParams, searchResult),
+		dataBody,
 	)
+}
+
+type CardDataTableConfig struct {
+	CardTitle                   func(ctx *web.EventContext, obj interface{}) (h.HTMLComponent, int)
+	CardContent                 func(ctx *web.EventContext, obj interface{}) (h.HTMLComponent, int)
+	Cols                        func(ctx *web.EventContext) int
+	HasSelectionPermission      func(ctx *web.EventContext, obj interface{}) bool
+	WrapMultipleSelectedActions func(ctx *web.EventContext, selectedActions h.HTMLComponents) h.HTMLComponents
+	WrapRows                    func(ctx *web.EventContext, searchParams *SearchParams, result *SearchResult, rows *VRowBuilder) *VRowBuilder
+	WrapRooters                 func(ctx *web.EventContext, footers h.HTMLComponents) h.HTMLComponents
+	ClickCardEvent              func(ctx *web.EventContext, obj interface{}) string
+	RemainingHeight             func(ctx *web.EventContext) string
+}
+
+func CardDataTableFunc(lb *ListingBuilder, config *CardDataTableConfig) func(ctx *web.EventContext, searchParams *SearchParams, result *SearchResult, pagination h.HTMLComponent) h.HTMLComponent {
+	return func(ctx *web.EventContext, searchParams *SearchParams, result *SearchResult, pagination h.HTMLComponent) h.HTMLComponent {
+		{
+			var (
+				lc       = ListingCompoFromContext(ctx.R.Context())
+				rows     = VRow()
+				inDialog = lc.Popup
+				err      error
+				cols     = -1
+				msgr     = i18n.MustGetModuleMessages(ctx.R, CoreI18nModuleKey, Messages_en_US).(*Messages)
+			)
+			if config.Cols != nil {
+				cols = config.Cols(ctx)
+			}
+			remainingHeight := "180px"
+			if config.RemainingHeight != nil {
+				remainingHeight = config.RemainingHeight(ctx)
+			}
+			objRowMenusMap := make(map[string][]h.HTMLComponent)
+			selectedActions := h.Components(
+				h.If(lb.mb.Info().Verifier().Do(PermDelete).WithReq(ctx.R).IsAllowed() == nil,
+					VBtn(msgr.Delete).Size(SizeSmall).Variant(VariantOutlined).
+						Color(ColorWarning).
+						Attr("@click", web.Plaid().
+							EventFunc(actions.DeleteConfirmation).
+							Query(ParamID, web.Var(`xLocals.select_ids.join(",")`)).Go()),
+				),
+			)
+			if config.WrapMultipleSelectedActions != nil {
+				selectedActions = config.WrapMultipleSelectedActions(ctx, selectedActions)
+			}
+			reflectutils.ForEach(result.Nodes, func(obj interface{}) {
+				var (
+					menus          = lb.rowMenu.listingItemFuncs(ctx)
+					primarySlug    = ObjectID(obj)
+					hasPermission  = true
+					clickCardEvent string
+					checkEvent     = fmt.Sprintf(`let arr=xLocals.select_ids;let find_id=%q;arr.includes(find_id)?arr.splice(arr.indexOf(find_id), 1):arr.push(find_id);`, primarySlug)
+				)
+				var opMenuItems []h.HTMLComponent
+				if config.HasSelectionPermission != nil {
+					hasPermission = config.HasSelectionPermission(ctx, obj)
+				}
+				for _, f := range menus {
+					item := f(obj, primarySlug, ctx)
+					if item == nil {
+						continue
+					}
+					opMenuItems = append(opMenuItems, item)
+				}
+				if len(opMenuItems) > 0 {
+					objRowMenusMap[primarySlug] = opMenuItems
+				}
+				if config.ClickCardEvent != nil {
+					clickCardEvent = config.ClickCardEvent(ctx, obj)
+				}
+				menu := h.If(!inDialog && len(objRowMenusMap[primarySlug]) > 0,
+					VMenu(
+						web.Slot(
+							VBtn("").Children(
+								VIcon("mdi-dots-horizontal"),
+							).Attr("v-bind", "props").Variant(VariantText).Size(SizeSmall),
+						).Name("activator").Scope("{ props }"),
+						VList(
+							objRowMenusMap[primarySlug]...,
+						),
+					),
+				)
+
+				cardTitle, cardTitleHeight := config.CardTitle(ctx, obj)
+				cardContent, cardContentHeight := config.CardContent(ctx, obj)
+				cardBody := h.Components(
+					VCardItem(
+						VCard(
+							VCardText(
+								cardTitle,
+							).Class("pa-0", H100, "bg-"+ColorGreyLighten4),
+						).Height(cardTitleHeight).Elevation(0),
+					).Class("pa-0", W100),
+					VCardItem(
+						VCard(
+							VCardItem(
+								h.Div(
+									h.Div(cardContent),
+									menu,
+								).Class(W100, "d-flex", "justify-space-between", "align-center"),
+							).Class("pa-2"),
+						).Color(ColorGreyLighten5).Height(cardContentHeight),
+					).Class("pa-0"),
+				)
+				var card h.HTMLComponent
+				if selectedActions != nil && len(selectedActions) > 0 {
+					card = VHover(
+						web.Slot(
+							VCard(
+								h.If(
+									!inDialog && hasPermission,
+									vx.VXCheckbox().
+										Attr(":model-value", fmt.Sprintf(`xLocals.select_ids.includes(%q)`, primarySlug)).
+										Attr("@update:model-value", checkEvent).
+										Attr("@click", "$event.stopPropagation()").
+										Attr("style", "z-index:2").
+										Class("position-absolute top-0 right-0").
+										Attr("v-if", "isHovering || xLocals.select_ids.length>0"),
+								),
+								cardBody,
+							).Elevation(0).
+								Class("position-relative").
+								Attr("v-bind", "props").
+								Hover(true).
+								Attr("@click",
+									fmt.Sprintf("if(xLocals.select_ids.length>0){%s}else{%s}", checkEvent, clickCardEvent)),
+						).Name("default").Scope(`{ isHovering, props }`))
+				} else {
+					card = VCard(cardBody).Elevation(0).Attr("@click", clickCardEvent)
+				}
+				col := VCol(
+					card,
+				)
+				if cols > 0 {
+					col.Cols(cols)
+				}
+				if lb.cellProcessor != nil {
+					_, err = lb.cellProcessor(ctx, col, primarySlug, obj)
+					if err != nil {
+						panic(err)
+					}
+				}
+				rows.AppendChildren(col)
+			})
+			if config.WrapRows != nil {
+				rows = config.WrapRows(ctx, searchParams, result, rows)
+			}
+			footer := h.Components(
+				h.Div(
+					h.Div(
+						h.If(!inDialog,
+							VCheckbox().HideDetails(true).
+								BaseColor(ColorPrimary).
+								ModelValue(true).
+								Density(DensityCompact).
+								Class("text-"+ColorPrimary).
+								Indeterminate(true).
+								Class("mr-2").
+								Attr("@click", "xLocals.select_ids=[]").Children(
+								web.Slot(
+									h.Text(msgr.SelectedTemplate(web.Var(`{{xLocals.select_ids.length}}`))),
+								).Name("label"),
+							),
+							h.If(len(selectedActions) > 0, h.Div(selectedActions).Class("d-flex flex-wrap ga-2")),
+						),
+					).Class("d-flex align-center").Attr("v-if", "xLocals.select_ids && xLocals.select_ids.length>0"),
+				),
+				h.Div(pagination).ClassIf(W100, (result.TotalCount != nil && *result.TotalCount == 0) || result.PageInfo.StartCursor == nil),
+			)
+			if config.WrapRooters != nil {
+				footer = config.WrapRooters(ctx, footer)
+			}
+			return web.Scope(
+				h.Div(
+					VContainer(
+						rows,
+						VRow(
+							VCol(footer).Cols(12).Class("d-flex justify-space-between align-center"),
+						).Class("bg-"+ColorBackground, "position-sticky bottom-0 pt-6"),
+					).Fluid(true).Class("pa-0"),
+				).Style(fmt.Sprintf("height:calc(100vh - %s);overflow-y:auto", remainingHeight)),
+			).VSlot("{locals:xLocals}").Init("{select_ids:[]}")
+		}
+	}
 }
 
 func (c *ListingCompo) buildDataTableAdditions(ctx context.Context, searchParams *SearchParams, searchResult *SearchResult) h.HTMLComponent {
@@ -727,26 +913,25 @@ func (c *ListingCompo) regularPagination(ctx context.Context, searchParams *Sear
 	if searchResult.TotalCount != nil {
 		totalCount = int64(*searchResult.TotalCount)
 	}
-	return h.Div().Style("margin-top:26px").Children(
-		vx.VXTablePagination().
-			Total(totalCount).
-			CurrPage(searchParams.Page).
-			PerPage(searchParams.PerPage).
-			CustomPerPages([]int64{c.lb.perPage}).
-			PerPageText(msgr.PaginationRowsPerPage).
-			NoOffsetPart(true).
-			TotalVisible(5).
-			OnSelectPerPage(stateful.ReloadAction(ctx, c,
-				func(target *ListingCompo) {
-					target.Page = 0
-					target.After, target.Before = nil, nil
-				},
-				stateful.WithAppendFix(`v.compo.per_page = parseInt($event, 10)`),
-			).ThenScript(ListingCompo_JsScrollToTop).Go()).
-			OnSelectPage(stateful.ReloadAction(ctx, c, nil,
-				stateful.WithAppendFix(`v.compo.page = parseInt(value,10);`),
-			).ThenScript(ListingCompo_JsScrollToTop).Go()),
-	)
+	return vx.VXTablePagination().
+		Total(totalCount).
+		CurrPage(searchParams.Page).
+		PerPage(searchParams.PerPage).
+		CustomPerPages([]int64{c.lb.perPage}).
+		PerPageText(msgr.PaginationRowsPerPage).
+		NoOffsetPart(true).
+		TotalVisible(5).
+		OnSelectPerPage(stateful.ReloadAction(ctx, c,
+			func(target *ListingCompo) {
+				target.Page = 0
+				target.After, target.Before = nil, nil
+			},
+			stateful.WithAppendFix(`v.compo.per_page = parseInt($event, 10)`),
+		).ThenScript(ListingCompo_JsScrollToTop).Go()).
+		OnSelectPage(stateful.ReloadAction(ctx, c, nil,
+			stateful.WithAppendFix(`v.compo.page = parseInt(value,10);`),
+		).ThenScript(ListingCompo_JsScrollToTop).Go(),
+		)
 }
 
 func (c *ListingCompo) relayPaginationCompo(ctx context.Context, perPage int, pageInfo relay.PageInfo) h.HTMLComponent {
@@ -796,7 +981,7 @@ func (c *ListingCompo) relayPaginationCompo(ctx context.Context, perPage int, pa
 		prev,
 		next,
 	)
-	return h.Div().Class("d-flex align-center ga-3 mt-6").Children(
+	return h.Div().Class("d-flex align-center ga-3").Children(
 		VSpacer(),
 		perPageSelect,
 		prevNext,
@@ -922,7 +1107,7 @@ func (c *ListingCompo) actionDialogContentPortalName() string {
 	return fmt.Sprintf("%s_action_dialog_content", c.CompoID())
 }
 
-func (c *ListingCompo) closeActionDialog() string {
+func (*ListingCompo) closeActionDialog() string {
 	return "locals.dialog = false;"
 }
 
@@ -985,26 +1170,7 @@ func (c *ListingCompo) actionsComponent(ctx context.Context) (r h.HTMLComponent)
 		)
 	}
 
-	buttonNew := func() h.HTMLComponent {
-		if c.lb.mb.Info().Verifier().Do(PermCreate).WithReq(evCtx.R).IsAllowed() != nil {
-			return nil
-		}
-		if c.lb.newBtnFunc != nil {
-			return c.lb.newBtnFunc(evCtx)
-		}
-		onClick := web.Plaid().EventFunc(actions.New)
-		if c.Popup {
-			onClick.URL(c.lb.mb.Info().ListingHref()).Query(ParamOverlay, actions.Dialog)
-		}
-		if c.ParentID != "" {
-			onClick.Query(ParamParentID, c.ParentID)
-		}
-		return VBtn(msgr.New).
-			Color(ColorPrimary).
-			Variant(VariantElevated).
-			Theme("light").Class("ml-2").
-			Attr("@click", onClick.Go())
-	}()
+	buttonNew := c.lb.newBtnFunc(evCtx)
 
 	if c.lb.actionsAsMenu {
 		buttons = append([]h.HTMLComponent{buttonNew}, buttons...)

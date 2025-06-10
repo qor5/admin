@@ -5,6 +5,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
@@ -23,12 +24,13 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 	b := m.builder
 	return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		var (
-			start, end, se string
-			onlineHint     h.HTMLComponent
-			ps             string
-			version        string
-			id             uint
-			containerCount int64
+			start, end, se     string
+			onlineHint         h.HTMLComponent
+			ps                 string
+			version            string
+			id                 uint
+			containerCount     int64
+			updatedSharedCount int64
 		)
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		versionComponent := publish.DefaultVersionComponentFunc(pm)(obj, field, ctx)
@@ -37,6 +39,7 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 		}
 
 		id = reflectutils.MustGet(obj, "ID").(uint)
+		UpdatedAt := reflectutils.MustGet(obj, "UpdatedAt").(time.Time)
 		ctx.R.Form.Set(paramPageID, strconv.Itoa(int(id)))
 
 		if v, ok := obj.(publish.VersionInterface); ok {
@@ -63,12 +66,21 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 		b.db.Model(&Container{}).
 			Where("page_id = ? AND page_version = ? and page_model_name = ?", id, version, m.name).
 			Count(&containerCount)
+		b.db.Model(&Container{}).
+			Where("page_id = ? AND page_version = ? and page_model_name = ? and shared=true and updated_at > ?", id, version, m.name, UpdatedAt).
+			Count(&updatedSharedCount)
 		var copyURL string
 		if p, ok := obj.(publish.StatusInterface); ok {
 			copyURL = fmt.Sprintf(`$event.view.window.location.origin+%q`, previewDevelopUrl)
 			if p.EmbedStatus().Status == publish.StatusOnline {
-				onlineHint = VAlert(h.Text(msgr.OnlineHit)).
-					Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("my-4")
+				onlineHint = h.Div(
+					h.If(updatedSharedCount > 0, VAlert(h.Text(msgr.SharedContainerHasBeenUpdated)).
+						Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("my-2"),
+					),
+					VAlert(
+						h.Text(msgr.OnlineHit)).
+						Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("my-2"),
+				)
 				var err error
 				previewDevelopUrl, err = b.publisher.FullUrl(ctx.R.Context(), p.EmbedStatus().OnlineUrl)
 				if err != nil {
@@ -77,12 +89,21 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 				copyURL = fmt.Sprintf(`%q`, previewDevelopUrl)
 			}
 		}
+		// Add pauseVideo=1 parameter to previewDevelopUrl for iframe
+		iframeUrlWithVideoPause := previewDevelopUrl
+		if strings.Contains(iframeUrlWithVideoPause, "?") {
+			iframeUrlWithVideoPause += "&pauseVideo=1"
+		} else {
+			iframeUrlWithVideoPause += "?pauseVideo=1"
+		}
+
 		previewComp := h.A(h.Text(previewDevelopUrl)).Href(previewDevelopUrl)
 		if m.builder.previewOpenNewTab {
 			previewComp.Target("_blank")
 		}
 		return h.Div(
 			onlineHint,
+
 			versionComponent,
 			web.Listen(m.mb.NotifModelsUpdated(),
 				web.Plaid().URL(m.mb.Info().DetailingHref(ps)).Go()),
@@ -98,7 +119,7 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 						).Class("d-flex align-center justify-center", H100, "bg-"+ColorGreyLighten4),
 					),
 					h.If(containerCount > 0,
-						h.Iframe().Src(previewDevelopUrl).
+						h.Iframe().Src(iframeUrlWithVideoPause).
 							Attr("scrolling", "no", "frameborder", "0").
 							Style(`pointer-events: none; 
  -webkit-mask-image: radial-gradient(circle, black 80px, transparent);
@@ -206,6 +227,7 @@ func detailPageEditor(dp *presets.DetailingBuilder, mb *presets.ModelBuilder, b 
 			complete := presets.SelectField(obj, field, ctx).
 				Multiple(false).Chips(false).
 				Label(msgr.Category).
+				Clearable(true).
 				Items(categories).ItemTitle("Path").ItemValue("ID")
 			if p.CategoryID > 0 {
 				complete.Attr(presets.VFieldError(field.FormKey, p.CategoryID, field.Errors)...)

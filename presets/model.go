@@ -138,6 +138,7 @@ func (mb *ModelBuilder) newListing() (lb *ListingBuilder) {
 		mb:            mb,
 		FieldsBuilder: *mb.p.listFieldDefaults.InspectFields(mb.model),
 	}
+	mb.listing.newBtnFunc = mb.listing.defaultNewBtnFunc
 	if mb.p.dataOperator != nil {
 		mb.listing.SearchFunc(mb.p.dataOperator.Search)
 	}
@@ -317,7 +318,7 @@ func (mb *ModelBuilder) getLabel(field NameLabel) (r string) {
 	return humanizeString(field.name)
 }
 
-func (mb *ModelBuilder) defaultMustGetMessages(r *http.Request) *Messages {
+func (*ModelBuilder) defaultMustGetMessages(r *http.Request) *Messages {
 	messages := &Messages{}
 	srcVal := reflect.ValueOf(MustGetMessages(r)).Elem()
 	dstVal := reflect.ValueOf(messages).Elem()

@@ -6,9 +6,9 @@ import (
 
 	"golang.org/x/text/language"
 
-	"github.com/qor5/admin/v3/presets"
-	"github.com/qor5/admin/v3/presets/examples"
 	. "github.com/qor5/web/v3/multipartestutils"
+
+	"github.com/qor5/admin/v3/presets/examples"
 )
 
 func TestLanguage(t *testing.T) {
@@ -23,36 +23,14 @@ func TestLanguage(t *testing.T) {
 
 	cases := []TestCase{
 		{
-			Name: "English Icon",
+			Name: "languages listing",
 			ReqFunc: func() *http.Request {
 				productData.TruncatePut(dbr)
 				return NewMultipartBuilder().
 					PageURL("/admin/languages").
 					BuildEventFuncRequest()
 			},
-			ExpectPageBodyContainsInOrder: []string{presets.EnLanguageIcon},
-		},
-		{
-			Name: "SimplifiedChinese Icon",
-			ReqFunc: func() *http.Request {
-				productData.TruncatePut(dbr)
-				return NewMultipartBuilder().
-					PageURL("/admin/languages").
-					Query("lang", language.SimplifiedChinese.String()).
-					BuildEventFuncRequest()
-			},
-			ExpectPageBodyContainsInOrder: []string{presets.ZhLanguageIcon},
-		},
-		{
-			Name: "Japanese Icon",
-			ReqFunc: func() *http.Request {
-				productData.TruncatePut(dbr)
-				return NewMultipartBuilder().
-					PageURL("/admin/languages").
-					Query("lang", language.Japanese.String()).
-					BuildEventFuncRequest()
-			},
-			ExpectPageBodyContainsInOrder: []string{presets.JPIcon},
+			ExpectPageBodyContainsInOrder: []string{"Code", "Name"},
 		},
 	}
 

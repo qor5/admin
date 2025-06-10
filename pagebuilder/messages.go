@@ -95,6 +95,9 @@ type Messages struct {
 
 	CategoryDeleteConfirmationText string
 	TheResourceCanNotBeModified    string
+	MarkAsShared                   string
+	Copy                           string
+	SharedContainerHasBeenUpdated  string
 }
 
 var Messages_en_US = &Messages{
@@ -137,7 +140,7 @@ var Messages_en_US = &Messages{
 	Slug:                      "Slug",
 	EditPage:                  "Edit Page",
 	ScheduledAt:               "Scheduled at",
-	OnlineHit:                 "The version cannot be edited directly after it is released. Please copy the version and edit it.",
+	OnlineHit:                 "This version cannot be edited once published. To make changes, please duplicate the current version",
 	NoContentHit:              "This page has no content yet, start to edit in page builder",
 
 	InvalidPathMsg:           "Invalid Path",
@@ -185,6 +188,9 @@ var Messages_en_US = &Messages{
 	Description:                    "Description",
 	CategoryDeleteConfirmationText: "this will remove all the records in all localized languages",
 	TheResourceCanNotBeModified:    "The resource can not be modified",
+	MarkAsShared:                   "Mark As Shared",
+	Copy:                           "Copy",
+	SharedContainerHasBeenUpdated:  "The shared container on this page has been updated. You may notice differences between the preview and the live page.",
 }
 
 var Messages_zh_CN = &Messages{
@@ -225,7 +231,7 @@ var Messages_zh_CN = &Messages{
 	Slug:                      "Slug",
 	EditPage:                  "编辑页面",
 	ScheduledAt:               "安排在",
-	OnlineHit:                 "这个版本无法在上线后直接编辑.请拷贝这个版本再编辑.",
+	OnlineHit:                 "这个版本发布后不能再编辑。要进行更改，请复制当前版本",
 	NoContentHit:              "这个页面没有内容，在page builder中开始编辑",
 
 	InvalidPathMsg:           "无效的路径",
@@ -276,6 +282,9 @@ var Messages_zh_CN = &Messages{
 
 	CategoryDeleteConfirmationText: "这将删除所有本地化语言中的所有记录",
 	TheResourceCanNotBeModified:    "该资源无法被修改",
+	MarkAsShared:                   "标记为已共享",
+	Copy:                           "复制",
+	SharedContainerHasBeenUpdated:  "此页面上的共享容器已更新。您可能会注意到预览和实时页面之间的差异。",
 }
 
 var Messages_ja_JP = &Messages{
@@ -318,7 +327,7 @@ var Messages_ja_JP = &Messages{
 	Slug:                      "スラッグ",
 	EditPage:                  "ページの編集",
 	ScheduledAt:               "公開開始日時",
-	OnlineHit:                 "バージョンはリリース後直接に編集できません。バージョンをコピーして編集してください。",
+	OnlineHit:                 "このバージョンは一度公開されると編集できなくなります。変更を加えるには、現在のバージョンを複製してください",
 	NoContentHit:              "このページにはまだコンテンツがありません。ページビルダーで編集を開始してください",
 
 	InvalidPathMsg:           "無効なパス",
@@ -366,6 +375,9 @@ var Messages_ja_JP = &Messages{
 	Description:                    "説明",
 	CategoryDeleteConfirmationText: "これは、すべてのローカライズされた言語のすべてのレコードを削除します",
 	TheResourceCanNotBeModified:    "このリソースは変更できません",
+	MarkAsShared:                   "共有済みとしてマーク",
+	Copy:                           "コピー",
+	SharedContainerHasBeenUpdated:  "このページの共有コンテナが更新されました。プレビューとライブページの間に違いがあるかもしれません。",
 }
 
 type ModelsI18nModulePage struct {

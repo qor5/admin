@@ -54,7 +54,7 @@ func TestListingExample(t *testing.T) {
 			},
 			ReqFunc: func() *http.Request {
 				dataEmptyForListing.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/posts", nil)
+				return httptest.NewRequest("GET", "/posts", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"No records to show"},
 		},
@@ -67,7 +67,7 @@ func TestListingExample(t *testing.T) {
 			},
 			ReqFunc: func() *http.Request {
 				dataSeedForListing.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/posts", nil)
+				return httptest.NewRequest("GET", "/posts", http.NoBody)
 			},
 			ExpectPageBodyNotContains:     []string{"No records to show"},
 			ExpectPageBodyContainsInOrder: []string{"v-pagination", ":total-visible='5'"},
@@ -87,7 +87,7 @@ func TestListingExample(t *testing.T) {
 			},
 			ReqFunc: func() *http.Request {
 				dataSeedForListing.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/posts", nil)
+				return httptest.NewRequest("GET", "/posts", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"ActionExample"},
 		},
@@ -374,7 +374,7 @@ func TestListingExample(t *testing.T) {
 			},
 			ReqFunc: func() *http.Request {
 				dataSeedForListing.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/posts", nil)
+				return httptest.NewRequest("GET", "/posts", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"BulkActionExample"},
 		},
@@ -653,6 +653,47 @@ func TestListingExample(t *testing.T) {
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"not implemented"},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, nil)
+		})
+	}
+}
+
+func TestListingWithJoinsExample(t *testing.T) {
+	dbr, _ := TestDB.DB()
+	TestDB.AutoMigrate(&Post{}, &Category{})
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "empty List",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				return listingPostWithCategory(presets.New(), TestDB, func(mb *presets.ModelBuilder) {
+				})
+			},
+			ReqFunc: func() *http.Request {
+				dataEmptyForListing.TruncatePut(dbr)
+				return httptest.NewRequest("GET", "/post-with-categories", http.NoBody)
+			},
+			ExpectPageBodyContainsInOrder: []string{"No records to show"},
+		},
+		{
+			Name:  "not empty List",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				return listingPostWithCategory(presets.New(), TestDB, func(mb *presets.ModelBuilder) {
+				})
+			},
+			ReqFunc: func() *http.Request {
+				dataSeedForListing.TruncatePut(dbr)
+				return httptest.NewRequest("GET", "/post-with-categories", http.NoBody)
+			},
+			ExpectPageBodyNotContains:     []string{"No records to show"},
+			ExpectPageBodyContainsInOrder: []string{"mdi-chevron-left", "mdi-chevron-right"},
 		},
 	}
 

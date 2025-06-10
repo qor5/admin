@@ -1,9 +1,11 @@
 package integration_test
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/qor5/web/v3"
 	. "github.com/qor5/web/v3/multipartestutils"
@@ -20,6 +22,7 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/publish"
+	"github.com/qor5/admin/v3/utils"
 )
 
 var TestDB *gorm.DB
@@ -49,7 +52,7 @@ INSERT INTO public.page_builder_templates (id, created_at, updated_at, deleted_a
 
 var pageBuilderContainerTestData = gofixtures.Data(gofixtures.Sql(`
 INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, seo, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code) VALUES 
-										(10, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, '1234567', '12313', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'draft', '', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'International');
+										(10, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, '1234567', '/12313', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'draft', '', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'International');
 SELECT setval('page_builder_pages_id_seq', 10, true);
 
 INSERT INTO public.page_builder_containers (id,created_at, updated_at, deleted_at, page_id, page_version, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id,page_model_name) VALUES 
@@ -84,7 +87,7 @@ func TestPageBuilder(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/pages", nil)
+				return httptest.NewRequest("GET", "/pages", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"ID", "Title", "Live", "12312"},
 		},
@@ -93,9 +96,12 @@ func TestPageBuilder(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/pages?__execute_event__=presets_New", nil)
+				req := NewMultipartBuilder().PageURL("/pages").
+					EventFunc(actions.New).
+					BuildEventFuncRequest()
+				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Template", "Title", `form["CategoryID"]`, `prefix='/'`},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Template", "Title", `form["CategoryID"]`, `:clearable='true'`, `prefix='/'`},
 		},
 
 		{
@@ -103,7 +109,7 @@ func TestPageBuilder(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/pages/1_2024-05-18-v01_International", nil)
+				return httptest.NewRequest("GET", "/pages/1_2024-05-18-v01_International", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{
 				`Page`, "Category", `SEO`, `Activity`,
@@ -111,17 +117,53 @@ func TestPageBuilder(t *testing.T) {
 			ExpectPageBodyNotContains: []string{"_blank"},
 		},
 		{
-			Name:  "Page Builder Detail editor",
+			Name:  "Page Builder Detail Page with invalid slug",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				return httptest.NewRequest("GET", "/pages/1_2024-05-18-v01_International_invalid", http.NoBody)
+			},
+			ExpectPageBodyContainsInOrder: []string{
+				`Sorry, the requested page cannot be found. Please check the URL.`,
+			},
+		},
+		{
+			Name:  "Page Builder Detail Page with invalid id in slug",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				return httptest.NewRequest("GET", "/pages/a_2024-05-18-v01_International", http.NoBody)
+			},
+			ExpectPageBodyContainsInOrder: []string{
+				`Sorry, the requested page cannot be found. Please check the URL.`,
+			},
+		},
+		{
+			Name:  "Page Builder Detail Editor",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().PageURL("/page_builder/pages/10_2024-05-21-v01_International").
-					Query("containerDataID", "list-content_10").
+					Query("containerDataID", "list-content_10_10International").
 					BuildEventFuncRequest()
 				return req
 			},
 			ExpectPageBodyContainsInOrder: []string{
 				`eventFunc("page_builder_EditContainerEvent").mergeQuery(true).query("containerDataID", vars.containerDataID)`,
+			},
+		},
+		{
+			Name:  "Page Builder Detail editor(not found)",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().PageURL("/page_builder/pages/10_2024-05-21-v01_InternationalNotFound").
+					Query("containerDataID", "list-content_10_10International").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{
+				`Sorry, the requested page cannot be found. Please check the URL.`,
 			},
 		},
 		{
@@ -184,7 +226,7 @@ func TestPageBuilder(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/page_builder/pages/10_2024-05-21-v01_International", nil)
+				return httptest.NewRequest("GET", "/page_builder/pages/10_2024-05-21-v01_International", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"Add Container", "Select an element and change the setting here."},
 		},
@@ -203,7 +245,7 @@ func TestPageBuilder(t *testing.T) {
 			},
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/page_builder/pages/10_2024-05-21-v01_International", nil)
+				return httptest.NewRequest("GET", "/page_builder/pages/10_2024-05-21-v01_International", http.NoBody)
 			},
 			ExpectPageBodyNotContains: []string{"Add Container", "Select an element and change the setting here."},
 		},
@@ -236,7 +278,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					PageURL("/pages/10_2024-05-21-v01_International").
 					EventFunc(publish.EventDuplicateVersion).
 					BuildEventFuncRequest()
 
@@ -299,7 +341,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/list-contents").
+					PageURL("/list-contents").
 					EventFunc(actions.Edit).
 					Query(presets.ParamOverlay, actions.Content).
 					Query("portal_name", "pageBuilderRightContentPortal").
@@ -622,7 +664,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderDemoContainerTestData.TruncatePut(dbr)
 				return NewMultipartBuilder().
-					PageURL("/page_builder/in-numbers").
+					PageURL("/in-numbers").
 					EventFunc(actions.Validate).
 					Query(presets.ParamID, "1").
 					AddField("Items[0].Heading", "").
@@ -636,7 +678,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderDemoContainerTestData.TruncatePut(dbr)
 				return NewMultipartBuilder().
-					PageURL("/page_builder/in-numbers").
+					PageURL("/in-numbers").
 					EventFunc(actions.Update).
 					Query(presets.ParamID, "1").
 					Query("status", "draft").
@@ -739,7 +781,7 @@ func TestPageBuilder(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`"Title":"1234567"`, `"CategoryID":""`, `"Slug":"12313"`},
+			ExpectPortalUpdate0ContainsInOrder: []string{`"Title":"1234567"`, `"CategoryID":""`, `:clearable='true'`, `"Slug":"12313"`},
 		},
 		{
 			Name:  "Page Detail Editing Has Category",
@@ -753,7 +795,7 @@ func TestPageBuilder(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`"Title":"12312"`, `"CategoryID":1`, `"Slug":"123"`},
+			ExpectPortalUpdate0ContainsInOrder: []string{`"Title":"12312"`, `"CategoryID":1`, `:clearable='true'`, `"Slug":"123"`},
 		},
 
 		{
@@ -982,7 +1024,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/headers").
+					PageURL("/headers").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "10").
 					BuildEventFuncRequest()
@@ -997,7 +1039,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/headers").
+					PageURL("/headers").
 					EventFunc(actions.Update).
 					Query(presets.ParamID, "10").
 					AddField("Color", "white").
@@ -1020,7 +1062,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderDemoContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/headings").
+					PageURL("/headings").
 					EventFunc(actions.Update).
 					Query(presets.ParamID, "1").
 					AddField("FontColor", "blue").
@@ -1037,7 +1079,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderDemoContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/headings").
+					PageURL("/headings").
 					EventFunc(actions.Update).
 					Query(presets.ParamID, "1").
 					AddField("LinkText", "ReplaceLinkText").
@@ -1059,45 +1101,7 @@ func TestPageBuilder(t *testing.T) {
 				}
 			},
 		},
-		{
-			Name:  "PageBuilder Editor Listing Page Redirect Pages",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				pageBuilderDemoContainerTestData.TruncatePut(dbr)
-				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages").
-					BuildEventFuncRequest()
 
-				return req
-			},
-			ExpectPageBodyNotContains: []string{"Page Builder"},
-		},
-		{
-			Name:  "PageBuilder Editor Listing Container Redirect Home Page",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				pageBuilderDemoContainerTestData.TruncatePut(dbr)
-				req := NewMultipartBuilder().
-					PageURL("/page_builder/headings").
-					BuildEventFuncRequest()
-
-				return req
-			},
-			ExpectPageBodyNotContains: []string{"Page Builder"},
-		},
-		{
-			Name:  "PageBuilder Editor Listing MediaLibrary Redirect Home Page",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				pageBuilderDemoContainerTestData.TruncatePut(dbr)
-				req := NewMultipartBuilder().
-					PageURL("/page_builder/media-libraries").
-					BuildEventFuncRequest()
-
-				return req
-			},
-			ExpectPageBodyNotContains: []string{"Page Builder"},
-		},
 		{
 			Name:  "PageBuilder Editor Replicate Container",
 			Debug: true,
@@ -1132,7 +1136,6 @@ func TestPageBuilder(t *testing.T) {
 					t.Fatalf("Replicate Container Faield %#+v", nextContainer)
 					return
 				}
-				return
 			},
 		},
 		{
@@ -1143,12 +1146,12 @@ func TestPageBuilder(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
 					EventFunc(pagebuilder.EditContainerEvent).
-					Query("containerDataID", "headers_10").
+					Query("containerDataID", "headers_10__10_International").
 					BuildEventFuncRequest()
 
 				return req
 			},
-			ExpectRunScriptContainsInOrder: []string{`url("/page_builder/headers").eventFunc("presets_Edit").query("id", "10").query("portal_name", "pageBuilderRightContentPortal").query("overlay", "content")`},
+			ExpectRunScriptContainsInOrder: []string{`url("/headers").eventFunc("presets_Edit").query("id", "10").query("portal_name", "pageBuilderRightContentPortal").query("overlay", "content")`},
 		},
 		{
 			Name:  "PageBuilder Wrap UpdateContainerEvent",
@@ -1172,7 +1175,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderDemoContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/headings").
+					PageURL("/headings").
 					EventFunc(actions.Validate).
 					Query(presets.ParamID, "1").
 					AddField("LinkText", "").
@@ -1189,7 +1192,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderDemoContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/in-numbers").
+					PageURL("/in-numbers").
 					EventFunc(actions.Update).
 					AddField("__Deleted.Items", "0").
 					AddField("Items[1].Heading", "").
@@ -1295,6 +1298,56 @@ func TestPageBuilder(t *testing.T) {
 				return req
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"vx-scroll-iframe"},
+		},
+		{
+			Name:  "Page DoLocalize",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/pages").
+					EventFunc(l10n.DoLocalize).
+					Query(presets.ParamID, "10_2024-05-21-v01_International").
+					AddField("localize_from", "International").
+					AddField("localize_to", "Japan").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var (
+					page  pagebuilder.Page
+					now   = time.Now()
+					count int64
+					err   error
+				)
+				if err = utils.PrimarySluggerWhere(TestDB, &page, fmt.Sprintf("10_%v_Japan", page.GetNextVersion(&now))).First(&page).Error; err != nil {
+					t.Fatalf("Copy Page Failed %v", err)
+					return
+				}
+				if err = TestDB.Model(&pagebuilder.Container{}).Where("page_id=10 and locale_code='Japan'").Count(&count).Error; err != nil {
+					t.Fatalf("Find Containers %v", err)
+					return
+				}
+				if count == 0 {
+					t.Fatalf("Containers not copied")
+					return
+				}
+			},
+		},
+		{
+			Name:  "Page Builder ReloadAddContainersListEvent",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					EventFunc(pagebuilder.ReloadAddContainersListEvent).
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Header", "PageTitle", "Shared"},
 		},
 	}
 

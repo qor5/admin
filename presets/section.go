@@ -27,6 +27,8 @@ const (
 	sectionListFieldDeleteBtnKey = "sectionListDeleteBtn"
 
 	sectionListFieldEditing = "sectionListEditing"
+
+	DisabledKeyButtonSave = "disabledKeyButtonSave"
 )
 
 func NewSectionBuilder(mb *ModelBuilder, name string) (r *SectionBuilder) {
@@ -306,6 +308,11 @@ func (b *SectionBuilder) SaveFunc(v SaveFunc) (r *SectionBuilder) {
 	return b
 }
 
+func (b *SectionBuilder) WrapSaveFunc(w func(in SaveFunc) SaveFunc) (r *SectionBuilder) {
+	b.saver = w(b.saver)
+	return b
+}
+
 func (b *SectionBuilder) WrapSetterFunc(w func(in func(obj interface{}, ctx *web.EventContext) error) func(obj interface{}, ctx *web.EventContext) error) (r *SectionBuilder) {
 	b.setter = w(b.setter)
 	return b
@@ -509,9 +516,9 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 			web.Scope(
 				content,
 			).VSlot("{ form }"),
-		).VSlot("{ dash }").DashInit("{errorMessages:{}}"),
+		).VSlot("{ dash }").DashInit("{errorMessages:{},disabled:{}}"),
 		hiddenComp,
-	).Attr("v-on-mounted", fmt.Sprintf(`()=>{%s}`, initDataChanged))
+	).Attr("v-on-mounted", fmt.Sprintf(`()=>{%s}`, initDataChanged)).Class("mb-10")
 }
 
 func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -530,7 +537,9 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 			Go())
 
 	disableEditBtn := b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
-	saveBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Save")).PrependIcon("mdi-check").Size(SizeSmall).Variant(VariantFlat).Color(ColorPrimary).Disabled(disableEditBtn).
+	saveBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Save")).PrependIcon("mdi-check").
+		Size(SizeSmall).Variant(VariantFlat).Color(ColorPrimary).
+		Attr(":disabled", fmt.Sprintf("%v || dash.disabled.%v", disableEditBtn, DisabledKeyButtonSave)).
 		Attr("style", "text-transform: none;").
 		Attr("@click", web.Plaid().
 			URL(ctx.R.URL.Path).
@@ -608,8 +617,8 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 				content,
 				hiddenComp,
 			).VSlot("{ form}").OnChange(onChangeEvent).UseDebounce(500),
-		).VSlot("{ dash }").DashInit("{errorMessages:{}}"),
-	)
+		).VSlot("{ dash }").DashInit("{errorMessages:{},disabled:{}}"),
+	).Class("mb-10")
 }
 
 func (b *SectionBuilder) defaultUnmarshalFunc(obj interface{}, ctx *web.EventContext) (err error) {
@@ -1473,7 +1482,7 @@ func (b *SectionBuilder) ReloadDetailListField(ctx *web.EventContext) (r web.Eve
 	return
 }
 
-func (b *SectionBuilder) getObjectID(ctx *web.EventContext, obj interface{}) string {
+func (*SectionBuilder) getObjectID(ctx *web.EventContext, obj interface{}) string {
 	id := ctx.Param(ParamID)
 	if id == "" {
 		if slugIf, ok := obj.(SlugEncoder); ok {

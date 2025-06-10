@@ -52,7 +52,7 @@ func TestPageBuilderOnline(t *testing.T) {
 		}))
 		pageBuilderOnlineData.TruncatePut(dbr)
 		require.Panics(t, func() {
-			h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/pages/10_2024-05-21-v01_International", nil))
+			h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/pages/10_2024-05-21-v01_International", http.NoBody))
 		})
 	})
 
@@ -64,7 +64,7 @@ func TestPageBuilderOnline(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderOnlineData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/pages/10_2024-05-21-v01_International", nil)
+				return httptest.NewRequest("GET", "/pages/10_2024-05-21-v01_International", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{`<a href='example-publish.s3.ap-northeast-1.amazonaws.com/'>example-publish.s3.ap-northeast-1.amazonaws.com/</a>`},
 		},
