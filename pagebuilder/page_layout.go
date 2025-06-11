@@ -53,7 +53,7 @@ func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *we
 
 	return h.Body(
 		h.RawHTML(`<div class="inner-container">
-<div class="container-instance container-header" style="position:relative; color: #fff;background: #000;">
+<div class="container-instance " style="position:relative; color: #fff;background: #000;height: 98px;font-size: 18px;font-weight: 700;display: flex;align-items: center;">
 <div class="container-wrapper">
 <ul data-list-unset="true" class="container-header-links">
 <li>

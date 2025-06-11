@@ -1410,6 +1410,7 @@ function(e){
 	const { msg_type,container_data_id, container_id,display_name,rect } = e.data
 	if (msg_type === %q) {
 		%s
+		return
 	}
 	if (!msg_type || !container_data_id.split) {
 		return
