@@ -192,7 +192,7 @@ var Messages_en_US = &Messages{
 	MarkAsShared:                   "Mark As Shared",
 	Copy:                           "Copy",
 	SharedContainerHasBeenUpdated:  "The shared container on this page has been updated. You may notice differences between the preview and the live page.",
-	TemplateFixedAreaMessage:       "This area is fixed by template and cannot be edited.",
+	TemplateFixedAreaMessage:       "This container is fixed and cannot be updated",
 }
 
 var Messages_zh_CN = &Messages{
