@@ -98,6 +98,7 @@ type Messages struct {
 	MarkAsShared                   string
 	Copy                           string
 	SharedContainerHasBeenUpdated  string
+	TemplateFixedAreaMessage       string
 }
 
 var Messages_en_US = &Messages{
@@ -191,6 +192,7 @@ var Messages_en_US = &Messages{
 	MarkAsShared:                   "Mark As Shared",
 	Copy:                           "Copy",
 	SharedContainerHasBeenUpdated:  "The shared container on this page has been updated. You may notice differences between the preview and the live page.",
+	TemplateFixedAreaMessage:       "This area is fixed by template and cannot be edited.",
 }
 
 var Messages_zh_CN = &Messages{
@@ -285,6 +287,7 @@ var Messages_zh_CN = &Messages{
 	MarkAsShared:                   "标记为已共享",
 	Copy:                           "复制",
 	SharedContainerHasBeenUpdated:  "此页面上的共享容器已更新。您可能会注意到预览和实时页面之间的差异。",
+	TemplateFixedAreaMessage:       "此区域由模板固定，无法编辑。",
 }
 
 var Messages_ja_JP = &Messages{
@@ -378,6 +381,7 @@ var Messages_ja_JP = &Messages{
 	MarkAsShared:                   "共有済みとしてマーク",
 	Copy:                           "コピー",
 	SharedContainerHasBeenUpdated:  "このページの共有コンテナが更新されました。プレビューとライブページの間に違いがあるかもしれません。",
+	TemplateFixedAreaMessage:       "この領域はテンプレートによって固定されており、編集できません。",
 }
 
 type ModelsI18nModulePage struct {
