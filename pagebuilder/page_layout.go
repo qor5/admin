@@ -52,6 +52,16 @@ func defaultPageLayoutFunc(body h.HTMLComponent, input *PageLayoutInput, ctx *we
 	}
 
 	return h.Body(
+		h.RawHTML(`<div>
+<div style="color: #fff;background: #000;height: 98px;font-size: 18px;font-weight: 700;display: flex;align-items: center;justify-content: center;">
+<div >
+<ul data-list-unset="true" >
+<li>
+<txt>Dummy Header Of Customized Template Layout</txt>
+</li>
+</ul>
+</div>
+</div>`),
 		bodies,
 	).Attr("data-site-domain", domain)
 }

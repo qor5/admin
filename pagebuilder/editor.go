@@ -60,11 +60,12 @@ const (
 	DeviceTablet   = "tablet"
 	DeviceComputer = "computer"
 
-	EventUp     = "up"
-	EventDown   = "down"
-	EventDelete = "delete"
-	EventAdd    = "add"
-	EventEdit   = "edit"
+	EventUp                        = "up"
+	EventDown                      = "down"
+	EventDelete                    = "delete"
+	EventAdd                       = "add"
+	EventEdit                      = "edit"
+	EventClickOutsideWrapperShadow = "clickOutsideWrapperShadow"
 
 	paramIframeEventName  = "iframeEventName"
 	changeDeviceEventName = "change_device"
