@@ -66,10 +66,10 @@ const (
 	EventAdd                       = "add"
 	EventEdit                      = "edit"
 	EventClickOutsideWrapperShadow = "clickOutsideWrapperShadow"
-	
-	paramIframeEventName           = "iframeEventName"
-	changeDeviceEventName          = "change_device"
-	updateBodyEventName            = "update_body"
+
+	paramIframeEventName  = "iframeEventName"
+	changeDeviceEventName = "change_device"
+	updateBodyEventName   = "update_body"
 )
 
 const (
