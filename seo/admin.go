@@ -298,49 +298,48 @@ func (b *Builder) vseo(fieldPrefix string, field *presets.FieldContext, seo *SEO
 	}
 	refPrefix := strings.ReplaceAll(strings.ToLower(fieldPrefix), " ", "_")
 	return VXSendVariables(
-		h.H4(msgr.Basic).Style("margin-top:15px;font-weight: 500"),
-		VRow(
-			varComps...,
-		).Class("ma-4"),
-		VCard(
-			VCardText(
-				VXField().Disabled(field.Disabled).Attr("counter", true).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "Title"), setting.Title)...).Label(msgr.Title).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_title", refPrefix))).Attr("ref", fmt.Sprintf("%s_title", refPrefix)),
-				VXField().Disabled(field.Disabled).Attr("counter", true).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "Description"), setting.Description)...).Label(msgr.Description).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_description", refPrefix))).Attr("ref", fmt.Sprintf("%s_description", refPrefix)),
-				VXField().Disabled(field.Disabled).Type("textarea").Attr("counter", true).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "Keywords"), setting.Keywords)...).Label(msgr.Keywords).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_keywords", refPrefix))).Attr("ref", fmt.Sprintf("%s_keywords", refPrefix)),
+		h.Div(
+			h.Span(msgr.Basic).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
+		),
+		h.Div(
+			VRow(
+				varComps...,
 			),
-		).Variant(VariantOutlined).Flat(true),
+		),
+		
+		VXField().Disabled(field.Disabled).Attr("counter", true).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "Title"), setting.Title)...).Label(msgr.Title).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_title", refPrefix))).Attr("ref", fmt.Sprintf("%s_title", refPrefix)),
+		VXField().Disabled(field.Disabled).Attr("counter", true).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "Description"), setting.Description)...).Label(msgr.Description).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_description", refPrefix))).Attr("ref", fmt.Sprintf("%s_description", refPrefix)),
+		VXField().Disabled(field.Disabled).Type("textarea").Attr("counter", true).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "Keywords"), setting.Keywords)...).Label(msgr.Keywords).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_keywords", refPrefix))).Attr("ref", fmt.Sprintf("%s_keywords", refPrefix)),
 
-		h.H4(msgr.OpenGraphInformation).Style("margin-top:15px;margin-bottom:15px;font-weight: 500"),
-		VCard(
-			VCardText(
-				VXField().Disabled(field.Disabled).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphTitle"), setting.OpenGraphTitle)...).Label(msgr.OpenGraphTitle).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_title", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_title", refPrefix)),
-				VXField().Disabled(field.Disabled).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphDescription"), setting.OpenGraphDescription)...).Label(msgr.OpenGraphDescription).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_description", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_description", refPrefix)),
-				VXField().Disabled(field.Disabled).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphURL"), setting.OpenGraphURL)...).Label(msgr.OpenGraphURL).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_url", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_url", refPrefix)),
-				VXField().Disabled(field.Disabled).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphType"), setting.OpenGraphType)...).Label(msgr.OpenGraphType).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_type", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_type", refPrefix)),
-				VXField().Disabled(field.Disabled).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageURL"), setting.OpenGraphImageURL)...).Label(msgr.OpenGraphImageURL).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_imageurl", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_imageurl", refPrefix)),
-				media.QMediaBox(db).Disabled(field.Disabled).Label(msgr.OpenGraphImage).
-					FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageFromMediaLibrary")).
-					Value(image).
-					Config(&media_library.MediaBoxConfig{
-						AllowType: "image",
-						Sizes: map[string]*base.Size{
-							"og": {
-								Width:  1200,
-								Height: 630,
-							},
-							"twitter-large": {
-								Width:  1200,
-								Height: 600,
-							},
-							"twitter-small": {
-								Width:  630,
-								Height: 630,
-							},
-						},
-					}),
-				VXField().Disabled(field.Disabled).Type("textarea").Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphMetadataString"), GetOpenGraphMetadataString(setting.OpenGraphMetadata))...).Label(msgr.OpenGraphMetadata).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_metadata", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_metadata", refPrefix)),
-			),
-		).Variant(VariantOutlined).Flat(true),
+		h.Div(
+			h.Span(msgr.OpenGraphInformation).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
+		),
+		VXField().Disabled(field.Disabled).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphTitle"), setting.OpenGraphTitle)...).Label(msgr.OpenGraphTitle).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_title", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_title", refPrefix)),
+		VXField().Disabled(field.Disabled).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphDescription"), setting.OpenGraphDescription)...).Label(msgr.OpenGraphDescription).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_description", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_description", refPrefix)),
+		VXField().Disabled(field.Disabled).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphURL"), setting.OpenGraphURL)...).Label(msgr.OpenGraphURL).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_url", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_url", refPrefix)),
+		VXField().Disabled(field.Disabled).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphType"), setting.OpenGraphType)...).Label(msgr.OpenGraphType).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_type", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_type", refPrefix)),
+		VXField().Disabled(field.Disabled).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageURL"), setting.OpenGraphImageURL)...).Label(msgr.OpenGraphImageURL).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_imageurl", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_imageurl", refPrefix)),
+		media.QMediaBox(db).Disabled(field.Disabled).Label(msgr.OpenGraphImage).
+			FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphImageFromMediaLibrary")).
+			Value(image).
+			Config(&media_library.MediaBoxConfig{
+				AllowType: "image",
+				Sizes: map[string]*base.Size{
+					"og": {
+						Width:  1200,
+						Height: 630,
+					},
+					"twitter-large": {
+						Width:  1200,
+						Height: 600,
+					},
+					"twitter-small": {
+						Width:  630,
+						Height: 630,
+					},
+				},
+			}),
+		VXField().Disabled(field.Disabled).Type("textarea").Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphMetadataString"), GetOpenGraphMetadataString(setting.OpenGraphMetadata))...).Label(msgr.OpenGraphMetadata).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_metadata", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_metadata", refPrefix)),
 	).Attr("ref", "seo")
 }
 
@@ -361,14 +360,6 @@ func (b *Builder) vSeoReadonly(obj interface{}, fieldPrefix, locale string, seo 
 		variables[varName] = varFunc(obj, setting, req)
 	}
 	*setting = replaceVariables(*setting, variables)
-	var keywordsComps []h.HTMLComponent
-
-	for i, keyword := range strings.Split(setting.Keywords, ",") {
-		if i > 0 {
-			keywordsComps = append(keywordsComps, h.Span("·"))
-		}
-		keywordsComps = append(keywordsComps, h.Span(keyword))
-	}
 
 	return h.Components(
 		h.Div(
