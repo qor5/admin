@@ -40,7 +40,7 @@ func TestPage_PublishUrl(t *testing.T) {
 	page := &Page{}
 	TestDB.First(page, 1)
 	b := New("/", TestDB, presets.New())
-	r := b.Model(b.ps.Model(page))
+	r := b.Model(b.pb.Model(page))
 	s := page.PublishUrl(TestDB, context.WithValue(context.Background(), r.name, r), nil)
 	if s != "/12/123/index.html" {
 		t.Log("Error Publish Url")

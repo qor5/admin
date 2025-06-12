@@ -471,18 +471,21 @@ func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, e
 		return
 	}
 
-	id := ctx.R.FormValue(ParamID)
-	obj := b.mb.NewModel()
-	if len(id) > 0 {
-		err := b.Deleter(obj, id, ctx)
-		if err != nil {
-			ShowMessage(&r, err.Error(), "warning")
-			return
+	ids := ctx.R.FormValue(ParamID)
+	if len(ids) > 0 {
+		deletedIds := strings.Split(ids, ",")
+		for _, id := range deletedIds {
+			obj := b.mb.NewModel()
+			err := b.Deleter(obj, id, ctx)
+			if err != nil {
+				ShowMessage(&r, err.Error(), "warning")
+				return
+			}
 		}
 
 		r.Emit(
 			b.mb.NotifModelsDeleted(),
-			PayloadModelsDeleted{Ids: []string{id}},
+			PayloadModelsDeleted{Ids: deletedIds},
 		)
 	}
 

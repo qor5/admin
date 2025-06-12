@@ -32,7 +32,7 @@ func TestSEOExampleBasic(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				seoData.TruncatePut(SqlDB)
-				return httptest.NewRequest("GET", "/seo-posts", nil)
+				return httptest.NewRequest("GET", "/seo-posts", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"The seo post 1"},
 		},

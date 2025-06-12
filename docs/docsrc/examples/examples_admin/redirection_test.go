@@ -31,7 +31,7 @@ func TestRedirection(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				redirectionData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/redirections", nil)
+				return httptest.NewRequest("GET", "/redirections", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"/international/international/index3.html", "https://www.xxx.com"},
 		},

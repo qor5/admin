@@ -39,25 +39,23 @@ func TestMain(m *testing.M) {
 }
 
 var pageBuilderData = gofixtures.Data(gofixtures.Sql(`
-INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (1, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'category_123', '/12', '', 'International');
-INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (1, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'category_123', '/12', '', 'China');
-INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (2, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'category_456', '/45', '', 'International');
-INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (3, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'category_34', '/34', '', 'International');
-INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (3, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'category_34', '/34', '', 'China');
-SELECT setval('page_builder_categories_id_seq', 1, true);
-INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code, seo) VALUES (1, '2024-05-17 15:25:39.716658 +00:00', '2024-05-17 15:25:39.716658 +00:00', null, '12312', '/123', 1, 'draft', '', null, null, null, null, '2024-05-18-v01', '2024-05-18-v01', '', 'International', '{"OpenGraphImageFromMediaLibrary":{"ID":0,"Url":"","VideoLink":"","FileName":"","Description":""}}');
+INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (1, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'category_123', '/12', '', 'Japan');
+INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (2, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'category_456', '/45', '', 'Japan');
+INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (3, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'category_34', '/34', '', 'Japan');
+SELECT setval('page_builder_categories_id_seq', 3, true);
+INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code, seo) VALUES (1, '2024-05-17 15:25:39.716658 +00:00', '2024-05-17 15:25:39.716658 +00:00', null, '12312', '/123', 1, 'draft', '', null, null, null, null, '2024-05-18-v01', '2024-05-18-v01', '', 'Japan', '{"OpenGraphImageFromMediaLibrary":{"ID":0,"Url":"","VideoLink":"","FileName":"","Description":""}}');
 SELECT setval('page_builder_pages_id_seq', 1, true);
 INSERT INTO public.page_builder_templates (id, created_at, updated_at, deleted_at, name, description, locale_code) VALUES (1, '2024-07-22 01:41:13.206348 +00:00', '2024-07-22 01:41:13.206348 +00:00', null, '123', '456', '');
 `, []string{"page_builder_pages", "page_builder_categories", "page_builder_templates"}))
 
 var pageBuilderContainerTestData = gofixtures.Data(gofixtures.Sql(`
 INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, seo, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code) VALUES 
-										(10, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, '1234567', '/12313', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'draft', '', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'International');
+										(10, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, '1234567', '/12313', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'draft', '', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'Japan');
 SELECT setval('page_builder_pages_id_seq', 10, true);
 
 INSERT INTO public.page_builder_containers (id,created_at, updated_at, deleted_at, page_id, page_version, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id,page_model_name) VALUES 
-										   (10,'2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', null, 10, '2024-05-21-v01', 'ListContent', 10, 1, false, false, 'ListContent', 'International', 0,'pages'),
-										   (11,'2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', null, 10, '2024-05-21-v01', 'Header', 10, 2, false, false, 'Header', 'International', 0,'pages')  ;
+										   (10,'2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', null, 10, '2024-05-21-v01', 'ListContent', 10, 1, false, false, 'ListContent', 'Japan', 0,'pages'),
+										   (11,'2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', null, 10, '2024-05-21-v01', 'Header', 10, 2, false, false, 'Header', 'Japan', 0,'pages')  ;
 SELECT setval('page_builder_containers_id_seq', 11, true);
 
 INSERT INTO public.container_list_content (id, add_top_space, add_bottom_space, anchor_id, items, background_color, link, link_text, link_display_option) VALUES (10, true, true, '', null, 'grey', 'ijuhuheweq', '', 'desktop');
@@ -70,10 +68,10 @@ SELECT setval('container_headers_id_seq', 10, true);
 
 var pageBuilderDemoContainerTestData = gofixtures.Data(gofixtures.Sql(`
 INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, seo, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code) VALUES 
-										(10, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, '1234567', '12313', 0, '{"OpenGraphImageFromMediaLibrary":{"ID":0,"Url":"","VideoLink":"","FileName":"","Description":""}}', 'draft', '', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'International');
+										(10, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, '1234567', '12313', 0, '{"OpenGraphImageFromMediaLibrary":{"ID":0,"Url":"","VideoLink":"","FileName":"","Description":""}}', 'draft', '', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'Japan');
 SELECT setval('page_builder_pages_id_seq', 10, true);
 INSERT INTO public.container_in_numbers (id, add_top_space, add_bottom_space, anchor_id, heading, items) VALUES (1, false, false, 'test1', '', 'null');
-INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, locale_code) VALUES (1, '2024-06-25 02:21:41.014915 +00:00', '2024-06-25 02:21:41.014915 +00:00', null, 'InNumbers', 1, 'International');
+INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, locale_code) VALUES (1, '2024-06-25 02:21:41.014915 +00:00', '2024-06-25 02:21:41.014915 +00:00', null, 'InNumbers', 1, 'Japan');
 INSERT INTO public.container_headings (id, add_top_space, add_bottom_space, anchor_id, heading, font_color, background_color, link, link_text, link_display_option, text) VALUES (1, false, false, '', '', '', '', '', '', '', '');
 `, []string{"page_builder_pages", "page_builder_containers", "container_in_numbers", "page_builder_demo_containers", "container_headings"}))
 
@@ -87,7 +85,7 @@ func TestPageBuilder(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/pages", nil)
+				return httptest.NewRequest("GET", "/pages", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"ID", "Title", "Live", "12312"},
 		},
@@ -109,7 +107,7 @@ func TestPageBuilder(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/pages/1_2024-05-18-v01_International", nil)
+				return httptest.NewRequest("GET", "/pages/1_2024-05-18-v01_Japan", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{
 				`Page`, "Category", `SEO`, `Activity`,
@@ -121,7 +119,7 @@ func TestPageBuilder(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/pages/1_2024-05-18-v01_International_invalid", nil)
+				return httptest.NewRequest("GET", "/pages/1_2024-05-18-v01_Japan_invalid", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{
 				`Sorry, the requested page cannot be found. Please check the URL.`,
@@ -132,19 +130,19 @@ func TestPageBuilder(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/pages/a_2024-05-18-v01_International", nil)
+				return httptest.NewRequest("GET", "/pages/a_2024-05-18-v01_Japan", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{
 				`Sorry, the requested page cannot be found. Please check the URL.`,
 			},
 		},
 		{
-			Name:  "Page Builder Detail editor",
+			Name:  "Page Builder Detail Editor",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
-				req := NewMultipartBuilder().PageURL("/page_builder/pages/10_2024-05-21-v01_International").
-					Query("containerDataID", "list-content_10_10International").
+				req := NewMultipartBuilder().PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
+					Query("containerDataID", "list-content_10_10Japan").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -157,8 +155,8 @@ func TestPageBuilder(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
-				req := NewMultipartBuilder().PageURL("/page_builder/pages/10_2024-05-21-v01_InternationalNotFound").
-					Query("containerDataID", "list-content_10_10International").
+				req := NewMultipartBuilder().PageURL("/page_builder/pages/10_2024-05-21-v01_JapanNotFound").
+					Query("containerDataID", "list-content_10_10Japan").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -186,7 +184,7 @@ func TestPageBuilder(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/pages").
-					Query(presets.ParamID, "1_2024-05-18-v01_International").
+					Query(presets.ParamID, "1_2024-05-18-v01_Japan").
 					AddField("Title", "").
 					EventFunc("section_validate_Page").
 					BuildEventFuncRequest()
@@ -201,7 +199,7 @@ func TestPageBuilder(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/pages").
-					Query(presets.ParamID, "1_2024-05-18-v01_International").
+					Query(presets.ParamID, "1_2024-05-18-v01_Japan").
 					EventFunc("section_save_Page").
 					BuildEventFuncRequest()
 				return req
@@ -226,7 +224,7 @@ func TestPageBuilder(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/page_builder/pages/10_2024-05-21-v01_International", nil)
+				return httptest.NewRequest("GET", "/page_builder/pages/10_2024-05-21-v01_Japan", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"Add Container", "Select an element and change the setting here."},
 		},
@@ -245,7 +243,7 @@ func TestPageBuilder(t *testing.T) {
 			},
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/page_builder/pages/10_2024-05-21-v01_International", nil)
+				return httptest.NewRequest("GET", "/page_builder/pages/10_2024-05-21-v01_Japan", http.NoBody)
 			},
 			ExpectPageBodyNotContains: []string{"Add Container", "Select an element and change the setting here."},
 		},
@@ -266,8 +264,8 @@ func TestPageBuilder(t *testing.T) {
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
 				var page pagebuilder.Page
 				TestDB.First(&page, "slug = ?", "/hello4")
-				if page.LocaleCode != "International" {
-					t.Fatalf("wrong locale code, expected International, got %#+v", page.LocaleCode)
+				if page.LocaleCode != "Japan" {
+					t.Fatalf("wrong locale code, expected Japan, got %#+v", page.LocaleCode)
 					return
 				}
 			},
@@ -278,7 +276,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					PageURL("/pages/10_2024-05-21-v01_Japan").
 					EventFunc(publish.EventDuplicateVersion).
 					BuildEventFuncRequest()
 
@@ -310,7 +308,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/pages/10_2024-05-21-v01_International").
+					PageURL("/pages/10_2024-05-21-v01_Japan").
 					EventFunc(publish.EventDuplicateVersion).
 					BuildEventFuncRequest()
 
@@ -341,7 +339,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/list-contents").
+					PageURL("/list-contents").
 					EventFunc(actions.Edit).
 					Query(presets.ParamOverlay, actions.Content).
 					Query("portal_name", "pageBuilderRightContentPortal").
@@ -364,7 +362,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
 					EventFunc(pagebuilder.AddContainerEvent).
 					Query("modelName", "BrandGrid").
 					BuildEventFuncRequest()
@@ -388,9 +386,9 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
 					EventFunc(pagebuilder.AddContainerEvent).
-					Query("containerID", "10_International").
+					Query("containerID", "10_Japan").
 					Query("modelName", "BrandGrid").
 					BuildEventFuncRequest()
 
@@ -415,15 +413,15 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
 					EventFunc(pagebuilder.DeleteContainerConfirmationEvent).
-					Query("containerID", "10_International").
+					Query("containerID", "10_Japan").
 					Query("containerName", "Header").
 					BuildEventFuncRequest()
 
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`page_builder_DeleteContainerEvent`, `query("containerID", "10_International")`},
+			ExpectPortalUpdate0ContainsInOrder: []string{`page_builder_DeleteContainerEvent`, `query("containerID", "10_Japan")`},
 		},
 		{
 			Name:  "Page Builder delete container ",
@@ -431,9 +429,9 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
 					EventFunc(pagebuilder.DeleteContainerEvent).
-					Query("containerID", "10_International").
+					Query("containerID", "10_Japan").
 					BuildEventFuncRequest()
 
 				return req
@@ -453,9 +451,9 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
 					EventFunc(pagebuilder.ToggleContainerVisibilityEvent).
-					Query("containerID", "10_International").
+					Query("containerID", "10_Japan").
 					Query("status", "draft").
 					BuildEventFuncRequest()
 
@@ -479,9 +477,9 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
 					EventFunc(pagebuilder.RenameContainerEvent).
-					Query("containerID", "10_International").
+					Query("containerID", "10_Japan").
 					Query("status", "draft").
 					AddField("DisplayName", "hello").
 					BuildEventFuncRequest()
@@ -506,9 +504,9 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
 					EventFunc(pagebuilder.MoveUpDownContainerEvent).
-					Query("containerID", "10_International").
+					Query("containerID", "10_Japan").
 					Query("moveDirection", "down").
 					BuildEventFuncRequest()
 
@@ -533,9 +531,9 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
 					EventFunc(pagebuilder.MoveUpDownContainerEvent).
-					Query("containerID", "11_International").
+					Query("containerID", "11_Japan").
 					Query("moveDirection", "up").
 					BuildEventFuncRequest()
 
@@ -560,10 +558,10 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
 					EventFunc(pagebuilder.MoveContainerEvent).
 					Query("status", "draft").
-					AddField("moveResult", `[{"index":0,"container_id":"11","locale":"International"},{"index":1,"container_id":"10","locale":"International"}]`).
+					AddField("moveResult", `[{"index":0,"container_id":"11","locale":"Japan"},{"index":1,"container_id":"10","locale":"Japan"}]`).
 					BuildEventFuncRequest()
 
 				return req
@@ -587,7 +585,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
 					EventFunc(pagebuilder.ShowSortedContainerDrawerEvent).
 					Query("status", "draft").
 					BuildEventFuncRequest()
@@ -603,7 +601,7 @@ func TestPageBuilder(t *testing.T) {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/page_builder/pages/preview").
-					Query(presets.ParamID, "10_2024-05-21-v01_International").
+					Query(presets.ParamID, "10_2024-05-21-v01_Japan").
 					BuildEventFuncRequest()
 
 				return req
@@ -629,7 +627,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderDemoContainerTestData.TruncatePut(dbr)
 				return NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
 					EventFunc(pagebuilder.AddContainerEvent).
 					AddField("modelName", "InNumbers").
 					AddField("id", "1").
@@ -664,7 +662,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderDemoContainerTestData.TruncatePut(dbr)
 				return NewMultipartBuilder().
-					PageURL("/page_builder/in-numbers").
+					PageURL("/in-numbers").
 					EventFunc(actions.Validate).
 					Query(presets.ParamID, "1").
 					AddField("Items[0].Heading", "").
@@ -678,7 +676,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderDemoContainerTestData.TruncatePut(dbr)
 				return NewMultipartBuilder().
-					PageURL("/page_builder/in-numbers").
+					PageURL("/in-numbers").
 					EventFunc(actions.Update).
 					Query(presets.ParamID, "1").
 					Query("status", "draft").
@@ -690,7 +688,7 @@ func TestPageBuilder(t *testing.T) {
 					mos  []*containers.InNumbers
 					cons []*pagebuilder.DemoContainer
 				)
-				TestDB.Where("model_name = ? and locale_code = ? ", "InNumbers", "International").Find(&cons)
+				TestDB.Where("model_name = ? and locale_code = ? ", "InNumbers", "Japan").Find(&cons)
 				if len(cons) != 1 {
 					t.Fatalf("Expected 1  Demo Containers, got %v", len(cons))
 					return
@@ -716,9 +714,9 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				return NewMultipartBuilder().
-					PageURL("/pages/10_2024-05-21-v01_International").
+					PageURL("/pages/10_2024-05-21-v01_Japan").
 					EventFunc("section_save_Page").
-					Query(presets.ParamID, "10_2024-05-21-v01_International").
+					Query(presets.ParamID, "10_2024-05-21-v01_Japan").
 					AddField("Title", "123").
 					AddField("Slug", "123").
 					AddField("CategoryID", "0").
@@ -747,7 +745,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderDemoContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
 					EventFunc(pagebuilder.ContainerPreviewEvent).
 					Query("modelName", "InNumbers").
 					BuildEventFuncRequest()
@@ -775,9 +773,9 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/pages/10_2024-05-21-v01_International").
+					PageURL("/pages/10_2024-05-21-v01_Japan").
 					Query(web.EventFuncIDName, "section_edit_Page").
-					Query("id", "10_2024-05-21-v01_International").
+					Query("id", "10_2024-05-21-v01_Japan").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -789,9 +787,9 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/pages/1_2024-05-18-v01_International").
+					PageURL("/pages/1_2024-05-18-v01_Japan").
 					Query(web.EventFuncIDName, "section_edit_Page").
-					Query("id", "1_2024-05-18-v01_International").
+					Query("id", "1_2024-05-18-v01_Japan").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -804,7 +802,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
 					EventFunc(pagebuilder.AddContainerEvent).
 					Query("modelName", "BrandGrid").
 					BuildEventFuncRequest()
@@ -851,7 +849,7 @@ func TestPageBuilder(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/page_categories").
 					EventFunc(actions.Update).
-					Query(presets.ParamID, "1_International").
+					Query(presets.ParamID, "1_Japan").
 					Query("Name", "").
 					BuildEventFuncRequest()
 
@@ -867,9 +865,9 @@ func TestPageBuilder(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/page_categories").
 					EventFunc(actions.Update).
-					Query(presets.ParamID, "1_International").
+					Query(presets.ParamID, "1_Japan").
 					AddField("Name", "").
-					AddField("LocaleCode", "International").
+					AddField("LocaleCode", "Japan").
 					BuildEventFuncRequest()
 
 				return req
@@ -884,10 +882,10 @@ func TestPageBuilder(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/page_categories").
 					EventFunc(actions.Update).
-					Query(presets.ParamID, "1_International").
+					Query(presets.ParamID, "1_Japan").
 					AddField("Name", "category_123").
 					AddField("Path", "/**)))=--").
-					AddField("LocaleCode", "International").
+					AddField("LocaleCode", "Japan").
 					BuildEventFuncRequest()
 
 				return req
@@ -918,11 +916,11 @@ func TestPageBuilder(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/page_categories").
 					EventFunc(actions.Update).
-					Query(presets.ParamID, "1_International").
+					Query(presets.ParamID, "1_Japan").
 					AddField("Name", "category_123").
 					AddField("Path", "45").
 					AddField("Description", "").
-					AddField("LocaleCode", "International").
+					AddField("LocaleCode", "Japan").
 					BuildEventFuncRequest()
 
 				return req
@@ -937,8 +935,8 @@ func TestPageBuilder(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/page_categories").
 					EventFunc(actions.Validate).
-					Query(presets.ParamID, "1_International").
-					AddField("LocaleCode", "International").
+					Query(presets.ParamID, "1_Japan").
+					AddField("LocaleCode", "Japan").
 					AddField("Path", "45").
 					BuildEventFuncRequest()
 
@@ -969,14 +967,14 @@ func TestPageBuilder(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/page_categories").
 					EventFunc(actions.DoDelete).
-					Query(presets.ParamID, "1_International").
+					Query(presets.ParamID, "1_Japan").
 					BuildEventFuncRequest()
 
 				return req
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
 				var count int64
-				TestDB.Model(&pagebuilder.Category{}).Where("id=1 and locale_code='International'").Count(&count)
+				TestDB.Model(&pagebuilder.Category{}).Where("id=1 and locale_code='Japan'").Count(&count)
 				if count != 1 {
 					t.Fatalf("category is Delete ")
 					return
@@ -991,14 +989,14 @@ func TestPageBuilder(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/page_categories").
 					EventFunc(actions.DoDelete).
-					Query(presets.ParamID, "2_International").
+					Query(presets.ParamID, "2_Japan").
 					BuildEventFuncRequest()
 
 				return req
 			},
 			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
 				var count int64
-				TestDB.Model(&pagebuilder.Category{}).Where("id=2 and locale_code='International'").Count(&count)
+				TestDB.Model(&pagebuilder.Category{}).Where("id=2 and locale_code='Japan'").Count(&count)
 				if count != 0 {
 					t.Fatalf("category is  Not Deleted count: %d ", count)
 					return
@@ -1024,7 +1022,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/headers").
+					PageURL("/headers").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "10").
 					BuildEventFuncRequest()
@@ -1039,7 +1037,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/headers").
+					PageURL("/headers").
 					EventFunc(actions.Update).
 					Query(presets.ParamID, "10").
 					AddField("Color", "white").
@@ -1062,7 +1060,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderDemoContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/headings").
+					PageURL("/headings").
 					EventFunc(actions.Update).
 					Query(presets.ParamID, "1").
 					AddField("FontColor", "blue").
@@ -1079,7 +1077,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderDemoContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/headings").
+					PageURL("/headings").
 					EventFunc(actions.Update).
 					Query(presets.ParamID, "1").
 					AddField("LinkText", "ReplaceLinkText").
@@ -1101,54 +1099,16 @@ func TestPageBuilder(t *testing.T) {
 				}
 			},
 		},
-		{
-			Name:  "PageBuilder Editor Listing Page Redirect Pages",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				pageBuilderDemoContainerTestData.TruncatePut(dbr)
-				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages").
-					BuildEventFuncRequest()
 
-				return req
-			},
-			ExpectPageBodyNotContains: []string{"Page Builder"},
-		},
-		{
-			Name:  "PageBuilder Editor Listing Container Redirect Home Page",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				pageBuilderDemoContainerTestData.TruncatePut(dbr)
-				req := NewMultipartBuilder().
-					PageURL("/page_builder/headings").
-					BuildEventFuncRequest()
-
-				return req
-			},
-			ExpectPageBodyNotContains: []string{"Page Builder"},
-		},
-		{
-			Name:  "PageBuilder Editor Listing MediaLibrary Redirect Home Page",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				pageBuilderDemoContainerTestData.TruncatePut(dbr)
-				req := NewMultipartBuilder().
-					PageURL("/page_builder/media-libraries").
-					BuildEventFuncRequest()
-
-				return req
-			},
-			ExpectPageBodyNotContains: []string{"Page Builder"},
-		},
 		{
 			Name:  "PageBuilder Editor Replicate Container",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
 					EventFunc(pagebuilder.ReplicateContainerEvent).
-					Query("containerID", "10_International").
+					Query("containerID", "10_Japan").
 					BuildEventFuncRequest()
 
 				return req
@@ -1174,7 +1134,6 @@ func TestPageBuilder(t *testing.T) {
 					t.Fatalf("Replicate Container Faield %#+v", nextContainer)
 					return
 				}
-				return
 			},
 		},
 		{
@@ -1183,14 +1142,14 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
 					EventFunc(pagebuilder.EditContainerEvent).
-					Query("containerDataID", "headers_10_10_International").
+					Query("containerDataID", "headers_10__10_Japan").
 					BuildEventFuncRequest()
 
 				return req
 			},
-			ExpectRunScriptContainsInOrder: []string{`url("/page_builder/headers").eventFunc("presets_Edit").query("id", "10").query("portal_name", "pageBuilderRightContentPortal").query("overlay", "content")`},
+			ExpectRunScriptContainsInOrder: []string{`url("/headers").eventFunc("presets_Edit").query("id", "10").query("portal_name", "pageBuilderRightContentPortal").query("overlay", "content")`},
 		},
 		{
 			Name:  "PageBuilder Wrap UpdateContainerEvent",
@@ -1198,7 +1157,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
 					EventFunc(pagebuilder.UpdateContainerEvent).
 					Query("containerUri", "/page_builder/headers").
 					Query("containerID", "10").
@@ -1214,7 +1173,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderDemoContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/headings").
+					PageURL("/headings").
 					EventFunc(actions.Validate).
 					Query(presets.ParamID, "1").
 					AddField("LinkText", "").
@@ -1231,7 +1190,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderDemoContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/in-numbers").
+					PageURL("/in-numbers").
 					EventFunc(actions.Update).
 					AddField("__Deleted.Items", "0").
 					AddField("Items[1].Heading", "").
@@ -1251,9 +1210,9 @@ func TestPageBuilder(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/page_categories").
 					EventFunc(l10n.DoLocalize).
-					Query(presets.ParamID, "1_International").
-					AddField("localize_from", "International").
-					AddField("localize_to", "Japan").
+					Query(presets.ParamID, "1_Japan").
+					AddField("localize_from", "Japan").
+					AddField("localize_to", "China").
 					BuildEventFuncRequest()
 
 				return req
@@ -1268,7 +1227,7 @@ func TestPageBuilder(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/page_categories").
 					EventFunc(actions.DeleteConfirmation).
-					Query(presets.ParamID, "1_International").
+					Query(presets.ParamID, "1_Japan").
 					BuildEventFuncRequest()
 
 				return req
@@ -1283,7 +1242,7 @@ func TestPageBuilder(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/page_categories").
 					EventFunc(actions.DoDelete).
-					Query(presets.ParamID, "3_International").
+					Query(presets.ParamID, "3_Japan").
 					BuildEventFuncRequest()
 
 				return req
@@ -1302,7 +1261,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
 					EventFunc(pagebuilder.EditContainerEvent).
 					BuildEventFuncRequest()
 
@@ -1316,7 +1275,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
 					EventFunc(pagebuilder.ReloadRenderPageOrTemplateBodyEvent).
 					BuildEventFuncRequest()
 
@@ -1330,7 +1289,7 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
 					EventFunc(pagebuilder.ReloadRenderPageOrTemplateEvent).
 					BuildEventFuncRequest()
 
@@ -1346,9 +1305,9 @@ func TestPageBuilder(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/pages").
 					EventFunc(l10n.DoLocalize).
-					Query(presets.ParamID, "10_2024-05-21-v01_International").
-					AddField("localize_from", "International").
-					AddField("localize_to", "Japan").
+					Query(presets.ParamID, "10_2024-05-21-v01_Japan").
+					AddField("localize_from", "Japan").
+					AddField("localize_to", "China").
 					BuildEventFuncRequest()
 
 				return req
@@ -1360,11 +1319,11 @@ func TestPageBuilder(t *testing.T) {
 					count int64
 					err   error
 				)
-				if err = utils.PrimarySluggerWhere(TestDB, &page, fmt.Sprintf("10_%v_Japan", page.GetNextVersion(&now))).First(&page).Error; err != nil {
+				if err = utils.PrimarySluggerWhere(TestDB, &page, fmt.Sprintf("10_%v_China", page.GetNextVersion(&now))).First(&page).Error; err != nil {
 					t.Fatalf("Copy Page Failed %v", err)
 					return
 				}
-				if err = TestDB.Model(&pagebuilder.Container{}).Where("page_id=10 and locale_code='Japan'").Count(&count).Error; err != nil {
+				if err = TestDB.Model(&pagebuilder.Container{}).Where("page_id=10 and locale_code='China'").Count(&count).Error; err != nil {
 					t.Fatalf("Find Containers %v", err)
 					return
 				}
@@ -1372,8 +1331,21 @@ func TestPageBuilder(t *testing.T) {
 					t.Fatalf("Containers not copied")
 					return
 				}
-				return
 			},
+		},
+		{
+			Name:  "Page Builder ReloadAddContainersListEvent",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
+					EventFunc(pagebuilder.ReloadAddContainersListEvent).
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Header", "PageTitle", "Shared"},
 		},
 	}
 

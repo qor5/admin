@@ -57,7 +57,7 @@ func (op *DataOperatorBuilder) Search(evCtx *web.EventContext, params *presets.S
 	}
 
 	wh := db.Model(params.Model)
-	if len(params.KeywordColumns) > 0 && len(params.Keyword) > 0 {
+	if len(params.KeywordColumns) > 0 && params.Keyword != "" {
 		var segs []string
 		var args []interface{}
 		for _, c := range params.KeywordColumns {

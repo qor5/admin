@@ -34,12 +34,12 @@ type (
 	ModelBuilder struct {
 		name            string
 		mb              *presets.ModelBuilder
-		editor          *presets.ModelBuilder
+		editor          *presets.CustomBuilder
 		db              *gorm.DB
 		builder         *Builder
 		preview         http.Handler
-		tb              *TemplateBuilder
 		eventMiddleware eventMiddlewareFunc
+		isTemplate      bool
 	}
 )
 
@@ -47,24 +47,16 @@ func (b *ModelBuilder) editorURLWithSlug(ps string) string {
 	return fmt.Sprintf("%s/%s", b.editorURL(), ps)
 }
 
+func (b *ModelBuilder) mountedUrl() string {
+	return strings.TrimLeft(path.Join(b.builder.prefix, b.mb.Info().URIName(), "{id}"), "/")
+}
+
 func (b *ModelBuilder) editorURL() string {
-	return fmt.Sprintf("%s/%s", b.builder.prefix, b.editor.Info().URIName())
+	return path.Join(b.builder.pb.GetURIPrefix(), b.builder.prefix, b.mb.Info().URIName())
 }
 
 func (b *ModelBuilder) getContainerBuilders() (cons []*ContainerBuilder) {
-	pageObjName := utils.GetObjectName(&Page{})
-	for _, builder := range b.builder.containerBuilders {
-		if builder.onlyPages {
-			if b.name == pageObjName || (b.tb != nil && pageObjName == utils.GetObjectName(b.tb.mb.NewModel())) {
-				cons = append(cons, builder)
-			}
-		} else {
-			if builder.modelBuilder == nil || (b.tb == nil && b.mb == builder.modelBuilder) || (b.tb != nil && b.tb.mb == builder.modelBuilder) {
-				cons = append(cons, builder)
-			}
-		}
-	}
-	return
+	return b.builder.containerBuilders
 }
 
 func (b *ModelBuilder) setName() {
@@ -75,7 +67,7 @@ func (b *ModelBuilder) addSharedContainerToPage(pageID int, containerID, pageVer
 	var c Container
 
 	err = b.db.Transaction(func(tx *gorm.DB) (dbErr error) {
-		if dbErr = tx.First(&c, "model_name = ? AND model_id = ? AND shared = true and page_model_name = ? ", modelName, modelID, b.name).Error; dbErr != nil {
+		if dbErr = tx.First(&c, "model_name = ? AND model_id = ? AND shared = true ", modelName, modelID).Error; dbErr != nil {
 			return
 		}
 
@@ -83,11 +75,7 @@ func (b *ModelBuilder) addSharedContainerToPage(pageID int, containerID, pageVer
 			maxOrder     sql.NullFloat64
 			displayOrder float64
 		)
-		dbErr = tx.Model(&Container{}).Select("MAX(display_order)").
-			Where("page_id = ? and page_version = ? and locale_code = ? and page_model_name = ?", pageID, pageVersion, locale, b.name).Scan(&maxOrder).Error
-		if dbErr != nil {
-			return
-		}
+
 		dbErr = tx.Model(&Container{}).Select("MAX(display_order)").
 			Where("page_id = ? and page_version = ? and locale_code = ? and page_model_name = ? ", pageID, pageVersion, locale, b.name).Scan(&maxOrder).Error
 		if dbErr != nil {
@@ -188,7 +176,7 @@ func (b *ModelBuilder) addContainerToPage(ctx *web.EventContext, pageID int, con
 		}
 		modelID = reflectutils.MustGet(model, "ID").(uint)
 		displayName := modelName
-		if b.builder.ps.GetI18n() != nil {
+		if b.builder.pb.GetI18n() != nil {
 			displayName = i18n.T(ctx.R, presets.ModelsI18nModuleKey, modelName)
 		}
 		container := Container{
@@ -293,10 +281,16 @@ func (b *ModelBuilder) renderScrollIframe(comps []h.HTMLComponent, ctx *web.Even
 		SeoTags:    seoTags,
 		Obj:        obj,
 	}
-
+	input.EditorCss = append(input.EditorCss,
+		h.Style(`
+.inner-container {
+    pointer-events: none
+}
+`))
 	if isEditor {
-		input.EditorCss = append(input.EditorCss, h.RawHTML(`<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">`))
-		input.EditorCss = append(input.EditorCss, h.Style(`
+		input.EditorCss = append(input.EditorCss,
+			h.RawHTML(`<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">`),
+			h.Style(`
 .wrapper-shadow {
     display: table;
     /* for IE or lower versions of browers */
@@ -318,9 +312,6 @@ func (b *ModelBuilder) renderScrollIframe(comps []h.HTMLComponent, ctx *web.Even
     z-index: 201;
 }
 
-.inner-container {
-    pointer-events: none
-}
 
 .editor-add {
     width: 100%;
@@ -497,7 +488,7 @@ func (b *ModelBuilder) rendering(comps []h.HTMLComponent, ctx *web.EventContext,
 		title string
 		svg   string
 	)
-	if b.tb == nil {
+	if !b.isTemplate {
 		title = msgr.StartBuildingMsg
 		svg = previewEmptySvg
 	} else {
@@ -712,7 +703,7 @@ func (b *ModelBuilder) localizeContainersToAnotherPage(db *gorm.DB, pageID int, 
 	}
 
 	for _, c := range cons {
-		newModelID := c.ModelID
+		var newModelID uint
 		newDisplayName := c.DisplayName
 		if !c.Shared {
 			model := b.builder.ContainerByName(c.ModelName).NewModel()
@@ -861,7 +852,7 @@ func (b *ModelBuilder) PreviewHTML(_ context.Context, obj interface{}) (r string
 		return
 	}
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%s", p.PrimarySlug()), nil)
+	req := httptest.NewRequest("GET", fmt.Sprintf("/?id=%s", p.PrimarySlug()), http.NoBody)
 	b.preview.ServeHTTP(w, req)
 	r = w.Body.String()
 	return
@@ -877,12 +868,11 @@ func (b *ModelBuilder) ExistedL10n() bool {
 
 func (b *ModelBuilder) newContainerContent(ctx *web.EventContext) h.HTMLComponent {
 	var (
-		containers = b.renderContainersList(ctx)
-		msgr       = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		title      string
-		svg        string
+		msgr  = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		title string
+		svg   string
 	)
-	if b.tb == nil {
+	if !b.isTemplate {
 		title = msgr.BuildYourPages
 		svg = previewEmptySvg
 	} else {
@@ -899,7 +889,7 @@ func (b *ModelBuilder) newContainerContent(ctx *web.EventContext) h.HTMLComponen
 		VSheet(
 			VCard(
 				VCardTitle(h.Text(msgr.NewElement)),
-				VCardText(containers),
+				VCardText(web.Portal(b.renderContainersList(ctx)).Name(pageBuilderAddContainersPortal)),
 			).Elevation(0),
 		).Class(W50).Class("pa-4", "overflow-y-auto"),
 		VSheet(
@@ -916,7 +906,7 @@ func (b *ModelBuilder) newContainerContent(ctx *web.EventContext) h.HTMLComponen
 				).Align(Center).Justify(Center).Attr("style", "height:420px"),
 			).Class(W100, "py-0"),
 		).Class(W50).Color(ColorGreyLighten3),
-	).Class("d-inline-flex").Width(665).Height(460)
+	).Class("d-inline-flex").Width(665).MinHeight(460).Height("65vh")
 }
 
 func (b *ModelBuilder) EventMiddleware(v eventMiddlewareFunc) *ModelBuilder {

@@ -54,7 +54,7 @@ func TestListingExample(t *testing.T) {
 			},
 			ReqFunc: func() *http.Request {
 				dataEmptyForListing.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/posts", nil)
+				return httptest.NewRequest("GET", "/posts", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"No records to show"},
 		},
@@ -67,7 +67,7 @@ func TestListingExample(t *testing.T) {
 			},
 			ReqFunc: func() *http.Request {
 				dataSeedForListing.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/posts", nil)
+				return httptest.NewRequest("GET", "/posts", http.NoBody)
 			},
 			ExpectPageBodyNotContains:     []string{"No records to show"},
 			ExpectPageBodyContainsInOrder: []string{"v-pagination", ":total-visible='5'"},
@@ -87,7 +87,7 @@ func TestListingExample(t *testing.T) {
 			},
 			ReqFunc: func() *http.Request {
 				dataSeedForListing.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/posts", nil)
+				return httptest.NewRequest("GET", "/posts", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"ActionExample"},
 		},
@@ -374,7 +374,7 @@ func TestListingExample(t *testing.T) {
 			},
 			ReqFunc: func() *http.Request {
 				dataSeedForListing.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/posts", nil)
+				return httptest.NewRequest("GET", "/posts", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"BulkActionExample"},
 		},
@@ -677,7 +677,7 @@ func TestListingWithJoinsExample(t *testing.T) {
 			},
 			ReqFunc: func() *http.Request {
 				dataEmptyForListing.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/post-with-categories", nil)
+				return httptest.NewRequest("GET", "/post-with-categories", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"No records to show"},
 		},
@@ -690,7 +690,7 @@ func TestListingWithJoinsExample(t *testing.T) {
 			},
 			ReqFunc: func() *http.Request {
 				dataSeedForListing.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/post-with-categories", nil)
+				return httptest.NewRequest("GET", "/post-with-categories", http.NoBody)
 			},
 			ExpectPageBodyNotContains:     []string{"No records to show"},
 			ExpectPageBodyContainsInOrder: []string{"mdi-chevron-left", "mdi-chevron-right"},

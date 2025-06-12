@@ -10,7 +10,7 @@ type Messages struct {
 	Publish                                 string
 	Unpublish                               string
 	Republish                               string
-	Areyousure                              string
+	ConfirmPublish                          string
 	ScheduledStartAt                        string
 	ScheduledEndAt                          string
 	ScheduledStartAtShouldLaterThanNow      string
@@ -86,7 +86,7 @@ var Messages_en_US = &Messages{
 	Publish:                                 "Publish",
 	Unpublish:                               "Unpublish",
 	Republish:                               "Republish",
-	Areyousure:                              "Are you sure?",
+	ConfirmPublish:                          "Are you sure you want to publish this page?",
 	ScheduledStartAt:                        "Start at",
 	ScheduledEndAt:                          "End at",
 	ScheduledStartAtShouldLaterThanNow:      "Start at should be later than now",
@@ -143,7 +143,7 @@ var Messages_zh_CN = &Messages{
 	Publish:                                 "发布",
 	Unpublish:                               "取消发布",
 	Republish:                               "重新发布",
-	Areyousure:                              "你确定吗?",
+	ConfirmPublish:                          "你确定要发布此页面吗?",
 	ScheduledStartAt:                        "发布时间",
 	ScheduledEndAt:                          "下线时间",
 	ScheduledStartAtShouldLaterThanNow:      "计划发布时间应当晚于现在时间",
@@ -200,7 +200,7 @@ var Messages_ja_JP = &Messages{
 	Publish:                                 "公開する",
 	Unpublish:                               "非公開",
 	Republish:                               "再公開",
-	Areyousure:                              "よろしいですか？",
+	ConfirmPublish:                          "このページを公開してもよろしいですか？",
 	ScheduledStartAt:                        "開始時刻",
 	ScheduledEndAt:                          "終了時刻",
 	ScheduledStartAtShouldLaterThanNow:      "開始時刻は現在より遅くなければならない",

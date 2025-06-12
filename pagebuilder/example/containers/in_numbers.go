@@ -85,6 +85,7 @@ func InNumbersBody(data *InNumbers, input *pagebuilder.RenderInput) (body HTMLCo
 			H2(data.Heading).Class("container-in_numbers-heading"),
 			InNumbersItemsBody(data.Items),
 		).Class("container-wrapper"),
+		Script(`window.addEventListener("message",(event)=>{console.log(event.data)},false)`),
 	)
 	return
 }

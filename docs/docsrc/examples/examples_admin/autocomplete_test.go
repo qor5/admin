@@ -34,7 +34,7 @@ func TestAutoComplete(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				autocompleteData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/auto-complete-posts", nil)
+				return httptest.NewRequest("GET", "/auto-complete-posts", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"test.title", "test.body"},
 		},
@@ -43,7 +43,7 @@ func TestAutoComplete(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				autocompleteData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/auto-complete-posts?f_title=test.title__2", nil)
+				return httptest.NewRequest("GET", "/auto-complete-posts?f_title=test.title__2", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"test.title"},
 			ExpectPageBodyNotContains:     []string{"test.body"},
