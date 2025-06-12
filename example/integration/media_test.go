@@ -49,7 +49,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/pages/1_2024-06-19-v01_International?__execute_event__=mediaLibrary_ChooseFileEvent&field=SEO.OpenGraphImageFromMediaLibrary&media_ids=1").
+					PageURL("/pages/1_2024-06-19-v01_Japan?__execute_event__=mediaLibrary_ChooseFileEvent&field=SEO.OpenGraphImageFromMediaLibrary&media_ids=1").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -62,7 +62,7 @@ func TestMedia(t *testing.T) {
 				pageBuilderData.TruncatePut(dbr)
 				mediaTestData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/1_2024-06-19-v01_International").
+					PageURL("/page_builder/pages/1_2024-06-19-v01_Japan").
 					EventFunc("mediaLibrary_LoadImageCropperEvent").
 					AddField("media_ids", "1").
 					AddField("thumb", "default").
