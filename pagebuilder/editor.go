@@ -173,13 +173,12 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 				return actionButtons
 			}
 			previewDevelopUrl := m.PreviewHref(ctx, ps)
-			if p, ok := obj.(publish.StatusInterface); ok {
-				if p.EmbedStatus().Status == publish.StatusOnline {
-					previewDevelopUrl, err = b.publisher.FullUrl(ctx.R.Context(), p.EmbedStatus().OnlineUrl)
-					if err != nil {
-						panic(err)
-					}
-				}
+			p, ok := obj.(publish.StatusInterface)
+			if !ok {
+				return actionButtons
+			}
+			if p.EmbedStatus().Status != publish.StatusDraft {
+				return actionButtons
 			}
 			btn := VBtn(msgr.Preview).
 				Attr(":disabled", phraseHasPresetsDataChanged).
