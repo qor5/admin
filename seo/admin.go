@@ -303,17 +303,19 @@ func (b *Builder) vseo(fieldPrefix string, field *presets.FieldContext, seo *SEO
 		),
 		h.Div(
 			VRow(
-				varComps...,
+				VCol(
+					varComps...,
+				),
 			),
-		),
-		
+		).Class("mt-4 mb-4"),
+
 		VXField().Disabled(field.Disabled).Attr("counter", true).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "Title"), setting.Title)...).Label(msgr.Title).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_title", refPrefix))).Attr("ref", fmt.Sprintf("%s_title", refPrefix)),
 		VXField().Disabled(field.Disabled).Attr("counter", true).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "Description"), setting.Description)...).Label(msgr.Description).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_description", refPrefix))).Attr("ref", fmt.Sprintf("%s_description", refPrefix)),
 		VXField().Disabled(field.Disabled).Type("textarea").Attr("counter", true).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "Keywords"), setting.Keywords)...).Label(msgr.Keywords).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_keywords", refPrefix))).Attr("ref", fmt.Sprintf("%s_keywords", refPrefix)),
 
 		h.Div(
 			h.Span(msgr.OpenGraphInformation).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
-		),
+		).Class("mb-6 mt-6"),
 		VXField().Disabled(field.Disabled).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphTitle"), setting.OpenGraphTitle)...).Label(msgr.OpenGraphTitle).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_title", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_title", refPrefix)),
 		VXField().Disabled(field.Disabled).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphDescription"), setting.OpenGraphDescription)...).Label(msgr.OpenGraphDescription).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_description", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_description", refPrefix)),
 		VXField().Disabled(field.Disabled).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "OpenGraphURL"), setting.OpenGraphURL)...).Label(msgr.OpenGraphURL).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_og_url", refPrefix))).Attr("ref", fmt.Sprintf("%s_og_url", refPrefix)),
