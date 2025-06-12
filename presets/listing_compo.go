@@ -223,14 +223,15 @@ func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 		return nil
 	}
 	_, msgr := c.MustGetEventContext(ctx)
-	newReloadAction := func() string {
+	newReloadAction := func(v string) string {
 		return fmt.Sprintf(`
-			const targetKeyword = xlocals.keyword || "";
+			const targetKeyword = %s || "";
 			if (targetKeyword === %q) {
 				return;
 			}
 			%s
 			`,
+			v,
 			c.Keyword,
 			stateful.ReloadAction(ctx, c,
 				func(target *ListingCompo) {
@@ -249,10 +250,10 @@ func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 			Attr(":clearable", "true").
 			Attr("v-model", "xlocals.keyword").
 			Attr("@blur", fmt.Sprintf("xlocals.keyword = %q", c.Keyword)).
-			Attr("@keyup.enter", newReloadAction()).
-			Attr("@click:clear", newReloadAction()).
+			Attr("@keyup.enter", newReloadAction("xlocals.keyword")).
+			Attr("@click:clear", newReloadAction("null")).
 			Children(
-				web.Slot(VIcon("mdi-magnify").Attr("@click", newReloadAction())).Name("append-inner"),
+				web.Slot(VIcon("mdi-magnify").Attr("@click", newReloadAction("xlocals.keyword"))).Name("append-inner"),
 			),
 	)
 }
