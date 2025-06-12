@@ -17,7 +17,7 @@ import (
 func TestProfileLanguageWithoutIcons(t *testing.T) {
 	testUser := &ProfileUser{
 		Model:   gorm.Model{ID: 1},
-		Email:   "test@theplant.jp", 
+		Email:   "test@theplant.jp",
 		Name:    "Test User",
 		Avatar:  "https://i.pravatar.cc/300",
 		Role:    "Admin",
@@ -41,18 +41,18 @@ func TestProfileLanguageWithoutIcons(t *testing.T) {
 		},
 		ExpectPageBodyContainsInOrder: []string{
 			"ProfileCompo",
-			"vx-select",    // Language selector component
-			"English",      // English language option
-			"简体中文",      // Chinese language option  
+			"vx-select", // Language selector component
+			"English",   // English language option
+			"简体中文",      // Chinese language option
 			"日本語",       // Japanese language option
 		},
 		ExpectPageBodyNotContains: []string{
 			// These icon-related elements were commented out
-			"prepend-inner",     // Icon slot that was commented out
-			"item.raw.Icon",     // Icon reference that was commented out
+			"prepend-inner",          // Icon slot that was commented out
+			"item.raw.Icon",          // Icon reference that was commented out
 			"selectedItems[0]?.Icon", // Icon display that was commented out
 		},
 	}
 
 	multipartestutils.RunCase(t, case1, case1.HandlerMaker())
-} 
+}
