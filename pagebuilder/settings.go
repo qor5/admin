@@ -70,9 +70,11 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 			Where("page_id = ? AND page_version = ? and page_model_name = ? and shared=true and updated_at > ?", id, version, m.name, UpdatedAt).
 			Count(&updatedSharedCount)
 		var copyURL string
+		coverBtn := VBtn(msgr.EditPage).AppendIcon("mdi-pencil")
 		if p, ok := obj.(publish.StatusInterface); ok {
 			copyURL = fmt.Sprintf(`$event.view.window.location.origin+%q`, previewDevelopUrl)
 			if p.EmbedStatus().Status == publish.StatusOnline {
+				coverBtn = VBtn(msgr.ViewPage).AppendIcon("mdi-eye")
 				onlineHint = h.Div(
 					h.If(updatedSharedCount > 0, VAlert(h.Text(msgr.SharedContainerHasBeenUpdated)).
 						Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("my-2"),
@@ -131,7 +133,7 @@ transform-origin: 0 0; transform:scale(0.5);width:200%;height:200%`),
 					h.Div(
 						h.Text(se),
 					).Class(fmt.Sprintf("bg-%s", ColorGreyLighten3)),
-					VBtn(msgr.ViewPage).AppendIcon("mdi-pencil").Color(ColorBlack).
+					coverBtn.Color(ColorBlack).
 						Class("rounded").Height(36).Variant(VariantElevated),
 				).Class("pa-6 w-100 d-flex justify-space-between align-center").Style(`position:absolute;bottom:0;left:0`),
 			).Style(`position:relative;height:320px;width:100%`).Class("border-thin rounded-lg").
