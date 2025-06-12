@@ -15,14 +15,14 @@ import (
 
 var l10nData = gofixtures.Data(gofixtures.Sql(`
 INSERT INTO public.l10n_models (id, created_at, updated_at, deleted_at, title, locale_code) VALUES (1, 
-'2024-06-04 23:27:40.442281 +00:00', '2024-06-04 23:27:40.442281 +00:00', null, 'My model title', 'International');
+'2024-06-04 23:27:40.442281 +00:00', '2024-06-04 23:27:40.442281 +00:00', null, 'My model title', 'Japan');
 
 
 `, []string{"l10n_models"}))
 
 var l10nDataWithChina = gofixtures.Data(gofixtures.Sql(`
 INSERT INTO public.l10n_models (id, created_at, updated_at, deleted_at, title, locale_code) VALUES (1, 
-'2024-06-04 23:27:40.442281 +00:00', '2024-06-04 23:27:40.442281 +00:00', null, 'My model title', 'International');
+'2024-06-04 23:27:40.442281 +00:00', '2024-06-04 23:27:40.442281 +00:00', null, 'My model title', 'Japan');
 INSERT INTO public.l10n_models (id, created_at, updated_at, deleted_at, title, locale_code) VALUES (1, '2024-06-04 23:50:28.847833 +00:00', '2024-06-04 23:50:28.844069 +00:00', null, '中文标题', 'China');
 
 
@@ -40,7 +40,7 @@ func TestLocalization(t *testing.T) {
 				l10nData.TruncatePut(SqlDB)
 				return httptest.NewRequest("GET", "/l10n-models", http.NoBody)
 			},
-			ExpectPageBodyContainsInOrder: []string{"My model title", "International"},
+			ExpectPageBodyContainsInOrder: []string{"My model title", "Japan"},
 		},
 		{
 			Name:  "Index Page with locale code",
@@ -107,9 +107,8 @@ func TestLocalization(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				l10nData.TruncatePut(SqlDB)
 				req := multipartestutils.NewMultipartBuilder().
-					PageURL("/l10n-models?__execute_event__=l10n_DoLocalizeEvent&id=1_International&localize_from=International").
+					PageURL("/l10n-models?__execute_event__=l10n_DoLocalizeEvent&id=1_Japan&localize_from=Japan").
 					AddField("localize_to", "China").
-					AddField("localize_to", "Japan").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -117,7 +116,7 @@ func TestLocalization(t *testing.T) {
 				var localeCodes []string
 				TestDB.Raw("SELECT locale_code FROM l10n_models ORDER BY locale_code").Scan(&localeCodes)
 				if diff := testingutils.PrettyJsonDiff(
-					[]string{"China", "International", "Japan"},
+					[]string{"China", "Japan"},
 					localeCodes); diff != "" {
 					t.Error(diff)
 				}
