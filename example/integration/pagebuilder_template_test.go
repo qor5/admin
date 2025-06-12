@@ -17,14 +17,14 @@ import (
 var pageBuilderTemplateData = gofixtures.Data(gofixtures.Sql(`
 INSERT INTO public.page_builder_templates (id, created_at, updated_at, deleted_at, name, description, locale_code)
 VALUES (1, '2024-07-22 01:41:13.206348 +00:00', '2024-07-22 01:41:13.206348 +00:00', null, '123', '456',
-        'International');
+        'Japan');
 INSERT INTO public.page_builder_containers (id, created_at, updated_at, deleted_at, page_id, page_version, model_name,
                                             model_id, display_order, shared, hidden, display_name, locale_code,
                                             localize_from_model_id, page_model_name)
 VALUES (1, '2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', null, 1, '', 'ListContent', 1, 1,
-        false, false, 'ListContent', 'International', 0, 'templates'),
+        false, false, 'ListContent', 'Japan', 0, 'templates'),
        (2, '2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', null, 1, '', 'Header', 2, 2, false,
-        false, 'Header', 'International', 0, 'templates');
+        false, 'Header', 'Japan', 0, 'templates');
 SELECT setval('page_builder_containers_id_seq', 1, true);
 INSERT INTO public.container_headers (id, color)
 VALUES (1, 'black'),(2, 'black');
@@ -45,7 +45,7 @@ func TestPageBuilderTemplate(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderTemplateData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/page_templates", nil)
+				return httptest.NewRequest("GET", "/page_templates", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"Add Page Template", "123", "456"},
 		},
@@ -85,7 +85,7 @@ func TestPageBuilderTemplate(t *testing.T) {
 					Query(presets.ParamID, "1").
 					AddField("Name", "template_name").
 					AddField("Description", "template_description").
-					AddField("LocaleCode", "International").
+					AddField("LocaleCode", "Japan").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -98,8 +98,8 @@ func TestPageBuilderTemplate(t *testing.T) {
 				if m.Description != "template_description" {
 					t.Fatalf("wrong Description, expected template_description, got %#+v", m.Description)
 				}
-				if m.LocaleCode != "International" {
-					t.Fatalf("wrong LocaleCode, expected International, got %#+v", m.LocaleCode)
+				if m.LocaleCode != "Japan" {
+					t.Fatalf("wrong LocaleCode, expected Japan, got %#+v", m.LocaleCode)
 				}
 			},
 		},
@@ -125,8 +125,8 @@ func TestPageBuilderTemplate(t *testing.T) {
 				if m.Description != "template_description" {
 					t.Fatalf("wrong Description, expected template_description, got %#+v", m.Description)
 				}
-				if m.LocaleCode != "International" {
-					t.Fatalf("wrong LocaleCode, expected International, got %#+v", m.LocaleCode)
+				if m.LocaleCode != "Japan" {
+					t.Fatalf("wrong LocaleCode, expected Japan, got %#+v", m.LocaleCode)
 				}
 			},
 		},
@@ -162,7 +162,7 @@ func TestPageBuilderTemplate(t *testing.T) {
 					EventFunc(actions.Update).
 					AddField("Title", "HelloPage").
 					AddField("Slug", "hello").
-					AddField(pagebuilder.ParamTemplateSelectedID, "1_International").
+					AddField(pagebuilder.ParamTemplateSelectedID, "1_Japan").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -216,7 +216,7 @@ func TestPageBuilderTemplate(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderTemplateData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/page_templates/1_International").
+					PageURL("/page_builder/page_templates/1_Japan").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -229,7 +229,7 @@ func TestPageBuilderTemplate(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderTemplateData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/page_templates/1_International_invalid").
+					PageURL("/page_builder/page_templates/1_Japan_invalid").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -242,7 +242,7 @@ func TestPageBuilderTemplate(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderTemplateData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/page_templates/a_International").
+					PageURL("/page_builder/page_templates/a_Japan").
 					BuildEventFuncRequest()
 				return req
 			},
@@ -255,7 +255,7 @@ func TestPageBuilderTemplate(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderTemplateData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/page_templates/1_International").
+					PageURL("/page_builder/page_templates/1_Japan").
 					EventFunc(pagebuilder.AddContainerEvent).
 					Query("modelName", "BrandGrid").
 					BuildEventFuncRequest()
@@ -279,9 +279,9 @@ func TestPageBuilderTemplate(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderTemplateData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/page_templates/1_International").
+					PageURL("/page_builder/page_templates/1_Japan").
 					EventFunc(pagebuilder.AddContainerEvent).
-					Query("containerID", "1_International").
+					Query("containerID", "1_Japan").
 					Query("modelName", "BrandGrid").
 					BuildEventFuncRequest()
 
@@ -306,15 +306,15 @@ func TestPageBuilderTemplate(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderTemplateData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/page_templates/1_International").
+					PageURL("/page_builder/page_templates/1_Japan").
 					EventFunc(pagebuilder.DeleteContainerConfirmationEvent).
-					Query("containerID", "2_International").
+					Query("containerID", "2_Japan").
 					Query("containerName", "Header").
 					BuildEventFuncRequest()
 
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{`page_builder_DeleteContainerEvent`, `query("containerID", "2_International")`},
+			ExpectPortalUpdate0ContainsInOrder: []string{`page_builder_DeleteContainerEvent`, `query("containerID", "2_Japan")`},
 		},
 		{
 			Name:  "Template delete container ",
@@ -322,9 +322,9 @@ func TestPageBuilderTemplate(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderTemplateData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/page_templates/1_International").
+					PageURL("/page_builder/page_templates/1_Japan").
 					EventFunc(pagebuilder.DeleteContainerEvent).
-					Query("containerID", "2_International").
+					Query("containerID", "2_Japan").
 					BuildEventFuncRequest()
 
 				return req
@@ -344,9 +344,9 @@ func TestPageBuilderTemplate(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderTemplateData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/page_templates/1_International").
+					PageURL("/page_builder/page_templates/1_Japan").
 					EventFunc(pagebuilder.ToggleContainerVisibilityEvent).
-					Query("containerID", "1_International").
+					Query("containerID", "1_Japan").
 					Query("status", "draft").
 					BuildEventFuncRequest()
 
@@ -370,9 +370,9 @@ func TestPageBuilderTemplate(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderTemplateData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/page_templates/1_International").
+					PageURL("/page_builder/page_templates/1_Japan").
 					EventFunc(pagebuilder.RenameContainerEvent).
-					Query("containerID", "1_International").
+					Query("containerID", "1_Japan").
 					Query("status", "draft").
 					AddField("DisplayName", "hello").
 					BuildEventFuncRequest()
@@ -397,9 +397,9 @@ func TestPageBuilderTemplate(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderTemplateData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/page_templates/1_International").
+					PageURL("/page_builder/page_templates/1_Japan").
 					EventFunc(pagebuilder.MoveUpDownContainerEvent).
-					Query("containerID", "1_International").
+					Query("containerID", "1_Japan").
 					Query("moveDirection", "down").
 					BuildEventFuncRequest()
 
@@ -424,9 +424,9 @@ func TestPageBuilderTemplate(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderTemplateData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/page_templates/1_International").
+					PageURL("/page_builder/page_templates/1_Japan").
 					EventFunc(pagebuilder.MoveUpDownContainerEvent).
-					Query("containerID", "2_International").
+					Query("containerID", "2_Japan").
 					Query("moveDirection", "up").
 					BuildEventFuncRequest()
 
@@ -451,10 +451,10 @@ func TestPageBuilderTemplate(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderTemplateData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/page_templates/1_International").
+					PageURL("/page_builder/page_templates/1_Japan").
 					EventFunc(pagebuilder.MoveContainerEvent).
 					Query("status", "draft").
-					AddField("moveResult", `[{"index":0,"container_id":"2","locale":"International"},{"index":1,"container_id":"1","locale":"International"}]`).
+					AddField("moveResult", `[{"index":0,"container_id":"2","locale":"Japan"},{"index":1,"container_id":"1","locale":"Japan"}]`).
 					BuildEventFuncRequest()
 
 				return req
@@ -478,7 +478,7 @@ func TestPageBuilderTemplate(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderTemplateData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/page_templates/1_International").
+					PageURL("/page_builder/page_templates/1_Japan").
 					EventFunc(pagebuilder.ShowSortedContainerDrawerEvent).
 					Query("status", "draft").
 					BuildEventFuncRequest()
@@ -494,7 +494,7 @@ func TestPageBuilderTemplate(t *testing.T) {
 				pageBuilderTemplateData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/page_builder/page_templates/preview").
-					Query(presets.ParamID, "1_International").
+					Query(presets.ParamID, "1_Japan").
 					BuildEventFuncRequest()
 
 				return req
@@ -508,12 +508,12 @@ func TestPageBuilderTemplate(t *testing.T) {
 				pageBuilderTemplateData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/pages").
-					EventFunc(pagebuilder.OpenTemplateDialogEvent).
+					EventFunc(actions.OpenListingDialog).
 					BuildEventFuncRequest()
 
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"vars.pageBuilderSelectTemplateDialog"},
+			ExpectPortalUpdate0ContainsInOrder: []string{presets.CloseListingDialogVarScript},
 		},
 		{
 			Name:  "Template ReloadSelectedTemplate",
@@ -531,13 +531,13 @@ func TestPageBuilderTemplate(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"123"},
 		},
 		{
-			Name:  "Template ReloadTemplateContent",
+			Name:  "Template Keyword",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderTemplateData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
 					PageURL("/page_templates").
-					EventFunc(pagebuilder.ReloadTemplateContentEvent).
+					EventFunc(actions.OpenListingDialog).
 					Query("keyword", "012").
 					BuildEventFuncRequest()
 

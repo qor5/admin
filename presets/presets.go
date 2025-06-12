@@ -1074,7 +1074,7 @@ func (b *Builder) InjectAssets(ctx *web.EventContext) {
 
 func (b *Builder) InjectExtraAssets(ctx *web.EventContext) {
 	for _, ea := range b.extraAssets {
-		if len(ea.refTag) > 0 {
+		if ea.refTag != "" {
 			ctx.Injector.HeadHTML(ea.refTag)
 			continue
 		}
@@ -1100,13 +1100,17 @@ func (b *Builder) getHomePageFunc() web.PageFunc {
 	return b.defaultHomePageFunc
 }
 
-func (b *Builder) DefaultNotFoundPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
+var DefaultNotFoundPageFunc = func(ctx *web.EventContext) (r web.PageResponse, err error) {
 	msgr := MustGetMessages(ctx.R)
 	r.Body = h.Div(
 		h.H1("404").Class("mb-2"),
 		h.Text(msgr.NotFoundPageNotice),
 	).Class("text-center mt-8")
 	return
+}
+
+func (*Builder) DefaultNotFoundPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
+	return DefaultNotFoundPageFunc(ctx)
 }
 
 func (b *Builder) getNotFoundPageFunc() web.PageFunc {
@@ -1168,7 +1172,9 @@ func (b *Builder) initMux() {
 		log.Printf("mounted url: %s", routePath)
 		mux.Handle(
 			routePath,
-			b.wrap(nil, cb.defaultLayout),
+			b.wrapInner(func(p *web.PageBuilder) {
+				p.MergeHub(&cb.EventsHub)
+			}, cb.defaultLayout),
 		)
 	}
 	for _, m := range b.models {
@@ -1237,7 +1243,6 @@ func (b *Builder) notFound(handler http.Handler) http.Handler {
 			// If no other handler wrote to the response, assume 404 and write our custom response.
 			b.notFoundHandler.ServeHTTP(w, r)
 		}
-		return
 	})
 }
 
@@ -1254,10 +1259,18 @@ func (b *Builder) AddWrapHandler(key string, f func(in http.Handler) (out http.H
 }
 
 func (b *Builder) wrap(m *ModelBuilder, pf web.PageFunc) http.Handler {
+	return b.wrapInner(func(p *web.PageBuilder) {
+		if m != nil {
+			m.registerDefaultEventFuncs()
+			p.MergeHub(&m.EventsHub)
+		}
+	}, pf)
+}
+
+func (b *Builder) wrapInner(f func(p *web.PageBuilder), pf web.PageFunc) http.Handler {
 	p := b.builder.Page(pf)
-	if m != nil {
-		m.registerDefaultEventFuncs()
-		p.MergeHub(&m.EventsHub)
+	if f != nil {
+		f(p)
 	}
 	p.WrapEventFunc(func(in web.EventFunc) web.EventFunc {
 		return func(ctx *web.EventContext) (r web.EventResponse, err error) {

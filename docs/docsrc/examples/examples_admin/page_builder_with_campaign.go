@@ -17,13 +17,14 @@ import (
 	. "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 
+	"github.com/spf13/cast"
+
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/media/media_library"
-	pagebuilder "github.com/qor5/admin/v3/pagebuilder"
+	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
-	"github.com/spf13/cast"
 )
 
 // models
@@ -55,7 +56,10 @@ type (
 	// Others
 
 	CampaignWithStringID struct {
-		ID string `gorm:"primarykey"`
+		ID        string `gorm:"primarykey"`
+		CreatedAt time.Time
+		UpdatedAt time.Time
+		DeletedAt gorm.DeletedAt `gorm:"index"`
 
 		Name  string
 		Price int
@@ -63,20 +67,6 @@ type (
 		publish.Status
 		publish.Schedule
 		publish.Version
-	}
-)
-
-// templates
-type (
-	CampaignTemplate struct {
-		gorm.Model
-		Name        string
-		Description string
-	}
-	CampaignProductTemplate struct {
-		gorm.Model
-		Title string
-		Desc  string
 	}
 )
 
@@ -105,54 +95,6 @@ type (
 		Name string
 	}
 )
-
-func (b *CampaignProductTemplate) GetName(ctx *web.EventContext) string {
-	return b.Title
-}
-
-func (b *CampaignProductTemplate) GetDescription(ctx *web.EventContext) string {
-	return b.Desc
-}
-
-func (p *CampaignTemplate) PrimarySlug() string {
-	return fmt.Sprintf("%v", p.ID)
-}
-
-func (p *CampaignTemplate) PrimaryColumnValuesBySlug(slug string) map[string]string {
-	segs := strings.Split(slug, "_")
-	if len(segs) != 1 {
-		panic(presets.ErrNotFound("wrong slug"))
-	}
-
-	_, err := cast.ToInt64E(segs[0])
-	if err != nil {
-		panic(presets.ErrNotFound(fmt.Sprintf("wrong slug %q: %v", slug, err)))
-	}
-
-	return map[string]string{
-		presets.ParamID: segs[0],
-	}
-}
-
-func (p *CampaignProductTemplate) PrimarySlug() string {
-	return fmt.Sprintf("%v", p.ID)
-}
-
-func (p *CampaignProductTemplate) PrimaryColumnValuesBySlug(slug string) map[string]string {
-	segs := strings.Split(slug, "_")
-	if len(segs) != 1 {
-		panic(presets.ErrNotFound("wrong slug"))
-	}
-
-	_, err := cast.ToInt64E(segs[0])
-	if err != nil {
-		panic(presets.ErrNotFound(fmt.Sprintf("wrong slug %q: %v", slug, err)))
-	}
-
-	return map[string]string{
-		presets.ParamID: segs[0],
-	}
-}
 
 func (p *CampaignWithStringID) PrimarySlug() string {
 	return fmt.Sprintf("%v", p.ID)
@@ -295,7 +237,6 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	err := db.AutoMigrate(
 		&Campaign{}, &CampaignProduct{}, &PageProduct{}, // models
 		&MyContent{}, &CampaignContent{}, &ProductContent{}, &PagesContent{}, // containers
-		&CampaignTemplate{}, &CampaignProductTemplate{},
 		&CampaignWithStringID{},
 	)
 	if err != nil {
@@ -310,7 +251,14 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		}, nil
 	}).AutoMigrate()
 
-	puBuilder := publish.New(db, storage)
+	puBuilder := publish.New(db, storage).DisablementCheckFunc(func(ctx *web.EventContext, obj any) *publish.Disablement {
+		status := obj.(publish.StatusInterface).EmbedStatus().Status
+		disabled := status == publish.StatusOnline
+		return &publish.Disablement{
+			DisabledRename: disabled,
+			DisabledDelete: disabled,
+		}
+	})
 	if b.GetPermission() == nil {
 		b.Permission(
 			perm.New().Policies(
@@ -320,7 +268,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	}
 	b.Use(puBuilder)
 
-	pb := pagebuilder.New(b.GetURIPrefix()+"/page_builder", db, b).
+	pb := pagebuilder.New("/page_builder", db, b).
 		Activity(ab).
 		Only("Title", "Slug").
 		DisabledNormalContainersGroup(true).
@@ -392,7 +340,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	})
 
 	// only pages view containers set OnlyPages true
-	pc := pb.RegisterContainer("PagesContent").Group("Navigation").OnlyPages(true).
+	pc := pb.RegisterContainer("PagesContent").Group("Navigation").
 		RenderFunc(func(obj interface{}, input *pagebuilder.RenderInput, ctx *web.EventContext) HTMLComponent {
 			c := obj.(*PagesContent)
 			return Div().Text(c.Text).Class("test-div")
@@ -408,7 +356,6 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 
 	// Campaigns Menu
 	campaignModelBuilder := b.Model(&Campaign{})
-	ct := b.Model(&CampaignTemplate{})
 	cmbCreating := campaignModelBuilder.Editing().Creating(pagebuilder.PageTemplateSelectionFiled, "Title")
 	cmbCreating.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
@@ -430,7 +377,6 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		}
 		return
 	})
-	pb.RegisterModelBuilderTemplate(campaignModelBuilder, ct)
 	campaignModelBuilder.Listing("Title")
 	detail := campaignModelBuilder.Detailing(
 		pagebuilder.PageBuilderPreviewCard,
@@ -448,9 +394,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 
 	// Products Menu
 	productModelBuilder := b.Model(&CampaignProduct{})
-	cpt := b.Model(&CampaignProductTemplate{})
 	productModelBuilder.Editing().Creating(pagebuilder.PageTemplateSelectionFiled, "Name")
-	pb.RegisterModelBuilderTemplate(productModelBuilder, cpt)
 	productModelBuilder.Listing("Name")
 
 	detail2 := productModelBuilder.Detailing(
@@ -472,7 +416,6 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	pageProductModelBuilder := b.Model(&PageProduct{})
 	pageProductModelBuilder.Editing().Creating(pagebuilder.PageTemplateSelectionFiled, "Name")
 	// just use public containers
-	pb.RegisterModelBuilderTemplate(pageProductModelBuilder, nil)
 	pageProductModelBuilder.Listing("Name")
 	detail3 := pageProductModelBuilder.Detailing(
 		pagebuilder.PageBuilderPreviewCard,

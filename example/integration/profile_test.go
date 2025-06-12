@@ -172,7 +172,7 @@ func TestProfile(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				profileData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/roles", nil)
+				return httptest.NewRequest("GET", "/roles", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"Viewer", "Editor", "Manager", ">Admin<"},
 		},
@@ -276,7 +276,7 @@ func TestRoleEditor(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				profileData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/roles", nil)
+				return httptest.NewRequest("GET", "/roles", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"Viewer", "Editor"},
 			ExpectPageBodyNotContains:     []string{"Manager", ">Admin<"},
