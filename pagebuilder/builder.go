@@ -1405,10 +1405,11 @@ func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
 		Query(paramModelID, web.Var("model_id")).
 		Query(paramStatus, ctx.Param(paramStatus)).
 		Go()
+	clickOutSizeShowMessage := ctx.Param(paramStatus) == publish.StatusDraft
 	return fmt.Sprintf(`
 function(e){
 	const { msg_type,container_data_id, container_id,display_name,rect,show_right_drawer } = e.data
-	if (msg_type === %q) {
+	if (%v && msg_type === %q) {
 		%s
 		return
 	}
@@ -1443,6 +1444,7 @@ function(e){
     }
 	
 }`,
+		clickOutSizeShowMessage,
 		EventClickOutsideWrapperShadow,
 		presets.ShowSnackbarScript(msgr.TemplateFixedAreaMessage, ColorWarning),
 		EventEdit, editAction,
