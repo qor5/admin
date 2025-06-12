@@ -23,7 +23,7 @@ type (
 		VersionName string
 		Title       string
 		Description string
-		Widgets     Widgets `gorm:"-"`
+		Widgets     Widgets
 	}
 	Widgets []Widget
 	Widget  struct {
