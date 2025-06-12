@@ -304,6 +304,7 @@ func NewConfig(db *gorm.DB, enableWork bool, opts ...ConfigOption) Config {
 	pageBuilder.
 		Media(mediab).
 		L10n(l10nBuilder).
+		PreviewOpenNewTab(true).
 		Activity(ab).
 		Publisher(publisher).
 		SEO(seoBuilder).
