@@ -19,11 +19,11 @@ import (
 
 var pageBuilderOnlineData = gofixtures.Data(gofixtures.Sql(`
 INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, seo, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code) VALUES 
-										(10, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, '1234567', '12313', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'online', '', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'International');
+										(10, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, '1234567', '12313', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'online', '', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'Japan');
 SELECT setval('page_builder_pages_id_seq', 10, true);
 
 INSERT INTO public.page_builder_containers (id,created_at, updated_at, deleted_at, page_id, page_version, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id,page_model_name) VALUES 
-										   (11,'2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', null, 10, '2024-05-21-v01', 'Header', 10, 2, false, false, 'Header', 'International', 0,'pages')  ;
+										   (11,'2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', null, 10, '2024-05-21-v01', 'Header', 10, 2, false, false, 'Header', 'Japan', 0,'pages')  ;
 SELECT setval('page_builder_containers_id_seq', 11, true);
 
 INSERT INTO public.container_headers (id, color) VALUES (10, 'black');
@@ -71,7 +71,7 @@ func TestPageBuilderOnline(t *testing.T) {
 		}))
 		pageBuilderOnlineData.TruncatePut(dbr)
 		require.Panics(t, func() {
-			h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/pages/10_2024-05-21-v01_International", http.NoBody))
+			h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/pages/10_2024-05-21-v01_Japan", http.NoBody))
 		})
 	})
 
@@ -83,9 +83,9 @@ func TestPageBuilderOnline(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderOnlineData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/pages/10_2024-05-21-v01_International", http.NoBody)
+				return httptest.NewRequest("GET", "/pages/10_2024-05-21-v01_Japan", http.NoBody)
 			},
-			ExpectPageBodyContainsInOrder: []string{`<a href='example-publish.s3.ap-northeast-1.amazonaws.com/'>example-publish.s3.ap-northeast-1.amazonaws.com/</a>`},
+			ExpectPageBodyContainsInOrder: []string{`<a href='example-publish.s3.ap-northeast-1.amazonaws.com/' target='_blank'>example-publish.s3.ap-northeast-1.amazonaws.com/</a>`},
 		},
 		{
 			Name:  "PageBuilder Online Wrap EditContainerEvent",
@@ -93,7 +93,7 @@ func TestPageBuilderOnline(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderOnlineData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
 					EventFunc(pagebuilder.EditContainerEvent).
 					Query("containerUri", "headers").
 					Query("containerID", "10").
@@ -109,7 +109,7 @@ func TestPageBuilderOnline(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderOnlineData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
 					EventFunc(pagebuilder.UpdateContainerEvent).
 					Query("containerUri", "headers").
 					Query("containerID", "10").
@@ -125,7 +125,7 @@ func TestPageBuilderOnline(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderOnlineData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_International").
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
 					EventFunc(pagebuilder.AddContainerEvent).
 					Query("modelName", "BrandGrid").
 					BuildEventFuncRequest()
@@ -140,9 +140,9 @@ func TestPageBuilderOnline(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderOnlineData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/pages/10_2024-05-21-v01_International").
+					PageURL("/pages/10_2024-05-21-v01_Japan").
 					EventFunc("section_save_Page").
-					Query(presets.ParamID, "10_2024-05-21-v01_International").
+					Query(presets.ParamID, "10_2024-05-21-v01_Japan").
 					AddField("Title", "123").
 					AddField("Slug", "123").
 					AddField("CategoryID", "0").
@@ -158,9 +158,9 @@ func TestPageBuilderOnline(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderOnlineData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/pages/10_2024-05-21-v01_International").
+					PageURL("/pages/10_2024-05-21-v01_Japan").
 					EventFunc("section_save_SEO").
-					Query(presets.ParamID, "10_2024-05-21-v01_International").
+					Query(presets.ParamID, "10_2024-05-21-v01_Japan").
 					AddField("SEO.EnabledCustomize", "true").
 					AddField("SEO.Title", "My seo title").
 					BuildEventFuncRequest()
