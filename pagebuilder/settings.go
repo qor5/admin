@@ -73,8 +73,11 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 		coverBtn := VBtn(msgr.EditPage).AppendIcon("mdi-pencil")
 		if p, ok := obj.(publish.StatusInterface); ok {
 			copyURL = fmt.Sprintf(`$event.view.window.location.origin+%q`, previewDevelopUrl)
-			if p.EmbedStatus().Status == publish.StatusOnline {
+			status := p.EmbedStatus().Status
+			if status != publish.StatusDraft {
 				coverBtn = VBtn(msgr.ViewPage).AppendIcon("mdi-eye")
+			}
+			if status == publish.StatusOnline {
 				onlineHint = h.Div(
 					h.If(updatedSharedCount > 0, VAlert(h.Text(msgr.SharedContainerHasBeenUpdated)).
 						Density(DensityCompact).Type(TypeInfo).Variant(VariantTonal).Closable(true).Class("my-2"),
