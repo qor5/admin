@@ -215,6 +215,8 @@ func configureDemoCase(b *presets.Builder, db *gorm.DB) {
 	configVxBtn(detailing, mb)
 	configVXBtnGroup(detailing, mb)
 	configVXChip(detailing, mb)
+	configVXBreadCrumb(detailing, mb)
+	configVXTreeView(detailing, mb)
 	return
 }
 
@@ -1428,6 +1430,181 @@ func configVXChip(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder)
 							),
 					).Cols("3").Class("text-center"),
 				)),
+		).Class("section-wrap with-border-b"))
+	})
+	detailing.Section(section)
+}
+
+func configVXBreadCrumb(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder) {
+	label := "vx-breadcrumbs"
+	sectionName := "VXBreadCrumbsSection"
+	section := presets.NewSectionBuilder(mb, sectionName).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		items := []string{
+			"Link_1", "Link_2", "Link_3",
+		}
+
+		itemsHref := []map[string]string{
+			{
+				"title": "Link_1",
+				"href":  "/link1",
+			},
+			{
+				"title": "Link_2",
+				"href":  "/link2",
+			},
+			{
+				"title": "Link_3",
+				"href":  "/link3",
+			},
+		}
+
+		return web.Scope(h.Div(
+			h.Div(
+				h.H2(label).Class("section-title"),
+			).Class("section-title-wrap"),
+
+			h.H3("Simplest Usage").Class("mb-2"),
+			v.VContainer(
+				v.VRow(
+					v.VCol(
+						vx.VXBreadcrumbs().Items(items),
+					).Cols(12),
+				),
+			),
+
+			h.H3("Link Usage").Class("mb-2"),
+			v.VContainer(
+				v.VRow(
+					v.VCol(
+						vx.VXBreadcrumbs().Items(itemsHref),
+					).Cols(12),
+				),
+			),
+
+			h.H3("Slot Usage"),
+			v.VContainer(
+				v.VRow(
+					v.VCol(
+						h.Div(
+							h.Text("Separator Slot"),
+						).Class("text-caption"),
+						vx.VXBreadcrumbs(
+							web.Slot(
+								v.VIcon("mdi-chevron-right"),
+							).Name("divider"),
+						).Items(itemsHref),
+					).Cols(6),
+
+					v.VCol(
+						h.Div(
+							h.Text("Prepend Slot"),
+						).Class("text-caption"),
+						vx.VXBreadcrumbs(
+							web.Slot(
+								v.VIcon("$vuetify"),
+							).Name("prepend"),
+						).Items(itemsHref),
+					).Cols(6),
+
+					v.VCol(
+						h.Div(
+							h.Text("Title Slot"),
+						).Class("text-caption"),
+						vx.VXBreadcrumbs(
+							web.Slot(
+								vx.VXChip("").Children(
+									h.Text("{{item.title}}"),
+								),
+							).Name("title").Scope("{item}"),
+						).Items(itemsHref),
+					).Cols(6),
+
+					v.VCol(
+						h.Div(
+							h.Text("default slot"),
+						).Class("text-caption"),
+						vx.VXBreadcrumbs(
+							v.VBreadcrumbsItem(
+								h.Text("Link_1"),
+							),
+							v.VBreadcrumbsDivider(
+								h.Text("-"),
+							),
+							v.VBreadcrumbsItem(
+								h.Text("Link_2"),
+							),
+							v.VBreadcrumbsDivider(
+								h.Text("-"),
+							),
+							v.VBreadcrumbsItem(
+								h.Text("Link_3"),
+							),
+						),
+					).Cols(6),
+				),
+			),
+		).Class("section-wrap with-border-b"))
+	})
+	detailing.Section(section)
+}
+
+func configVXTreeView(detailing *presets.DetailingBuilder, mb *presets.ModelBuilder) {
+	label := "vx-treeview"
+	sectionName := "VXTreeViewSection"
+	section := presets.NewSectionBuilder(mb, sectionName).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		type TreeNode struct {
+			ID       int        `json:"id"`
+			Title    string     `json:"title"`
+			Children []TreeNode `json:"children"`
+		}
+
+		linkUsageItems := []TreeNode{
+			{
+				ID:    1,
+				Title: "Node 1 :",
+			},
+			{
+				ID:    5,
+				Title: "Node 5 :",
+			},
+			{
+				ID:    19,
+				Title: "Node 19 :",
+				Children: []TreeNode{
+					{
+						ID:    20,
+						Title: "Node 20 :",
+						Children: []TreeNode{
+							{ID: 21, Title: "Node 21 :"},
+							{ID: 22, Title: "Node 22 :"},
+							{ID: 23, Title: "Node 23 :"},
+						},
+					},
+					{ID: 24, Title: "Node 24 :"},
+					{ID: 25, Title: "Node 25 :"},
+				},
+			},
+		}
+
+		return web.Scope(h.Div(
+			h.Div(
+				h.H2(label).Class("section-title"),
+			).Class("section-title-wrap"),
+
+			h.H3("Simplest Usage").Class("mb-2"),
+			v.VContainer(
+				v.VRow(
+					v.VCol(
+						vx.VXTreeview(
+							web.Slot(
+								v.VIcon("mdi-plus-circle-outline").
+									Attr("size", "small").
+									Attr("color", "grey-darken-3"),
+							).Name("prepend"),
+						).Items(linkUsageItems),
+					).Attr("cols", "6"),
+				),
+			),
 		).Class("section-wrap with-border-b"))
 	})
 	detailing.Section(section)

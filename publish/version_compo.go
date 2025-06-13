@@ -50,6 +50,7 @@ type VersionComponentConfig struct {
 	Top                       bool
 	DisableListeners          bool
 	DisableDataChangeTracking bool
+	WrapActionButtons         func(ctx *web.EventContext, obj interface{}, actionButtons []h.HTMLComponent, phraseHasPresetsDataChanged string) []h.HTMLComponent
 }
 
 func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionComponentConfig) presets.FieldComponentFunc {
@@ -70,6 +71,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 			panic("obj should be SlugEncoder")
 		}
 		slug := primarySlugger.PrimarySlug()
+		actionButtons := []h.HTMLComponent{}
 
 		div := h.Div().Class("tagList-bar-warp")
 		confirmDialogPayload := utils.UtilDialogPayloadType{
@@ -99,13 +101,18 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 		deniedUnpublish := DeniedDo(verifier, obj, ctx.R, PermUnpublish)
 
 		if _, ok := obj.(StatusInterface); ok {
-			div.AppendChildren(buildPublishButton(obj, field, ctx, config, msgr, phraseHasPresetsDataChanged, deniedPublish, deniedUnpublish))
+			actionButtons = append(actionButtons, buildPublishButton(obj, field, ctx, config, msgr, phraseHasPresetsDataChanged, deniedPublish, deniedUnpublish))
 		}
 
 		if _, ok := obj.(ScheduleInterface); ok {
-			div.AppendChildren(buildScheduleButton(obj, ctx, mb, slug, config, msgr, phraseHasPresetsDataChanged, deniedPublish, deniedUnpublish))
+			actionButtons = append(actionButtons, buildScheduleButton(obj, ctx, mb, slug, config, msgr, phraseHasPresetsDataChanged, deniedPublish, deniedUnpublish))
 		}
-
+		if config.WrapActionButtons != nil {
+			actionButtons = config.WrapActionButtons(ctx, obj, actionButtons, phraseHasPresetsDataChanged)
+		}
+		for _, actionButton := range actionButtons {
+			div.AppendChildren(actionButton)
+		}
 		children := []h.HTMLComponent{div}
 		if !config.DisableListeners {
 			children = append(children,
