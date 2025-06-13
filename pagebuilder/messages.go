@@ -59,7 +59,6 @@ type Messages struct {
 	ConflictPathMsg           string
 	ExistingPathMsg           string
 	UnableDeleteCategoryMsg   string
-	DatabaseErrorMsg          string
 	WouldCausePageConflictMsg string
 	Versions                  string
 	NewContainer              string
@@ -153,7 +152,6 @@ var Messages_en_US = &Messages{
 	ConflictPathMsg:           "Conflicting Path",
 	ExistingPathMsg:           "Existing Path",
 	UnableDeleteCategoryMsg:   "To delete this category you need to remove all association to products first",
-	DatabaseErrorMsg:          "Database error occurred",
 	WouldCausePageConflictMsg: "This path would cause URL conflicts with existing pages",
 	Versions:                  "versions",
 	NewContainer:              "New Container",
@@ -246,7 +244,6 @@ var Messages_zh_CN = &Messages{
 	ConflictPathMsg:           "冲突的路径",
 	ExistingPathMsg:           "已存在的路径",
 	UnableDeleteCategoryMsg:   "这个分类没办法被删除,因为已被页面使用",
-	DatabaseErrorMsg:          "数据库错误",
 	WouldCausePageConflictMsg: "此路径会导致与现有页面的URL冲突",
 	Versions:                  "版本",
 	NewContainer:              "新增组件",
