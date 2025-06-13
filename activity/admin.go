@@ -261,7 +261,7 @@ func setupListing(b *presets.Builder, lb *presets.ListingBuilder, op *gorm2op.Da
 			{
 				Key:          "created",
 				Label:        msgr.FilterCreatedAt,
-				ItemType:     vuetifyx.ItemTypeDatetimeRange,
+				ItemType:     vuetifyx.ItemTypeDatetimeRangePicker,
 				SQLCondition: `created_at %s ?`,
 			},
 		}

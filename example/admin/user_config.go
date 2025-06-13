@@ -320,7 +320,7 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 			{
 				Key:          "created",
 				Label:        "Create Time",
-				ItemType:     vx.ItemTypeDatetimeRange,
+				ItemType:     vx.ItemTypeDatetimeRangePicker,
 				SQLCondition: `users.created_at %s ?`,
 			},
 			{
@@ -342,14 +342,14 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 			{
 				Key:          "registration_date",
 				Label:        "Registration Date",
-				ItemType:     vx.ItemTypeDate,
+				ItemType:     vx.ItemTypeDatePicker,
 				SQLCondition: `users.registration_date %s ?`,
 				Folded:       true,
 			},
 			{
 				Key:          "registration_date_range",
 				Label:        "Registration Date Range",
-				ItemType:     vx.ItemTypeDateRange,
+				ItemType:     vx.ItemTypeDateRangePicker,
 				SQLCondition: `users.registration_date %s ?`,
 				Folded:       true,
 			},
@@ -436,7 +436,7 @@ func configureFavorPostSelectDialog(db *gorm.DB, pb *presets.Builder, publisher 
 			{
 				Key:          "created",
 				Label:        "Create Time",
-				ItemType:     vx.ItemTypeDatetimeRange,
+				ItemType:     vx.ItemTypeDatetimeRangePicker,
 				SQLCondition: `created_at %s ?`,
 			},
 			{

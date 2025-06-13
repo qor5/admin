@@ -3,13 +3,14 @@ package admin
 import (
 	"time"
 
-	"github.com/qor5/admin/v3/example/models"
-	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/ui/vuetify"
 	"github.com/qor5/x/v3/ui/vuetifyx"
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/example/models"
+	"github.com/qor5/admin/v3/presets"
 )
 
 const (
@@ -68,7 +69,7 @@ func configOrder(pb *presets.Builder, db *gorm.DB) {
 			{
 				Key:          "created_at",
 				Label:        "Created At",
-				ItemType:     vuetifyx.ItemTypeDate,
+				ItemType:     vuetifyx.ItemTypeDatePicker,
 				SQLCondition: `created_at %s ?`,
 			},
 			{
