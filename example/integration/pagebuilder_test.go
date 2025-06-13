@@ -226,6 +226,23 @@ func TestPageBuilder(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"Invalid Name"},
 		},
 		{
+			Name:  "Category Validate Page Same Path",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_categories").
+					EventFunc(actions.Update).
+					Query(presets.ParamID, "4_Japan").
+					AddField("Name", "InvalidPath").
+					AddField("LocaleCode", "Japan").
+					AddField("Path", "category2").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Successfully Updated"},
+		},
+		{
 			Name:  "Category Validate Page Invalid Path",
 			Debug: true,
 			ReqFunc: func() *http.Request {
