@@ -66,7 +66,7 @@ func TestPageBuilderOnline(t *testing.T) {
 				pageBuilderOnlineData.TruncatePut(dbr)
 				return httptest.NewRequest("GET", "/pages/10_2024-05-21-v01_Japan", http.NoBody)
 			},
-			ExpectPageBodyContainsInOrder: []string{`<a href='example-publish.s3.ap-northeast-1.amazonaws.com/'>example-publish.s3.ap-northeast-1.amazonaws.com/</a>`},
+			ExpectPageBodyContainsInOrder: []string{`<a href='example-publish.s3.ap-northeast-1.amazonaws.com/' target='_blank'>example-publish.s3.ap-northeast-1.amazonaws.com/</a>`},
 		},
 		{
 			Name:  "PageBuilder Online Wrap EditContainerEvent",
