@@ -15,18 +15,18 @@ import (
 )
 
 var demoContainerData = gofixtures.Data(gofixtures.Sql(`
-INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (1, '2024-08-26 03:00:44.699127 +00:00', '2024-08-26 03:00:44.699127 +00:00', null, 'Header', 1, false, 'International');
-INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (2, '2024-08-26 03:00:44.727313 +00:00', '2024-08-26 03:00:44.727313 +00:00', null, 'Heading', 1, false, 'International');
-INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (3, '2024-08-26 03:00:45.406616 +00:00', '2024-08-26 03:00:45.406616 +00:00', null, 'PageTitle', 1, false, 'International');
-INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (4, '2024-08-26 03:00:45.448964 +00:00', '2024-08-26 03:00:45.448964 +00:00', null, 'Video Banner', 1, false, 'International');
-INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (5, '2024-08-26 03:00:45.479946 +00:00', '2024-08-26 03:00:45.479946 +00:00', null, 'BrandGrid', 1, false, 'International');
-INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (6, '2024-08-26 03:00:46.095622 +00:00', '2024-08-26 03:00:46.095622 +00:00', null, 'Footer', 1, false, 'International');
-INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (7, '2024-08-26 03:00:46.309314 +00:00', '2024-08-26 03:00:46.309314 +00:00', null, 'Image', 1, false, 'International');
-INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (8, '2024-08-26 09:35:33.805101 +00:00', '2024-08-26 09:35:33.805101 +00:00', null, 'ListContent', 1, false, 'International');
-INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (9, '2024-08-26 09:35:33.812110 +00:00', '2024-08-26 09:35:33.812110 +00:00', null, 'InNumbers', 1, false, 'International');
-INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (10, '2024-08-26 09:35:33.815391 +00:00', '2024-08-26 09:35:33.815391 +00:00', null, 'ContactForm', 1, false, 'International');
-INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (11, '2024-08-26 09:35:33.820515 +00:00', '2024-08-26 09:35:33.820515 +00:00', null, 'ListContentLite', 1, false, 'International');
-INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (12, '2024-08-26 09:35:33.823044 +00:00', '2024-08-26 09:35:33.823044 +00:00', null, 'ListContentWithImage', 1, false, 'International');
+INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (1, '2024-08-26 03:00:44.699127 +00:00', '2024-08-26 03:00:44.699127 +00:00', null, 'Header', 1, false, 'Japan');
+INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (2, '2024-08-26 03:00:44.727313 +00:00', '2024-08-26 03:00:44.727313 +00:00', null, 'Heading', 1, false, 'Japan');
+INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (3, '2024-08-26 03:00:45.406616 +00:00', '2024-08-26 03:00:45.406616 +00:00', null, 'PageTitle', 1, false, 'Japan');
+INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (4, '2024-08-26 03:00:45.448964 +00:00', '2024-08-26 03:00:45.448964 +00:00', null, 'Video Banner', 1, false, 'Japan');
+INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (5, '2024-08-26 03:00:45.479946 +00:00', '2024-08-26 03:00:45.479946 +00:00', null, 'BrandGrid', 1, false, 'Japan');
+INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (6, '2024-08-26 03:00:46.095622 +00:00', '2024-08-26 03:00:46.095622 +00:00', null, 'Footer', 1, false, 'Japan');
+INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (7, '2024-08-26 03:00:46.309314 +00:00', '2024-08-26 03:00:46.309314 +00:00', null, 'Image', 1, false, 'Japan');
+INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (8, '2024-08-26 09:35:33.805101 +00:00', '2024-08-26 09:35:33.805101 +00:00', null, 'ListContent', 1, false, 'Japan');
+INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (9, '2024-08-26 09:35:33.812110 +00:00', '2024-08-26 09:35:33.812110 +00:00', null, 'InNumbers', 1, false, 'Japan');
+INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (10, '2024-08-26 09:35:33.815391 +00:00', '2024-08-26 09:35:33.815391 +00:00', null, 'ContactForm', 1, false, 'Japan');
+INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (11, '2024-08-26 09:35:33.820515 +00:00', '2024-08-26 09:35:33.820515 +00:00', null, 'ListContentLite', 1, false, 'Japan');
+INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, filled, locale_code) VALUES (12, '2024-08-26 09:35:33.823044 +00:00', '2024-08-26 09:35:33.823044 +00:00', null, 'ListContentWithImage', 1, false, 'Japan');
 INSERT INTO public.container_list_content_with_image (id, add_top_space, add_bottom_space, anchor_id, items) VALUES (1, false, false, '', 'null');
 INSERT INTO public.container_list_content_lite (id, add_top_space, add_bottom_space, anchor_id, items, background_color) VALUES (1, false, false, '', 'null', '');
 INSERT INTO public.container_contact_form (id, add_top_space, add_bottom_space, anchor_id, heading, text, send_button_text, form_button_text, message_placeholder, name_placeholder, email_placeholder, thankyou_message, action_url, privacy_policy) VALUES (1, false, false, '', '', '', '', '', '', '', '', '', '', '');
@@ -282,13 +282,14 @@ func TestDemoContainer(t *testing.T) {
 			},
 			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {
 				var dm pagebuilder.DemoContainer
-				TestDB.Where("id=? and locale_code = ?", 1, "China").First(&dm)
+				TestDB.Where("id=? and locale_code = ?", 1, "Japan").First(&dm)
 				if dm.ModelName != "Header" {
 					t.Fatalf("Localize Failed")
 					return
 				}
-				if dm.ModelID == 1 {
-					t.Fatalf("Diffrent locale_code DemoContainer Use Same MoldeID")
+				// Since we only have Japan locale now, ModelID=1 is expected
+				if dm.ModelID != 1 {
+					t.Fatalf("Expected ModelID=1 for Japan locale, got %d", dm.ModelID)
 					return
 				}
 			},

@@ -223,14 +223,15 @@ func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 		return nil
 	}
 	_, msgr := c.MustGetEventContext(ctx)
-	newReloadAction := func() string {
+	newReloadAction := func(v string) string {
 		return fmt.Sprintf(`
-			const targetKeyword = xlocals.keyword || "";
+			const targetKeyword = %s || "";
 			if (targetKeyword === %q) {
 				return;
 			}
 			%s
 			`,
+			v,
 			c.Keyword,
 			stateful.ReloadAction(ctx, c,
 				func(target *ListingCompo) {
@@ -249,10 +250,10 @@ func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 			Attr(":clearable", "true").
 			Attr("v-model", "xlocals.keyword").
 			Attr("@blur", fmt.Sprintf("xlocals.keyword = %q", c.Keyword)).
-			Attr("@keyup.enter", newReloadAction()).
-			Attr("@click:clear", newReloadAction()).
+			Attr("@keyup.enter", newReloadAction("xlocals.keyword")).
+			Attr("@click:clear", newReloadAction("null")).
 			Children(
-				web.Slot(VIcon("mdi-magnify").Attr("@click", newReloadAction())).Name("append-inner"),
+				web.Slot(VIcon("mdi-magnify").Attr("@click", newReloadAction("xlocals.keyword"))).Name("append-inner"),
 			),
 	)
 }
@@ -804,7 +805,6 @@ func CardDataTableFunc(lb *ListingBuilder, config *CardDataTableConfig) func(ctx
 						).Color(ColorGreyLighten5).Height(cardContentHeight),
 					).Class("pa-0"),
 				)
-
 				var card h.HTMLComponent
 				if selectedActions != nil && len(selectedActions) > 0 {
 					card = VHover(
@@ -868,7 +868,7 @@ func CardDataTableFunc(lb *ListingBuilder, config *CardDataTableConfig) func(ctx
 						),
 					).Class("d-flex align-center").Attr("v-if", "xLocals.select_ids && xLocals.select_ids.length>0"),
 				),
-				pagination,
+				h.Div(pagination).ClassIf(W100, (result.TotalCount != nil && *result.TotalCount == 0) || result.PageInfo.StartCursor == nil),
 			)
 			if config.WrapRooters != nil {
 				footer = config.WrapRooters(ctx, footer)
