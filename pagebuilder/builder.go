@@ -1371,6 +1371,7 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
+	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 	editAction := web.POST().
 		BeforeScript(
 			fmt.Sprintf(`vars.%s=container_data_id;locals.__pageBuilderLeftContentKeepScroll(container_data_id);`, paramContainerDataID)+
@@ -1407,6 +1408,10 @@ func (b *Builder) generateEditorBarJsFunction(ctx *web.EventContext) string {
 	return fmt.Sprintf(`
 function(e){
 	const { msg_type,container_data_id, container_id,display_name,rect,show_right_drawer } = e.data
+	if (msg_type === %q) {
+		%s
+		return
+	}
 	if (!msg_type || !container_data_id.split) {
 		return
 	} 
@@ -1422,22 +1427,24 @@ function(e){
 	}
 	
     switch (msg_type) {
-	  case '%s':
+	  case %q:
 		%s;
 		break
-      case '%s':
+      case %q:
         %s;
         break
-	  case '%s':
-	  case '%s':
+	  case %q:
+	  case %q:
 		%s;
 		break
-	  case '%s':
+	  case %q:
         %s;
         break
     }
 	
 }`,
+		EventClickOutsideWrapperShadow,
+		presets.ShowSnackbarScript(msgr.TemplateFixedAreaMessage, ColorWarning),
 		EventEdit, editAction,
 		EventDelete, deleteAction,
 		EventUp, EventDown, moveAction, EventAdd, addAction,

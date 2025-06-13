@@ -60,11 +60,12 @@ const (
 	DeviceTablet   = "tablet"
 	DeviceComputer = "computer"
 
-	EventUp     = "up"
-	EventDown   = "down"
-	EventDelete = "delete"
-	EventAdd    = "add"
-	EventEdit   = "edit"
+	EventUp                        = "up"
+	EventDown                      = "down"
+	EventDelete                    = "delete"
+	EventAdd                       = "add"
+	EventEdit                      = "edit"
+	EventClickOutsideWrapperShadow = "clickOutsideWrapperShadow"
 
 	paramIframeEventName  = "iframeEventName"
 	changeDeviceEventName = "change_device"
@@ -419,7 +420,7 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 		),
 		VMain(
 			addOverlay,
-			vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction(ctx)),
+			h.If(!isStag, vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction(ctx)).Name("message")),
 			tabContent.Body,
 		).Attr(web.VAssign("vars", "{overlayEl:$}")...).Class("ma-2"),
 	)
