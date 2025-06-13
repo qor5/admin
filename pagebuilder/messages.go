@@ -52,21 +52,22 @@ type Messages struct {
 	PageBuilder               string
 	PageTemplate              string
 
-	InvalidPathMsg           string
-	InvalidTitleMsg          string
-	InvalidNameMsg           string
-	InvalidSlugMsg           string
-	ConflictSlugMsg          string
-	ConflictPathMsg          string
-	ExistingPathMsg          string
-	UnableDeleteCategoryMsg  string
-	Versions                 string
-	NewContainer             string
-	Settings                 string
-	SelectElementMsg         string
-	StartBuildingMsg         string
-	StartBuildingTemplateMsg string
-	StartBuildingSubMsg      string
+	InvalidPathMsg            string
+	InvalidTitleMsg           string
+	InvalidNameMsg            string
+	InvalidSlugMsg            string
+	ConflictSlugMsg           string
+	ConflictPathMsg           string
+	ExistingPathMsg           string
+	UnableDeleteCategoryMsg   string
+	WouldCausePageConflictMsg string
+	Versions                  string
+	NewContainer              string
+	Settings                  string
+	SelectElementMsg          string
+	StartBuildingMsg          string
+	StartBuildingTemplateMsg  string
+	StartBuildingSubMsg       string
 
 	ListHeaderID          string
 	ListHeaderTitle       string
@@ -99,6 +100,7 @@ type Messages struct {
 	MarkAsShared                   string
 	Copy                           string
 	SharedContainerHasBeenUpdated  string
+	TemplateFixedAreaMessage       string
 }
 
 var Messages_en_US = &Messages{
@@ -145,21 +147,22 @@ var Messages_en_US = &Messages{
 	OnlineHit:                 "This version cannot be edited once published. To make changes, please duplicate the current version",
 	NoContentHit:              "This page has no content yet, start to edit in page builder",
 
-	InvalidPathMsg:           "Invalid Path",
-	InvalidTitleMsg:          "Invalid Title",
-	InvalidNameMsg:           "Invalid Name",
-	InvalidSlugMsg:           "Invalid Slug",
-	ConflictSlugMsg:          "Conflicting Slug",
-	ConflictPathMsg:          "Conflicting Path",
-	ExistingPathMsg:          "Existing Path",
-	UnableDeleteCategoryMsg:  "To delete this category you need to remove all association to products first",
-	Versions:                 "versions",
-	NewContainer:             "New Container",
-	Settings:                 "settings",
-	SelectElementMsg:         "Select an element and change the setting here.",
-	StartBuildingMsg:         "Start building a page",
-	StartBuildingTemplateMsg: "Start building a template",
-	StartBuildingSubMsg:      "By Browsing and selecting container from the library",
+	InvalidPathMsg:            "Invalid Path",
+	InvalidTitleMsg:           "Invalid Title",
+	InvalidNameMsg:            "Invalid Name",
+	InvalidSlugMsg:            "Invalid Slug",
+	ConflictSlugMsg:           "Conflicting Slug",
+	ConflictPathMsg:           "Conflicting Path",
+	ExistingPathMsg:           "Existing Path",
+	UnableDeleteCategoryMsg:   "To delete this category you need to remove all association to products first",
+	WouldCausePageConflictMsg: "This path would cause URL conflicts with existing pages",
+	Versions:                  "versions",
+	NewContainer:              "New Container",
+	Settings:                  "settings",
+	SelectElementMsg:          "Select an element and change the setting here.",
+	StartBuildingMsg:          "Start building a page",
+	StartBuildingTemplateMsg:  "Start building a template",
+	StartBuildingSubMsg:       "By Browsing and selecting container from the library",
 
 	ListHeaderID:          "ID",
 	ListHeaderTitle:       "Title",
@@ -193,6 +196,7 @@ var Messages_en_US = &Messages{
 	MarkAsShared:                   "Mark As Shared",
 	Copy:                           "Copy",
 	SharedContainerHasBeenUpdated:  "The shared container on this page has been updated. You may notice differences between the preview and the live page.",
+	TemplateFixedAreaMessage:       "This container is fixed and cannot be updated",
 }
 
 var Messages_zh_CN = &Messages{
@@ -237,23 +241,24 @@ var Messages_zh_CN = &Messages{
 	OnlineHit:                 "这个版本发布后不能再编辑。要进行更改，请复制当前版本",
 	NoContentHit:              "这个页面没有内容，在page builder中开始编辑",
 
-	InvalidPathMsg:           "无效的路径",
-	InvalidTitleMsg:          "无效的标题",
-	InvalidNameMsg:           "无效的名称",
-	InvalidSlugMsg:           "无效的Slug",
-	ConflictSlugMsg:          "冲突的Slug",
-	ConflictPathMsg:          "冲突的路径",
-	ExistingPathMsg:          "已存在的路径",
-	UnableDeleteCategoryMsg:  "这个分类没办法被删除,因为已被页面使用",
-	Versions:                 "版本",
-	NewContainer:             "新增组件",
-	Settings:                 "设置",
-	SelectElementMsg:         "选择一个组件，这里会变成设置",
-	StartBuildingMsg:         "开始构建页面",
-	StartBuildingTemplateMsg: "开始构建模版",
-	StartBuildingSubMsg:      "从库中选择组件",
-	PageBuilder:              "页面构建",
-	PageTemplate:             "页面模版",
+	InvalidPathMsg:            "无效的路径",
+	InvalidTitleMsg:           "无效的标题",
+	InvalidNameMsg:            "无效的名称",
+	InvalidSlugMsg:            "无效的Slug",
+	ConflictSlugMsg:           "冲突的Slug",
+	ConflictPathMsg:           "冲突的路径",
+	ExistingPathMsg:           "已存在的路径",
+	UnableDeleteCategoryMsg:   "这个分类没办法被删除,因为已被页面使用",
+	WouldCausePageConflictMsg: "此路径会导致与现有页面的URL冲突",
+	Versions:                  "版本",
+	NewContainer:              "新增组件",
+	Settings:                  "设置",
+	SelectElementMsg:          "选择一个组件，这里会变成设置",
+	StartBuildingMsg:          "开始构建页面",
+	StartBuildingTemplateMsg:  "开始构建模版",
+	StartBuildingSubMsg:       "从库中选择组件",
+	PageBuilder:               "页面构建",
+	PageTemplate:              "页面模版",
 
 	ListHeaderID:          "ID",
 	ListHeaderTitle:       "标题",
@@ -288,6 +293,7 @@ var Messages_zh_CN = &Messages{
 	MarkAsShared:                   "标记为已共享",
 	Copy:                           "复制",
 	SharedContainerHasBeenUpdated:  "此页面上的共享容器已更新。您可能会注意到预览和实时页面之间的差异。",
+	TemplateFixedAreaMessage:       "此区域由模板固定，无法编辑。",
 }
 
 var Messages_ja_JP = &Messages{
@@ -382,6 +388,7 @@ var Messages_ja_JP = &Messages{
 	MarkAsShared:                   "共有済みとしてマーク",
 	Copy:                           "コピー",
 	SharedContainerHasBeenUpdated:  "このページの共有コンテナが更新されました。プレビューとライブページの間に違いがあるかもしれません。",
+	TemplateFixedAreaMessage:       "この領域はテンプレートによって固定されており、編集できません。",
 }
 
 type ModelsI18nModulePage struct {
