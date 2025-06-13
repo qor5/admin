@@ -240,7 +240,7 @@ func TestPageBuilder(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Successfully Updated"},
+			ExpectRunScriptContainsInOrder: []string{"Successfully Updated"},
 		},
 		{
 			Name:  "Category Validate Page Invalid Path",
