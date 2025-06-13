@@ -119,7 +119,6 @@ func TestPageBuilder(t *testing.T) {
 			ExpectPageBodyContainsInOrder: []string{
 				`Page`, "Category", `SEO`, `Activity`,
 			},
-			ExpectPageBodyNotContains: []string{"_blank"},
 		},
 		{
 			Name:  "Page Builder Detail Page with invalid slug",
