@@ -42,6 +42,9 @@ func NewListEditor(v *FieldContext) *ListEditorBuilder {
 		addListItemRowEvent:    actions.AddRowEvent,
 		removeListItemRowEvent: actions.RemoveRowEvent,
 		sortListItemsEvent:     actions.SortEvent,
+		addRowBtnLabelFunc: func(msgr *Messages) string {
+			return msgr.AddRow
+		},
 	}
 }
 
@@ -104,6 +107,9 @@ func (b *ListEditorBuilder) AddRowBtnLabel(labelFunc interface{}) (r *ListEditor
 // getAddRowBtnLabel returns the resolved label text based on the context
 func (b *ListEditorBuilder) getAddRowBtnLabel(ctx *web.EventContext) string {
 	msgr := MustGetMessages(ctx.R)
+	if b.addRowBtnLabelFunc == nil {
+		return msgr.AddRow
+	}
 	return b.addRowBtnLabelFunc(msgr)
 }
 
