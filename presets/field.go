@@ -323,7 +323,7 @@ func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *Field
 			case *SortListItemsEvent:
 				sortListItemsEvent = t.Event
 			case *MaxItems:
-				maxItems = t.Limit	
+				maxItems = t.Limit
 			case *AddRowBtnLabel:
 				addRowBtnLabelFunc = t.LabelFunc
 			default:
