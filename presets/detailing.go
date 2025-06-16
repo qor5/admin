@@ -258,7 +258,7 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 		layoutClass[i] = string(layout)
 	}
 	if b.breadcrumbFunc != nil {
-		itemFunc, err := b.breadcrumbFunc(ctx, b.mb.Info(), ctx.Param(ParamID))
+		itemFunc, err := b.breadcrumbFunc(ctx, obj, id)
 		if err != nil {
 			return r, err
 		}
