@@ -163,11 +163,7 @@ func (b *DetailingBuilder) SidePanelFunc(v ObjectComponentFunc) (r *DetailingBui
 }
 
 func (b *DetailingBuilder) WrapSidePanel(w func(in ObjectComponentFunc) ObjectComponentFunc) (r *DetailingBuilder) {
-	if b.sidePanel == nil {
-		b.sidePanel = w(nil)
-	} else {
-		b.sidePanel = w(b.sidePanel)
-	}
+	b.sidePanel = w(b.sidePanel)
 	return b
 }
 

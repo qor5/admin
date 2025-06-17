@@ -823,6 +823,29 @@ func TestPresetsDetailAfterTitle(t *testing.T) {
 		})
 	}
 }
+func TestPresetsDetailSidePanel(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsDetailSidePanel(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "detail with drawer side panel",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				customerData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers/1?__execute_event__=presets_DetailingDrawer").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Side Panel 1", "Side Panel 2"},
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}
 
 func TestPresetsDetailSectionView(t *testing.T) {
 	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))

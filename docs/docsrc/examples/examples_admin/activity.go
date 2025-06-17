@@ -60,14 +60,6 @@ func activityExample(b *presets.Builder, db *gorm.DB, customize func(mb *presets
 	dp := mb.Detailing("Content").Drawer(true)
 	contentSection := presets.NewSectionBuilder(mb, "Content").Editing("Title", "Code", "Approved", "Edited", "Price", "StockedAt", "AppovedAt")
 	dp.Section(contentSection)
-	dp.WrapSidePanel(func(in presets.ObjectComponentFunc) presets.ObjectComponentFunc {
-		return func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
-			return h.Div(
-				in(obj, ctx),
-				ab.MustGetModelBuilder(mb).NewTimelineCompo(ctx, obj, "_side"),
-			)
-		}
-	})
 	dp.SidePanelFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		return ab.MustGetModelBuilder(mb).NewTimelineCompo(ctx, obj, "_side")
 	})
