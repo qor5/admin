@@ -10,9 +10,11 @@ import (
 	"reflect"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/huandu/go-clone"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/qor5/web/v3"
@@ -23,6 +25,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/login"
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
@@ -88,6 +91,7 @@ type Builder struct {
 	mediaBuilder                  *media.Builder
 	ab                            *activity.Builder
 	publisher                     *publish.Builder
+	sharedContainerModelBuilder   *presets.ModelBuilder
 	seoBuilder                    *seo.Builder
 	pageStyle                     h.HTMLComponent
 	pageLayoutFunc                PageLayoutFunc
@@ -111,6 +115,7 @@ type Builder struct {
 	categoryInstall               presets.ModelInstallFunc
 	devices                       []Device
 	fields                        []string
+	editorActivityEnabledFunc     func(ctx *web.EventContext, container *Container) bool
 }
 
 const (
@@ -120,6 +125,8 @@ const (
 
 	PageBuilderPreviewCard = "PageBuilderPreviewCard"
 )
+
+type oldObjKey struct{}
 
 func New(prefix string, db *gorm.DB, b *presets.Builder) *Builder {
 	return newBuilder(prefix, db, b)
@@ -157,6 +164,11 @@ func (b *Builder) GetURIPrefix() string {
 
 func (b *Builder) PageStyle(v h.HTMLComponent) (r *Builder) {
 	b.pageStyle = v
+	return b
+}
+
+func (b *Builder) EditorActivityEnabledFunc(v func(ctx *web.EventContext, container *Container) bool) (r *Builder) {
+	b.editorActivityEnabledFunc = v
 	return b
 }
 
@@ -489,6 +501,7 @@ func (b *Builder) useAllPlugin(pm *presets.ModelBuilder, pageModelName string) {
 
 	if b.ab != nil {
 		pm.Use(b.ab)
+		b.ab.RegisterModel(&Container{})
 	}
 
 	if b.seoBuilder != nil {
@@ -714,6 +727,12 @@ func (b *Builder) configSharedContainer(pb *presets.Builder) {
 	db := b.db
 
 	pm := pb.Model(&Container{}).URIName("shared_containers").Label("Shared Containers")
+	defer func() {
+		b.sharedContainerModelBuilder = pm
+		if b.ab != nil {
+			pm.Use(b.ab)
+		}
+	}()
 
 	pm.RegisterEventFunc(republishRelatedOnlinePagesEvent, b.republishRelatedOnlinePages)
 	pm.RegisterEventFunc(RenameContainerDialogEvent, b.renameContainerDialog)
@@ -787,7 +806,11 @@ func (b *Builder) configSharedContainer(pb *presets.Builder) {
 
 func (b *Builder) configDemoContainer(pb *presets.Builder) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&DemoContainer{}).URIName("demo_containers").Label("Demo Containers")
-
+	defer func() {
+		if b.ab != nil {
+			b.ab.RegisterModel(pm).SkipEdit().SkipDelete()
+		}
+	}()
 	listing := pm.Listing("ModelName").SearchColumns("model_name")
 	listing.Field("ModelName").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		p := obj.(*DemoContainer)
@@ -1014,9 +1037,22 @@ func (b *ContainerBuilder) Install() {
 			return
 		}
 	})
+	editing.WrapFetchFunc(func(in presets.FetchFunc) presets.FetchFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (r interface{}, err error) {
+			r, err = in(obj, id, ctx)
+			if err != nil {
+				return
+			}
+
+			ctx.WithContextValue(oldObjKey{}, clone.Clone(r))
+			return
+		}
+	})
+
 	editing.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
 		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-			return b.builder.db.Transaction(func(tx *gorm.DB) (dbErr error) {
+			db := b.builder.db
+			if err = db.Transaction(func(tx *gorm.DB) (dbErr error) {
 				ctx.WithContextValue(gorm2op.CtxKeyDB{}, tx)
 				defer ctx.WithContextValue(gorm2op.CtxKeyDB{}, nil)
 				if dbErr = in(obj, id, ctx); dbErr != nil {
@@ -1025,8 +1061,16 @@ func (b *ContainerBuilder) Install() {
 				if dbErr = b.builder.updateAllContainersUpdatedTimeFromModel(tx, id); dbErr != nil {
 					return
 				}
+
 				return
-			})
+			}); err != nil {
+				return
+			}
+			defer func() {
+				b.logModelDiffActivity(obj, id, ctx)
+			}()
+
+			return
 		}
 	})
 	editing.EditingTitleFunc(func(obj interface{}, defaultTitle string, ctx *web.EventContext) h.HTMLComponent {
@@ -1620,6 +1664,7 @@ func (b *Builder) updateAllContainersUpdatedTime(tx *gorm.DB, modelName string, 
 	pageID := ps[presets.ParamID]
 	pageVersion := ps[publish.SlugVersion]
 	localeCode := ps[l10n.SlugLocaleCode]
+
 	return tx.Model(&Container{}).Where("page_id = ? AND page_version = ? AND locale_code = ? and page_model_name = ? and shared = true", pageID, pageVersion, localeCode, modelName).Update("updated_at", updatedAt).Error
 }
 
@@ -1652,4 +1697,114 @@ func (b *Builder) localizeModel(db *gorm.DB, obj interface{}, fromID, fromLocale
 		return
 	}
 	return
+}
+
+func (b *ContainerBuilder) logModelDiffActivity(obj interface{}, id string, ctx *web.EventContext) {
+	ab := b.builder.ab
+	if ab == nil {
+		return
+	}
+
+	oldObj := ctx.ContextValue(oldObjKey{})
+	if oldObj == nil {
+		return
+	}
+
+	acmb := ab.RegisterModel(obj)
+	diffs, err := activity.NewDiffBuilder(acmb).Diff(oldObj, obj)
+	if err != nil || len(diffs) == 0 {
+		return
+	}
+
+	user := login.GetCurrentUser(ctx.R)
+	if user == nil {
+		return
+	}
+
+	uid := presets.MustObjectID(user)
+	now := time.Now()
+
+	b.builder.db.Transaction(func(tx *gorm.DB) error {
+		if ctx.Param(paramDemoContainer) == "true" {
+			return b.logDemoContainerActivity(tx, id, diffs, ab, ctx)
+		}
+		return b.logContainerActivity(tx, id, diffs, uid, now, ctx)
+	})
+}
+
+func (b *ContainerBuilder) logDemoContainerActivity(tx *gorm.DB, id string, diffs []activity.Diff, ab *activity.Builder, ctx *web.EventContext) error {
+	var demoContainer DemoContainer
+	if err := tx.Where("model_id = ? AND model_name = ?", id, b.name).First(&demoContainer).Error; err != nil {
+		return err
+	}
+
+	// Prefix diff fields for demo container
+	for i := range diffs {
+		diffs[i].Field = fmt.Sprintf("%s:%s:%s", b.name, id, diffs[i].Field)
+	}
+
+	ab.Log(ctx.R.Context(), activity.ActionEdit, demoContainer, diffs)
+	return nil
+}
+
+func (b *ContainerBuilder) logContainerActivity(tx *gorm.DB, id string, diffs []activity.Diff, uid string, now time.Time, ctx *web.EventContext) error {
+	var containers []Container
+	if err := tx.Where("model_id = ? AND model_name = ?", id, b.name).Find(&containers).Error; err != nil {
+		return err
+	}
+
+	for i := range containers {
+		container := &containers[i]
+		container.ModelUpdatedAt = now
+		container.ModelUpdatedBy = uid
+
+		if b.builder.editorActivityEnabledFunc != nil && b.builder.editorActivityEnabledFunc(ctx, container) {
+			if err := b.logPageModelActivity(tx, container, diffs, ctx); err != nil {
+				continue // Log error but continue processing other containers
+			}
+		}
+	}
+	return tx.Save(&containers).Error
+}
+
+func (b *ContainerBuilder) logPageModelActivity(tx *gorm.DB, container *Container, diffs []activity.Diff, ctx *web.EventContext) error {
+	mb := b.builder.getModelBuilderByName(container.PageModelName)
+	if mb == nil {
+		return fmt.Errorf("model builder not found for %s", container.PageModelName)
+	}
+
+	amb, ok := b.builder.ab.GetModelBuilder(mb.mb)
+	if !ok {
+		return fmt.Errorf("activity model builder not found")
+	}
+
+	pageModel := mb.mb.NewModel()
+	query := b.buildPageModelQuery(tx, container, mb.isTemplate)
+	if err := query.First(pageModel).Error; err != nil {
+		return err
+	}
+
+	// Clone and prefix diff fields for this container
+	containerDiff := clone.Clone(diffs).([]activity.Diff)
+	for j := range containerDiff {
+		containerDiff[j].Field = fmt.Sprintf("%v:%s:%v:%s", container.ID, b.name, container.ModelID, containerDiff[j].Field)
+	}
+
+	amb.Log(ctx.R.Context(), activity.ActionEdit, pageModel, containerDiff)
+	return nil
+}
+
+func (b *ContainerBuilder) buildPageModelQuery(tx *gorm.DB, container *Container, isTemplate bool) *gorm.DB {
+	if isTemplate {
+		return tx.Where("id = ? AND locale_code = ?", container.PageID, container.LocaleCode)
+	}
+	return tx.Where("id = ? AND version = ? AND locale_code = ?", container.PageID, container.PageVersion, container.LocaleCode)
+}
+
+// parseUint safely converts string to uint, returns 0 if conversion fails
+func parseUint(s string) uint {
+	if val, err := strconv.ParseUint(s, 10, 32); err == nil {
+		return uint(val)
+	}
+	return 0
 }

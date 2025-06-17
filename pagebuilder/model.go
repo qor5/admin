@@ -64,7 +64,7 @@ func (b *ModelBuilder) setName() {
 	b.name = utils.GetObjectName(b.mb.NewModel())
 }
 
-func (b *ModelBuilder) addSharedContainerToPage(pageID int, containerID, pageVersion, locale, modelName string, modelID uint) (newContainerID string, err error) {
+func (b *ModelBuilder) addSharedContainerToPage(ctx *web.EventContext, pageID int, containerID, pageVersion, locale, modelName string, modelID uint) (newContainerID string, err error) {
 	var c Container
 
 	err = b.db.Transaction(func(tx *gorm.DB) (dbErr error) {
@@ -114,6 +114,13 @@ func (b *ModelBuilder) addSharedContainerToPage(pageID int, containerID, pageVer
 			return
 		}
 		newContainerID = container.PrimarySlug()
+		if b.builder.ab != nil {
+			mb, ok := b.builder.ab.GetModelBuilder(b.builder.sharedContainerModelBuilder)
+			if !ok {
+				return
+			}
+			mb.OnCreate(ctx.R.Context(), container)
+		}
 		return
 	})
 	return
@@ -194,7 +201,9 @@ func (b *ModelBuilder) addContainerToPage(ctx *web.EventContext, pageID int, con
 		}
 		err = tx.Create(&container).Error
 		newContainerID = container.PrimarySlug()
-
+		if b.builder.ab != nil {
+			b.builder.ab.OnCreate(ctx.R.Context(), container)
+		}
 		return
 	})
 
@@ -635,8 +644,20 @@ func (b *ModelBuilder) markAsSharedContainer(ctx *web.EventContext) (r web.Event
 		containerID = cs[presets.ParamID]
 		locale      = cs[l10n.SlugLocaleCode]
 	)
-	err = b.db.Model(&Container{}).Where("id = ? AND locale_code = ?", containerID, locale).Update("shared", true).Error
-	if err != nil {
+	if err = b.db.Transaction(func(tx *gorm.DB) (dbErr error) {
+		if dbErr = tx.First(&container, "id = ? AND locale_code = ?", containerID, locale).Error; dbErr != nil {
+			return
+		}
+		oldContainer := container
+		container.Shared = true
+		if dbErr = tx.Save(&container).Error; dbErr != nil {
+			return
+		}
+
+		b.builder.ab.OnEdit(ctx.R.Context(), &oldContainer, &container)
+
+		return
+	}); err != nil {
 		return
 	}
 	r.PushState = web.Location(url.Values{})
