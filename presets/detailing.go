@@ -162,6 +162,15 @@ func (b *DetailingBuilder) SidePanelFunc(v ObjectComponentFunc) (r *DetailingBui
 	return b
 }
 
+func (b *DetailingBuilder) WrapSidePanel(w func(in ObjectComponentFunc) ObjectComponentFunc) (r *DetailingBuilder) {
+	if b.sidePanel == nil {
+		b.sidePanel = w(nil)
+	} else {
+		b.sidePanel = w(b.sidePanel)
+	}
+	return b
+}
+
 type ctxKeyDetailingStyle struct{}
 
 func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
