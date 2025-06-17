@@ -823,6 +823,7 @@ func TestPresetsDetailAfterTitle(t *testing.T) {
 		})
 	}
 }
+
 func TestPresetsDetailSidePanel(t *testing.T) {
 	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
 	PresetsDetailSidePanel(pb, TestDB)
