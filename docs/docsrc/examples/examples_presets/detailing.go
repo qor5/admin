@@ -346,7 +346,6 @@ func PresetsDetailAfterTitle(b *presets.Builder, db *gorm.DB) (
 	return
 }
 
-
 func PresetsDetailSidePanel(b *presets.Builder, db *gorm.DB) (
 	cust *presets.ModelBuilder,
 	cl *presets.ListingBuilder,
@@ -354,16 +353,18 @@ func PresetsDetailSidePanel(b *presets.Builder, db *gorm.DB) (
 	dp *presets.DetailingBuilder,
 ) {
 	cust, cl, ce, dp = PresetsHelloWorld(b, db)
-	
+
+	dp = cust.Detailing().Drawer(true)
+
 	dp.SidePanelFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
-		return h.Div(h.Text("Side Panel 2"))
+		return h.Div(h.Text("Side Panel 1"))
 	})
 
 	dp.WrapSidePanel(func(in presets.ObjectComponentFunc) presets.ObjectComponentFunc {
 		return func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 			return h.Div(
 				in(obj, ctx),
-				h.Text("Side Panel 1"),
+				h.Text("Side Panel 2"),
 			)
 		}
 	})
