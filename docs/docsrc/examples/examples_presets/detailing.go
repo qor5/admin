@@ -356,8 +356,13 @@ func PresetsDetailSidePanel(b *presets.Builder, db *gorm.DB) (
 
 	dp = cust.Detailing().Drawer(true)
 
-	dp.SidePanelFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
-		return h.Div(h.Text("Side Panel 1"))
+	dp.WrapSidePanel(func(in presets.ObjectComponentFunc) presets.ObjectComponentFunc {
+		return func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+			return h.Div(
+				in(obj, ctx),
+				h.Text("Side Panel 1"),
+			)
+		}
 	})
 
 	dp.WrapSidePanel(func(in presets.ObjectComponentFunc) presets.ObjectComponentFunc {

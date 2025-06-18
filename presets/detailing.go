@@ -163,6 +163,11 @@ func (b *DetailingBuilder) SidePanelFunc(v ObjectComponentFunc) (r *DetailingBui
 }
 
 func (b *DetailingBuilder) WrapSidePanel(w func(in ObjectComponentFunc) ObjectComponentFunc) (r *DetailingBuilder) {
+	if b.sidePanel == nil {
+		b.sidePanel = func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
+			return nil
+		}
+	}
 	b.sidePanel = w(b.sidePanel)
 	return b
 }
