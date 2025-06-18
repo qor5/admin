@@ -115,7 +115,7 @@ type Builder struct {
 	categoryInstall               presets.ModelInstallFunc
 	devices                       []Device
 	fields                        []string
-	editorActivityEnabledFunc     func(ctx *web.EventContext, container *Container) bool
+	editorActivityEnabledFunc     func(ctx *web.EventContext, container Container) bool
 }
 
 const (
@@ -167,7 +167,7 @@ func (b *Builder) PageStyle(v h.HTMLComponent) (r *Builder) {
 	return b
 }
 
-func (b *Builder) EditorActivityEnabledFunc(v func(ctx *web.EventContext, container *Container) bool) (r *Builder) {
+func (b *Builder) EditorActivityEnabledFunc(v func(ctx *web.EventContext, container Container) bool) (r *Builder) {
 	b.editorActivityEnabledFunc = v
 	return b
 }
@@ -1758,7 +1758,7 @@ func (b *ContainerBuilder) logContainerActivity(tx *gorm.DB, id string, diffs []
 		container.ModelUpdatedAt = now
 		container.ModelUpdatedBy = uid
 
-		if b.builder.editorActivityEnabledFunc != nil && b.builder.editorActivityEnabledFunc(ctx, container) {
+		if b.builder.editorActivityEnabledFunc != nil && b.builder.editorActivityEnabledFunc(ctx, *container) {
 			if err := b.logPageModelActivity(tx, container, diffs, ctx); err != nil {
 				continue // Log error but continue processing other containers
 			}
