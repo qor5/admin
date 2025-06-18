@@ -97,13 +97,7 @@ if (payload && payload.ids && payload.ids.length > 0) {
 `
 
 func ListingCompo_JsScrollToTop(compID string) string {
-	return fmt.Sprintf(`(function() {
-	const elem = plaid().findScrollableParent(document.querySelector('#%s'));
-	if (elem) {
-		elem.scrollTop = 0;
-	}
-})()`, compID)
-	// return fmt.Sprintf(`plaid().findScrollableParent(document.querySelector('#%s'))?.scrollTop = 0;`, compID)
+	return fmt.Sprintf(`(plaid().findScrollableParent(locals.document.querySelector('#%s'))||{}).scrollTop = 0;`, ListingLocatorID(compID))
 }
 
 func (c *ListingCompo) JsScrollToTop() string {
