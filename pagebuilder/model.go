@@ -262,6 +262,7 @@ func (b *ModelBuilder) pageContent(ctx *web.EventContext) (r web.PageResponse, e
 func (b *ModelBuilder) getPrimaryColumnValuesBySlug(ctx *web.EventContext) (pageID int, pageVersion string, locale string) {
 	return b.primaryColumnValuesBySlug(ctx.Param(presets.ParamID))
 }
+
 func (b *ModelBuilder) getObjFromSlug(ctx *web.EventContext) (obj interface{}, err error) {
 	pageID, pageVersion, locale := b.getPrimaryColumnValuesBySlug(ctx)
 	obj = b.mb.NewModel()

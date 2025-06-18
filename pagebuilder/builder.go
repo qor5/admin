@@ -1802,7 +1802,6 @@ func (b *ContainerBuilder) logContainerActivity(tx *gorm.DB, old, new interface{
 }
 
 func (b *ContainerBuilder) logPageModelActivity(tx *gorm.DB, old, new interface{}, container *Container, diffs []activity.Diff, ctx *web.EventContext) error {
-
 	mb := b.builder.getModelBuilderByName(container.PageModelName)
 	if mb == nil {
 		return fmt.Errorf("model builder not found for %s", container.PageModelName)
