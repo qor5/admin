@@ -50,7 +50,8 @@ type pageTitle interface {
 	PageTitle() string
 }
 
-// Only string / []string / *FieldsSection
+// Detailing configures the detailing builder with the given fields.
+// Accepts string / []string / *FieldsSection
 func (mb *ModelBuilder) Detailing(vs ...interface{}) (r *DetailingBuilder) {
 	r = mb.detailing
 	if !mb.hasDetailing && len(vs) == 0 {
@@ -71,13 +72,14 @@ func (b *DetailingBuilder) GetDrawer() bool {
 	return b.drawer
 }
 
-// Let u easier to adjust the detailing page by each project
+// ContainerClass let u easier to adjust the detailing page by each project
 func (b *DetailingBuilder) ContainerClass(layoutVal DetailingLayout) (r *DetailingBuilder) {
 	b.layouts = append(b.layouts, layoutVal)
 	return b
 }
 
-// Only string / []string / *FieldsSection
+// Only specifies which fields to include in the detailing builder.
+// Accepts string / []string / *FieldsSection
 func (b *DetailingBuilder) Only(vs ...interface{}) (r *DetailingBuilder) {
 	r = b
 	r.FieldsBuilder = *r.FieldsBuilder.Only(vs...)
