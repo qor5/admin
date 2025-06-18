@@ -111,7 +111,6 @@ func categoryValidator(ctx *web.EventContext, category *Category, db *gorm.DB, l
 	// Check for category path conflicts
 	var categories []*Category
 	if dbErr := db.Model(&Category{}).Find(&categories).Error; dbErr != nil {
-		err.GlobalError(msgr.DatabaseErrorMsg)
 		return
 	}
 
@@ -136,11 +135,7 @@ func categoryValidator(ctx *web.EventContext, category *Category, db *gorm.DB, l
 	if category.ID != 0 {
 		var originalCategory Category
 		if dbErr := db.Where("id = ? AND locale_code = ?", category.ID, category.LocaleCode).First(&originalCategory).Error; dbErr != nil {
-			// If can't find original, it's probably a new record
-			if dbErr.Error() != "record not found" {
-				err.GlobalError(msgr.DatabaseErrorMsg)
-				return
-			}
+			return
 		} else if originalCategory.Path == categoryPath {
 			// If path hasn't changed, no need to check for conflicts
 			return
@@ -150,7 +145,6 @@ func categoryValidator(ctx *web.EventContext, category *Category, db *gorm.DB, l
 		var relatedPages []*Page
 		if dbErr := db.Model(&Page{}).Where("category_id = ? AND locale_code = ? ",
 			category.ID, category.LocaleCode).Find(&relatedPages).Error; dbErr != nil {
-			err.GlobalError(msgr.DatabaseErrorMsg)
 			return
 		}
 
@@ -162,7 +156,6 @@ func categoryValidator(ctx *web.EventContext, category *Category, db *gorm.DB, l
 		// Get all pages for conflict checking
 		var pagePathInfos []pagePathInfo
 		if dbErr := db.Raw(queryLocaleCodeCategoryPathSlugSQL).Scan(&pagePathInfos).Error; dbErr != nil {
-			err.GlobalError(msgr.DatabaseErrorMsg)
 			return
 		}
 

@@ -12,6 +12,7 @@ import (
 const (
 	pageBuilderRightContentPortal   = "pageBuilderRightContentPortal"
 	pageBuilderLayerContainerPortal = "pageBuilderLayerContainerPortal"
+	pageBuilderAddContainersPortal  = "pageBuilderAddContainersPortal"
 )
 
 func (b *ModelBuilder) PreviewHref(_ *web.EventContext, ps string) string {

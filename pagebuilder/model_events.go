@@ -52,6 +52,7 @@ func (b *ModelBuilder) registerCustomFuncs() {
 	b.editor.RegisterEventFunc(ReplicateContainerEvent, b.eventMiddleware(b.replicateContainer))
 	b.editor.RegisterEventFunc(EditContainerEvent, b.eventMiddleware(b.editContainer))
 	b.editor.RegisterEventFunc(UpdateContainerEvent, b.eventMiddleware(b.updateContainer))
+	b.editor.RegisterEventFunc(ReloadAddContainersListEvent, b.eventMiddleware(b.reloadAddContainersList))
 
 	preview := web.Page(b.previewContent)
 	preview.Wrap(func(in web.PageFunc) web.PageFunc {
@@ -347,7 +348,7 @@ func (b *ModelBuilder) addContainer(ctx *web.EventContext) (r web.EventResponse,
 	)
 
 	if sharedContainer == "true" {
-		newContainerID, err = b.addSharedContainerToPage(pageID, containerID, pageVersion, locale, modelName, uint(modelID))
+		newContainerID, err = b.addSharedContainerToPage(ctx, pageID, containerID, pageVersion, locale, modelName, uint(modelID))
 	} else {
 		var newModelId uint
 		newModelId, newContainerID, err = b.addContainerToPage(ctx, pageID, containerID, pageVersion, locale, modelName)
@@ -441,16 +442,36 @@ func (b *ModelBuilder) moveUpDownContainer(ctx *web.EventContext) (r web.EventRe
 }
 
 func (b *ModelBuilder) toggleContainerVisibility(ctx *web.EventContext) (r web.EventResponse, err error) {
-	var container Container
 	var (
+		container   Container
 		paramID     = ctx.R.FormValue(paramContainerID)
 		cs          = container.PrimaryColumnValuesBySlug(paramID)
 		containerID = cs[presets.ParamID]
 		locale      = cs[l10n.SlugLocaleCode]
 	)
+	if err = b.db.Transaction(func(tx *gorm.DB) (dbErr error) {
+		if dbErr = tx.Where("id = ? AND locale_code = ?", containerID, locale).First(&container).Error; dbErr != nil {
+			return
+		}
+		oldContainer := container
+		container.Hidden = !container.Hidden
+		if dbErr = tx.Save(&container).Error; dbErr != nil {
+			return
+		}
+		if container.Shared {
+			mb, ok := b.builder.ab.GetModelBuilder(b.builder.sharedContainerModelBuilder)
+			if !ok {
+				return
+			}
+			mb.OnEdit(ctx.R.Context(), &oldContainer, &container)
+		} else {
+			b.builder.ab.OnEdit(ctx.R.Context(), &oldContainer, &container)
+		}
 
-	err = b.db.Exec("UPDATE page_builder_containers SET hidden = NOT(coalesce(hidden,FALSE)) WHERE id = ? AND locale_code = ?", containerID, locale).Error
-
+		return
+	}); err != nil {
+		return
+	}
 	web.AppendRunScripts(&r,
 		web.Plaid().
 			EventFunc(ReloadRenderPageOrTemplateBodyEvent).
@@ -503,6 +524,9 @@ func (b *ModelBuilder) deleteContainer(ctx *web.EventContext) (r web.EventRespon
 		count                  int64
 	)
 	if err = b.db.Transaction(func(tx *gorm.DB) (dbErr error) {
+		if dbErr = tx.Where("id = ? AND locale_code = ?", containerID, locale).First(&container).Error; dbErr != nil {
+			return
+		}
 		if dbErr = tx.Delete(&Container{}, "id = ? AND locale_code = ?", containerID, locale).Error; err != nil {
 			return
 		}
@@ -510,7 +534,17 @@ func (b *ModelBuilder) deleteContainer(ctx *web.EventContext) (r web.EventRespon
 	}); err != nil {
 		return
 	}
-
+	if b.builder.ab != nil {
+		if container.Shared {
+			mb, ok := b.builder.ab.GetModelBuilder(b.builder.sharedContainerModelBuilder)
+			if !ok {
+				return
+			}
+			mb.OnDelete(ctx.R.Context(), &container)
+		} else {
+			b.builder.ab.OnDelete(ctx.R.Context(), &container)
+		}
+	}
 	web.AppendRunScripts(&r,
 		web.Plaid().PushState(true).ClearMergeQuery([]string{paramContainerID, paramContainerDataID}).RunPushState(),
 		web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).Go(),
@@ -754,14 +788,44 @@ func (b *ModelBuilder) renameContainer(ctx *web.EventContext) (r web.EventRespon
 		return
 	}
 	if container.Shared {
-		err = b.db.Model(&Container{}).Where("model_name = ? AND model_id = ? AND locale_code = ?", container.ModelName, container.ModelID, locale).Update("display_name", name).Error
+		containers := []Container{}
+		oldContainers := []Container{}
+		err = b.db.Where("model_name = ? AND model_id = ? AND locale_code = ?", container.ModelName, container.ModelID, locale).Find(&containers).Error
 		if err != nil {
 			return
 		}
+		if err = b.db.Transaction(func(tx *gorm.DB) (dbErr error) {
+			for i := 0; i < len(containers); i++ {
+				oldContainers = append(oldContainers, containers[i])
+				containers[i].DisplayName = name
+
+			}
+			if dbErr = tx.Save(&containers).Error; dbErr != nil {
+				return
+			}
+			return
+		}); err != nil {
+			return
+		}
+
+		if b.builder.ab != nil {
+			mb, ok := b.builder.ab.GetModelBuilder(b.builder.sharedContainerModelBuilder)
+			if !ok {
+				return
+			}
+			for i, c := range oldContainers {
+				mb.OnEdit(ctx.R.Context(), &c, &containers[i])
+			}
+		}
 	} else {
-		err = b.db.Model(&Container{}).Where("id = ? AND locale_code = ?", containerID, locale).Update("display_name", name).Error
+		oldContainer := container
+		container.DisplayName = name
+		err = b.db.Save(&container).Error
 		if err != nil {
 			return
+		}
+		if b.builder.ab != nil {
+			b.builder.ab.OnEdit(ctx.R.Context(), &oldContainer, &container)
 		}
 	}
 	web.AppendRunScripts(&r,
@@ -932,7 +996,10 @@ func (b *ModelBuilder) reloadRenderPageOrTemplateBody(ctx *web.EventContext) (r 
 		data []byte
 		body h.HTMLComponent
 	)
-
+	iframeEventName := ctx.Param(paramIframeEventName)
+	if iframeEventName == "" {
+		iframeEventName = updateBodyEventName
+	}
 	if body, err = b.renderPageOrTemplate(ctx, true, true, true); err != nil {
 		return
 	}
@@ -945,9 +1012,18 @@ func (b *ModelBuilder) reloadRenderPageOrTemplateBody(ctx *web.EventContext) (r 
 				Body:            string(data),
 				ContainerDataID: ctx.Param(paramContainerDataID),
 				IsUpdate:        ctx.Param(paramIsUpdate) == "true",
+				EventName:       iframeEventName,
 			},
 		),
 	)
+	return
+}
+
+func (b *ModelBuilder) reloadAddContainersList(ctx *web.EventContext) (r web.EventResponse, err error) {
+	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
+		Name: pageBuilderAddContainersPortal,
+		Body: b.renderContainersList(ctx),
+	})
 	return
 }
 
@@ -959,4 +1035,5 @@ type notifIframeBodyUpdatedPayload struct {
 	Body            string `json:"body"`
 	ContainerDataID string `json:"containerDataID"`
 	IsUpdate        bool   `json:"isUpdate"`
+	EventName       string `json:"eventName"`
 }

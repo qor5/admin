@@ -138,6 +138,7 @@ func (mb *ModelBuilder) newListing() (lb *ListingBuilder) {
 		mb:            mb,
 		FieldsBuilder: *mb.p.listFieldDefaults.InspectFields(mb.model),
 	}
+	mb.listing.newBtnFunc = mb.listing.defaultNewBtnFunc
 	if mb.p.dataOperator != nil {
 		mb.listing.SearchFunc(mb.p.dataOperator.Search)
 	}
@@ -171,6 +172,8 @@ func (mb *ModelBuilder) newDetailing() (r *DetailingBuilder) {
 	if mb.p.dataOperator != nil {
 		mb.detailing.FetchFunc(mb.p.dataOperator.Fetch)
 	}
+	mb.detailing.Breadcrumb(mb.detailing.defaultBreadcrumbFunc)
+	mb.detailing.PageFunc(mb.detailing.defaultPageFunc)
 	return
 }
 

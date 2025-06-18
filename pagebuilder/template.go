@@ -1,17 +1,13 @@
 package pagebuilder
 
 import (
-	"cmp"
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
-	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
-	"github.com/theplant/relay"
 
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
@@ -21,23 +17,17 @@ import (
 )
 
 const (
-	ParamPage               = "page"
-	ParamPerPage            = "per_page"
 	ParamTemplateSelectedID = "select_id"
-	ParamSearchKeyword      = "keyword"
 	iframeCardHeight        = 180
 	dialogIframeCardHeight  = 120
 	cardContentHeight       = 88
+	cardDialogContentHeight = 34
 )
 
 type (
 	TemplateBuilder struct {
 		tm      *ModelBuilder
 		builder *Builder
-	}
-	TemplateInterface interface {
-		GetName(ctx *web.EventContext) string
-		GetDescription(ctx *web.EventContext) string
 	}
 )
 
@@ -93,25 +83,6 @@ func (b *Builder) defaultTemplateInstall(pb *presets.Builder, pm *presets.ModelB
 	return
 }
 
-func (b *TemplateBuilder) configList(mb *presets.ModelBuilder) {
-	listing := mb.Listing()
-	oldPageFunc := listing.GetPageFunc()
-	listing.PageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		var pr web.PageResponse
-		if pr, err = oldPageFunc(ctx); err != nil {
-			return
-		}
-		r.PageTitle = pr.PageTitle
-		ctx.WithContextValue(presets.CtxPageTitleComponent, h.Div(
-			VAppBarTitle(h.Text(mb.Info().LabelName(ctx, false))),
-		).Class(W100, "d-flex align-center"))
-		r.Body = web.Portal(
-			b.templateContent(ctx, mb),
-		).Name(PageTemplatePortalName)
-		return
-	})
-}
-
 func (b *TemplateBuilder) configModelWithTemplate(mb *presets.ModelBuilder) {
 	creating := mb.Editing().Creating()
 	filed := creating.GetField(PageTemplateSelectionFiled)
@@ -124,7 +95,7 @@ func (b *TemplateBuilder) configModelWithTemplate(mb *presets.ModelBuilder) {
 					Color(ColorPrimary).
 					Variant(VariantElevated).
 					Theme("light").Class("ml-2").
-					Attr("@click", web.Plaid().URL(mb.Info().ListingHref()).EventFunc(OpenTemplateDialogEvent).Query(presets.ParamOverlay, actions.Dialog).Go()),
+					Attr("@click", web.Plaid().URL(b.tm.mb.Info().ListingHref()).EventFunc(actions.OpenListingDialog).Query(presets.ParamOverlay, actions.Dialog).Go()),
 			)
 		})
 
@@ -170,233 +141,23 @@ func (b *TemplateBuilder) configModelWithTemplate(mb *presets.ModelBuilder) {
 	}
 }
 
-func (b *TemplateBuilder) templateContent(ctx *web.EventContext, model *presets.ModelBuilder) h.HTMLComponent {
-	var (
-		err            error
-		cardClickEvent string
-		mb             = b.tm.mb
-		obj            = mb.NewModel()
-		ml             = mb.Listing()
-		pMsgr          = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
-		msgr           = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		perPage        = cmp.Or(int64(ctx.ParamAsInt(ParamPerPage)), presets.PerPageDefault)
-		page           = cmp.Or(int64(ctx.ParamAsInt(ParamPage)), 1)
-		inDialog       = ctx.Param(presets.ParamOverlay) == actions.Dialog
-		cols           = 3
-		cardHeight     = iframeCardHeight
-	)
-	searchParams := &presets.SearchParams{
-		Model:          mb.NewModel(),
-		PageURL:        ctx.R.URL,
-		Keyword:        ctx.Param(ParamSearchKeyword),
-		KeywordColumns: []string{"Name"},
-		OrderBys:       []relay.OrderBy{{Field: "CreatedAt", Desc: true}},
-	}
-	searchParams.PerPage = perPage
-	searchParams.Page = page
-	result, err := ml.Searcher(ctx, searchParams)
-	if err != nil {
-		panic(errors.Wrap(err, "searcher error"))
-	}
-	totalCount := int64(0)
-	if result.TotalCount != nil {
-		totalCount = int64(*result.TotalCount)
-	}
-	pagesCount := totalCount/perPage + 1
-	if totalCount%(perPage) == 0 {
-		pagesCount--
-	}
-
-	rows := VRow()
-	if inDialog {
-		cardHeight = dialogIframeCardHeight
-		cardClickEvent, cols = b.getEventCols(model, inDialog, "")
-		if page == 1 {
-			rows.AppendChildren(VCol(
-				VCard(
-					VCardItem(
-						VCard(
-							VCardText(
-								VIcon("mdi-plus").Class("mr-1"), h.Text(msgr.AddBlankPage),
-							).Class("pa-0", H100, "text-"+ColorPrimary, "text-body-2", "d-flex", "justify-center", "align-center"),
-						).Height(cardHeight).Elevation(0).Class("bg-"+ColorGreyLighten4),
-					).Class("pa-0", W100),
-					VCardText(h.Text(msgr.BlankPage)).Class("text-caption"),
-				).Attr("@click", cardClickEvent).Elevation(0),
-			).Cols(cols))
-		}
-
-	}
-	reflectutils.ForEach(result.Nodes, func(obj interface{}) {
-		var (
-			name        string
-			description string
-			ps          string
-			ojID        interface{}
-			menus       []h.HTMLComponent
-		)
-		name, description = b.getTemplateNameDescription(obj, ctx)
-		if p, ok := obj.(presets.SlugEncoder); ok {
-			ps = p.PrimarySlug()
-		}
-		if ojID, err = reflectutils.Get(obj, "ID"); err != nil {
-			panic(err)
-		}
-		cardClickEvent, cols = b.getEventCols(model, inDialog, ps)
-		if mb.Info().Verifier().Do(presets.PermDelete).WithReq(ctx.R).IsAllowed() == nil {
-			menus = append(menus,
-				VListItem(h.Text(pMsgr.Delete)).Attr("@click", web.Plaid().
-					URL(mb.Info().ListingHref()).
-					EventFunc(actions.DeleteConfirmation).
-					Query(presets.ParamID, ojID).
-					Go(),
-				))
-		}
-		if mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() == nil {
-			menus = append(menus,
-				VListItem(h.Text(pMsgr.Edit)).Attr("@click", web.Plaid().
-					URL(mb.Info().ListingHref()).
-					EventFunc(actions.Edit).
-					Query(presets.ParamID, ojID).
-					Go(),
-				))
-		}
-		rows.AppendChildren(
-			VCol(
-				VCard(
-					VCardItem(
-						VCard(
-							VCardText(
-								h.Iframe().Src(b.tm.PreviewHref(ctx, ps)).
-									Attr("scrolling", "no", "frameborder", "0").
-									Style(`pointer-events: none;transform-origin: 0 0; transform:scale(0.2);width:500%;height:500%`),
-							).Class("pa-0", H100, "bg-"+ColorGreyLighten4),
-						).Height(cardHeight).Elevation(0),
-					).Class("pa-0", W100),
-					h.If(!inDialog,
-						VCardItem(
-							VCard(
-								VCardItem(
-									h.Components(
-										web.Slot(
-											h.Text(name),
-										).Name("title"),
-										web.Slot(
-											h.Text(description),
-										).Name("subtitle"),
-									),
-									h.Div(
-										h.Div(),
-										h.If(!inDialog && len(menus) > 0,
-											VMenu(
-												web.Slot(
-													VBtn("").Children(
-														VIcon("mdi-dots-horizontal"),
-													).Attr("v-bind", "props").Variant(VariantText).Size(SizeSmall),
-												).Name("activator").Scope("{ props }"),
-												VList(
-													menus...,
-												),
-											),
-										),
-									).Class(W100, "d-flex", "justify-space-between", "align-center"),
-								).Class("pa-2"),
-							).Color(ColorGreyLighten5).Height(cardContentHeight),
-						).Class("pa-0"),
-					),
-					h.If(inDialog, VCardTitle(h.Text(name)).Class("text-caption")),
-				).Attr("@click", cardClickEvent).Elevation(0),
-			).Cols(cols),
-		)
-	})
-	simpleReload := web.Plaid().
-		URL(mb.Info().ListingHref()).
-		EventFunc(ReloadTemplateContentEvent).
-		MergeQuery(true).
-		Queries(ctx.Queries()).
-		Go()
-	changePageEvent := web.Plaid().
-		URL(mb.Info().ListingHref()).
-		EventFunc(ReloadTemplateContentEvent).
-		Query(presets.ParamOverlay, ctx.Param(presets.ParamOverlay)).
-		Query(ParamPage, web.Var("$event")).
-		Query(ParamSearchKeyword, ctx.Param(ParamSearchKeyword)).
-		Go()
-	if !inDialog {
-		changePageEvent += ";" + web.Plaid().PushState(true).MergeQuery(true).Query(ParamPage, web.Var("$event")).RunPushState()
-	}
-
-	return h.Div(
-
-		VContainer(
-			h.If(!inDialog,
-				VRow(
-					VCol(
-						h.Div(
-							b.searchComponent(ctx),
-							h.If(mb.Info().Verifier().Do(presets.PermCreate).WithReq(ctx.R).IsAllowed() == nil,
-								VBtn(msgr.AddPageTemplate).
-									Color(ColorPrimary).
-									Variant(VariantElevated).
-									Theme("light").
-									Attr("@click", web.Plaid().URL(mb.Info().ListingHref()).EventFunc(actions.New).Go()),
-							),
-						).Class("d-flex justify-space-between align-center"),
-					).Cols(12),
-				).Class("position-sticky top-0", "bg-"+ColorBackground).Attr("style", "z-index:2"),
-			),
-			rows,
-			h.If(totalCount > perPage,
-				VRow(
-					VCol(
-						vx.VXPagination().
-							Length(pagesCount).
-							TotalVisible(5).
-							ModelValue(int(page)).
-							Attr("@update:model-value", changePageEvent).Class("float-right"),
-					).Cols(12),
-				).Class("position-sticky bottom-0", "bg-"+ColorBackground),
-			)).Fluid(true), web.Listen(
-			presets.NotifModelsCreated(obj), simpleReload,
-			presets.NotifModelsUpdated(obj), simpleReload,
-			presets.NotifModelsDeleted(obj), simpleReload,
-		))
-}
-
-func (b *TemplateBuilder) searchComponent(ctx *web.EventContext) h.HTMLComponent {
-	msgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
-	clickEvent := web.Plaid().PushState(true).MergeQuery(true).ClearMergeQuery([]string{ParamPage}).Query(ParamSearchKeyword, web.Var("vars.searchMsg")).RunPushState() + ";" + web.Plaid().
-		EventFunc(ReloadTemplateContentEvent).
-		Query(ParamPage, "1").
-		Query(presets.ParamOverlay, ctx.Param(presets.ParamOverlay)).
-		Query(ParamSearchKeyword, web.Var("vars.searchMsg")).Go()
-
-	return vx.VXField().
-		Placeholder(msgr.Search).
-		HideDetails(true).
-		Attr(":clearable", "true").
-		Attr("v-model", "vars.searchMsg").
-		Attr(web.VAssign("vars", fmt.Sprintf(`{searchMsg:%q}`, ctx.Param(ParamSearchKeyword)))...).
-		Attr("@click:clear", `vars.searchMsg="";`+clickEvent).
-		Attr("@keyup.enter", clickEvent).
-		Children(
-			web.Slot(VIcon("mdi-magnify").Attr("@click", clickEvent)).Name("append-inner"),
-		).Width(320)
-}
-
 func (b *TemplateBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponent {
 	var (
-		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		template = b.tm.mb.NewModel()
-		selectID = ctx.Param(ParamTemplateSelectedID)
-		err      error
-		name     string
+		msgr        = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		template    = b.tm.mb.NewModel()
+		selectID    = ctx.Param(ParamTemplateSelectedID)
+		err         error
+		name        string
+		previewHref string
 	)
 	if selectID != "" {
 		if err = utils.PrimarySluggerWhere(b.builder.db, template, selectID).First(template).Error; err != nil {
 			panic(err)
 		}
-		name, _ = b.getTemplateNameDescription(template, ctx)
+		p := template.(*Template)
+		name = p.Name
+		previewHref = b.tm.PreviewHref(ctx, selectID)
+
 	}
 	return h.Div(
 		h.Div(
@@ -407,12 +168,13 @@ func (b *TemplateBuilder) selectedTemplate(ctx *web.EventContext) h.HTMLComponen
 			PrependIcon("mdi-cached").
 			Attr("@click",
 				web.Plaid().
+					URL(b.tm.mb.Info().ListingHref()).
 					Query(templateSelectedID, selectID).
 					Query(presets.ParamOverlay, actions.Dialog).
-					EventFunc(OpenTemplateDialogEvent).Go()),
+					EventFunc(actions.OpenListingDialog).Go()),
 		VCard(
 			VCardText(
-				h.Iframe().Src(b.tm.PreviewHref(ctx, selectID)).
+				h.Iframe().Src(previewHref).
 					Attr("scrolling", "no", "frameborder", "0").
 					Style(`pointer-events: none;transform-origin: 0 0; transform:scale(0.2);width:500%;height:500%`),
 			).Class("pa-0", H100, "border-xl"),
@@ -431,35 +193,6 @@ func NotifTemplateSelected(mb *presets.ModelBuilder) string {
 	return fmt.Sprintf("pagebuilder_NotifTemplateSelected_%T", mb.NewModel())
 }
 
-func (b *TemplateBuilder) getEventCols(mb *presets.ModelBuilder, inDialog bool, ps string) (cardClickEvent string, cols int) {
-	cols = 3
-	if inDialog {
-		cols = 4
-		emit := web.Emit(NotifTemplateSelected(b.tm.mb), TemplateSelected{Slug: ps})
-		cardClickEvent = fmt.Sprintf("%s;vars.pageBuilderSelectTemplateDialog=false;if(!vars.presetsDialog){%s};",
-			emit,
-			web.Plaid().URL(mb.Info().ListingHref()).EventFunc(actions.New).FieldValue(ParamTemplateSelectedID, ps).Query(presets.ParamOverlay, actions.Dialog).Go())
-	} else {
-		cardClickEvent = web.Plaid().URL(b.tm.editorURLWithSlug(ps)).PushState(true).Go()
-	}
-	return
-}
-
-func (b *TemplateBuilder) getTemplateNameDescription(obj interface{}, ctx *web.EventContext) (name, description string) {
-	if p, ok := obj.(TemplateInterface); ok {
-		name = p.GetName(ctx)
-		description = p.GetDescription(ctx)
-		return
-	}
-	if v, err := reflectutils.Get(obj, "Name"); err == nil {
-		name = v.(string)
-	}
-	if v, err := reflectutils.Get(obj, "Description"); err == nil {
-		description = v.(string)
-	}
-	return
-}
-
 func (b *TemplateBuilder) ModelInstall(_ *presets.Builder, mb *presets.ModelBuilder) error {
 	b.configModelWithTemplate(mb)
 	b.registerFunctions(mb)
@@ -469,8 +202,159 @@ func (b *TemplateBuilder) ModelInstall(_ *presets.Builder, mb *presets.ModelBuil
 func (b *TemplateBuilder) Install(pb *presets.Builder) error {
 	builder := b.builder
 	tm := b.tm
+	builder.useAllPlugin(tm.mb, tm.name)
 	builder.configEditor(tm)
-	b.configList(b.tm.mb)
-	defer builder.useAllPlugin(tm.mb, tm.name)
+	b.configList()
 	return nil
+}
+
+func (b *TemplateBuilder) configList() {
+	var (
+		listing = b.tm.mb.Listing().SearchColumns("Name")
+		config  = &presets.CardDataTableConfig{}
+	)
+	defer listing.DataTableFunc(presets.CardDataTableFunc(listing, config))
+	listing.NewButtonFunc(func(ctx *web.EventContext) h.HTMLComponent {
+		var (
+			lc   = presets.ListingCompoFromContext(ctx.R.Context())
+			msgr = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		)
+		if lc.Popup {
+			return nil
+		}
+		return VBtn(msgr.AddPageTemplate).
+			Color(ColorPrimary).
+			Variant(VariantElevated).
+			Theme("light").Class("ml-2").
+			Attr("@click", web.Plaid().EventFunc(actions.New).Go())
+	})
+	listing.DialogWidth(templateDialogWidth).Title(func(ctx *web.EventContext, style presets.ListingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error) {
+		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		if ctx.Param(web.EventFuncIDName) == actions.OpenListingDialog {
+			return msgr.CreateFromTemplate, nil, nil
+		}
+		return defaultTitle, nil, nil
+	})
+	rowMenu := listing.RowMenu()
+	rowMenu.RowMenuItem("Edit").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
+		var (
+			pMsgr = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+			mb    = b.tm.mb
+		)
+		if mb.Info().Verifier().Do(presets.PermUpdate).WithReq(ctx.R).IsAllowed() != nil {
+			return nil
+		}
+
+		return VListItem(VListItemTitle(h.Text(pMsgr.Edit))).PrependIcon("mdi-pencil").Attr("@click", web.Plaid().
+			URL(mb.Info().ListingHref()).
+			EventFunc(actions.Edit).
+			Query(presets.ParamID, id).
+			Go(),
+		)
+	})
+	rowMenu.RowMenuItem("Localize").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
+		return nil
+	})
+	config.CardTitle = func(ctx *web.EventContext, obj interface{}) (h.HTMLComponent, int) {
+		var (
+			cardHeight = iframeCardHeight
+			lc         = presets.ListingCompoFromContext(ctx.R.Context())
+		)
+		if lc.Popup {
+			cardHeight = dialogIframeCardHeight
+		}
+		return h.Iframe().Src(b.tm.PreviewHref(ctx, presets.ObjectID(obj))).
+			Attr("scrolling", "no", "frameborder", "0").
+			Style(`pointer-events: none;transform-origin: 0 0; transform:scale(0.2);width:500%;height:500%`), cardHeight
+	}
+	config.CardContent = func(ctx *web.EventContext, obj interface{}) (content h.HTMLComponent, height int) {
+		var (
+			lc = presets.ListingCompoFromContext(ctx.R.Context())
+			p  = obj.(*Template)
+		)
+		if lc.Popup {
+			return VCardTitle(h.Text(p.Name)).Class("text-caption"), cardDialogContentHeight
+		} else {
+			return h.Components(
+				VCardTitle(h.Text(p.Name)),
+				VCardSubtitle(h.Text(p.Description)),
+			), cardContentHeight
+		}
+	}
+	config.Cols = func(ctx *web.EventContext) int {
+		lc := presets.ListingCompoFromContext(ctx.R.Context())
+		if lc.Popup {
+			return 4
+		}
+		return 3
+	}
+	config.WrapMultipleSelectedActions = func(_ *web.EventContext, _ h.HTMLComponents) h.HTMLComponents {
+		return nil
+	}
+	config.ClickCardEvent = func(ctx *web.EventContext, obj interface{}) string {
+		var (
+			lc = presets.ListingCompoFromContext(ctx.R.Context())
+			ps = presets.ObjectID(obj)
+		)
+		if lc.Popup {
+			emit := web.Emit(NotifTemplateSelected(b.tm.mb), TemplateSelected{Slug: ps})
+			return fmt.Sprintf("%s;%s;if(!vars.presetsDialog){%s};",
+				emit,
+				presets.CloseListingDialogVarScript,
+				web.Plaid().EventFunc(actions.New).FieldValue(ParamTemplateSelectedID, ps).Query(presets.ParamOverlay, actions.Dialog).Go())
+		} else {
+			return web.Plaid().URL(b.tm.editorURLWithSlug(ps)).PushState(true).Go()
+		}
+	}
+	config.WrapRows = func(ctx *web.EventContext, searchParams *presets.SearchParams, result *presets.SearchResult, rows *VRowBuilder) *VRowBuilder {
+		var (
+			lc   = presets.ListingCompoFromContext(ctx.R.Context())
+			msgr = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		)
+		if lc.Popup {
+			emit := web.Emit(NotifTemplateSelected(b.tm.mb), TemplateSelected{Slug: ""})
+			cardClickEvent := fmt.Sprintf("%s;%s;if(!vars.presetsDialog){%s};",
+				emit,
+				presets.CloseListingDialogVarScript,
+				web.Plaid().EventFunc(actions.New).FieldValue(ParamTemplateSelectedID, "").Query(presets.ParamOverlay, actions.Dialog).Go())
+			if searchParams.Page == 1 {
+				rows.PrependChildren(
+					VCol(
+						VCard(
+							VCardItem(
+								VCard(
+									VCardText(
+										VIcon("mdi-plus").Class("mr-1"), h.Text(msgr.AddBlankPage),
+									).Class("pa-0", H100, "text-"+ColorPrimary, "text-body-2", "d-flex", "justify-center", "align-center"),
+								).Height(dialogIframeCardHeight).Elevation(0).Class("bg-"+ColorGreyLighten4),
+							).Class("pa-0", W100),
+							VCardItem(
+								VCard(
+									VCardItem(
+										h.Div(
+											h.Div(VCardTitle(h.Text(msgr.BlankPage)).Class("text-caption")),
+										).Class(W100, "d-flex", "justify-space-between", "align-center"),
+									).Class("pa-2"),
+								).Color(ColorGreyLighten5).Height(cardDialogContentHeight),
+							).Class("pa-0"),
+						).Attr("@click", cardClickEvent).Elevation(0),
+					).Cols(4))
+			}
+		}
+		return rows
+	}
+	config.WrapRooters = func(ctx *web.EventContext, footers h.HTMLComponents) h.HTMLComponents {
+		lc := presets.ListingCompoFromContext(ctx.R.Context())
+		if lc.Popup {
+			return nil
+		}
+		return footers
+	}
+	config.RemainingHeight = func(ctx *web.EventContext) string {
+		lc := presets.ListingCompoFromContext(ctx.R.Context())
+		if lc.Popup {
+			return "400px"
+		}
+		return "180px"
+	}
 }
