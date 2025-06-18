@@ -92,7 +92,70 @@ if (payload && payload.ids && payload.ids.length > 0) {
 }
 `
 
-const ListingCompo_JsScrollToTop = "(locals.document?.querySelector(`#vt-app > div.v-layout > main`) || {}).scrollTop = 0"
+const ListingCompo_JsScrollToTop = `
+(function() {
+	var doc = locals.document;
+	if (!doc) return;
+	
+	// Find all listing components and determine which one to scroll
+	var listingComponents = doc.querySelectorAll('.listing-compo-wrap');
+	var targetListingCompo = null;
+	
+	// If there's only one listing component, use it
+	if (listingComponents.length === 1) {
+		targetListingCompo = listingComponents[0];
+	} else if (listingComponents.length > 1) {
+		// Multiple listing components: prioritize the one in an active dialog
+		for (var i = 0; i < listingComponents.length; i++) {
+			var compo = listingComponents[i];
+			var dialog = compo.closest('.v-dialog');
+			if (dialog && (dialog.style.display !== 'none')) {
+				targetListingCompo = compo;
+				break;
+			}
+		}
+		// If no dialog listing found, use the first one
+		if (!targetListingCompo) {
+			targetListingCompo = listingComponents[0];
+		}
+	}
+	
+	if (!targetListingCompo) {
+		// Fallback to main page scroll if no listing component found
+		var mainElement = doc.querySelector('#vt-app > div.v-layout > main');
+		if (mainElement) {
+			mainElement.scrollTop = 0;
+		}
+		return;
+	}
+	
+	// Check if the listing component is inside a dialog
+	var dialogContainer = targetListingCompo.closest('.v-dialog');
+	if (dialogContainer) {
+		// We're in a dialog, find the scrollable container
+		var scrollableContainers = [
+			dialogContainer.querySelector('.v-card'),
+			dialogContainer.querySelector('.v-dialog__content'),
+			dialogContainer.querySelector('[style*="overflow"]'),
+			dialogContainer
+		];
+		
+		for (var i = 0; i < scrollableContainers.length; i++) {
+			var container = scrollableContainers[i];
+			if (container && container.scrollTop !== undefined) {
+				container.scrollTop = 0;
+				return;
+			}
+		}
+	}
+	
+	// Fallback to main page scroll
+	var mainElement = doc.querySelector('#vt-app > div.v-layout > main');
+	if (mainElement) {
+		mainElement.scrollTop = 0;
+	}
+})()
+`
 
 func (c *ListingCompo) VarCurrentActive() string {
 	return fmt.Sprintf("__current_active_of_%s__", stateful.MurmurHash3(c.CompoID()))
