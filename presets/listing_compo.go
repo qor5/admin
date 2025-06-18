@@ -75,6 +75,10 @@ func (c *ListingCompo) CompoID() string {
 	return fmt.Sprintf("ListingCompo_%s", c.ID)
 }
 
+func ListingLocatorID(id string) string {
+	return fmt.Sprintf("ListingLocator_%s", id)
+}
+
 type ctxKeyListingCompo struct{}
 
 func ListingCompoFromContext(ctx context.Context) *ListingCompo {
@@ -91,6 +95,47 @@ if (payload && payload.ids && payload.ids.length > 0) {
 	locals.selected_ids = locals.selected_ids.filter(id => !payload.ids.includes(id));
 }
 `
+
+func ListingCompo_JsScrollToTop2(compID string) string {
+	funcStr := `(function() {
+		function findScrollableParent(element) {
+			if (!element) return null;
+			
+			let parent = element.parentElement;
+			
+			while (parent && parent !== document.body && parent !== document.documentElement) {
+				const style = window.getComputedStyle(parent);
+				
+				// 检查overflow属性
+				const overflowY = style.overflowY;
+				const overflow = style.overflow;
+				
+				// 检查是否设置了可滚动的overflow
+				if (overflowY === 'scroll' || overflowY === 'auto' || 
+					overflow === 'scroll' || overflow === 'auto') {
+					
+					// 检查是否实际上可以滚动（内容超出容器）
+					if (parent.scrollHeight > parent.clientHeight) {
+						return parent;
+					}
+				}
+				
+				// 特殊处理：某些元素即使没有明确设置overflow也可能可滚动
+				if (parent.scrollHeight > parent.clientHeight && 
+					parent.scrollTop >= 0) {
+					return parent;
+				}
+				
+				parent = parent.parentElement;
+			}
+			
+			// 返回默认的滚动元素
+			return document.scrollingElement || document.documentElement;
+		}
+	})()`
+
+	return funcStr
+}
 
 const ListingCompo_JsScrollToTop = `
 (function() {
@@ -171,6 +216,7 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 	evCtx.WithContextValue(ctxKeyListingCompo{}, c)
 
 	return stateful.Actionable(ctx, c,
+		h.Div().Id(ListingLocatorID(c.CompoID())),
 		// onMounted for selected_ids front-end autonomy
 		web.RunScript(fmt.Sprintf(`({el}) => {
 			locals.dialog = false;
