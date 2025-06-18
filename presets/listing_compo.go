@@ -97,52 +97,37 @@ const ListingCompo_JsScrollToTop = `
 	var doc = locals.document;
 	if (!doc) return;
 	
-	// Find all listing components and determine which one to scroll
-	var listingComponents = doc.querySelectorAll('.listing-compo-wrap');
-	var targetListingCompo = null;
-	
-	// If there's only one listing component, use it
-	if (listingComponents.length === 1) {
-		targetListingCompo = listingComponents[0];
-	} else if (listingComponents.length > 1) {
-		// Multiple listing components: prioritize the one in an active dialog
-		for (var i = 0; i < listingComponents.length; i++) {
-			var compo = listingComponents[i];
-			var dialog = compo.closest('.v-dialog');
-			if (dialog && (dialog.style.display !== 'none')) {
-				targetListingCompo = compo;
-				break;
-			}
-		}
-		// If no dialog listing found, use the first one
-		if (!targetListingCompo) {
-			targetListingCompo = listingComponents[0];
-		}
-	}
-	
-	if (!targetListingCompo) {
-		// Fallback to main page scroll if no listing component found
+	// Helper function to scroll main page
+	function scrollMainPage() {
 		var mainElement = doc.querySelector('#vt-app > div.v-layout > main');
 		if (mainElement) {
 			mainElement.scrollTop = 0;
 		}
+	}
+	
+	// Find target listing component (prioritize dialog over main page)
+	var targetListingCompo = doc.querySelector('.v-dialog--active .listing-compo-wrap') ||
+							 doc.querySelector('.v-dialog[aria-modal="true"] .listing-compo-wrap') ||
+							 doc.querySelector('.listing-compo-wrap');
+	
+	if (!targetListingCompo) {
+		scrollMainPage();
 		return;
 	}
 	
-	// Check if the listing component is inside a dialog
+	// Check if we're in a dialog
 	var dialogContainer = targetListingCompo.closest('.v-dialog');
 	if (dialogContainer) {
-		// We're in a dialog, find the scrollable container
-		var scrollableContainers = [
+		// Try to scroll dialog containers in order of preference
+		var containers = [
 			dialogContainer.querySelector('.v-card'),
 			dialogContainer.querySelector('.v-dialog__content'),
-			dialogContainer.querySelector('[style*="overflow"]'),
 			dialogContainer
 		];
 		
-		for (var i = 0; i < scrollableContainers.length; i++) {
-			var container = scrollableContainers[i];
-			if (container && container.scrollTop !== undefined) {
+		for (var i = 0; i < containers.length; i++) {
+			var container = containers[i];
+			if (container && typeof container.scrollTop === 'number') {
 				container.scrollTop = 0;
 				return;
 			}
@@ -150,10 +135,7 @@ const ListingCompo_JsScrollToTop = `
 	}
 	
 	// Fallback to main page scroll
-	var mainElement = doc.querySelector('#vt-app > div.v-layout > main');
-	if (mainElement) {
-		mainElement.scrollTop = 0;
-	}
+	scrollMainPage();
 })()
 `
 
