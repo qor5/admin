@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/huandu/go-clone"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/qor5/web/v3"
@@ -22,6 +21,7 @@ import (
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 
+	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
@@ -453,30 +453,44 @@ func (b *ModelBuilder) toggleContainerVisibility(ctx *web.EventContext) (r web.E
 		cs          = container.PrimaryColumnValuesBySlug(paramID)
 		containerID = cs[presets.ParamID]
 		locale      = cs[l10n.SlugLocaleCode]
+		obj         interface{}
 	)
-	if err = b.db.Transaction(func(tx *gorm.DB) (dbErr error) {
-		if dbErr = tx.Where("id = ? AND locale_code = ?", containerID, locale).First(&container).Error; dbErr != nil {
-			return
-		}
-		oldContainer := clone.Clone(container).(Container)
-		container.Hidden = !container.Hidden
-		if dbErr = tx.Save(&container).Error; dbErr != nil {
-			return
-		}
-		if container.Shared {
-			mb, ok := b.builder.ab.GetModelBuilder(b.builder.sharedContainerModelBuilder)
+	if obj, err = b.getObjFromSlug(ctx); err != nil {
+		return
+	}
+
+	if err = b.db.Where("id = ? AND locale_code = ?", containerID, locale).First(&container).Error; err != nil {
+		return
+	}
+	diffs := []activity.Diff{
+		{Field: fmt.Sprintf("[%s %v].Hidden", container.DisplayName, container.ModelID), Old: fmt.Sprint(container.Hidden), New: fmt.Sprint(!container.Hidden)},
+	}
+	container.Hidden = !container.Hidden
+	if err = b.db.Save(&container).Error; err != nil {
+		return
+	}
+	defer func() {
+		if b.builder.ab != nil && b.builder.editorActivityProcessor != nil {
+			detail := &EditorLogInput{
+				Action:     activity.ActionEdit,
+				PageObject: obj,
+				Container:  container,
+				Detail:     diffs,
+			}
+			if b.builder.editorActivityProcessor != nil {
+				detail = b.builder.editorActivityProcessor(ctx, detail)
+			}
+			if detail == nil {
+				return
+			}
+			mb, ok := b.builder.ab.GetModelBuilder(b.mb)
 			if !ok {
 				return
 			}
-			mb.OnEdit(ctx.R.Context(), &oldContainer, &container)
-		} else {
-			b.builder.ab.OnEdit(ctx.R.Context(), &oldContainer, &container)
+			mb.Log(ctx.R.Context(), detail.Action, detail.PageObject, detail.Detail)
 		}
+	}()
 
-		return
-	}); err != nil {
-		return
-	}
 	web.AppendRunScripts(&r,
 		web.Plaid().
 			EventFunc(ReloadRenderPageOrTemplateBodyEvent).
@@ -799,52 +813,44 @@ func (b *ModelBuilder) renameContainer(ctx *web.EventContext) (r web.EventRespon
 		containerID = cs[presets.ParamID]
 		locale      = cs[l10n.SlugLocaleCode]
 		name        = ctx.R.FormValue(paramDisplayName)
+		obj         interface{}
 	)
+	if obj, err = b.getObjFromSlug(ctx); err != nil {
+		return
+	}
 	err = b.db.First(&container, "id = ? AND locale_code = ?  ", containerID, locale).Error
 	if err != nil {
 		return
 	}
-	if container.Shared {
-		containers := []Container{}
-		oldContainers := []Container{}
-		err = b.db.Where("model_name = ? AND model_id = ? AND locale_code = ?", container.ModelName, container.ModelID, locale).Find(&containers).Error
-		if err != nil {
-			return
-		}
-		if err = b.db.Transaction(func(tx *gorm.DB) (dbErr error) {
-			for i := 0; i < len(containers); i++ {
-				oldContainers = append(oldContainers, containers[i])
-				containers[i].DisplayName = name
-
+	diffs := []activity.Diff{
+		{Field: fmt.Sprintf("[%s %v].DisplayName", container.DisplayName, container.ModelID), Old: container.DisplayName, New: name},
+	}
+	err = b.db.Model(&Container{}).Where("model_name = ? AND model_id = ? AND locale_code = ?", container.ModelName, container.ModelID, locale).Update("display_name", name).Error
+	if err != nil {
+		return
+	}
+	defer func() {
+		if b.builder.ab != nil && b.builder.editorActivityProcessor != nil {
+			detail := &EditorLogInput{
+				Action:          activity.ActionEdit,
+				PageObject:      obj,
+				Container:       container,
+				ContainerObject: nil,
+				Detail:          diffs,
 			}
-			if dbErr = tx.Save(&containers).Error; dbErr != nil {
+			if b.builder.editorActivityProcessor != nil {
+				detail = b.builder.editorActivityProcessor(ctx, detail)
+			}
+			if detail == nil {
 				return
 			}
-			return
-		}); err != nil {
-			return
-		}
-
-		if b.builder.ab != nil {
-			mb, ok := b.builder.ab.GetModelBuilder(b.builder.sharedContainerModelBuilder)
+			mb, ok := b.builder.ab.GetModelBuilder(b.mb)
 			if !ok {
 				return
 			}
-			for i, c := range oldContainers {
-				mb.OnEdit(ctx.R.Context(), &c, &containers[i])
-			}
+			mb.Log(ctx.R.Context(), detail.Action, detail.PageObject, detail.Detail)
 		}
-	} else {
-		oldContainer := container
-		container.DisplayName = name
-		err = b.db.Save(&container).Error
-		if err != nil {
-			return
-		}
-		if b.builder.ab != nil {
-			b.builder.ab.OnEdit(ctx.R.Context(), &oldContainer, &container)
-		}
-	}
+	}()
 	web.AppendRunScripts(&r,
 		fmt.Sprintf("vars.__pageBuilderRightContentTitle=%q", name),
 		web.Plaid().EventFunc(ShowSortedContainerDrawerEvent).MergeQuery(true).Query(paramStatus, ctx.Param(paramStatus)).Go(),

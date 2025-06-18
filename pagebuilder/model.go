@@ -14,7 +14,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/huandu/go-clone"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
@@ -23,6 +22,7 @@ import (
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 
+	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
@@ -268,9 +268,12 @@ func (b *ModelBuilder) getObjFromSlug(ctx *web.EventContext) (obj interface{}, e
 	obj = b.mb.NewModel()
 	g := b.db
 	if b.isTemplate {
-		g = g.Where("id = ? AND locale_code = ? ", pageID, locale)
+		g = g.Where("id = ? ", pageID)
 	} else {
-		g = g.Where("id = ? AND locale_code = ? and version = ?", pageID, locale, pageVersion)
+		g = g.Where("id = ? and version = ?", pageID, pageVersion)
+	}
+	if _, ok := obj.(l10n.LocaleInterface); ok {
+		g = g.Where(" locale_code = ?", locale)
 	}
 	if err = g.First(obj).Error; err != nil {
 		return
@@ -696,23 +699,43 @@ func (b *ModelBuilder) markAsSharedContainer(ctx *web.EventContext) (r web.Event
 		cs          = container.PrimaryColumnValuesBySlug(paramID)
 		containerID = cs[presets.ParamID]
 		locale      = cs[l10n.SlugLocaleCode]
+		obj         interface{}
 	)
-	if err = b.db.Transaction(func(tx *gorm.DB) (dbErr error) {
-		if dbErr = tx.First(&container, "id = ? AND locale_code = ?", containerID, locale).Error; dbErr != nil {
-			return
-		}
-		oldContainer := clone.Clone(container).(Container)
-		container.Shared = true
-		if dbErr = tx.Save(&container).Error; dbErr != nil {
-			return
-		}
-
-		b.builder.ab.OnEdit(ctx.R.Context(), &oldContainer, &container)
-
-		return
-	}); err != nil {
+	if obj, err = b.getObjFromSlug(ctx); err != nil {
 		return
 	}
+	if err = b.db.First(&container, "id = ? AND locale_code = ?", containerID, locale).Error; err != nil {
+		return
+	}
+	diffs := []activity.Diff{
+		{Field: fmt.Sprintf("[%s %v].Shared", container.DisplayName, container.ModelID), Old: fmt.Sprint(container.Shared), New: fmt.Sprint(true)},
+	}
+	container.Shared = true
+	if err = b.db.Save(&container).Error; err != nil {
+		return
+	}
+	defer func() {
+		if b.builder.ab != nil && b.builder.editorActivityProcessor != nil {
+			detail := &EditorLogInput{
+				Action:     activity.ActionEdit,
+				PageObject: obj,
+				Container:  container,
+				Detail:     diffs,
+			}
+			if b.builder.editorActivityProcessor != nil {
+				detail = b.builder.editorActivityProcessor(ctx, detail)
+			}
+			if detail == nil {
+				return
+			}
+			mb, ok := b.builder.ab.GetModelBuilder(b.mb)
+			if !ok {
+				return
+			}
+			mb.Log(ctx.R.Context(), detail.Action, detail.PageObject, detail.Detail)
+		}
+	}()
+
 	r.PushState = web.Location(url.Values{})
 	return
 }

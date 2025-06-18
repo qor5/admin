@@ -105,7 +105,6 @@ type Builder struct {
 	mediaBuilder                   *media.Builder
 	ab                             *activity.Builder
 	publisher                      *publish.Builder
-	sharedContainerModelBuilder    *presets.ModelBuilder
 	seoBuilder                     *seo.Builder
 	pageStyle                      h.HTMLComponent
 	pageLayoutFunc                 PageLayoutFunc
@@ -747,13 +746,6 @@ func (b *Builder) configSharedContainer(pb *presets.Builder) {
 	db := b.db
 
 	pm := pb.Model(&Container{}).URIName("shared_containers").Label("Shared Containers")
-	defer func() {
-		b.sharedContainerModelBuilder = pm
-		if b.ab != nil {
-			pm.Use(b.ab)
-		}
-	}()
-
 	pm.RegisterEventFunc(republishRelatedOnlinePagesEvent, b.republishRelatedOnlinePages)
 	pm.RegisterEventFunc(RenameContainerDialogEvent, b.renameContainerDialog)
 	pm.RegisterEventFunc(RenameContainerFromDialogEvent, b.renameContainerFromDialog)
