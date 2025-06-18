@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/huandu/go-clone"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	. "github.com/qor5/x/v3/ui/vuetify"
@@ -64,11 +65,18 @@ func (b *ModelBuilder) setName() {
 	b.name = utils.GetObjectName(b.mb.NewModel())
 }
 
-func (b *ModelBuilder) addSharedContainerToPage(ctx *web.EventContext, pageID int, containerID, pageVersion, locale, modelName string, modelID uint) (newContainerID string, err error) {
-	var c Container
+func (b *ModelBuilder) addSharedContainerToPage(ctx *web.EventContext, obj interface{}, pageID int, containerID, pageVersion, locale, modelName string, modelID uint) (newContainerID string, err error) {
+	var (
+		c           Container
+		containerMb = b.builder.ContainerByName(modelName)
+		model       = containerMb.NewModel()
+	)
 
 	err = b.db.Transaction(func(tx *gorm.DB) (dbErr error) {
 		if dbErr = tx.First(&c, "model_name = ? AND model_id = ? AND shared = true ", modelName, modelID).Error; dbErr != nil {
+			return
+		}
+		if dbErr = tx.First(model, modelID).Error; dbErr != nil {
 			return
 		}
 
@@ -114,12 +122,25 @@ func (b *ModelBuilder) addSharedContainerToPage(ctx *web.EventContext, pageID in
 			return
 		}
 		newContainerID = container.PrimarySlug()
-		if b.builder.ab != nil {
-			mb, ok := b.builder.ab.GetModelBuilder(b.builder.sharedContainerModelBuilder)
+		if b.builder.ab != nil && b.builder.editorActivityProcessor != nil {
+			mb, ok := b.builder.ab.GetModelBuilder(b.mb)
 			if !ok {
 				return
 			}
-			mb.OnCreate(ctx.R.Context(), container)
+			detail := &EditorLogInput{
+				Action:          ActionAddContainer,
+				PageObject:      obj,
+				Container:       container,
+				ContainerObject: model,
+				Detail:          fmt.Sprintf("%s %s", container.DisplayName, container.PrimarySlug()),
+			}
+			if b.builder.editorActivityProcessor != nil {
+				detail = b.builder.editorActivityProcessor(ctx, detail)
+			}
+			if detail == nil {
+				return
+			}
+			mb.Log(ctx.R.Context(), detail.Action, detail.PageObject, detail.Detail)
 		}
 		return
 	})
@@ -133,7 +154,7 @@ func withLocale(builder *Builder, wh *gorm.DB, locale string) *gorm.DB {
 	return wh.Where("locale_code = ?", locale)
 }
 
-func (b *ModelBuilder) addContainerToPage(ctx *web.EventContext, pageID int, containerID, pageVersion, locale, modelName string) (modelID uint, newContainerID string, err error) {
+func (b *ModelBuilder) addContainerToPage(ctx *web.EventContext, obj interface{}, pageID int, containerID, pageVersion, locale, modelName string) (modelID uint, newContainerID string, err error) {
 	var (
 		dc          DemoContainer
 		containerMb = b.builder.ContainerByName(modelName)
@@ -201,8 +222,25 @@ func (b *ModelBuilder) addContainerToPage(ctx *web.EventContext, pageID int, con
 		}
 		err = tx.Create(&container).Error
 		newContainerID = container.PrimarySlug()
-		if b.builder.ab != nil {
-			b.builder.ab.OnCreate(ctx.R.Context(), container)
+		if b.builder.ab != nil && b.builder.editorActivityProcessor != nil {
+			mb, ok := b.builder.ab.GetModelBuilder(b.mb)
+			if !ok {
+				return
+			}
+			detail := &EditorLogInput{
+				Action:          ActionAddContainer,
+				PageObject:      obj,
+				Container:       container,
+				ContainerObject: model,
+				Detail:          fmt.Sprintf("%s %s", container.DisplayName, container.PrimarySlug()),
+			}
+			if b.builder.editorActivityProcessor != nil {
+				detail = b.builder.editorActivityProcessor(ctx, detail)
+			}
+			if detail == nil {
+				return
+			}
+			mb.Log(ctx.R.Context(), detail.Action, detail.PageObject, detail.Detail)
 		}
 		return
 	})
@@ -223,6 +261,20 @@ func (b *ModelBuilder) pageContent(ctx *web.EventContext) (r web.PageResponse, e
 
 func (b *ModelBuilder) getPrimaryColumnValuesBySlug(ctx *web.EventContext) (pageID int, pageVersion string, locale string) {
 	return b.primaryColumnValuesBySlug(ctx.Param(presets.ParamID))
+}
+func (b *ModelBuilder) getObjFromSlug(ctx *web.EventContext) (obj interface{}, err error) {
+	pageID, pageVersion, locale := b.getPrimaryColumnValuesBySlug(ctx)
+	obj = b.mb.NewModel()
+	g := b.db
+	if b.isTemplate {
+		g = g.Where("id = ? AND locale_code = ? ", pageID, locale)
+	} else {
+		g = g.Where("id = ? AND locale_code = ? and version = ?", pageID, locale, pageVersion)
+	}
+	if err = g.First(obj).Error; err != nil {
+		return
+	}
+	return
 }
 
 func (b *ModelBuilder) primaryColumnValuesBySlug(slug string) (pageID int, pageVersion string, locale string) {
@@ -648,7 +700,7 @@ func (b *ModelBuilder) markAsSharedContainer(ctx *web.EventContext) (r web.Event
 		if dbErr = tx.First(&container, "id = ? AND locale_code = ?", containerID, locale).Error; dbErr != nil {
 			return
 		}
-		oldContainer := container
+		oldContainer := clone.Clone(container).(Container)
 		container.Shared = true
 		if dbErr = tx.Save(&container).Error; dbErr != nil {
 			return
