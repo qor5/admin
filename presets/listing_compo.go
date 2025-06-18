@@ -96,93 +96,19 @@ if (payload && payload.ids && payload.ids.length > 0) {
 }
 `
 
-func ListingCompo_JsScrollToTop2(compID string) string {
-	funcStr := `(function() {
-		function findScrollableParent(element) {
-			if (!element) return null;
-			
-			let parent = element.parentElement;
-			
-			while (parent && parent !== document.body && parent !== document.documentElement) {
-				const style = window.getComputedStyle(parent);
-				
-				// 检查overflow属性
-				const overflowY = style.overflowY;
-				const overflow = style.overflow;
-				
-				// 检查是否设置了可滚动的overflow
-				if (overflowY === 'scroll' || overflowY === 'auto' || 
-					overflow === 'scroll' || overflow === 'auto') {
-					
-					// 检查是否实际上可以滚动（内容超出容器）
-					if (parent.scrollHeight > parent.clientHeight) {
-						return parent;
-					}
-				}
-				
-				// 特殊处理：某些元素即使没有明确设置overflow也可能可滚动
-				if (parent.scrollHeight > parent.clientHeight && 
-					parent.scrollTop >= 0) {
-					return parent;
-				}
-				
-				parent = parent.parentElement;
-			}
-			
-			// 返回默认的滚动元素
-			return document.scrollingElement || document.documentElement;
-		}
-	})()`
-
-	return funcStr
+func ListingCompo_JsScrollToTop(compID string) string {
+	return fmt.Sprintf(`(function() {
+	const elem = plaid().findScrollableParent(document.querySelector('#%s'));
+	if (elem) {
+		elem.scrollTop = 0;
+	}
+})()`, compID)
+	// return fmt.Sprintf(`plaid().findScrollableParent(document.querySelector('#%s'))?.scrollTop = 0;`, compID)
 }
 
-const ListingCompo_JsScrollToTop = `
-(function() {
-	var doc = locals.document;
-	if (!doc) return;
-	
-	// Helper function to scroll main page
-	function scrollMainPage() {
-		var mainElement = doc.querySelector('#vt-app > div.v-layout > main');
-		if (mainElement) {
-			mainElement.scrollTop = 0;
-		}
-	}
-	
-	// Find target listing component (prioritize dialog over main page)
-	var targetListingCompo = doc.querySelector('.v-dialog--active .listing-compo-wrap') ||
-							 doc.querySelector('.v-dialog[aria-modal="true"] .listing-compo-wrap') ||
-							 doc.querySelector('.listing-compo-wrap');
-	
-	if (!targetListingCompo) {
-		scrollMainPage();
-		return;
-	}
-	
-	// Check if we're in a dialog
-	var dialogContainer = targetListingCompo.closest('.v-dialog');
-	if (dialogContainer) {
-		// Try to scroll dialog containers in order of preference
-		var containers = [
-			dialogContainer.querySelector('.v-card'),
-			dialogContainer.querySelector('.v-dialog__content'),
-			dialogContainer
-		];
-		
-		for (var i = 0; i < containers.length; i++) {
-			var container = containers[i];
-			if (container && typeof container.scrollTop === 'number') {
-				container.scrollTop = 0;
-				return;
-			}
-		}
-	}
-	
-	// Fallback to main page scroll
-	scrollMainPage();
-})()
-`
+func (c *ListingCompo) JsScrollToTop() string {
+	return ListingCompo_JsScrollToTop(c.CompoID())
+}
 
 func (c *ListingCompo) VarCurrentActive() string {
 	return fmt.Sprintf("__current_active_of_%s__", stateful.MurmurHash3(c.CompoID()))
@@ -292,7 +218,7 @@ func (c *ListingCompo) tabsFilter(ctx context.Context) h.HTMLComponent {
 					target.After, target.Before = nil, nil
 					target.ActiveFilterTab = ft.ID
 					target.FilterQuery = encodedQuery
-				}).ThenScript(ListingCompo_JsScrollToTop).Go()).
+				}).ThenScript(c.JsScrollToTop()).Go()).
 				Children(
 					h.Iff(ft.AdvancedLabel != nil, func() h.HTMLComponent {
 						return ft.AdvancedLabel
@@ -330,7 +256,7 @@ func (c *ListingCompo) textFieldSearch(ctx context.Context) h.HTMLComponent {
 					target.After, target.Before = nil, nil
 				},
 				stateful.WithAppendFix(`v.compo.keyword = targetKeyword;`),
-			).ThenScript(ListingCompo_JsScrollToTop).Go(),
+			).ThenScript(c.JsScrollToTop()).Go(),
 		)
 	}
 	return web.Scope().VSlot("{ locals: xlocals }").Init(fmt.Sprintf("{ keyword: %q }", c.Keyword)).Children(
@@ -436,7 +362,7 @@ func (c *ListingCompo) filterSearch(ctx context.Context, fd vx.FilterData) h.HTM
 			UpdateModelValue(stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
 				target.Page = 0
 				target.After, target.Before = nil, nil
-			}, opts...).ThenScript(ListingCompo_JsScrollToTop).Go()).
+			}, opts...).ThenScript(c.JsScrollToTop()).Go()).
 			Attr("v-on-mounted", fmt.Sprintf(`({el}) => { 
 				xlocals.textFieldSearchElem = el.ownerDocument.getElementById(%q); 
 			}`, c.textFieldSearchID())),
@@ -626,7 +552,7 @@ func (c *ListingCompo) headCellWrapperFunc(ctx context.Context, columns []*Colum
 				} else {
 					target.OrderBys = append(target.OrderBys, orderBy)
 				}
-			}).ThenScript(ListingCompo_JsScrollToTop).Go()).
+			}).ThenScript(c.JsScrollToTop()).Go()).
 			Children(
 				h.Div().Style("cursor: pointer; white-space: nowrap;").Children(
 					h.Span(title).Style("text-decoration: underline;"),
@@ -1019,10 +945,10 @@ func (c *ListingCompo) regularPagination(ctx context.Context, searchParams *Sear
 				target.After, target.Before = nil, nil
 			},
 			stateful.WithAppendFix(`v.compo.per_page = parseInt($event, 10)`),
-		).ThenScript(ListingCompo_JsScrollToTop).Go()).
+		).ThenScript(c.JsScrollToTop()).Go()).
 		OnSelectPage(stateful.ReloadAction(ctx, c, nil,
 			stateful.WithAppendFix(`v.compo.page = parseInt(value,10);`),
-		).ThenScript(ListingCompo_JsScrollToTop).Go(),
+		).ThenScript(c.JsScrollToTop()).Go(),
 		)
 }
 
@@ -1052,7 +978,7 @@ func (c *ListingCompo) relayPaginationCompo(ctx context.Context, perPage int, pa
 					target.After, target.Before = nil, nil
 				},
 				stateful.WithAppendFix(`v.compo.per_page = parseInt($event, 10)`),
-			).ThenScript(ListingCompo_JsScrollToTop).Go()),
+			).ThenScript(c.JsScrollToTop()).Go()),
 	)
 
 	prev := VBtn("").Variant(VariantText).Icon("mdi-chevron-left").Disabled(!pageInfo.HasPreviousPage)
@@ -1061,13 +987,13 @@ func (c *ListingCompo) relayPaginationCompo(ctx context.Context, perPage int, pa
 		prev.SetAttr("@click", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
 			target.Before = pageInfo.StartCursor
 			target.After = nil
-		}).ThenScript(ListingCompo_JsScrollToTop).Go())
+		}).ThenScript(c.JsScrollToTop()).Go())
 	}
 	if pageInfo.HasNextPage {
 		next.SetAttr("@click", stateful.ReloadAction(ctx, c, func(target *ListingCompo) {
 			target.Before = nil
 			target.After = pageInfo.EndCursor
-		}).ThenScript(ListingCompo_JsScrollToTop).Go())
+		}).ThenScript(c.JsScrollToTop()).Go())
 	}
 	prevNext := h.Div().Class("d-flex align-center ga-2").Children(
 		prev,

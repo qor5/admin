@@ -2,6 +2,8 @@ module github.com/qor5/admin/v3
 
 go 1.23.0
 
+replace github.com/qor5/web/v3 => ../web
+
 require (
 	github.com/ahmetb/go-linq/v3 v3.2.0
 	github.com/aws/aws-sdk-go-v2 v1.32.5
