@@ -70,6 +70,9 @@ const (
 	paramIframeEventName  = "iframeEventName"
 	changeDeviceEventName = "change_device"
 	updateBodyEventName   = "update_body"
+
+	ActionAddContainer    = "AddContainer"
+	ActionDeleteContainer = "DeleteContainer"
 )
 
 const (

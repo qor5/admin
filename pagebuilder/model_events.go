@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/huandu/go-clone"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 	"github.com/qor5/web/v3"
@@ -345,13 +346,17 @@ func (b *ModelBuilder) addContainer(ctx *web.EventContext) (r web.EventResponse,
 		containerID                 = ctx.Param(paramContainerID)
 		newContainerID              string
 		pageID, pageVersion, locale = b.getPrimaryColumnValuesBySlug(ctx)
+		obj                         interface{}
 	)
+	if obj, err = b.getObjFromSlug(ctx); err != nil {
+		return
+	}
 
 	if sharedContainer == "true" {
-		newContainerID, err = b.addSharedContainerToPage(ctx, pageID, containerID, pageVersion, locale, modelName, uint(modelID))
+		newContainerID, err = b.addSharedContainerToPage(ctx, obj, pageID, containerID, pageVersion, locale, modelName, uint(modelID))
 	} else {
 		var newModelId uint
-		newModelId, newContainerID, err = b.addContainerToPage(ctx, pageID, containerID, pageVersion, locale, modelName)
+		newModelId, newContainerID, err = b.addContainerToPage(ctx, obj, pageID, containerID, pageVersion, locale, modelName)
 		modelID = int(newModelId)
 	}
 	cb := b.builder.ContainerByName(modelName)
@@ -453,7 +458,7 @@ func (b *ModelBuilder) toggleContainerVisibility(ctx *web.EventContext) (r web.E
 		if dbErr = tx.Where("id = ? AND locale_code = ?", containerID, locale).First(&container).Error; dbErr != nil {
 			return
 		}
-		oldContainer := container
+		oldContainer := clone.Clone(container).(Container)
 		container.Hidden = !container.Hidden
 		if dbErr = tx.Save(&container).Error; dbErr != nil {
 			return
@@ -522,7 +527,11 @@ func (b *ModelBuilder) deleteContainer(ctx *web.EventContext) (r web.EventRespon
 		containerID            = cs[presets.ParamID]
 		locale                 = cs[l10n.SlugLocaleCode]
 		count                  int64
+		obj                    interface{}
 	)
+	if obj, err = b.getObjFromSlug(ctx); err != nil {
+		return
+	}
 	if err = b.db.Transaction(func(tx *gorm.DB) (dbErr error) {
 		if dbErr = tx.Where("id = ? AND locale_code = ?", containerID, locale).First(&container).Error; dbErr != nil {
 			return
@@ -534,16 +543,24 @@ func (b *ModelBuilder) deleteContainer(ctx *web.EventContext) (r web.EventRespon
 	}); err != nil {
 		return
 	}
-	if b.builder.ab != nil {
-		if container.Shared {
-			mb, ok := b.builder.ab.GetModelBuilder(b.builder.sharedContainerModelBuilder)
-			if !ok {
-				return
-			}
-			mb.OnDelete(ctx.R.Context(), &container)
-		} else {
-			b.builder.ab.OnDelete(ctx.R.Context(), &container)
+	if b.builder.ab != nil && b.builder.editorActivityProcessor != nil {
+		mb, ok := b.builder.ab.GetModelBuilder(b.mb)
+		if !ok {
+			return
 		}
+		detail := &EditorLogInput{
+			Action:     ActionDeleteContainer,
+			PageObject: obj,
+			Container:  container,
+			Detail:     fmt.Sprintf("%s %s", container.DisplayName, container.PrimarySlug()),
+		}
+		if b.builder.editorActivityProcessor != nil {
+			detail = b.builder.editorActivityProcessor(ctx, detail)
+		}
+		if detail == nil {
+			return
+		}
+		mb.Log(ctx.R.Context(), detail.Action, detail.PageObject, detail.Detail)
 	}
 	web.AppendRunScripts(&r,
 		web.Plaid().PushState(true).ClearMergeQuery([]string{paramContainerID, paramContainerDataID}).RunPushState(),

@@ -10,7 +10,6 @@ import (
 	"reflect"
 	"slices"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -77,45 +76,61 @@ type (
 		IsPreview         bool
 		Obj               interface{}
 	}
+	EditorLogInput struct {
+		PageObject         interface{}
+		Container          Container
+		ContainerObject    interface{}
+		OldContainerObject interface{} // only edit has value
+		Action             string
+		Detail             interface{}
+	}
+	DemoContainerLogInput struct {
+		Container          DemoContainer
+		ContainerObject    interface{}
+		OldContainerObject interface{}
+		Action             string
+		Detail             interface{}
+	}
 )
 
 type Builder struct {
-	prefix                        string
-	pb                            *presets.Builder
-	wb                            *web.Builder
-	db                            *gorm.DB
-	containerBuilders             []*ContainerBuilder
-	models                        []*ModelBuilder
-	templateBuilder               *TemplateBuilder
-	l10n                          *l10n.Builder
-	mediaBuilder                  *media.Builder
-	ab                            *activity.Builder
-	publisher                     *publish.Builder
-	sharedContainerModelBuilder   *presets.ModelBuilder
-	seoBuilder                    *seo.Builder
-	pageStyle                     h.HTMLComponent
-	pageLayoutFunc                PageLayoutFunc
-	subPageTitleFunc              SubPageTitleFunc
-	images                        http.Handler
-	imagesPrefix                  string
-	defaultDevice                 string
-	editorBackgroundColor         string
-	editorUpdateDifferent         bool
-	publishBtnColor               string
-	duplicateBtnColor             string
-	templateEnabled               bool
-	expendContainers              bool
-	pageEnabled                   bool
-	disabledNormalContainersGroup bool
-	previewOpenNewTab             bool
-	previewContainer              bool
-	disabledShared                bool
-	templateInstall               presets.ModelInstallFunc
-	pageInstall                   presets.ModelInstallFunc
-	categoryInstall               presets.ModelInstallFunc
-	devices                       []Device
-	fields                        []string
-	editorActivityEnabledFunc     func(ctx *web.EventContext, container Container) bool
+	prefix                         string
+	pb                             *presets.Builder
+	wb                             *web.Builder
+	db                             *gorm.DB
+	containerBuilders              []*ContainerBuilder
+	models                         []*ModelBuilder
+	templateBuilder                *TemplateBuilder
+	l10n                           *l10n.Builder
+	mediaBuilder                   *media.Builder
+	ab                             *activity.Builder
+	publisher                      *publish.Builder
+	sharedContainerModelBuilder    *presets.ModelBuilder
+	seoBuilder                     *seo.Builder
+	pageStyle                      h.HTMLComponent
+	pageLayoutFunc                 PageLayoutFunc
+	subPageTitleFunc               SubPageTitleFunc
+	images                         http.Handler
+	imagesPrefix                   string
+	defaultDevice                  string
+	editorBackgroundColor          string
+	editorUpdateDifferent          bool
+	publishBtnColor                string
+	duplicateBtnColor              string
+	templateEnabled                bool
+	expendContainers               bool
+	pageEnabled                    bool
+	disabledNormalContainersGroup  bool
+	previewOpenNewTab              bool
+	previewContainer               bool
+	disabledShared                 bool
+	templateInstall                presets.ModelInstallFunc
+	pageInstall                    presets.ModelInstallFunc
+	categoryInstall                presets.ModelInstallFunc
+	devices                        []Device
+	fields                         []string
+	editorActivityProcessor        func(ctx *web.EventContext, input *EditorLogInput) *EditorLogInput
+	demoContainerActivityProcessor func(ctx *web.EventContext, input *DemoContainerLogInput) *DemoContainerLogInput
 }
 
 const (
@@ -126,7 +141,7 @@ const (
 	PageBuilderPreviewCard = "PageBuilderPreviewCard"
 )
 
-type oldObjKey struct{}
+type ctxKeyOldObject struct{}
 
 func New(prefix string, db *gorm.DB, b *presets.Builder) *Builder {
 	return newBuilder(prefix, db, b)
@@ -167,8 +182,13 @@ func (b *Builder) PageStyle(v h.HTMLComponent) (r *Builder) {
 	return b
 }
 
-func (b *Builder) EditorActivityEnabledFunc(v func(ctx *web.EventContext, container Container) bool) (r *Builder) {
-	b.editorActivityEnabledFunc = v
+func (b *Builder) EditorActivityProcessor(v func(ctx *web.EventContext, input *EditorLogInput) *EditorLogInput) (r *Builder) {
+	b.editorActivityProcessor = v
+	return b
+}
+
+func (b *Builder) DemoContainerActivityProcessor(v func(ctx *web.EventContext, input *DemoContainerLogInput) *DemoContainerLogInput) (r *Builder) {
+	b.demoContainerActivityProcessor = v
 	return b
 }
 
@@ -1044,7 +1064,7 @@ func (b *ContainerBuilder) Install() {
 				return
 			}
 
-			ctx.WithContextValue(oldObjKey{}, clone.Clone(r))
+			ctx.WithContextValue(ctxKeyOldObject{}, clone.Clone(r))
 			return
 		}
 	})
@@ -1705,7 +1725,7 @@ func (b *ContainerBuilder) logModelDiffActivity(obj interface{}, id string, ctx 
 		return
 	}
 
-	oldObj := ctx.ContextValue(oldObjKey{})
+	oldObj := ctx.ContextValue(ctxKeyOldObject{})
 	if oldObj == nil {
 		return
 	}
@@ -1726,13 +1746,16 @@ func (b *ContainerBuilder) logModelDiffActivity(obj interface{}, id string, ctx 
 
 	b.builder.db.Transaction(func(tx *gorm.DB) error {
 		if ctx.Param(paramDemoContainer) == "true" {
-			return b.logDemoContainerActivity(tx, id, diffs, ab, ctx)
+			return b.logDemoContainerActivity(tx, oldObj, obj, id, diffs, ab, ctx)
 		}
-		return b.logContainerActivity(tx, id, diffs, uid, now, ctx)
+		return b.logContainerActivity(tx, oldObj, obj, id, uid, diffs, now, ctx)
 	})
 }
 
-func (b *ContainerBuilder) logDemoContainerActivity(tx *gorm.DB, id string, diffs []activity.Diff, ab *activity.Builder, ctx *web.EventContext) error {
+func (b *ContainerBuilder) logDemoContainerActivity(tx *gorm.DB, old, new interface{}, id string, diffs []activity.Diff, ab *activity.Builder, ctx *web.EventContext) error {
+	if b.builder.demoContainerActivityProcessor == nil {
+		return nil
+	}
 	var demoContainer DemoContainer
 	if err := tx.Where("model_id = ? AND model_name = ?", id, b.name).First(&demoContainer).Error; err != nil {
 		return err
@@ -1740,14 +1763,25 @@ func (b *ContainerBuilder) logDemoContainerActivity(tx *gorm.DB, id string, diff
 
 	// Prefix diff fields for demo container
 	for i := range diffs {
-		diffs[i].Field = fmt.Sprintf("%s:%s:%s", b.name, id, diffs[i].Field)
+		diffs[i].Field = fmt.Sprintf("[%s %s].%s", b.name, id, diffs[i].Field)
+	}
+	detail := &DemoContainerLogInput{
+		Container:          demoContainer,
+		ContainerObject:    new,
+		OldContainerObject: old,
+		Action:             activity.ActionEdit,
+		Detail:             diffs,
+	}
+	detail = b.builder.demoContainerActivityProcessor(ctx, detail)
+	if detail == nil {
+		return nil
 	}
 
-	ab.Log(ctx.R.Context(), activity.ActionEdit, demoContainer, diffs)
+	ab.Log(ctx.R.Context(), detail.Action, detail.Container, detail.Detail)
 	return nil
 }
 
-func (b *ContainerBuilder) logContainerActivity(tx *gorm.DB, id string, diffs []activity.Diff, uid string, now time.Time, ctx *web.EventContext) error {
+func (b *ContainerBuilder) logContainerActivity(tx *gorm.DB, old, new interface{}, id string, uid string, diffs []activity.Diff, now time.Time, ctx *web.EventContext) error {
 	var containers []Container
 	if err := tx.Where("model_id = ? AND model_name = ?", id, b.name).Find(&containers).Error; err != nil {
 		return err
@@ -1758,8 +1792,8 @@ func (b *ContainerBuilder) logContainerActivity(tx *gorm.DB, id string, diffs []
 		container.ModelUpdatedAt = now
 		container.ModelUpdatedBy = uid
 
-		if b.builder.editorActivityEnabledFunc != nil && b.builder.editorActivityEnabledFunc(ctx, *container) {
-			if err := b.logPageModelActivity(tx, container, diffs, ctx); err != nil {
+		if b.builder.editorActivityProcessor != nil {
+			if err := b.logPageModelActivity(tx, old, new, container, diffs, ctx); err != nil {
 				continue // Log error but continue processing other containers
 			}
 		}
@@ -1767,15 +1801,10 @@ func (b *ContainerBuilder) logContainerActivity(tx *gorm.DB, id string, diffs []
 	return tx.Save(&containers).Error
 }
 
-func (b *ContainerBuilder) logPageModelActivity(tx *gorm.DB, container *Container, diffs []activity.Diff, ctx *web.EventContext) error {
+func (b *ContainerBuilder) logPageModelActivity(tx *gorm.DB, old, new interface{}, container *Container, diffs []activity.Diff, ctx *web.EventContext) error {
 	mb := b.builder.getModelBuilderByName(container.PageModelName)
 	if mb == nil {
 		return fmt.Errorf("model builder not found for %s", container.PageModelName)
-	}
-
-	amb, ok := b.builder.ab.GetModelBuilder(mb.mb)
-	if !ok {
-		return fmt.Errorf("activity model builder not found")
 	}
 
 	pageModel := mb.mb.NewModel()
@@ -1783,14 +1812,33 @@ func (b *ContainerBuilder) logPageModelActivity(tx *gorm.DB, container *Containe
 	if err := query.First(pageModel).Error; err != nil {
 		return err
 	}
-
 	// Clone and prefix diff fields for this container
 	containerDiff := clone.Clone(diffs).([]activity.Diff)
 	for j := range containerDiff {
-		containerDiff[j].Field = fmt.Sprintf("%v:%s:%v:%s", container.ID, b.name, container.ModelID, containerDiff[j].Field)
+		containerDiff[j].Field = fmt.Sprintf("[%s %s][%s %v].%s",
+			container.DisplayName, container.PrimarySlug(), b.name, container.ModelID, containerDiff[j].Field)
+	}
+	detail := &EditorLogInput{
+		PageObject:         pageModel,
+		Container:          *container,
+		ContainerObject:    new,
+		OldContainerObject: old,
+		Action:             activity.ActionEdit,
+		Detail:             containerDiff,
+	}
+	if b.builder.editorActivityProcessor != nil {
+		detail = b.builder.editorActivityProcessor(ctx, detail)
+	}
+	if detail == nil {
+		return nil
 	}
 
-	amb.Log(ctx.R.Context(), activity.ActionEdit, pageModel, containerDiff)
+	amb, ok := b.builder.ab.GetModelBuilder(mb.mb)
+	if !ok {
+		return fmt.Errorf("activity model builder not found")
+	}
+
+	amb.Log(ctx.R.Context(), detail.Action, detail.PageObject, detail.Detail)
 	return nil
 }
 
@@ -1799,12 +1847,4 @@ func (b *ContainerBuilder) buildPageModelQuery(tx *gorm.DB, container *Container
 		return tx.Where("id = ? AND locale_code = ?", container.PageID, container.LocaleCode)
 	}
 	return tx.Where("id = ? AND version = ? AND locale_code = ?", container.PageID, container.PageVersion, container.LocaleCode)
-}
-
-// parseUint safely converts string to uint, returns 0 if conversion fails
-func parseUint(s string) uint {
-	if val, err := strconv.ParseUint(s, 10, 32); err == nil {
-		return uint(val)
-	}
-	return 0
 }

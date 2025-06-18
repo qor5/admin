@@ -256,8 +256,10 @@ type Messages_ModelsI18nModuleKey struct {
 	ContactFormsActionUrl          string
 	ContactFormsPrivacyPolicy      string
 
-	ActivityActionLogIn         string
-	ActivityActionExtendSession string
+	ActivityActionLogIn           string
+	ActivityActionExtendSession   string
+	ActivityActionAddContainer    string
+	ActivityActionDeleteContainer string
 
 	PagesPage string
 }
@@ -412,8 +414,10 @@ var Messages_zh_CN_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	ContactFormsActionUrl:          "ContactFormsActionUrl",
 	ContactFormsPrivacyPolicy:      "ContactFormsPrivacyPolicy",
 
-	ActivityActionLogIn:         "登录",
-	ActivityActionExtendSession: "延长会话",
+	ActivityActionLogIn:           "登录",
+	ActivityActionExtendSession:   "延长会话",
+	ActivityActionAddContainer:    "添加容器",
+	ActivityActionDeleteContainer: "删除容器",
 
 	PagesPage: "Page",
 }
@@ -568,8 +572,9 @@ var Messages_ja_JP_ModelsI18nModuleKey = &Messages_ModelsI18nModuleKey{
 	ContactFormsActionUrl:          "アクションURL",
 	ContactFormsPrivacyPolicy:      "プライバシーポリシー",
 
-	ActivityActionLogIn:         "ログイン",
-	ActivityActionExtendSession: "セッション延長",
-
-	PagesPage: "ページ",
+	ActivityActionLogIn:           "ログイン",
+	ActivityActionExtendSession:   "セッション延長",
+	ActivityActionAddContainer:    "コンテナ追加",
+	ActivityActionDeleteContainer: "コンテナ削除",
+	PagesPage:                     "ページ",
 }
