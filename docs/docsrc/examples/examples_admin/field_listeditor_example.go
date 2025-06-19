@@ -58,10 +58,10 @@ func ListEditorAddRowBtnLabelExample(b *presets.Builder, db *gorm.DB) http.Handl
 	// Register ExampleContainer into the builder
 	mb := b.Model(&ExampleContainer{})
 	mb.Listing("ID", "Title")
-	
+
 	// Configure editing fields with different AddRowBtnLabel examples
 	eb := mb.Editing("Title", "Items")
-	
+
 	// Example 1: Using custom label with LabelFunc
 	fb := b.NewFieldsBuilder(presets.WRITE).Model(&ExampleItem{}).Only("Name", "Description")
 	eb.Field("Items").Nested(fb, &presets.AddRowBtnLabel{
@@ -82,7 +82,7 @@ func ListEditorAddRowBtnLabelExample(b *presets.Builder, db *gorm.DB) http.Handl
 		},
 		{
 			Model: gorm.Model{ID: 2},
-			Title: "Sample Container 2", 
+			Title: "Sample Container 2",
 			Items: ExampleItems{
 				{Name: "Item A", Description: "Sample item A"},
 			},
@@ -104,4 +104,4 @@ func ListEditorAddRowBtnLabelExample(b *presets.Builder, db *gorm.DB) http.Handl
 	}
 
 	return b
-} 
+}
