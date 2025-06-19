@@ -49,6 +49,7 @@ func SamplesHandler(mux webexamples.Muxer) {
 	examples.AddPresetExample(mux, MediaAllowTypesExample)
 	examples.AddPresetExample(mux, SingletonExample)
 	examples.AddPresetExample(mux, RedirectionExample)
+	examples.AddPresetExample(mux, ListEditorAddRowBtnLabelExample)
 
 	examples.AddPresetAutocompleteExample(mux, AutoCompleteBasicFilterExample)
 	examples.AddPresetsLinkageSelectFilterItemRemoteExample(mux, LinkageSelectFilterItemRemoteExample)
