@@ -227,9 +227,9 @@ func NewConfig(db *gorm.DB, enableWork bool, opts ...ConfigOption) Config {
 	l10nBuilder := l10n.New(db)
 	l10nBuilder.
 		Activity(ab).
-		RegisterLocales("International", "international", "International", l10n.InternationalSvg).
-		RegisterLocales("China", "cn", "China", l10n.ChinaSvg).
+		// RegisterLocales("International", "international", "International", l10n.InternationalSvg).
 		RegisterLocales("Japan", "jp", "Japan", l10n.JapanSvg).
+		RegisterLocales("China", "cn", "China", l10n.ChinaSvg).
 		SupportLocalesFunc(func(R *http.Request) []string {
 			return l10nBuilder.GetSupportLocaleCodes()[:]
 		})
@@ -304,6 +304,7 @@ func NewConfig(db *gorm.DB, enableWork bool, opts ...ConfigOption) Config {
 	pageBuilder.
 		Media(mediab).
 		L10n(l10nBuilder).
+		PreviewOpenNewTab(true).
 		Activity(ab).
 		Publisher(publisher).
 		SEO(seoBuilder).

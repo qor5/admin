@@ -7,13 +7,14 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	"github.com/qor5/admin/v3/activity"
-	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/qor5/x/v3/perm"
 	"github.com/stretchr/testify/require"
 	"github.com/theplant/gofixtures"
 	"gorm.io/gorm"
+
+	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/presets"
 )
 
 var activityData = gofixtures.Data(gofixtures.Sql(`
@@ -558,7 +559,7 @@ func TestActivityAdmin(t *testing.T) {
 				return httptest.NewRequest("GET", "/activity-logs?lang=zh&per_page=10", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{
-				"操作日志列表",
+				"操作日志",
 				"全部", "创建", "编辑", "删除", "备注",
 				"<vx-filter", "操作类型", "操作时间", "操作者", "对象", "</vx-filter>",
 				"日期时间", "操作者", "操作", "主键", "菜单名", "对象",
@@ -574,7 +575,7 @@ func TestActivityAdmin(t *testing.T) {
 				return httptest.NewRequest("GET", "/activity-logs?lang=zh&after=eyJJRCI6Mzd9&per_page=10", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{
-				"操作日志列表",
+				"操作日志",
 				"全部", "创建", "编辑", "删除", "备注",
 				"<vx-filter", "操作类型", "操作时间", "操作者", "对象", "</vx-filter>",
 				"日期时间", "操作者", "操作", "主键", "菜单名", "对象",
@@ -590,7 +591,7 @@ func TestActivityAdmin(t *testing.T) {
 				return httptest.NewRequest("GET", "/activity-logs?lang=zh&before=eyJJRCI6MzZ9&per_page=10", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{
-				"操作日志列表",
+				"操作日志",
 				"全部", "创建", "编辑", "删除", "备注",
 				"<vx-filter", "操作类型", "操作时间", "操作者", "对象", "</vx-filter>",
 				"日期时间", "操作者", "操作", "主键", "菜单名", "对象",
@@ -635,7 +636,7 @@ func TestActivityAdmin(t *testing.T) {
 				return httptest.NewRequest("GET", "/activity-logs?lang=zh&before=eyJJRCI6MzZ9&per_page=10", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{
-				"操作日志列表",
+				"操作日志",
 				"全部", "创建", "编辑", "删除", "备注",
 				"<vx-filter", "操作类型", "操作时间", "操作者", "对象", "</vx-filter>",
 				"日期时间", "操作者", "操作", "主键", "菜单名", "对象",
@@ -651,7 +652,7 @@ func TestActivityAdmin(t *testing.T) {
 				return httptest.NewRequest("GET", "/activity-logs?lang=zh&before=eyJJRCI6MTIzfQ&per_page=10", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{
-				"操作日志列表",
+				"操作日志",
 				"全部", "创建", "编辑", "删除", "备注",
 				"<vx-filter", "操作类型", "操作时间", "操作者", "对象", "</vx-filter>",
 				"日期时间", "操作者", "操作", "主键", "菜单名", "对象",
@@ -896,7 +897,7 @@ func TestActivityBeforeCreate(t *testing.T) {
 				return httptest.NewRequest("GET", "/activity-logs?lang=zh", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{
-				"操作日志列表",
+				"操作日志",
 				"全部", "创建", "编辑", "删除", "备注",
 				"<vx-filter", "操作类型", "操作时间", "操作者", "对象", "</vx-filter>",
 				"日期时间", "操作者", "操作", "主键", "菜单名", "对象",
