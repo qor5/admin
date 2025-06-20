@@ -636,7 +636,7 @@ func configPost(
 			{
 				Key:          "created",
 				Label:        "Create Time",
-				ItemType:     vx.ItemTypeDatetimeRange,
+				ItemType:     vx.ItemTypeDatetimeRangePicker,
 				SQLCondition: `created_at %s ?`,
 			},
 			{
