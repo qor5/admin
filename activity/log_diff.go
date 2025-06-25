@@ -1,6 +1,7 @@
 package activity
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -93,7 +94,9 @@ func (db *DiffBuilder) diffLoop(old, new reflect.Value, prefixField string) erro
 		}
 
 		if old.IsNil() && !new.IsNil() {
-			db.diffs = append(db.diffs, Diff{Field: prefixField, Old: "", New: fmt.Sprintf("%+v", new.Interface())})
+			newVal, _ := json.Marshal(new.Interface())
+
+			db.diffs = append(db.diffs, Diff{Field: prefixField, Old: "", New: string(newVal)})
 			return true
 		}
 
