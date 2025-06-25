@@ -60,6 +60,7 @@ func SamplesHandler(mux examples.Muxer) {
 	addExample(mux, db, PresetsDetailInlineEditValidate)
 	addExample(mux, db, PresetsDetailSimple)
 	addExample(mux, db, PresetsDetailListSection)
+	addExample(mux, db, PresetsDetailSidePanel)
 	addExample(mux, db, PresetsUtilsDialog)
 	addExample(mux, db, PresetsCustomPage)
 	addExample(mux, db, PresetsPlainNestedField)
