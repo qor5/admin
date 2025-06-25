@@ -362,12 +362,19 @@ github.com/qor5/imaging v1.6.4 h1:6VNy1EnFKAns8e73uzsZa6UQDw0oekvUHui1oeydy78=
 github.com/qor5/imaging v1.6.4/go.mod h1:i1E3GRDbTFbXuzZtm1/8zWu+lDbDw6O1hCmjtyQFnR4=
 github.com/qor5/web v1.3.2 h1:zw796YJeDLe8vRwGR1cM+uS1ZuSkPutchBEXv2GgOhI=
 github.com/qor5/web v1.3.2/go.mod h1:LszskQJbFQDJwOeZC6j6afOiHxxyjrzz8B3zuBwfgKQ=
+<<<<<<< HEAD
 github.com/qor5/web/v3 v3.0.12-0.20250610095130-935d3f95f63a h1:msSdenwBRqoe4VX6Wltm6shmgnpT6G8AHq+D9PRUE0M=
 github.com/qor5/web/v3 v3.0.12-0.20250610095130-935d3f95f63a/go.mod h1:hrhZ4nc1U+AOBrGmnUoRUPpA9fymxlAbNfGvn9TJLns=
 github.com/qor5/x/v3 v3.0.14-0.20250612055822-109e92cc06e8 h1:/S2MpwRMfVZB6jbS1MgjacsX37syPCkfmMHqSyIkkuU=
 github.com/qor5/x/v3 v3.0.14-0.20250612055822-109e92cc06e8/go.mod h1:IZR9L4uAppXT/qV+fZ9DIoXo/36nEBm7dNd4vLzjW8k=
 github.com/qor5/x/v3 v3.0.14-0.20250612122349-63c3b5762fe3 h1:06zKjyeiv9dKJudq2FatWdvdVzPD5rZ4ZlSY2wUavaM=
 github.com/qor5/x/v3 v3.0.14-0.20250612122349-63c3b5762fe3/go.mod h1:IZR9L4uAppXT/qV+fZ9DIoXo/36nEBm7dNd4vLzjW8k=
+=======
+github.com/qor5/web/v3 v3.0.12-0.20250618085230-3764d0e521a8 h1:s3jBS5bq6VX56GicRPCeXvb0TRLSz5w1xJHymPnhTuo=
+github.com/qor5/web/v3 v3.0.12-0.20250618085230-3764d0e521a8/go.mod h1:hrhZ4nc1U+AOBrGmnUoRUPpA9fymxlAbNfGvn9TJLns=
+github.com/qor5/x/v3 v3.0.14-0.20250619100108-82f95c844c4d h1:0E8I4Cn9/nuKL3J+C2G5MqijtECHVtPF6fvQCHHMzYY=
+github.com/qor5/x/v3 v3.0.14-0.20250619100108-82f95c844c4d/go.mod h1:IZR9L4uAppXT/qV+fZ9DIoXo/36nEBm7dNd4vLzjW8k=
+>>>>>>> main
 github.com/robfig/cron/v3 v3.0.1/go.mod h1:eQICP3HwyT7UooqI/z+Ov+PtYAWygg1TEWWzGIFLtro=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.12.0 h1:exVL4IDcn6na9z1rAb56Vxr+CgyK3nn3O+epU5NdKM8=

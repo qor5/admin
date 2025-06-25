@@ -304,6 +304,7 @@ func NewConfig(db *gorm.DB, enableWork bool, opts ...ConfigOption) Config {
 	pageBuilder.
 		Media(mediab).
 		L10n(l10nBuilder).
+		PreviewOpenNewTab(true).
 		Activity(ab).
 		Publisher(publisher).
 		SEO(seoBuilder).
@@ -635,7 +636,7 @@ func configPost(
 			{
 				Key:          "created",
 				Label:        "Create Time",
-				ItemType:     vx.ItemTypeDatetimeRange,
+				ItemType:     vx.ItemTypeDatetimeRangePicker,
 				SQLCondition: `created_at %s ?`,
 			},
 			{

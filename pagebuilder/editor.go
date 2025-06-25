@@ -60,11 +60,12 @@ const (
 	DeviceTablet   = "tablet"
 	DeviceComputer = "computer"
 
-	EventUp     = "up"
-	EventDown   = "down"
-	EventDelete = "delete"
-	EventAdd    = "add"
-	EventEdit   = "edit"
+	EventUp                        = "up"
+	EventDown                      = "down"
+	EventDelete                    = "delete"
+	EventAdd                       = "add"
+	EventEdit                      = "edit"
+	EventClickOutsideWrapperShadow = "clickOutsideWrapperShadow"
 
 	paramIframeEventName  = "iframeEventName"
 	changeDeviceEventName = "change_device"
@@ -110,6 +111,7 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 		msgr            = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		title           string
 		err             error
+		ps              = ctx.Param(presets.ParamID)
 	)
 	if m.mb.Info().Verifier().Do(presets.PermGet).WithReq(ctx.R).IsAllowed() != nil {
 		return h.Text(perm.PermissionDenied.Error())
@@ -166,6 +168,29 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 	versionComponent = publish.DefaultVersionComponentFunc(m.mb, publish.VersionComponentConfig{
 		Top: true, DisableListeners: true,
 		DisableDataChangeTracking: true,
+		WrapActionButtons: func(ctx *web.EventContext, obj interface{}, actionButtons []h.HTMLComponent, phraseHasPresetsDataChanged string) []h.HTMLComponent {
+			if len(actionButtons) < 2 {
+				return actionButtons
+			}
+			previewDevelopUrl := m.PreviewHref(ctx, ps)
+			p, ok := obj.(publish.StatusInterface)
+			if !ok {
+				return actionButtons
+			}
+			if p.EmbedStatus().Status != publish.StatusDraft {
+				return actionButtons
+			}
+			btn := VBtn(msgr.Preview).
+				Attr(":disabled", phraseHasPresetsDataChanged).
+				Href(previewDevelopUrl).
+				Class("ml-2").
+				Class("rounded").
+				Variant(VariantElevated).Color(ColorPrimary).Height(36)
+			if b.previewOpenNewTab {
+				btn.Attr("target", "_blank")
+			}
+			return append([]h.HTMLComponent{btn}, actionButtons...)
+		},
 	})(obj, &presets.FieldContext{ModelInfo: m.mb.Info()}, ctx)
 	pageAppbarContent = h.Components(
 		h.Div(
@@ -419,7 +444,7 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 		),
 		VMain(
 			addOverlay,
-			vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction(ctx)),
+			h.If(!isStag, vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction(ctx)).Name("message")),
 			tabContent.Body,
 		).Attr(web.VAssign("vars", "{overlayEl:$}")...).Class("ma-2"),
 	)
