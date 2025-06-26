@@ -74,12 +74,16 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 		actionButtons := []h.HTMLComponent{}
 
 		div := h.Div().Class("tagList-bar-warp")
-		confirmDialogPayload := utils.UtilDialogPayloadType{
-			Text:     msgr.ConfirmPublish,
-			OkAction: web.Plaid().URL(mb.Info().ListingHref()).EventFunc(web.Var("locals.action")).Query(presets.ParamID, slug).Go(),
-			Msgr:     utilsMsgr,
-		}
-		div.AppendChildren(utils.ConfirmDialog(confirmDialogPayload))
+
+		div.AppendChildren(
+			vx.VXDialog().
+				Title(utilsMsgr.ModalTitleConfirm).
+				Attr(":text", fmt.Sprintf(`locals.action==%q?%q:%q`, EventPublish, msgr.ConfirmPublish, msgr.ConfirmDuplicate)).
+				HideClose(true).
+				OkText(utilsMsgr.OK).
+				CancelText(utilsMsgr.Cancel).
+				Attr("@click:ok", web.Plaid().URL(mb.Info().ListingHref()).EventFunc(web.Var("locals.action")).Query(presets.ParamID, slug).Go()).
+				Attr("v-model", "locals.commonConfirmDialog"))
 
 		if !config.Top {
 			div.Class("pb-4")
