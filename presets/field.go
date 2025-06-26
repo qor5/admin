@@ -291,6 +291,17 @@ type MaxItems struct {
 
 func (*MaxItems) nested() {}
 
+type AddRowBtnLabel struct {
+	LabelFunc func(*Messages) string
+}
+
+func (*AddRowBtnLabel) nested() {}
+
+// Helper functions for common i18n patterns
+func AddRowLabelI18n(labelFunc func(*Messages) string) *AddRowBtnLabel {
+	return &AddRowBtnLabel{LabelFunc: labelFunc}
+}
+
 func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *FieldBuilder) {
 	b.nestedFieldsBuilder = fb
 	switch b.rt.Kind() {
@@ -300,6 +311,7 @@ func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *Field
 		var removeListItemRowEvent string
 		var sortListItemsEvent string
 		var maxItems int
+		var addRowBtnLabelFunc func(*Messages) string
 		for _, cfg := range cfgs {
 			switch t := cfg.(type) {
 			case *DisplayFieldInSorter:
@@ -312,16 +324,20 @@ func (b *FieldBuilder) Nested(fb *FieldsBuilder, cfgs ...NestedConfig) (r *Field
 				sortListItemsEvent = t.Event
 			case *MaxItems:
 				maxItems = t.Limit
+			case *AddRowBtnLabel:
+				addRowBtnLabelFunc = t.LabelFunc
 			default:
 				panic("unknown nested config")
 			}
 		}
+
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return NewListEditor(field).Value(field.Value(obj)).
 				DisplayFieldInSorter(displayFieldInSorter).
 				AddListItemRowEvnet(addListItemRowEvent).
 				RemoveListItemRowEvent(removeListItemRowEvent).
 				SortListItemsEvent(sortListItemsEvent).
+				AddRowBtnLabel(addRowBtnLabelFunc).
 				MaxItems(maxItems)
 		})
 	default:
