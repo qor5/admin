@@ -830,7 +830,7 @@ func (b *ModelBuilder) renameContainer(ctx *web.EventContext) (r web.EventRespon
 		return
 	}
 	defer func() {
-		if b.builder.ab != nil && b.builder.editorActivityProcessor != nil {
+		if container.DisplayName != name && b.builder.ab != nil && b.builder.editorActivityProcessor != nil {
 			detail := &EditorLogInput{
 				Action:          activity.ActionEdit,
 				PageObject:      obj,
