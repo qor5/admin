@@ -98,7 +98,7 @@ func setupEditing(eb *presets.EditingBuilder) {
 }
 
 func setupListing(b *presets.Builder, lb *presets.ListingBuilder, op *gorm2op.DataOperatorBuilder, ab *Builder) {
-	lb.RelayPagination(gorm2op.KeysetBasedPagination(true))
+	lb.RelayPagination(gorm2op.KeysetBasedPagination(true)).KeywordSearchOff(true)
 	lb.SearchFunc(func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 		if !ab.skipResPermCheck {
 			var modelLabels []string
