@@ -735,6 +735,7 @@ func TestPageBuilder(t *testing.T) {
 				return NewMultipartBuilder().
 					PageURL("/in-numbers").
 					EventFunc(actions.Update).
+					Query("demoContainer", "true").
 					Query(presets.ParamID, "1").
 					Query("status", "draft").
 					AddField("AnchorID", "test_in_numbers").
