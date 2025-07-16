@@ -74,12 +74,16 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 		actionButtons := []h.HTMLComponent{}
 
 		div := h.Div().Class("tagList-bar-warp")
-		confirmDialogPayload := utils.UtilDialogPayloadType{
-			Text:     msgr.ConfirmPublish,
-			OkAction: web.Plaid().URL(mb.Info().ListingHref()).EventFunc(web.Var("locals.action")).Query(presets.ParamID, slug).Go(),
-			Msgr:     utilsMsgr,
-		}
-		div.AppendChildren(utils.ConfirmDialog(confirmDialogPayload))
+
+		div.AppendChildren(
+			vx.VXDialog().
+				Title(utilsMsgr.ModalTitleConfirm).
+				Attr(":text", "locals.message").
+				HideClose(true).
+				OkText(utilsMsgr.OK).
+				CancelText(utilsMsgr.Cancel).
+				Attr("@click:ok", web.Plaid().URL(mb.Info().ListingHref()).EventFunc(web.Var("locals.action")).Query(presets.ParamID, slug).Go()).
+				Attr("v-model", "locals.commonConfirmDialog"))
 
 		if !config.Top {
 			div.Class("pb-4")
@@ -93,7 +97,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 				div.AppendChildren(v.VBtn(msgr.Duplicate).
 					Height(36).Class("ml-2").Variant(v.VariantOutlined).
 					Attr(":disabled", phraseHasPresetsDataChanged).
-					Attr("@click", fmt.Sprintf(`locals.action=%q;locals.commonConfirmDialog = true`, EventDuplicateVersion)))
+					Attr("@click", fmt.Sprintf(`locals.action=%q;locals.commonConfirmDialog = true;locals.message = %q`, EventDuplicateVersion, msgr.ConfirmDuplicate)))
 			}
 		}
 		verifier := mb.Info().Verifier()
@@ -120,7 +124,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 				NewListenerModelsDeleted(mb, slug),
 			)
 		}
-		return web.Scope(children...).VSlot(" { locals } ").Init(`{action: "", commonConfirmDialog: false }`)
+		return web.Scope(children...).VSlot(" { locals } ").Init(`{action: "", commonConfirmDialog: false ,message: ""}`)
 	}
 }
 
@@ -161,7 +165,7 @@ func buildPublishButton(obj interface{}, field *presets.FieldContext, ctx *web.E
 	switch status.EmbedStatus().Status {
 	case StatusDraft, StatusOffline:
 		if !deniedPublish {
-			publishEvent := fmt.Sprintf(`locals.action=%q;locals.commonConfirmDialog = true`, EventPublish)
+			publishEvent := fmt.Sprintf(`locals.action=%q;locals.commonConfirmDialog = true;locals.message = %q`, EventPublish, msgr.ConfirmPublish)
 			if config.PublishEvent != nil {
 				publishEvent = config.PublishEvent(obj, field, ctx)
 			}
@@ -176,13 +180,13 @@ func buildPublishButton(obj interface{}, field *presets.FieldContext, ctx *web.E
 	case StatusOnline:
 		var unPublishEvent, rePublishEvent string
 		if !deniedUnpublish {
-			unPublishEvent = fmt.Sprintf(`locals.action=%q;locals.commonConfirmDialog = true`, EventUnpublish)
+			unPublishEvent = fmt.Sprintf(`locals.action=%q;locals.commonConfirmDialog = true;locals.message = %q`, EventUnpublish, msgr.ConfirmUnpublish)
 			if config.UnPublishEvent != nil {
 				unPublishEvent = config.UnPublishEvent(obj, field, ctx)
 			}
 		}
 		if !deniedPublish {
-			rePublishEvent = fmt.Sprintf(`locals.action=%q;locals.commonConfirmDialog = true`, EventRepublish)
+			rePublishEvent = fmt.Sprintf(`locals.action=%q;locals.commonConfirmDialog = true;locals.message = %q`, EventRepublish, msgr.ConfirmRepublish)
 			if config.RePublishEvent != nil {
 				rePublishEvent = config.RePublishEvent(obj, field, ctx)
 			}
