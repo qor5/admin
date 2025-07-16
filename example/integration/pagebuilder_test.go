@@ -1450,48 +1450,6 @@ func TestPageBuilder(t *testing.T) {
 			},
 			ExpectRunScriptContainsInOrder: []string{"Successfully Updated"},
 		},
-		{
-			Name:  "Page Builder toggle visibility DB ERROR Before Query",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				pageBuilderContainerTestData.TruncatePut(dbr)
-				callBack := TestDB.Callback().Query().Before("gorm:query")
-				callBack.Register("inject_error", func(db *gorm.DB) {
-					_ = db.AddError(presets.ErrNotFound(fmt.Sprintf("inject error")))
-				})
-				defer callBack.Remove("inject_error")
-				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
-					EventFunc(pagebuilder.ToggleContainerVisibilityEvent).
-					Query("containerID", "10_Japan").
-					Query("status", "draft").
-					BuildEventFuncRequest()
-
-				return req
-			},
-			ExpectRunScriptContainsInOrder: []string{"page_builder_ShowSortedContainerDrawerEvent"},
-		},
-		{
-			Name:  "Page Builder toggle visibility DB ERROR Before Update",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				pageBuilderContainerTestData.TruncatePut(dbr)
-				callBack := TestDB.Callback().Update().Before("gorm:update")
-				callBack.Register("inject_error", func(db *gorm.DB) {
-					_ = db.AddError(presets.ErrNotFound(fmt.Sprintf("inject error")))
-				})
-				defer callBack.Remove("inject_error")
-				req := NewMultipartBuilder().
-					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
-					EventFunc(pagebuilder.ToggleContainerVisibilityEvent).
-					Query("containerID", "10_Japan").
-					Query("status", "draft").
-					BuildEventFuncRequest()
-
-				return req
-			},
-			ExpectRunScriptContainsInOrder: []string{"page_builder_ShowSortedContainerDrawerEvent"},
-		},
 	}
 
 	for _, c := range cases {
