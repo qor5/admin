@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.68.0
 	github.com/dustin/go-humanize v1.0.1
 	github.com/fatih/color v1.17.0
-	github.com/go-chi/chi/v5 v5.1.0
+	github.com/go-chi/chi/v5 v5.2.2
 	github.com/gocarina/gocsv v0.0.0-20240520201108-78e41c74b4b1
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
@@ -28,8 +28,8 @@ require (
 	github.com/pquerna/otp v1.4.0
 	github.com/qor5/imaging v1.6.4
 	github.com/qor5/web v1.3.2
-	github.com/qor5/web/v3 v3.0.12-0.20250610095130-935d3f95f63a
-	github.com/qor5/x/v3 v3.0.14-0.20250613023730-c4d8bed52c73
+	github.com/qor5/web/v3 v3.0.12-0.20250618085230-3764d0e521a8
+	github.com/qor5/x/v3 v3.0.14-0.20250619100108-82f95c844c4d
 	github.com/samber/lo v1.47.0
 	github.com/shurcooL/sanitized_anchor_name v1.0.0
 	github.com/spf13/cast v1.6.0
