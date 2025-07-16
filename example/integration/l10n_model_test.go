@@ -43,6 +43,7 @@ func TestL10nModel(t *testing.T) {
 					Query(presets.ParamID, "1_Japan").
 					EventFunc(actions.Update).
 					AddField("Title", "234").
+					AddField("LocaleCode", "Japan").
 					BuildEventFuncRequest()
 				return req
 			},
