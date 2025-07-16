@@ -274,6 +274,12 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		DisabledNormalContainersGroup(true).
 		PreviewOpenNewTab(true).
 		Publisher(puBuilder).
+		DemoContainerActivityProcessor(func(ctx *web.EventContext, input *pagebuilder.DemoContainerLogInput) *pagebuilder.DemoContainerLogInput {
+			return nil
+		}).
+		EditorActivityProcessor(func(ctx *web.EventContext, input *pagebuilder.EditorLogInput) *pagebuilder.EditorLogInput {
+			return nil
+		}).
 		PreviewDevices(
 			pagebuilder.Device{Name: pagebuilder.DeviceComputer, Width: "", Icon: "mdi-monitor", Disabled: true},
 			pagebuilder.Device{Name: pagebuilder.DevicePhone, Width: "414px", Icon: "mdi-cellphone"},

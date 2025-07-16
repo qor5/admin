@@ -182,7 +182,7 @@ func TestDiff(t *testing.T) {
 				{
 					Field: "Comments",
 					Old:   "",
-					New:   "[{Text:1.1} {Text:2}]",
+					New:   "[{\"Text\":\"1.1\"},{\"Text\":\"2\"}]",
 				},
 			},
 		},
@@ -252,7 +252,7 @@ func TestDiff(t *testing.T) {
 				{
 					Field: "Tags",
 					Old:   "",
-					New:   "map[tag1:{Name:tst1}]",
+					New:   "{\"tag1\":{\"Name\":\"tst1\"}}",
 				},
 			},
 		},

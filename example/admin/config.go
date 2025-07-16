@@ -306,6 +306,12 @@ func NewConfig(db *gorm.DB, enableWork bool, opts ...ConfigOption) Config {
 		L10n(l10nBuilder).
 		PreviewOpenNewTab(true).
 		Activity(ab).
+		EditorActivityProcessor(func(ctx *web.EventContext, input *pagebuilder.EditorLogInput) *pagebuilder.EditorLogInput {
+			return input
+		}).
+		DemoContainerActivityProcessor(func(ctx *web.EventContext, input *pagebuilder.DemoContainerLogInput) *pagebuilder.DemoContainerLogInput {
+			return input
+		}).
 		Publisher(publisher).
 		SEO(seoBuilder).
 		WrapPageInstall(func(in presets.ModelInstallFunc) presets.ModelInstallFunc {
