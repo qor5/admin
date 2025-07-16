@@ -82,6 +82,20 @@ INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, del
 INSERT INTO public.container_headings (id, add_top_space, add_bottom_space, anchor_id, heading, font_color, background_color, link, link_text, link_display_option, text) VALUES (1, false, false, '', '', '', '', '', '', '', '');
 `, []string{"page_builder_pages", "page_builder_containers", "container_in_numbers", "page_builder_demo_containers", "container_headings"}))
 
+var pageBuilderHiddenContainerTestData = gofixtures.Data(gofixtures.Sql(`
+INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, seo, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code) VALUES 
+										(10, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, '1234567', '/12313', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'draft', '', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'Japan');
+SELECT setval('page_builder_pages_id_seq', 10, true);
+
+INSERT INTO public.page_builder_containers (id,created_at, updated_at, deleted_at, page_id, page_version, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id,page_model_name) VALUES 
+										   (11,'2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', null, 10, '2024-05-21-v01', 'Header', 10, 2, false, true, 'Header', 'Japan', 0,'pages')  ;
+SELECT setval('page_builder_containers_id_seq', 11, true);
+
+INSERT INTO public.container_headers (id, color) VALUES (10, 'black');
+SELECT setval('container_headers_id_seq', 10, true);
+
+`, []string{"page_builder_pages", "page_builder_containers", "container_headers"}))
+
 func TestPageBuilder(t *testing.T) {
 	h := admin.TestHandler(TestDB, nil)
 	dbr, _ := TestDB.DB()
@@ -1404,6 +1418,21 @@ func TestPageBuilder(t *testing.T) {
 				return req
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Header", "PageTitle", "Shared"},
+		},
+		{
+			Name:  "Page Builder show hidden container",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderHiddenContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
+					EventFunc(pagebuilder.ShowSortedContainerDrawerEvent).
+					Query("status", "draft").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Header", "mdi-eye-off"},
 		},
 	}
 
