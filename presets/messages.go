@@ -73,6 +73,8 @@ type Messages struct {
 	ButtonLabelActionsMenu                     string
 	Save                                       string
 	AddRow                                     string
+	AddCard                                    string
+	AddButton                                  string
 	CheckboxTrueLabel                          string
 	CheckboxFalseLabel                         string
 
@@ -223,6 +225,8 @@ var Messages_en_US = &Messages{
 	ButtonLabelActionsMenu:                     "Actions",
 	Save:                                       "Save",
 	AddRow:                                     "Add Item",
+	AddCard:                                    "Add Card",
+	AddButton:                                  "Add Button",
 	CheckboxTrueLabel:                          "YES",
 	CheckboxFalseLabel:                         "NO",
 
@@ -319,6 +323,8 @@ var Messages_zh_CN = &Messages{
 	ButtonLabelActionsMenu:                     "菜单",
 	Save:                                       "保存",
 	AddRow:                                     "新增",
+	AddCard:                                    "新增卡片",
+	AddButton:                                  "新增按钮",
 	CheckboxTrueLabel:                          "是",
 	CheckboxFalseLabel:                         "否",
 
@@ -415,6 +421,8 @@ var Messages_ja_JP = &Messages{
 	ButtonLabelActionsMenu:                     "アクション",
 	Save:                                       "保存する",
 	AddRow:                                     "アイテムを追加",
+	AddCard:                                    "カードを追加",
+	AddButton:                                  "ボタンを追加",
 	CheckboxTrueLabel:                          "選択済み",
 	CheckboxFalseLabel:                         "未選択",
 

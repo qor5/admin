@@ -713,7 +713,7 @@ func TestActivityAdmin(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Activity Log", "87", "<td style='white-space: nowrap;'>Price</td>", "<td v-pre>70</td>", "<td v-pre>72</td>"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Activity Log", "87", `:items='[{"Field":"Price","Old":"70","New":"72"}]'`},
 		},
 		{
 			Name:  "Activity log detail for edit action (new)",
@@ -725,7 +725,7 @@ func TestActivityAdmin(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Activity Log", "121", "<td style='white-space: nowrap;'>AppovedAt</td>", "<td v-pre>2024-11-06 00:00:00 +0800 CST</td>"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Activity Log", "121", `:items='[{"Field":"AppovedAt","Old":"","New":"2024-11-06 00:00:00 +0800 CST"}]'`},
 		},
 		{
 			Name:  "Activity log detail for edit action (delete)",
@@ -737,7 +737,7 @@ func TestActivityAdmin(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Activity Log", "121", "<td style='white-space: nowrap;'>AppovedAt</td>", "<td v-pre>2024-11-06 00:00:00 +0800 CST</td>"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Activity Log", "121", `:items='[{"Field":"AppovedAt","Old":"","New":"2024-11-06 00:00:00 +0800 CST"}]'`},
 		},
 
 		{

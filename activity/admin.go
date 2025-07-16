@@ -98,7 +98,7 @@ func setupEditing(eb *presets.EditingBuilder) {
 }
 
 func setupListing(b *presets.Builder, lb *presets.ListingBuilder, op *gorm2op.DataOperatorBuilder, ab *Builder) {
-	lb.RelayPagination(gorm2op.KeysetBasedPagination(true))
+	lb.RelayPagination(gorm2op.KeysetBasedPagination(true)).KeywordSearchOff(true)
 	lb.SearchFunc(func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 		if !ab.skipResPermCheck {
 			var modelLabels []string
@@ -460,65 +460,46 @@ func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
 	msgr := i18n.MustGetModuleMessages(req, I18nActivityKey, Messages_en_US).(*Messages)
 
 	if len(addediffs) > 0 {
-		var elems []h.HTMLComponent
-		for _, d := range addediffs {
-			elems = append(elems, h.Tr(
-				h.Td().Style("white-space: nowrap").Text(d.Field),
-				h.Td().Attr("v-pre", true).Text(d.New),
-			))
+		tableHeaders := []map[string]any{
+			{"title": msgr.DiffField, "key": "Field", "sortable": false, "width": "40%"},
+			{"title": msgr.DiffValue, "key": "New", "sortable": false, "width": "60%"},
 		}
 
 		diffsElems = append(diffsElems,
 			VCard().Elevation(0).Children(
 				VCardTitle().Class("pa-0").Children(h.Text(msgr.DiffAdd)),
 				VCardText().Class("pa-0 pt-3").Children(
-					VTable(
-						h.Thead(h.Tr(h.Th(msgr.DiffField).Style("white-space: nowrap"), h.Th(msgr.DiffValue))),
-						h.Tbody(elems...),
-					),
+					VDataTable().ItemsPerPage(-1).HideDefaultFooter(true).Headers(tableHeaders).Items(addediffs),
 				),
 			))
 	}
 
 	if len(deletediffs) > 0 {
-		var elems []h.HTMLComponent
-		for _, d := range deletediffs {
-			elems = append(elems, h.Tr(
-				h.Td().Style("white-space: nowrap").Text(d.Field),
-				h.Td().Attr("v-pre", true).Text(d.Old),
-			))
+		tableHeaders := []map[string]any{
+			{"title": msgr.DiffField, "key": "Field", "sortable": false, "width": "40%"},
+			{"title": msgr.DiffValue, "key": "Old", "sortable": false, "width": "60%"},
 		}
-
 		diffsElems = append(diffsElems,
 			VCard().Elevation(0).Children(
 				VCardTitle().Class("pa-0").Children(h.Text(msgr.DiffDelete)),
 				VCardText().Class("pa-0 pt-3").Children(
-					VTable(
-						h.Thead(h.Tr(h.Th(msgr.DiffField).Style("white-space: nowrap"), h.Th(msgr.DiffValue))),
-						h.Tbody(elems...),
-					),
+					VDataTable().ItemsPerPage(-1).HideDefaultFooter(true).Headers(tableHeaders).Items(deletediffs),
 				),
 			))
 	}
 
 	if len(changediffs) > 0 {
-		var elems []h.HTMLComponent
-		for _, d := range changediffs {
-			elems = append(elems, h.Tr(
-				h.Td().Style("white-space: nowrap").Text(d.Field),
-				h.Td().Attr("v-pre", true).Text(d.Old),
-				h.Td().Attr("v-pre", true).Text(d.New),
-			))
+		tableHeaders := []map[string]any{
+			{"title": msgr.DiffField, "key": "Field", "sortable": false, "width": "20%"},
+			{"title": msgr.DiffOld, "key": "Old", "sortable": false, "width": "40%"},
+			{"title": msgr.DiffNew, "key": "New", "sortable": false, "width": "40%"},
 		}
 
 		diffsElems = append(diffsElems,
 			VCard().Elevation(0).Children(
 				VCardTitle().Class("pa-0").Children(h.Text(msgr.DiffChanges)),
 				VCardText().Class("pa-0 pt-3").Children(
-					VTable(
-						h.Thead(h.Tr(h.Th(msgr.DiffField).Style("white-space: nowrap"), h.Th(msgr.DiffOld), h.Th(msgr.DiffNew))),
-						h.Tbody(elems...),
-					),
+					VDataTable().ItemsPerPage(-1).HideDefaultFooter(true).Headers(tableHeaders).Items(changediffs),
 				),
 			))
 	}
