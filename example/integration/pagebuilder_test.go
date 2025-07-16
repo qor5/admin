@@ -1434,6 +1434,22 @@ func TestPageBuilder(t *testing.T) {
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Header", "mdi-eye-off"},
 		},
+		{
+			Name:  "Page Builder Edit Same Form Container",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderHiddenContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/headers").
+					EventFunc(actions.Update).
+					Query(presets.ParamID, "10").
+					AddField("Color", "Black").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"Successfully Updated"},
+		},
 	}
 
 	for _, c := range cases {
