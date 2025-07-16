@@ -466,7 +466,7 @@ func (b *ModelBuilder) toggleContainerVisibility(ctx *web.EventContext) (r web.E
 		{Field: fmt.Sprintf("[%s %v].Hidden", container.DisplayName, container.ModelID), Old: fmt.Sprint(container.Hidden), New: fmt.Sprint(!container.Hidden)},
 	}
 	container.Hidden = !container.Hidden
-	if err = b.db.Save(&container).Error; err != nil {
+	if err = b.db.Updates(&container).Error; err != nil {
 		return
 	}
 	defer func() {
@@ -593,8 +593,8 @@ func (b *Builder) renameContainerDialog(ctx *web.EventContext) (r web.EventRespo
 		msgr     = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		pMsgr    = presets.MustGetMessages(ctx.R)
 		okAction = web.Plaid().
-				ThenScript("locals.renameDialog=false").
-				EventFunc(RenameContainerFromDialogEvent).Query(paramContainerID, paramID).Go()
+			ThenScript("locals.renameDialog=false").
+			EventFunc(RenameContainerFromDialogEvent).Query(paramContainerID, paramID).Go()
 		portalName = dialogPortalName
 	)
 

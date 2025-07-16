@@ -711,7 +711,7 @@ func (b *ModelBuilder) markAsSharedContainer(ctx *web.EventContext) (r web.Event
 		{Field: fmt.Sprintf("[%s %v].Shared", container.DisplayName, container.ModelID), Old: fmt.Sprint(container.Shared), New: fmt.Sprint(true)},
 	}
 	container.Shared = true
-	if err = b.db.Save(&container).Error; err != nil {
+	if err = b.db.Updates(&container).Error; err != nil {
 		return
 	}
 	defer func() {
