@@ -78,7 +78,7 @@ func RegisterListContentLiteContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 			Attr(presets.VFieldError(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)), field.Errors)...).
 			Label(field.Label).
 			Disabled(field.Disabled)
-	})
+	}).SetterFunc(presets.TiptapHTMLSetter) // Use strict policy for list content
 	eb.Field("Items").Nested(fb, &presets.DisplayFieldInSorter{Field: "Heading"})
 }
 
