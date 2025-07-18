@@ -55,7 +55,7 @@ func RegisterHeadingContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 			Attr(presets.VFieldError(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)), field.Errors)...).
 			Label(field.Label).
 			Disabled(field.Disabled)
-	})
+	}).SetterFunc(presets.TiptapHTMLSetter) // Enable HTML sanitization with default tiptap policy
 	ed.Field("Heading").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
 		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) HTMLComponent {
 			return Components(presets.LinkageFieldsController(field, "AnchorID"), in(obj, field, ctx))
