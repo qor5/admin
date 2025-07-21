@@ -15,14 +15,6 @@ type HTMLSanitizerConfig struct {
 	Policy *bluemonday.Policy
 }
 
-// SanitizeHTML sanitizes the input HTML using the configured policy
-func (c *HTMLSanitizerConfig) SanitizeHTML(input string) string {
-	if c == nil || c.Policy == nil {
-		return input
-	}
-	return c.Policy.Sanitize(input)
-}
-
 // SanitizerPolicyType defines the base policy type for extension
 type HTMLSanitizerPolicyType string
 
@@ -31,42 +23,6 @@ const (
 	HTMLSanitizerPolicyUGC    HTMLSanitizerPolicyType = "UGC"
 	HTMLSanitizerPolicyStrict HTMLSanitizerPolicyType = "STRICT"
 )
-
-// Convenience constructors for different policy types
-func TiptapHTMLSanitizerConfig() *HTMLSanitizerConfig {
-	return &HTMLSanitizerConfig{
-		Policy: CreateHTMLSanitizerPolicy(HTMLSanitizerPolicyTiptap),
-	}
-}
-
-func UGCHTMLSanitizerConfig() *HTMLSanitizerConfig {
-	return &HTMLSanitizerConfig{
-		Policy: CreateHTMLSanitizerPolicy(HTMLSanitizerPolicyUGC),
-	}
-}
-
-func StrictHTMLSanitizerConfig() *HTMLSanitizerConfig {
-	return &HTMLSanitizerConfig{
-		Policy: CreateHTMLSanitizerPolicy(HTMLSanitizerPolicyStrict),
-	}
-}
-
-// ExtendHTMLSanitizerConfig creates a new sanitizer config by extending a base policy type
-func ExtendHTMLSanitizerConfig(policyType HTMLSanitizerPolicyType, extendFunc func(*bluemonday.Policy) *bluemonday.Policy) *HTMLSanitizerConfig {
-	basePolicy := CreateHTMLSanitizerPolicy(policyType)
-	if extendFunc != nil {
-		basePolicy = extendFunc(basePolicy)
-	}
-	return &HTMLSanitizerConfig{
-		Policy: basePolicy,
-	}
-}
-
-// ExtendTiptapHTMLSanitizerConfig is a deprecated convenience function for extending tiptap policy
-// Deprecated: Use ExtendHTMLSanitizerConfig(HTMLSanitizerPolicyTiptap, extendFunc) instead
-func ExtendTiptapHTMLSanitizerConfig(extendFunc func(*bluemonday.Policy) *bluemonday.Policy) *HTMLSanitizerConfig {
-	return ExtendHTMLSanitizerConfig(HTMLSanitizerPolicyTiptap, extendFunc)
-}
 
 // CreateHTMLSanitizerPolicy creates a fresh base policy of the specified type
 func CreateHTMLSanitizerPolicy(policyType HTMLSanitizerPolicyType) *bluemonday.Policy {
@@ -80,26 +36,6 @@ func CreateHTMLSanitizerPolicy(policyType HTMLSanitizerPolicyType) *bluemonday.P
 	default:
 		panic("unknown policy type: " + string(policyType))
 	}
-}
-
-// CreateBasePolicyByType creates a policy by string type (for backwards compatibility)
-func CreateBasePolicyByType(policyType string) *bluemonday.Policy {
-	switch policyType {
-	case "tiptap":
-		return CreateHTMLSanitizerPolicy(HTMLSanitizerPolicyTiptap)
-	case "ugc":
-		return CreateHTMLSanitizerPolicy(HTMLSanitizerPolicyUGC)
-	case "strict":
-		return CreateHTMLSanitizerPolicy(HTMLSanitizerPolicyStrict)
-	default:
-		// Default to tiptap for unknown types
-		return CreateHTMLSanitizerPolicy(HTMLSanitizerPolicyTiptap)
-	}
-}
-
-// CreateTiptapBasePolicy is an alias for CreateDefaultTiptapSanitizerPolicy for backwards compatibility
-func CreateTiptapBasePolicy() *bluemonday.Policy {
-	return CreateDefaultTiptapSanitizerPolicy()
 }
 
 // CreateTiptapBasePolicy creates a fresh tiptap policy (for extension)
@@ -177,33 +113,6 @@ func CreateDefaultTiptapSanitizerPolicy() *bluemonday.Policy {
 	p.AllowAttrs("data-video").Matching(regexp.MustCompile(`^(|true|false|[a-zA-Z0-9\-_]*)$`)).OnElements("div") // Allow empty or safe values for data-video
 
 	return p
-}
-
-// Setter functions for form field processing
-
-// TiptapHTMLSetter creates a setter function for tiptap fields with default tiptap policy
-func TiptapHTMLSetter(obj interface{}, field *FieldContext, ctx *web.EventContext) error {
-	config := TiptapHTMLSanitizerConfig()
-	return CreateHTMLSanitizer(config)(obj, field, ctx)
-}
-
-// TiptapHTMLSetterWithPolicy creates a setter function with a specific policy type
-func TiptapHTMLSetterWithPolicy(policyType string) FieldSetterFunc {
-	policy := CreateBasePolicyByType(policyType)
-	config := &HTMLSanitizerConfig{Policy: policy}
-	return CreateHTMLSanitizer(config)
-}
-
-// TiptapHTMLSetterWithConfig creates a setter function with a custom config
-func TiptapHTMLSetterWithConfig(config *HTMLSanitizerConfig) FieldSetterFunc {
-	if config == nil {
-		// If no config provided, don't sanitize
-		return func(obj interface{}, field *FieldContext, ctx *web.EventContext) error {
-			v := ctx.R.Form.Get(field.FormKey)
-			return reflectutils.Set(obj, field.Name, v)
-		}
-	}
-	return CreateHTMLSanitizer(config)
 }
 
 // SanitizeHTMLSetter creates a setter function for tiptap fields with default tiptap policy
