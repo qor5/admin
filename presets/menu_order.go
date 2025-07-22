@@ -16,9 +16,10 @@ import (
 type MenuOrderBuilder struct {
 	p *Builder
 	// string or *MenuGroupBuilder
-	order    []interface{}
-	modelMap map[string]*ModelBuilder
-	once     sync.Once
+	order             []interface{}
+	modelMap          map[string]*ModelBuilder
+	menuComponentFunc func(menus []h.HTMLComponent, menuGroupSelected, menuItemSelected string) h.HTMLComponent
+	once              sync.Once
 }
 
 type menuOrderItem struct {
@@ -28,6 +29,11 @@ type menuOrderItem struct {
 
 func NewMenuOrderBuilder(b *Builder) *MenuOrderBuilder {
 	return &MenuOrderBuilder{p: b}
+}
+
+func (b *MenuOrderBuilder) MenuComponentFunc(fn func(menus []h.HTMLComponent, menuGroupSelected, menuItemSelected string) h.HTMLComponent) *MenuOrderBuilder {
+	b.menuComponentFunc = fn
+	return b
 }
 
 func (b *MenuOrderBuilder) isMenuGroupInOrder(mgb *MenuGroupBuilder) bool {
@@ -208,6 +214,9 @@ func (b *MenuOrderBuilder) getActiveMenuState(ctx *web.EventContext, inOrderMap 
 }
 
 func (b *MenuOrderBuilder) buildMenuComponent(menus []h.HTMLComponent, menuGroupSelected, menuItemSelected string) h.HTMLComponent {
+	if b.menuComponentFunc != nil {
+		return b.menuComponentFunc(menus, menuGroupSelected, menuItemSelected)
+	}
 	return h.Div(
 		web.Scope(
 			VList(menus...).
