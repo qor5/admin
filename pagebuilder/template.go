@@ -68,7 +68,7 @@ func (b *Builder) defaultTemplateInstall(pb *presets.Builder, pm *presets.ModelB
 		}
 		return
 	})
-	wrapper := presets.WrapperFieldLabel(func(evCtx *web.EventContext, obj interface{}, field *presets.FieldContext) (name2label map[string]string, err error) {
+	wrapper := presets.WrapperFieldLabel(func(evCtx *web.EventContext, _ interface{}, _ *presets.FieldContext) (name2label map[string]string, err error) {
 		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		return map[string]string{
 			"Name":        msgr.Name,
@@ -130,7 +130,7 @@ func (b *TemplateBuilder) configModelWithTemplate(mb *presets.ModelBuilder) {
 				return
 			}
 		})
-		filed.ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		filed.ComponentFunc(func(_ interface{}, _ *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			return h.Components(
 				web.Listen(NotifTemplateSelected(b.tm.mb),
 					web.Plaid().EventFunc(ReloadSelectedTemplateEvent).FieldValue(ParamTemplateSelectedID, web.Var("payload.slug")).Go(),
@@ -199,7 +199,7 @@ func (b *TemplateBuilder) ModelInstall(_ *presets.Builder, mb *presets.ModelBuil
 	return nil
 }
 
-func (b *TemplateBuilder) Install(pb *presets.Builder) error {
+func (b *TemplateBuilder) Install(_ *presets.Builder) error {
 	builder := b.builder
 	tm := b.tm
 	builder.useAllPlugin(tm.mb, tm.name)
@@ -228,7 +228,7 @@ func (b *TemplateBuilder) configList() {
 			Theme("light").Class("ml-2").
 			Attr("@click", web.Plaid().EventFunc(actions.New).Go())
 	})
-	listing.DialogWidth(templateDialogWidth).Title(func(ctx *web.EventContext, style presets.ListingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error) {
+	listing.DialogWidth(templateDialogWidth).Title(func(ctx *web.EventContext, _ presets.ListingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		if ctx.Param(web.EventFuncIDName) == actions.OpenListingDialog {
 			return msgr.CreateFromTemplate, nil, nil
@@ -236,7 +236,7 @@ func (b *TemplateBuilder) configList() {
 		return defaultTitle, nil, nil
 	})
 	rowMenu := listing.RowMenu()
-	rowMenu.RowMenuItem("Edit").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
+	rowMenu.RowMenuItem("Edit").ComponentFunc(func(_ interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
 		var (
 			pMsgr = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 			mb    = b.tm.mb
@@ -252,7 +252,7 @@ func (b *TemplateBuilder) configList() {
 			Go(),
 		)
 	})
-	rowMenu.RowMenuItem("Localize").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
+	rowMenu.RowMenuItem("Localize").ComponentFunc(func(_ interface{}, _ string, _ *web.EventContext) h.HTMLComponent {
 		return nil
 	})
 	config.CardTitle = func(ctx *web.EventContext, obj interface{}) (h.HTMLComponent, int) {
@@ -306,7 +306,7 @@ func (b *TemplateBuilder) configList() {
 			return web.Plaid().URL(b.tm.editorURLWithSlug(ps)).PushState(true).Go()
 		}
 	}
-	config.WrapRows = func(ctx *web.EventContext, searchParams *presets.SearchParams, result *presets.SearchResult, rows *VRowBuilder) *VRowBuilder {
+	config.WrapRows = func(ctx *web.EventContext, searchParams *presets.SearchParams, _ *presets.SearchResult, rows *VRowBuilder) *VRowBuilder {
 		var (
 			lc   = presets.ListingCompoFromContext(ctx.R.Context())
 			msgr = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)

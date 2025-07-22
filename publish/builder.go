@@ -194,7 +194,7 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.Model
 			return fd
 		}
 	})
-	lb.RowMenu().RowMenuItem("Delete").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) h.HTMLComponent {
+	lb.RowMenu().RowMenuItem("Delete").ComponentFunc(func(_ interface{}, _ string, _ *web.EventContext) h.HTMLComponent {
 		// DeleteRowMenu should be disabled when using the version interface
 		return nil
 	})
@@ -211,7 +211,7 @@ func (b *Builder) configVersionAndPublish(pb *presets.Builder, mb *presets.Model
 			ListingFieldLive:       msgr.HeaderLive,
 		}, nil
 	}))
-	lb.WrapColumns(presets.CustomizeColumnHeader(func(evCtx *web.EventContext, col *presets.Column, th h.MutableAttrHTMLComponent) (h.MutableAttrHTMLComponent, error) {
+	lb.WrapColumns(presets.CustomizeColumnHeader(func(_ *web.EventContext, _ *presets.Column, th h.MutableAttrHTMLComponent) (h.MutableAttrHTMLComponent, error) {
 		th.SetAttr("style", "min-width: 200px;")
 		return th, nil
 	}, ListingFieldLive))
