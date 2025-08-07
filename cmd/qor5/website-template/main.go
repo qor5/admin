@@ -20,6 +20,11 @@ var (
 )
 
 func serverWithTimeouts(addr string, handler http.Handler) *http.Server {
+	// Warn if timeouts are disabled in production
+	if writeTimeout == 0 || readTimeout == 0 {
+		log.Printf("WARNING: HTTP timeouts are disabled (WriteTimeout=%ds, ReadTimeout=%ds). This is unsafe for production use.", writeTimeout, readTimeout)
+	}
+
 	return &http.Server{
 		Addr:         addr,
 		Handler:      handler,
