@@ -1127,7 +1127,7 @@ func (c *ListingCompo) dialog(r *web.EventResponse, comp h.HTMLComponent, width 
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: c.actionDialogPortalName(),
 		Body: web.Scope().VSlot("{ form }").Children(
-			VDialog().Attr("v-model", "locals.dialog").Width(cmp.Or(width, c.lb.mb.rightDrawerWidth)).Children(
+			VDialog().Attr("v-model", "locals.dialog").Width(cmp.Or(width, c.lb.mb.rightDrawerWidth)).Class("rounded").Children(
 				web.Portal(comp).Name(c.actionDialogContentPortalName()),
 			),
 		),

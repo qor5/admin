@@ -48,6 +48,7 @@ func ConfirmDialog(payload UtilDialogPayloadType) h.HTMLComponent {
 		HideClose(true).
 		OkText(payload.Msgr.OK).
 		CancelText(payload.Msgr.Cancel).
+		Class("rounded").
 		Attr("@click:ok", payload.OkAction).
 		Attr("v-model", "locals.commonConfirmDialog")
 }
@@ -60,6 +61,7 @@ func DeleteDialog(msg string, okAction string, msgr *Messages) h.HTMLComponent {
 			HideClose(true).
 			OkText(msgr.OK).
 			CancelText(msgr.Cancel).
+			Class("rounded").
 			Attr("@click:ok", okAction).
 			Attr("v-model", "locals.deleteConfirmation"),
 	).VSlot(" { locals }").Init(`{deleteConfirmation: true}`)
@@ -79,6 +81,7 @@ func CustomDialog(payload UtilDialogPayloadType) h.HTMLComponent {
 			Width(payload.Width).
 			OkText(payload.Msgr.OK).
 			CancelText(payload.Msgr.Cancel).
+			Class("rounded").
 			Attr("v-model", "locals.customConfirmationDialog").
 			Attr("@click:ok", payload.OkAction),
 	).VSlot(" { locals }").Init(`{ customConfirmationDialog: true }`)

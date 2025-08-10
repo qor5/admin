@@ -375,7 +375,7 @@ func (b *ListingBuilder) openListingDialog(evCtx *web.EventContext) (r web.Event
 			b.mb.p.dc.MustInject(injectorName, stateful.ParseQuery(compo)),
 		),
 	)
-	dialog := v.VDialog(content).Attr("v-model", "vars.presetsListingDialog").Scrollable(true)
+	dialog := v.VDialog(content).Attr("v-model", "vars.presetsListingDialog").Scrollable(true).Class("rounded")
 	if b.dialogWidth != "" {
 		dialog.Width(b.dialogWidth)
 	}
@@ -407,6 +407,7 @@ func (b *ListingBuilder) deleteConfirmation(evCtx *web.EventContext) (r web.Even
 			).Title(msgr.DialogTitleDefault).
 				CancelText(msgr.Cancel).
 				OkText(msgr.Delete).
+				Class("rounded").
 				Attr("@click:ok", web.Plaid().
 					EventFunc(actions.DoDelete).
 					Queries(evCtx.Queries()).

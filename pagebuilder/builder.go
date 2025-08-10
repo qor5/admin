@@ -1591,6 +1591,7 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 			Text(pMsgr.LeaveBeforeUnsubmit).
 			OkText(pMsgr.OK).
 			CancelText(pMsgr.Cancel).
+			Class("rounded").
 			Attr("@click:ok", "toggleLocals.dialog=false;"+reloadBodyEditingEvent).
 			Attr("@update:model-value", "if(!$event){toggleLocals.activeDevice=toggleLocals.oldDevice;}").
 			Attr("v-model", "toggleLocals.dialog"),

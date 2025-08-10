@@ -670,6 +670,7 @@ func (b *Builder) rightDrawer(ctx *web.EventContext, r *web.EventResponse, comp 
 				Text(msgr.LeaveBeforeUnsubmit).
 				OkText(msgr.OK).
 				CancelText(msgr.Cancel).
+				Class("rounded").
 				Attr("@click:ok", "vars.confirmDrawerLeave=false;vars.presetsRightDrawer = false").
 				Attr("v-model", "vars.confirmDrawerLeave"),
 			activeWatcher,
@@ -727,7 +728,8 @@ func (b *Builder) dialog(ctx *web.EventContext, r *web.EventResponse, comp h.HTM
 				),
 			).
 				Attr("v-model", "vars.presetsDialog").
-				Width(width),
+				Width(width).
+				Class("rounded"),
 		).VSlot("{ form }"),
 	})
 	r.RunScript = "setTimeout(function(){ vars.presetsDialog = true }, 100)"
@@ -807,6 +809,7 @@ func (b *Builder) openConfirmDialog(ctx *web.EventContext) (er web.EventResponse
 				Text(promptText).
 				CancelText(cancelText).
 				OkText(okText).
+				Class("rounded").
 				Attr("@click:ok", fmt.Sprintf("%s; locals.show = false", confirmEvent)).
 				Attr("v-model", "locals.show"),
 		).VSlot("{ locals }").Init("{show: true}"),
