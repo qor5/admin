@@ -721,13 +721,15 @@ func (b *Builder) dialog(ctx *web.EventContext, r *web.EventResponse, comp h.HTM
 		Name: DialogPortalName,
 		Body: web.Scope(
 			activeWatcher,
-			VDialog(
+			vuetifyx.VXDialog(
 				h.Div().Class("overflow-y-auto").Children(
 					web.Portal(comp).Name(dialogContentPortalName),
 				),
 			).
+				HideClose(true).
+				HideFooter(true).
 				Attr("v-model", "vars.presetsDialog").
-				Width(width),
+				Attr(":width", width),
 		).VSlot("{ form }"),
 	})
 	r.RunScript = "setTimeout(function(){ vars.presetsDialog = true }, 100)"
