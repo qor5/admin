@@ -15,7 +15,6 @@ func TestGetFullPath(t *testing.T) {
 	t.Run("default base path", func(t *testing.T) {
 		// Test with default base path (nil option)
 		path, err := fs.GetFullPath("test.jpg", nil)
-
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
@@ -88,7 +87,6 @@ func TestGetFullPath_SecurityValidation(t *testing.T) {
 		shouldErr bool
 		desc      string
 	}{
-
 		{
 			name:      "path_traversal_single_dotdot",
 			url:       "../config.txt",
