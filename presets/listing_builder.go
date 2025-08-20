@@ -129,7 +129,7 @@ func (b *ListingBuilder) CellWrapperFunc(cwf vx.CellWrapperFunc) (r *ListingBuil
 
 func (b *ListingBuilder) WrapCell(w func(in CellProcessor) CellProcessor) (r *ListingBuilder) {
 	if b.cellProcessor == nil {
-		b.cellProcessor = w(func(evCtx *web.EventContext, cell h.MutableAttrHTMLComponent, id string, obj any) (h.MutableAttrHTMLComponent, error) {
+		b.cellProcessor = w(func(_ *web.EventContext, cell h.MutableAttrHTMLComponent, _ string, _ any) (h.MutableAttrHTMLComponent, error) {
 			return cell, nil
 		})
 	} else {
@@ -145,7 +145,7 @@ func (b *ListingBuilder) DataTableFunc(v func(*web.EventContext, *SearchParams, 
 
 func (b *ListingBuilder) WrapRow(w func(in RowProcessor) RowProcessor) (r *ListingBuilder) {
 	if b.rowProcessor == nil {
-		b.rowProcessor = w(func(evCtx *web.EventContext, row h.MutableAttrHTMLComponent, id string, obj any) (h.MutableAttrHTMLComponent, error) {
+		b.rowProcessor = w(func(_ *web.EventContext, row h.MutableAttrHTMLComponent, _ string, _ any) (h.MutableAttrHTMLComponent, error) {
 			return row, nil
 		})
 	} else {
@@ -156,7 +156,7 @@ func (b *ListingBuilder) WrapRow(w func(in RowProcessor) RowProcessor) (r *Listi
 
 func (b *ListingBuilder) WrapTable(w func(in TableProcessor) TableProcessor) (r *ListingBuilder) {
 	if b.tableProcessor == nil {
-		b.tableProcessor = w(func(evCtx *web.EventContext, table *vx.DataTableBuilder) (*vx.DataTableBuilder, error) {
+		b.tableProcessor = w(func(_ *web.EventContext, table *vx.DataTableBuilder) (*vx.DataTableBuilder, error) {
 			return table, nil
 		})
 	} else {
@@ -193,7 +193,7 @@ func (b *ListingBuilder) KeywordSearchOff(v bool) (r *ListingBuilder) {
 
 func (b *ListingBuilder) WrapColumns(w func(in ColumnsProcessor) ColumnsProcessor) (r *ListingBuilder) {
 	if b.columnsProcessor == nil {
-		b.columnsProcessor = w(func(evCtx *web.EventContext, columns []*Column) ([]*Column, error) {
+		b.columnsProcessor = w(func(_ *web.EventContext, columns []*Column) ([]*Column, error) {
 			return columns, nil
 		})
 	} else {
@@ -275,7 +275,7 @@ func (b *ListingBuilder) GetPageFunc() web.PageFunc {
 }
 
 func (b *ListingBuilder) cellComponentFunc(f *FieldBuilder) vx.CellComponentFunc {
-	return func(obj interface{}, fieldName string, ctx *web.EventContext) h.HTMLComponent {
+	return func(obj interface{}, _ string, ctx *web.EventContext) h.HTMLComponent {
 		return f.lazyCompFunc().FieldComponent(obj, b.mb.getComponentFuncField(f), ctx)
 	}
 }

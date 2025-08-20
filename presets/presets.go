@@ -21,6 +21,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/text/language"
 
+	"github.com/qor5/admin/v3/common"
 	"github.com/qor5/admin/v3/presets/actions"
 )
 
@@ -62,6 +63,7 @@ type Builder struct {
 	menuGroups                            MenuGroups
 	menuOrder                             *MenuOrderBuilder
 	wrapHandlers                          map[string]func(in http.Handler) (out http.Handler)
+	handlerHook                           common.Hook[http.Handler]
 	plugins                               []Plugin
 	notFoundHandler                       http.Handler
 	customBuilders                        []*CustomBuilder
@@ -1213,6 +1215,9 @@ func (b *Builder) initMux() {
 	// b.handler = mux
 	// Handle 404
 	b.handler = b.notFound(mux)
+	if b.handlerHook != nil {
+		b.handler = b.handlerHook(b.handler)
+	}
 }
 
 type responseWriterWrapper struct {
@@ -1255,6 +1260,24 @@ func (b *Builder) WrapNotFoundHandler(w func(in http.Handler) (out http.Handler)
 
 func (b *Builder) NotFoundHandler() http.Handler {
 	return b.notFoundHandler
+}
+
+func (b *Builder) WithHandlerHook(hooks ...common.Hook[http.Handler]) *Builder {
+	b.handlerHook = common.ChainHookWith(b.handlerHook, hooks...)
+	return b
+}
+
+// NewMuxHook creates a handler wrapper for sub-modules that have their own mux and prefix
+func (b *Builder) NewMuxHook(mux *http.ServeMux) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if _, pattern := mux.Handler(r); pattern != "" {
+				mux.ServeHTTP(w, r)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
 func (b *Builder) AddWrapHandler(key string, f func(in http.Handler) (out http.Handler)) {

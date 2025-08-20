@@ -2,10 +2,12 @@ package presets
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strconv"
 	"testing"
 
+	"github.com/qor5/admin/v3/common"
 	"github.com/qor5/web/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -108,4 +110,76 @@ func TestHumanizeString(t *testing.T) {
 	assert.Equal(t, "Hello World", humanizeString("helloWorld"))
 	assert.Equal(t, "Order Item", humanizeString("OrderItem"))
 	assert.Equal(t, "CNN Name", humanizeString("CNNName"))
+}
+
+func TestWithHandlerHook(t *testing.T) {
+	b := New()
+
+	// Create hooks
+	hook1 := common.Hook[http.Handler](func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("X-Hook-1", "first")
+			next.ServeHTTP(w, r)
+		})
+	})
+
+	hook2 := common.Hook[http.Handler](func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("X-Hook-2", "second")
+			next.ServeHTTP(w, r)
+		})
+	})
+
+	// Test chaining
+	result := b.WithHandlerHook(hook1, hook2)
+	assert.Equal(t, b, result)
+
+	// Test hooks are applied
+	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("test response"))
+	})
+
+	finalHandler := b.handlerHook(testHandler)
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "/", nil)
+	finalHandler.ServeHTTP(w, r)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "test response", w.Body.String())
+	assert.Equal(t, "first", w.Header().Get("X-Hook-1"))
+	assert.Equal(t, "second", w.Header().Get("X-Hook-2"))
+}
+
+func TestNewMuxHook(t *testing.T) {
+	b := New()
+
+	// Create a mux with a route
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/test", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("mux response"))
+	})
+
+	// Create the hook
+	muxHook := b.NewMuxHook(mux)
+	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("next handler"))
+	})
+	wrappedHandler := muxHook(nextHandler)
+
+	// Test mux route
+	w1 := httptest.NewRecorder()
+	r1 := httptest.NewRequest("GET", "/api/test", nil)
+	wrappedHandler.ServeHTTP(w1, r1)
+	assert.Equal(t, http.StatusOK, w1.Code)
+	assert.Equal(t, "mux response", w1.Body.String())
+
+	// Test fallback to next handler
+	w2 := httptest.NewRecorder()
+	r2 := httptest.NewRequest("GET", "/other", nil)
+	wrappedHandler.ServeHTTP(w2, r2)
+	assert.Equal(t, http.StatusOK, w2.Code)
+	assert.Equal(t, "next handler", w2.Body.String())
 }

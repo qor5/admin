@@ -139,6 +139,19 @@ func TestUsers(t *testing.T) {
 				}
 			},
 		},
+		{
+			Name:  "User Open Dialog Post",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				userData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/dialog-select-favor-posts").
+					EventFunc(actions.OpenListingDialog).
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`Posts`, `Search`, `ID`, `Title`, "Body"},
+		},
 	}
 
 	for _, c := range cases {

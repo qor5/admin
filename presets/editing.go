@@ -185,7 +185,7 @@ func (b *EditingBuilder) EditingTitleFunc(v EditingTitleComponentFunc) (r *Editi
 
 func (b *EditingBuilder) WrapIdCurrentActive(w func(in IdCurrentActiveProcessor) IdCurrentActiveProcessor) (r *EditingBuilder) {
 	if b.idCurrentActiveProcessor == nil {
-		b.idCurrentActiveProcessor = w(func(ctx *web.EventContext, current string) (string, error) {
+		b.idCurrentActiveProcessor = w(func(_ *web.EventContext, current string) (string, error) {
 			return current, nil
 		})
 	} else {
@@ -691,8 +691,8 @@ func (b *EditingBuilder) Section(sections ...*SectionBuilder) *EditingBuilder {
 		sb.registerEvent()
 		sb.isEdit = true
 
-		sb.WrapSaveBtnFunc(func(in ObjectBoolFunc) ObjectBoolFunc {
-			return func(obj interface{}, ctx *web.EventContext) bool {
+		sb.WrapSaveBtnFunc(func(_ ObjectBoolFunc) ObjectBoolFunc {
+			return func(_ interface{}, _ *web.EventContext) bool {
 				return false
 			}
 		})
@@ -704,7 +704,7 @@ func (b *EditingBuilder) Section(sections ...*SectionBuilder) *EditingBuilder {
 		})
 
 		b.Field(sb.name).Component(sb).
-			SetterFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) (err error) {
+			SetterFunc(func(obj interface{}, _ *FieldContext, ctx *web.EventContext) (err error) {
 				err = sb.defaultUnmarshalFunc(obj, ctx)
 				if err != nil {
 					return err

@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/microcosm-cc/bluemonday"
 	"github.com/qor5/web/v3"
 	v "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
@@ -33,7 +34,7 @@ func PresetsEditingCustomizationDescription(b *presets.Builder, db *gorm.DB) (
 ) {
 	mb, cl, ce, _ = PresetsListingCustomizationBulkActions(b, db)
 
-	ce.Only("Name", "Email", "CompanyID", "Description")
+	ce.Only("Name", "Email", "CompanyID", "Description", "HTMLSanitizerPolicyTiptapInput", "HTMLSanitizerPolicyUGCInput", "HTMLSanitizerPolicyStrictInput", "HTMLSanitizerPolicyCustomInput")
 
 	ce.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		customer := obj.(*Customer)
@@ -45,6 +46,18 @@ func PresetsEditingCustomizationDescription(b *presets.Builder, db *gorm.DB) (
 		}
 		if customer.Description == "" {
 			err.FieldError("Description", "description must not be empty")
+		}
+		if customer.HTMLSanitizerPolicyTiptapInput == "" {
+			err.FieldError("HTMLSanitizerPolicyTiptapInput", "HTMLSanitizerPolicyTiptapInput must not be empty")
+		}
+		if customer.HTMLSanitizerPolicyUGCInput == "" {
+			err.FieldError("HTMLSanitizerPolicyUGCInput", "HTMLSanitizerPolicyUGCInput must not be empty")
+		}
+		if customer.HTMLSanitizerPolicyStrictInput == "" {
+			err.FieldError("HTMLSanitizerPolicyStrictInput", "HTMLSanitizerPolicyStrictInput must not be empty")
+		}
+		if customer.HTMLSanitizerPolicyCustomInput == "" {
+			err.FieldError("HTMLSanitizerPolicyCustomInput", "HTMLSanitizerPolicyCustomInput must not be empty")
 		}
 		return
 	})
@@ -58,6 +71,59 @@ func PresetsEditingCustomizationDescription(b *presets.Builder, db *gorm.DB) (
 			Disabled(field.Disabled).
 			ErrorMessages(field.Errors...)
 	})
+
+	ce.Field("HTMLSanitizerPolicyTiptapInput").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		extensions := vx.TiptapSlackLikeExtensions()
+		return tiptap.TiptapEditor(db, field.FormKey).
+			Extensions(extensions).
+			Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
+			Label(field.Label).
+			Disabled(field.Disabled).
+			ErrorMessages(field.Errors...)
+	}).SetterFunc(presets.CreateHTMLSanitizer(&presets.HTMLSanitizerConfig{
+		Policy: presets.CreateHTMLSanitizerPolicy(presets.HTMLSanitizerPolicyTiptap),
+	}))
+
+	ce.Field("HTMLSanitizerPolicyUGCInput").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		extensions := vx.TiptapSlackLikeExtensions()
+		return tiptap.TiptapEditor(db, field.FormKey).
+			Extensions(extensions).
+			Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
+			Label(field.Label).
+			Disabled(field.Disabled).
+			ErrorMessages(field.Errors...)
+	}).SetterFunc(presets.CreateHTMLSanitizer(&presets.HTMLSanitizerConfig{
+		Policy: presets.CreateHTMLSanitizerPolicy(presets.HTMLSanitizerPolicyUGC),
+	}))
+
+	ce.Field("HTMLSanitizerPolicyStrictInput").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		extensions := vx.TiptapSlackLikeExtensions()
+		return tiptap.TiptapEditor(db, field.FormKey).
+			Extensions(extensions).
+			Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
+			Label(field.Label).
+			Disabled(field.Disabled).
+			ErrorMessages(field.Errors...)
+	}).SetterFunc(presets.CreateHTMLSanitizer(&presets.HTMLSanitizerConfig{
+		Policy: presets.CreateHTMLSanitizerPolicy(presets.HTMLSanitizerPolicyStrict),
+	}))
+
+	policy := bluemonday.NewPolicy()
+
+	p := policy.AllowElements("video", "audio")
+	p.AllowAttrs("src", "controls").OnElements("video", "audio")
+
+	ce.Field("HTMLSanitizerPolicyCustomInput").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+		extensions := vx.TiptapSlackLikeExtensions()
+		return tiptap.TiptapEditor(db, field.FormKey).
+			Extensions(extensions).
+			Attr(web.VField(field.FormKey, fmt.Sprint(reflectutils.MustGet(obj, field.Name)))...).
+			Label(field.Label).
+			Disabled(field.Disabled).
+			ErrorMessages(field.Errors...)
+	}).SetterFunc(presets.CreateHTMLSanitizer(&presets.HTMLSanitizerConfig{
+		Policy: p,
+	}))
 
 	// If you just want to specify the label to be displayed
 	wrapper := presets.WrapperFieldLabel(func(evCtx *web.EventContext, obj interface{}, field *presets.FieldContext) (name2label map[string]string, err error) {

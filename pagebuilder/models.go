@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/qor5/web/v3"
 	"github.com/spf13/cast"
@@ -173,6 +174,9 @@ type Container struct {
 
 	l10n.Locale
 	LocalizeFromModelID uint
+
+	ModelUpdatedAt time.Time
+	ModelUpdatedBy string
 }
 
 func (c *Container) PrimarySlug() string {
