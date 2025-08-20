@@ -176,7 +176,7 @@ func TestGetFullPath_SecurityValidation(t *testing.T) {
 				} else {
 					// Check that error message contains relevant information
 					errMsg := err.Error()
-					if !strings.Contains(errMsg, "outside the allowed base directory") {
+					if !strings.Contains(errMsg, "illegal file path") {
 						t.Errorf("%s: expected security error message, got: %s", tt.desc, errMsg)
 					}
 				}
