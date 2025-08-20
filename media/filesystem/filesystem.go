@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/qor5/admin/v3/media/base"
+	"github.com/qor5/x/v3/filepathx"
 )
 
 var _ base.Media = &FileSystem{}
@@ -23,23 +24,14 @@ func (FileSystem) GetFullPath(url string, option *base.Option) (string, error) {
 		basePath = option.Get("path")
 	}
 
-	// Convert base path to absolute and join with URL in one step
-	absBasePath, err := filepath.Abs(basePath)
+	path, err := filepathx.Join(basePath, url)
 	if err != nil {
-		return "", fmt.Errorf("failed to get absolute base path: %w", err)
+		return "", err
 	}
 
-	// Join and get absolute path directly
-	absPath, err := filepath.Abs(filepath.Join(absBasePath, url))
+	absPath, err := filepath.Abs(path)
 	if err != nil {
-		return "", fmt.Errorf("failed to get absolute path: %w", err)
-	}
-
-	// Security check: ensure path is within base directory
-	if relPath, err := filepath.Rel(absBasePath, absPath); err != nil {
-		return "", fmt.Errorf("failed to get relative path: %w", err)
-	} else if filepath.IsAbs(relPath) || relPath == ".." || (len(relPath) >= 2 && relPath[:2] == "..") {
-		return "", fmt.Errorf("path '%s' is outside the allowed base directory '%s'", absPath, absBasePath)
+		return "", err
 	}
 
 	// Create directory if it doesn't exist
