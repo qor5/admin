@@ -10,6 +10,7 @@ import (
 	"github.com/qor5/web/v3/stateful"
 	"github.com/qor5/x/v3/perm"
 	v "github.com/qor5/x/v3/ui/vuetify"
+	"github.com/qor5/x/v3/ui/vuetifyx"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/samber/lo"
 	h "github.com/theplant/htmlgo"
@@ -375,9 +376,12 @@ func (b *ListingBuilder) openListingDialog(evCtx *web.EventContext) (r web.Event
 			b.mb.p.dc.MustInject(injectorName, stateful.ParseQuery(compo)),
 		),
 	)
-	dialog := v.VDialog(content).Attr("v-model", "vars.presetsListingDialog").Scrollable(true)
+	dialog := vuetifyx.VXDialog(content).Attr("v-model", "vars.presetsListingDialog").
+		ContentOnlyMode(true).
+		ContentPadding("0")
+
 	if b.dialogWidth != "" {
-		dialog.Width(b.dialogWidth)
+		dialog.Attr(":width", b.dialogWidth)
 	}
 	if b.dialogHeight != "" {
 		content.Attr("height", b.dialogHeight)
