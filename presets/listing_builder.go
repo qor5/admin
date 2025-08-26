@@ -376,7 +376,10 @@ func (b *ListingBuilder) openListingDialog(evCtx *web.EventContext) (r web.Event
 			b.mb.p.dc.MustInject(injectorName, stateful.ParseQuery(compo)),
 		),
 	)
-	dialog := vuetifyx.VXDialog(content).Attr("v-model", "vars.presetsListingDialog").HideFooter(true).HideClose(true)
+	dialog := vuetifyx.VXDialog(content).Attr("v-model", "vars.presetsListingDialog").
+		ContentOnlyMode(true).
+		ContentPadding("0")
+
 	if b.dialogWidth != "" {
 		dialog.Attr(":width", b.dialogWidth)
 	}

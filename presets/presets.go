@@ -726,8 +726,8 @@ func (b *Builder) dialog(ctx *web.EventContext, r *web.EventResponse, comp h.HTM
 					web.Portal(comp).Name(dialogContentPortalName),
 				),
 			).
-				HideClose(true).
-				HideFooter(true).
+				ContentOnlyMode(true).
+				ContentPadding("0 2px 9px").
 				Attr("v-model", "vars.presetsDialog").
 				Attr(":width", width),
 		).VSlot("{ form }"),
