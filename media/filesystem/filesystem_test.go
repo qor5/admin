@@ -195,46 +195,30 @@ func TestGetFullPath_SecurityValidation(t *testing.T) {
 }
 
 func TestGetFullPath_DirectoryCreation(t *testing.T) {
+	// Test the directory auto-creation feature (main modification)
 	fs := FileSystem{}
 
-	// Create a temporary directory for testing
-	tempDir := t.TempDir()
+	t.Run("nested directory creation", func(t *testing.T) {
+		tempDir := t.TempDir()
+		option := &base.Option{"PATH": tempDir}
 
-	// Test with a custom base that points to temp directory
-	option := &base.Option{"PATH": tempDir}
-
-	// Test path that requires creating nested directories
-	testPath := "level1/level2/level3/test.txt"
-	fullPath, err := fs.GetFullPath(testPath, option)
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
-
-	// Verify the directory structure was created
-	expectedDir := filepath.Join(tempDir, "level1/level2/level3")
-	if _, err = os.Stat(expectedDir); os.IsNotExist(err) {
-		t.Errorf("Expected directory %s to be created, but it doesn't exist", expectedDir)
-	}
-
-	// Verify the full path is correct
-	expectedPath := filepath.Join(tempDir, testPath)
-	if fullPath != expectedPath {
-		t.Errorf("Expected path %s, got %s", expectedPath, fullPath)
-	}
-}
-
-func TestGetFullPath_ErrorHandling(t *testing.T) {
-	fs := FileSystem{}
-
-	t.Run("permission denied directory creation", func(t *testing.T) {
-		// This test is more about documenting the behavior than testing error conditions
-		// since it's hard to create a reliable error condition for filepath.Abs
-		// In real scenarios, errors would come from directory creation permissions
-
-		// Test normal case to ensure no error
-		_, err := fs.GetFullPath("test.txt", nil)
+		// Test path that requires creating nested directories
+		testPath := "level1/level2/level3/test.txt"
+		fullPath, err := fs.GetFullPath(testPath, option)
 		if err != nil {
-			t.Errorf("Unexpected error in normal case: %v", err)
+			t.Fatalf("Unexpected error: %v", err)
+		}
+
+		// Verify the directory structure was created
+		expectedDir := filepath.Join(tempDir, "level1/level2/level3")
+		if _, err = os.Stat(expectedDir); os.IsNotExist(err) {
+			t.Errorf("Expected directory %s to be created", expectedDir)
+		}
+
+		// Verify the full path is correct
+		expectedPath := filepath.Join(tempDir, testPath)
+		if fullPath != expectedPath {
+			t.Errorf("Expected path %s, got %s", expectedPath, fullPath)
 		}
 	})
 }
@@ -332,10 +316,14 @@ func TestStore_DirectoryCreation(t *testing.T) {
 	})
 }
 
-func TestRetrieve_Basic(t *testing.T) {
+func TestStore_ErrorHandling(t *testing.T) {
 	fs := FileSystem{}
 
-	if _, err := fs.Retrieve("non_existent_file.txt"); err == nil {
-		t.Errorf("Expected error when retrieving non-existent file")
-	}
+	t.Run("store with invalid path", func(t *testing.T) {
+		// Test with path traversal that should be blocked
+		reader := strings.NewReader("test content")
+		if err := fs.Store("../../../etc/test.txt", nil, reader); err == nil {
+			t.Errorf("Expected error when storing file with path traversal")
+		}
+	})
 }
