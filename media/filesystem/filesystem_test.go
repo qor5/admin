@@ -331,3 +331,11 @@ func TestStore_DirectoryCreation(t *testing.T) {
 		}
 	})
 }
+
+func TestRetrieve_Basic(t *testing.T) {
+	fs := FileSystem{}
+
+	if _, err := fs.Retrieve("non_existent_file.txt"); err == nil {
+		t.Errorf("Expected error when retrieving non-existent file")
+	}
+}
