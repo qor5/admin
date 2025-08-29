@@ -299,3 +299,35 @@ func TestGetFullPath_EdgeCases(t *testing.T) {
 		})
 	}
 }
+
+func TestStore_DirectoryCreation(t *testing.T) {
+	// Test the new directory auto-creation feature in GetFullPath
+	fs := FileSystem{}
+
+	t.Run("store with nested path creation", func(t *testing.T) {
+		tempDir := t.TempDir()
+		option := &base.Option{"PATH": tempDir}
+
+		content := "nested file content"
+		reader := strings.NewReader(content)
+		filename := "images/thumbnails/nested_file.txt"
+
+		err := fs.Store(filename, option, reader)
+		if err != nil {
+			t.Fatalf("Unexpected error storing nested file: %v", err)
+		}
+
+		fullPath := filepath.Join(tempDir, filename)
+		if _, err = os.Stat(fullPath); os.IsNotExist(err) {
+			t.Errorf("Expected nested file to exist at %s", fullPath)
+		}
+
+		data, err := os.ReadFile(fullPath)
+		if err != nil {
+			t.Fatalf("Failed to read nested file: %v", err)
+		}
+		if string(data) != content {
+			t.Errorf("Expected content '%s', got '%s'", content, string(data))
+		}
+	})
+}
