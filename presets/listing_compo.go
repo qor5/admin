@@ -809,7 +809,7 @@ func CardDataTableFunc(lb *ListingBuilder, config *CardDataTableConfig) func(ctx
 						VCard(
 							VCardItem(
 								h.Div(
-									h.Div(cardContent),
+									h.Div(cardContent).Style("max-width: 80%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"),
 									menu,
 								).Class(W100, "d-flex", "justify-space-between", "align-center"),
 							).Class("pa-2"),
