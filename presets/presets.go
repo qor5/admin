@@ -1395,6 +1395,11 @@ func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			b.Build()
 		}
 	})
+	if b.handler == nil {
+		log.Printf("presets: Builder.handler is nil after Build; cannot serve request for %s", r.URL.Path)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 	redirectSlashes(b.handler).ServeHTTP(w, r)
 }
 
