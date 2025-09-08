@@ -1389,7 +1389,7 @@ func (b *Builder) LookUpModelBuilder(uriName string) *ModelBuilder {
 
 func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if b.handler == nil {
-		b.Build()
+		panic("handler is nil, please call Build() first before serving")
 	}
 	redirectSlashes(b.handler).ServeHTTP(w, r)
 }
