@@ -72,7 +72,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload coverage to DeepSource
-        uses: deepsourcelabs/test-coverage-action@master
+        uses: deepsourcelabs/test-coverage-action@4284bb73a04adb39faaa6bfcc2d0e3dd137ffed7 # master
         with:
           key: go
           coverage-file: coverage.txt
