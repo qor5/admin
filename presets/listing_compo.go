@@ -817,7 +817,7 @@ func CardDataTableFunc(lb *ListingBuilder, config *CardDataTableConfig) func(ctx
 					).Class("pa-0"),
 				)
 				var card h.HTMLComponent
-				if selectedActions != nil && len(selectedActions) > 0 {
+				if len(selectedActions) > 0 {
 					card = VHover(
 						web.Slot(
 							VCard(

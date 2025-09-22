@@ -3,6 +3,7 @@ package microsite
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"path"
@@ -176,9 +177,9 @@ func (this *MicroSite) GetUnPublishActions(ctx context.Context, db *gorm.DB, sto
 }
 
 func (*MicroSite) UnArchiveAndPublish(getPath func(string) string, fileName string, f io.Reader, storage oss.StorageInterface) (filesList []string, err error) {
-	format, reader, err := archiver.Identify(fileName, f)
+	format, reader, err := archiver.Identify(context.Background(), fileName, f)
 	if err != nil {
-		if err == archiver.ErrNoMatch {
+		if errors.Is(err, archiver.NoMatch) {
 			err = utils.Upload(storage, getPath(fileName), f)
 			return
 		}
@@ -189,19 +190,21 @@ func (*MicroSite) UnArchiveAndPublish(getPath func(string) string, fileName stri
 	var putError error
 	var mutex sync.Mutex
 
-	err = format.(archiver.Extractor).Extract(context.Background(), reader, nil, func(ctx context.Context, f archiver.File) (err error) {
-		if f.IsDir() || strings.Contains(f.NameInArchive, "__MACOSX") || strings.Contains(f.NameInArchive, "DS_Store") {
+	err = format.(archiver.Extractor).Extract(context.Background(), reader, func(ctx context.Context, info archiver.FileInfo) (err error) {
+		if info.IsDir() || strings.Contains(info.NameInArchive, "__MACOSX") || strings.Contains(info.NameInArchive, "DS_Store") {
 			return
 		}
 
-		rc, err := f.Open()
+		rc, err := info.Open()
 		if err != nil {
 			return
 		}
 
-		filesList = append(filesList, f.NameInArchive)
+		mutex.Lock()
+		filesList = append(filesList, info.NameInArchive)
+		mutex.Unlock()
 
-		publishedPath := getPath(f.NameInArchive)
+		publishedPath := getPath(info.NameInArchive)
 		wg.Add(1)
 		putSemaphore <- struct{}{}
 		go func() {

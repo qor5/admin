@@ -1097,10 +1097,18 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 	}
 
 	if needSave {
-		err = b.saver(obj, id, ctx)
+		err := b.saver(obj, id, ctx)
 		if err != nil {
-			ShowMessage(&r, err.Error(), "warning")
-			return r, nil
+			var ve *web.ValidationErrors
+			if errors.As(err, &ve) && ve != nil {
+				ctx.Flash = ve
+				if ve.GetGlobalError() != "" {
+					ShowMessage(&r, ve.GetGlobalError(), "warning")
+				}
+			} else {
+				ShowMessage(&r, err.Error(), "warning")
+				return r, nil
+			}
 		}
 	}
 
