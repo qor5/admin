@@ -90,8 +90,8 @@ func EditSetterFunc(obj interface{}, field *presets.FieldContext, ctx *web.Event
 
 func (collection *Collection) EditingComponentFunc(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	var (
-		msgr        = i18n.MustGetModuleMessages(ctx.R, I18nSeoKey, Messages_en_US).(*Messages)
-		fieldPrefix string
+		msgr               = i18n.MustGetModuleMessages(ctx.R, I18nSeoKey, Messages_en_US).(*Messages)
+		fieldPrefix string = field.Name
 		setting     Setting
 		db          = collection.getDBFromContext(ctx.R.Context())
 		locale, _   = l10n.IsLocalizableFromCtx(ctx.R.Context())
@@ -104,9 +104,8 @@ func (collection *Collection) EditingComponentFunc(obj interface{}, field *prese
 
 	value := reflect.Indirect(reflect.ValueOf(obj))
 	for i := 0; i < value.NumField(); i++ {
-		if s, ok := value.Field(i).Interface().(Setting); ok {
+		if s, ok := value.Field(i).Interface().(Setting); ok && fieldPrefix == value.Type().Field(i).Name {
 			setting = s
-			fieldPrefix = value.Type().Field(i).Name
 		}
 	}
 	if !setting.EnabledCustomize && setting.IsEmpty() {
@@ -133,7 +132,7 @@ func (collection *Collection) EditingComponentFunc(obj interface{}, field *prese
 	if o != "" {
 		hideActions = true
 	}
-
+	customize := "customize" + fieldPrefix
 	return web.Scope(
 		h.Div(
 			h.Label(msgr.Seo).Class("v-label theme--light"),
@@ -141,8 +140,8 @@ func (collection *Collection) EditingComponentFunc(obj interface{}, field *prese
 				VExpansionPanel(
 					VExpansionPanelHeader(
 						h.HTMLComponents{
-							VSwitch().Label(msgr.UseDefaults).Attr("v-model", "locals.userDefaults").On("change", "locals.enabledCustomize = !locals.userDefaults;$refs.customize.$emit('change', locals.enabledCustomize);if((locals.openCustomizePanel=='0'&&locals.enabledCustomize)||(locals.openCustomizePanel!='0'&&!locals.enabledCustomize)){event.stopPropagation();}"),
-							VSwitch().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "EnabledCustomize")).Value(setting.EnabledCustomize).Attr(":input-value", "locals.enabledCustomize").Attr("ref", "customize").Attr("style", "display:none;"),
+							VSwitch().Label(msgr.UseDefaults).Attr("v-model", "locals.userDefaults").On("change", fmt.Sprintf("locals.enabledCustomize = !locals.userDefaults;$refs.%s.$emit('change', locals.enabledCustomize);if((locals.openCustomizePanel=='0'&&locals.enabledCustomize)||(locals.openCustomizePanel!='0'&&!locals.enabledCustomize)){event.stopPropagation();}", customize)),
+							VSwitch().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "EnabledCustomize")).Value(setting.EnabledCustomize).Attr(":input-value", "locals.enabledCustomize").Attr("ref", customize).Attr("style", "display:none;"),
 						},
 					).Attr("style", "padding: 0px 24px;").HideActions(hideActions),
 
