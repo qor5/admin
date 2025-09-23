@@ -15,9 +15,8 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/oss"
-	"github.com/qor5/x/v3/oss/s3"
+	"github.com/qor5/x/v3/s3x"
 
-	microsite_utils "github.com/qor5/admin/v3/microsite/utils"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 )
 
@@ -35,14 +34,8 @@ func CreateSEOBuilder(a *Handler, l10nBuilder *l10n.Builder) *seo.Builder {
 
 // CreatePublishStorage configures S3 storage for publishing
 func CreatePublishStorage(a *Handler) oss.StorageInterface {
-	s3Client := s3.New(&s3.Config{
-		Bucket:   a.S3Publish.Bucket,
-		Region:   a.S3Publish.Region,
-		ACL:      string(types.ObjectCannedACLBucketOwnerFullControl),
-		Endpoint: a.S3Publish.Endpoint,
-	})
-	// TODO: @molon 一定要使用 microsite_utils 吗？
-	return microsite_utils.NewClient(s3Client)
+	a.S3Publish.ACL = string(types.ObjectCannedACLBucketOwnerFullControl)
+	return s3x.SetupClient(&a.S3Publish)
 }
 
 // CreatePublisher creates and configures the publisher

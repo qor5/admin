@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/common"
@@ -20,8 +19,8 @@ import (
 	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/login"
-	"github.com/qor5/x/v3/oss/s3"
 	"github.com/qor5/x/v3/perm"
+	"github.com/qor5/x/v3/s3x"
 	"github.com/theplant/inject"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
@@ -34,19 +33,13 @@ import (
 	h "github.com/theplant/htmlgo"
 )
 
-type S3Config struct {
-	Bucket   string `confx:"bucket"`
-	Region   string `confx:"region"`
-	Endpoint string `confx:"endpoint"`
-}
-
 // Config contains all dependencies needed for Handler
 type Config struct {
 	DB *gorm.DB `inject:"" confx:"-"`
 
 	Prefix    string     `confx:"prefix" validate:"omitempty"`
-	S3        S3Config   `confx:"s3"`
-	S3Publish S3Config   `confx:"s3Publish"`
+	S3        s3x.Config `confx:"s3"`
+	S3Publish s3x.Config `confx:"s3Publish"`
 	Auth      AuthConfig `confx:"auth"`
 }
 
@@ -150,12 +143,7 @@ func (a *Handler) autoMigrate(ctx context.Context) error {
 
 // configureMediaStorage configures S3 storage for media
 func (a *Handler) configureMediaStorage() {
-	media_oss.Storage = s3.New(&s3.Config{
-		Bucket:   a.S3.Bucket,
-		Region:   a.S3.Region,
-		ACL:      string(types.ObjectCannedACLBucketOwnerFullControl),
-		Endpoint: a.S3.Endpoint,
-	})
+	media_oss.Storage = s3x.SetupClient(&a.S3)
 }
 
 // createActivityBuilder creates and configures the activity builder
