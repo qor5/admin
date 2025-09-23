@@ -8,6 +8,7 @@ import (
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/i18nx"
 	"github.com/qor5/x/v3/statusx"
+	"github.com/samber/lo"
 	"golang.org/x/text/language"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/metadata"
@@ -82,7 +83,10 @@ func (w *grpcWrapper) convert(err error) error {
 	badRequest := statusx.ExtractDetail[*errdetails.BadRequest](details)
 	if badRequest != nil {
 		for _, violation := range badRequest.GetFieldViolations() {
-			vErr.FieldError(violation.GetField(), cmp.Or(violation.GetLocalizedMessage().GetMessage(), violation.GetDescription()))
+			vErr.FieldError(
+				statusx.FormatField(violation.GetField(), lo.PascalCase),
+				cmp.Or(violation.GetLocalizedMessage().GetMessage(), violation.GetDescription()),
+			)
 		}
 		return errors.WithStack(&vErr)
 	}
