@@ -121,12 +121,12 @@ func (h *Handler) BuildForTest(ctx context.Context, ctors ...any) error {
 		return err
 	}
 
-	h.WithHandlerHook(func(h http.Handler) http.Handler {
+	h.WithHandlerHook(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			for _, cookie := range cookies {
 				r.AddCookie(cookie)
 			}
-			h.ServeHTTP(w, r)
+			next.ServeHTTP(w, r)
 		})
 	})
 

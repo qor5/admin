@@ -81,7 +81,7 @@ func (a *Handler) createLoginBuilder(presetsBuilder *presets.Builder) *login.Bui
 		Secret(a.Auth.Secret).
 		OAuthProviders(buildOAuthProviders(&a.Auth)...).
 		HomeURLFunc(func(_ *http.Request, _ any) string {
-			return a.Prefix
+			return strings.TrimSuffix(a.Prefix, "/") + "/"
 		}).
 		Recaptcha(a.Auth.EnableRecaptcha, login.RecaptchaConfig{
 			SiteKey:   a.Auth.RecaptchaSiteKey,

@@ -15,7 +15,6 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/login"
-	"github.com/qor5/x/v3/lox"
 	"github.com/qor5/x/v3/perm"
 	"gorm.io/gorm"
 
@@ -134,7 +133,6 @@ func (a *Handler) createUserModelBuilder(presetsBuilder *presets.Builder, activi
 	})
 
 	// ========== Field Configurations ==========
-	// Field: Type (display account type)
 	editing.Field("Type").ComponentFunc(func(obj any, _ *presets.FieldContext, _ *web.EventContext) h.HTMLComponent {
 		u := obj.(*User)
 		if u.ID == 0 {
@@ -157,7 +155,6 @@ func (a *Handler) createUserModelBuilder(presetsBuilder *presets.Builder, activi
 		).Class("mb-2")
 	})
 
-	// Field: Actions (action buttons)
 	editing.Field("Actions").ComponentFunc(func(obj any, _ *presets.FieldContext, _ *web.EventContext) h.HTMLComponent {
 		var actionBtns h.HTMLComponents
 		u := obj.(*User)
@@ -197,7 +194,6 @@ func (a *Handler) createUserModelBuilder(presetsBuilder *presets.Builder, activi
 		).Class("mb-5 text-right")
 	})
 
-	// Field: Account (email)
 	editing.Field("Account").Label("Email").ComponentFunc(func(obj any, field *presets.FieldContext, _ *web.EventContext) h.HTMLComponent {
 		return vx.VXField().Attr(web.VField(field.Name, field.Value(obj))...).Label(field.Label).ErrorMessages(field.Errors...)
 	}).SetterFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) (err error) {
@@ -211,7 +207,6 @@ func (a *Handler) createUserModelBuilder(presetsBuilder *presets.Builder, activi
 		return nil
 	})
 
-	// Field: OAuth Provider
 	editing.Field("OAuthProvider").Label("OAuth Provider").ComponentFunc(func(obj any, field *presets.FieldContext, _ *web.EventContext) h.HTMLComponent {
 		u := obj.(*User)
 		if !u.IsOAuthUser() && u.ID != 0 {
@@ -223,7 +218,6 @@ func (a *Handler) createUserModelBuilder(presetsBuilder *presets.Builder, activi
 		}
 	})
 
-	// Field: OAuth Identifier
 	editing.Field("OAuthIdentifier").Label("OAuth Identifier").ComponentFunc(func(obj any, field *presets.FieldContext, _ *web.EventContext) h.HTMLComponent {
 		u := obj.(*User)
 		if !u.IsOAuthUser() {
@@ -233,16 +227,18 @@ func (a *Handler) createUserModelBuilder(presetsBuilder *presets.Builder, activi
 		}
 	})
 
-	// Field: Roles (role selection)
 	editing.Field("Roles").
 		ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			var selectedItems []v.DefaultOptionItem
 			var values []string
 			u, ok := obj.(*User)
-			if ok {
-				// Load user with roles using Preload to avoid Association method
+			if ok && u.ID != 0 {
 				var userWithRoles User
-				lox.Must0(a.DB.WithContext(ctx.R.Context()).Preload("Roles").Where("id = ?", u.ID).First(&userWithRoles).Error)
+				if err := a.DB.WithContext(ctx.R.Context()).Preload("Roles").Where("id = ?", u.ID).First(&userWithRoles).Error; err != nil {
+					if !errors.Is(err, gorm.ErrRecordNotFound) {
+						panic(err)
+					}
+				}
 				for _, r := range userWithRoles.Roles {
 					values = append(values, fmt.Sprint(r.ID))
 					selectedItems = append(selectedItems, v.DefaultOptionItem{
@@ -308,17 +304,24 @@ func (a *Handler) createUserModelBuilder(presetsBuilder *presets.Builder, activi
 			if u.RegistrationDate.IsZero() {
 				u.RegistrationDate = time.Now()
 			}
-			if err := a.DB.Transaction(func(tx *gorm.DB) (dbErr error) {
+			if err := a.DB.Transaction(func(tx *gorm.DB) error {
 				ctx.WithContextValue(gorm2op.CtxKeyDB{}, tx)
 				defer ctx.WithContextValue(gorm2op.CtxKeyDB{}, nil)
-				if id != "" {
-					for _, r := range u.Roles {
-						if err := grantUserRole(ctx.R.Context(), tx, u.ID, r.Name); err != nil {
-							return err
-						}
+				// First save the user to ensure we have a valid ID (covers both create and update)
+				if err := in(obj, id, ctx); err != nil {
+					return err
+				}
+				// Explicitly replace user roles in the join table
+				var roleIDs []uint
+				for _, r := range u.Roles {
+					if r.ID != 0 {
+						roleIDs = append(roleIDs, r.ID)
 					}
 				}
-				return in(obj, id, ctx)
+				if err := replaceUserRoles(tx, u.ID, roleIDs); err != nil {
+					return err
+				}
+				return nil
 			}); err != nil {
 				return errors.Wrap(err, "failed to save user")
 			}
@@ -400,4 +403,22 @@ func (a *Handler) createUserModelBuilder(presetsBuilder *presets.Builder, activi
 	})
 
 	return umb
+}
+
+// replaceUserRoles replaces all roles of a user by role IDs via the join table explicitly.
+// This does not rely on GORM association auto-save behavior.
+func replaceUserRoles(db *gorm.DB, userID uint, roleIDs []uint) error {
+	// Clear existing relations
+	if err := db.Table("user_role_join").Where("user_id = ?", userID).Delete(nil).Error; err != nil {
+		return errors.Wrap(err, "failed to delete user role")
+	}
+	if len(roleIDs) == 0 {
+		return nil
+	}
+	// Bulk insert new relations
+	rows := make([]map[string]any, 0, len(roleIDs))
+	for _, rid := range roleIDs {
+		rows = append(rows, map[string]any{"user_id": userID, "role_id": rid})
+	}
+	return errors.WithStack(db.Table("user_role_join").Create(&rows).Error)
 }

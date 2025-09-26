@@ -10,7 +10,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/activity"
-	"github.com/qor5/admin/v3/common"
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/presets"
@@ -18,6 +17,7 @@ import (
 	"github.com/qor5/admin/v3/role"
 	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/hook"
 	"github.com/qor5/x/v3/login"
 	"github.com/qor5/x/v3/perm"
 	"github.com/qor5/x/v3/s3x"
@@ -49,7 +49,7 @@ type Handler struct {
 	*inject.Injector
 
 	plugins     []presets.Plugin
-	handlerHook common.Hook[http.Handler]
+	handlerHook hook.Hook[http.Handler]
 	warmupOnce  sync.Once
 	handler     http.Handler
 }
@@ -115,8 +115,8 @@ func (a *Handler) Build(ctx context.Context, ctors ...any) error {
 	return nil
 }
 
-func (a *Handler) WithHandlerHook(hooks ...common.Hook[http.Handler]) *Handler {
-	a.handlerHook = common.ChainHookWith(a.handlerHook, hooks...)
+func (a *Handler) WithHandlerHook(hooks ...hook.Hook[http.Handler]) *Handler {
+	a.handlerHook = hook.Prepend(a.handlerHook, hooks...)
 	return a
 }
 
@@ -203,27 +203,8 @@ func (a *Handler) createPresetsBuilder() *presets.Builder {
 		NotificationCenterInvisible: true,
 	}).RightDrawerWidth("700")
 
-	// Configure permissions
 	a.configurePermission(presetsBuilder)
-
-	// Configure i18n
 	a.configureI18n(presetsBuilder)
-
-	// TODO: @molon 需要 hook ？
-	presetsBuilder.MenuOrder(
-		presetsBuilder.MenuGroup("Page Builder").SubItems(
-			"Page",
-			"shared_containers",
-			"demo_containers",
-			"page_templates",
-			"page_categories",
-		).Icon("mdi-view-quilt"),
-		presetsBuilder.MenuGroup("User Management").SubItems(
-			"User",
-			"Role",
-		).Icon("mdi-account-multiple"),
-	)
-
 	return presetsBuilder
 }
 
@@ -301,14 +282,13 @@ func (a *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			presetsBuilder.Use(a.plugins...)
 			presetsBuilder.Build()
 
-			handlerHook := common.ChainHook(
-				// TODO: @molon 可能要整理一下
+			handlerHook := hook.Chain(
 				loginSessionBuilder.Middleware(),
 				withRoles(a.DB),
 				securityMiddleware(),
 			)
 			if a.handlerHook != nil {
-				handlerHook = common.ChainHookWith(handlerHook, a.handlerHook)
+				handlerHook = hook.Prepend(handlerHook, a.handlerHook)
 			}
 			a.handler = handlerHook(mux)
 		}); err != nil {
