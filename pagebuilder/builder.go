@@ -936,7 +936,7 @@ func (b *Builder) firstOrCreateDemoContainers(ctx *web.EventContext, cons ...*Co
 		cons = b.containerBuilders
 	}
 	for _, con := range cons {
-		if err := con.firstOrCreate(slices.Concat(localeCodes)); err != nil {
+		if err := con.firstOrCreate(ctx, slices.Concat(localeCodes)); err != nil {
 			continue
 		}
 	}
@@ -1320,20 +1320,25 @@ func (b *ContainerBuilder) getContainerDataID(modelID int, primarySlug string) s
 	return fmt.Sprintf(inflection.Plural(strcase.ToKebab(b.name))+"_%v_%v", modelID, primarySlug)
 }
 
-func (b *ContainerBuilder) firstOrCreate(localeCodes []string) (err error) {
+func (b *ContainerBuilder) firstOrCreate(ctx *web.EventContext, localeCodes []string) (err error) {
 	var (
-		db   = b.builder.db
-		obj  = b.mb.NewModel()
-		cons []*DemoContainer
-		m    = &DemoContainer{}
+		db    = b.builder.db
+		obj   = b.mb.NewModel()
+		cons  []*DemoContainer
+		m     = &DemoContainer{}
+		saver = b.mb.Editing().Creating().Saver
 	)
 	if len(localeCodes) == 0 {
 		return
 	}
+	ctx.R.Form.Set(ParamContainerCreate, "1")
 	return db.Transaction(func(tx *gorm.DB) (vErr error) {
+		ctx.WithContextValue(gorm2op.CtxKeyDB{}, tx)
+		defer ctx.WithContextValue(gorm2op.CtxKeyDB{}, nil)
 		tx.Where("model_name = ? and locale_code in ? ", b.name, localeCodes).Find(&cons)
+
 		if len(cons) == 0 {
-			if vErr = tx.Create(obj).Error; vErr != nil {
+			if vErr = saver(obj, "", ctx); vErr != nil {
 				return
 			}
 			modelID := reflectutils.MustGet(obj, "ID").(uint)
@@ -1364,7 +1369,7 @@ func (b *ContainerBuilder) firstOrCreate(localeCodes []string) (err error) {
 				continue
 			}
 			obj = b.mb.NewModel()
-			if vErr = tx.Create(obj).Error; vErr != nil {
+			if vErr = saver(obj, "", ctx); vErr != nil {
 				return
 			}
 			modelID := reflectutils.MustGet(obj, "ID").(uint)
