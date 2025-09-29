@@ -73,13 +73,16 @@ func (w *grpcWrapper) convert(err error) error {
 	if err == nil {
 		return nil
 	}
+
 	st, ok := status.FromError(err)
 	if !ok {
 		return err
 	}
 
 	var vErr web.ValidationErrors
+
 	details := st.Details()
+
 	badRequest := statusx.ExtractDetail[*errdetails.BadRequest](details)
 	if badRequest != nil {
 		for _, violation := range badRequest.GetFieldViolations() {
@@ -94,8 +97,9 @@ func (w *grpcWrapper) convert(err error) error {
 	localized := statusx.ExtractDetail[*errdetails.LocalizedMessage](details)
 	if localized != nil {
 		vErr.GlobalError(cmp.Or(localized.GetMessage(), st.Message()))
-		return errors.WithStack(&vErr)
+	} else {
+		vErr.GlobalError(st.Message())
 	}
 
-	return errors.WithStack(err)
+	return errors.WithStack(&vErr)
 }
