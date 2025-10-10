@@ -807,7 +807,6 @@ func (b *Builder) configSharedContainer(pb *presets.Builder) {
 			return in(evCtx, cell, id, obj)
 		}
 	})
-
 	if b.ab != nil {
 		b.ab.RegisterModel(pm)
 	}
@@ -1087,18 +1086,30 @@ func (b *ContainerBuilder) Install() {
 	})
 	editing.EditingTitleFunc(func(obj interface{}, defaultTitle string, ctx *web.EventContext) h.HTMLComponent {
 		var (
-			modelID    = reflectutils.MustGet(obj, "ID")
-			locale     = ctx.ContextValue(l10n.LocaleCode)
-			localeCode string
-			con        Container
+			modelID           = reflectutils.MustGet(obj, "ID")
+			locale            = ctx.ContextValue(l10n.LocaleCode)
+			localeCode        string
+			con               Container
+			isSharedContainer = ctx.Param(paramOpenFromSharedContainer) == "1"
+			msgr              = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		)
 
 		if locale != nil {
 			localeCode = locale.(string)
 		}
 		b.builder.db.Where("model_id = ? and model_name = ? and locale_code = ?", modelID, b.name, localeCode).First(&con)
-		return h.Span("{{vars.__pageBuilderRightContentTitle?vars.__pageBuilderRightContentTitle:vars.__pageBuilderRightDefaultContentTitle}}").
+		comp := h.Span("{{vars.__pageBuilderRightContentTitle?vars.__pageBuilderRightContentTitle:vars.__pageBuilderRightDefaultContentTitle}}").
 			Attr(web.VAssign("vars", fmt.Sprintf("{__pageBuilderRightContentTitle:%q,__pageBuilderRightDefaultContentTitle:%q}", con.DisplayName, defaultTitle))...)
+		if isSharedContainer {
+			return h.Div(comp,
+				VTooltip(
+					web.Slot(
+						VIcon("mdi-information-outline").Color(ColorWarning).Attr("v-bind", "tooltip").Class("ml-2").Size(SizeSmall),
+					).Name("activator").Scope(`{props:tooltip}`),
+				).Location(LocationBottom).Text(msgr.SharedContainerModificationWarning),
+			).Class("v-flex v-flex-row")
+		}
+		return comp
 	})
 	editing.AppendHiddenFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		if portalName := ctx.Param(presets.ParamPortalName); portalName != pageBuilderRightContentPortal {
@@ -1555,6 +1566,7 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 		device  = ctx.Param(paramDevice)
 		devices = b.getDevices()
 		pMsgr   = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+		isDraft = ctx.Param(paramStatus) == publish.StatusDraft
 	)
 
 	for _, d := range devices {
@@ -1580,7 +1592,7 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 			Query(paramIframeEventName, changeDeviceEventName).
 			Query(paramContainerDataID, containerDataID).
 			AfterScript("vars.__pageBuilderEditingUnPassed=false;toggleLocals.oldDevice = toggleLocals.activeDevice;").
-			ThenScript(fmt.Sprintf(`if(%s!==""){%s}`, containerDataID,
+			ThenScript(fmt.Sprintf(`if(%v && %s!==""){%s}`, isDraft, containerDataID,
 				web.Plaid().EventFunc(EditContainerEvent).
 					MergeQuery(true).
 					Query(paramContainerDataID, containerDataID).
