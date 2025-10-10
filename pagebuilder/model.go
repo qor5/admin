@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"path"
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -21,6 +22,7 @@ import (
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 
+	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
@@ -63,11 +65,18 @@ func (b *ModelBuilder) setName() {
 	b.name = utils.GetObjectName(b.mb.NewModel())
 }
 
-func (b *ModelBuilder) addSharedContainerToPage(pageID int, containerID, pageVersion, locale, modelName string, modelID uint) (newContainerID string, err error) {
-	var c Container
+func (b *ModelBuilder) addSharedContainerToPage(ctx *web.EventContext, obj interface{}, pageID int, containerID, pageVersion, locale, modelName string, modelID uint) (newContainerID string, err error) {
+	var (
+		c           Container
+		containerMb = b.builder.ContainerByName(modelName)
+		model       = containerMb.NewModel()
+	)
 
 	err = b.db.Transaction(func(tx *gorm.DB) (dbErr error) {
 		if dbErr = tx.First(&c, "model_name = ? AND model_id = ? AND shared = true ", modelName, modelID).Error; dbErr != nil {
+			return
+		}
+		if dbErr = tx.First(model, modelID).Error; dbErr != nil {
 			return
 		}
 
@@ -113,6 +122,26 @@ func (b *ModelBuilder) addSharedContainerToPage(pageID int, containerID, pageVer
 			return
 		}
 		newContainerID = container.PrimarySlug()
+		if b.builder.ab != nil && b.builder.editorActivityProcessor != nil {
+			mb, ok := b.builder.ab.GetModelBuilder(b.mb)
+			if !ok {
+				return
+			}
+			detail := &EditorLogInput{
+				Action:          ActionAddContainer,
+				PageObject:      obj,
+				Container:       container,
+				ContainerObject: model,
+				Detail:          fmt.Sprintf("%s %s", container.DisplayName, container.PrimarySlug()),
+			}
+			if b.builder.editorActivityProcessor != nil {
+				detail = b.builder.editorActivityProcessor(ctx, detail)
+			}
+			if detail == nil {
+				return
+			}
+			mb.Log(ctx.R.Context(), detail.Action, detail.PageObject, detail.Detail)
+		}
 		return
 	})
 	return
@@ -125,7 +154,7 @@ func withLocale(builder *Builder, wh *gorm.DB, locale string) *gorm.DB {
 	return wh.Where("locale_code = ?", locale)
 }
 
-func (b *ModelBuilder) addContainerToPage(ctx *web.EventContext, pageID int, containerID, pageVersion, locale, modelName string) (modelID uint, newContainerID string, err error) {
+func (b *ModelBuilder) addContainerToPage(ctx *web.EventContext, obj interface{}, pageID int, containerID, pageVersion, locale, modelName string) (modelID uint, newContainerID string, err error) {
 	var (
 		dc          DemoContainer
 		containerMb = b.builder.ContainerByName(modelName)
@@ -193,7 +222,26 @@ func (b *ModelBuilder) addContainerToPage(ctx *web.EventContext, pageID int, con
 		}
 		err = tx.Create(&container).Error
 		newContainerID = container.PrimarySlug()
-
+		if b.builder.ab != nil && b.builder.editorActivityProcessor != nil {
+			mb, ok := b.builder.ab.GetModelBuilder(b.mb)
+			if !ok {
+				return
+			}
+			detail := &EditorLogInput{
+				Action:          ActionAddContainer,
+				PageObject:      obj,
+				Container:       container,
+				ContainerObject: model,
+				Detail:          fmt.Sprintf("%s %s", container.DisplayName, container.PrimarySlug()),
+			}
+			if b.builder.editorActivityProcessor != nil {
+				detail = b.builder.editorActivityProcessor(ctx, detail)
+			}
+			if detail == nil {
+				return
+			}
+			mb.Log(ctx.R.Context(), detail.Action, detail.PageObject, detail.Detail)
+		}
 		return
 	})
 
@@ -213,6 +261,24 @@ func (b *ModelBuilder) pageContent(ctx *web.EventContext) (r web.PageResponse, e
 
 func (b *ModelBuilder) getPrimaryColumnValuesBySlug(ctx *web.EventContext) (pageID int, pageVersion string, locale string) {
 	return b.primaryColumnValuesBySlug(ctx.Param(presets.ParamID))
+}
+
+func (b *ModelBuilder) getObjFromSlug(ctx *web.EventContext) (obj interface{}, err error) {
+	pageID, pageVersion, locale := b.getPrimaryColumnValuesBySlug(ctx)
+	obj = b.mb.NewModel()
+	g := b.db
+	if b.isTemplate {
+		g = g.Where("id = ? ", pageID)
+	} else {
+		g = g.Where("id = ? and version = ?", pageID, pageVersion)
+	}
+	if _, ok := obj.(l10n.LocaleInterface); ok {
+		g = g.Where(" locale_code = ?", locale)
+	}
+	if err = g.First(obj).Error; err != nil {
+		return
+	}
+	return
 }
 
 func (b *ModelBuilder) primaryColumnValuesBySlug(slug string) (pageID int, pageVersion string, locale string) {
@@ -633,17 +699,49 @@ func (b *ModelBuilder) markAsSharedContainer(ctx *web.EventContext) (r web.Event
 		cs          = container.PrimaryColumnValuesBySlug(paramID)
 		containerID = cs[presets.ParamID]
 		locale      = cs[l10n.SlugLocaleCode]
+		obj         interface{}
 	)
-	err = b.db.Model(&Container{}).Where("id = ? AND locale_code = ?", containerID, locale).Update("shared", true).Error
-	if err != nil {
+	if obj, err = b.getObjFromSlug(ctx); err != nil {
 		return
 	}
+	if err = b.db.First(&container, "id = ? AND locale_code = ?", containerID, locale).Error; err != nil {
+		return
+	}
+	diffs := []activity.Diff{
+		{Field: fmt.Sprintf("[%s %v].Shared", container.DisplayName, container.ModelID), Old: fmt.Sprint(container.Shared), New: fmt.Sprint(true)},
+	}
+	container.Shared = true
+	if err = b.db.Updates(&container).Error; err != nil {
+		return
+	}
+	defer func() {
+		if b.builder.ab != nil && b.builder.editorActivityProcessor != nil {
+			detail := &EditorLogInput{
+				Action:     activity.ActionEdit,
+				PageObject: obj,
+				Container:  container,
+				Detail:     diffs,
+			}
+			if b.builder.editorActivityProcessor != nil {
+				detail = b.builder.editorActivityProcessor(ctx, detail)
+			}
+			if detail == nil {
+				return
+			}
+			mb, ok := b.builder.ab.GetModelBuilder(b.mb)
+			if !ok {
+				return
+			}
+			mb.Log(ctx.R.Context(), detail.Action, detail.PageObject, detail.Detail)
+		}
+	}()
+
 	r.PushState = web.Location(url.Values{})
 	return
 }
 
-func (b *ModelBuilder) copyContainersToNewPageVersion(db *gorm.DB, pageID int, locale, oldPageVersion, newPageVersion, fromModelName, toModelName string) (err error) {
-	return b.copyContainersToAnotherPage(db, pageID, oldPageVersion, locale, pageID, newPageVersion, locale, fromModelName, toModelName)
+func (b *ModelBuilder) copyContainersToNewPageVersion(db *gorm.DB, pageID int, localeCode, parentVersion, version, fromModelName, toModelName string) (err error) {
+	return b.copyContainersToAnotherPage(db, pageID, parentVersion, localeCode, pageID, version, localeCode, fromModelName, toModelName)
 }
 
 func (b *ModelBuilder) copyContainersToAnotherPage(db *gorm.DB, pageID int, pageVersion, locale string, toPageID int, toPageVersion, toPageLocale, fromModelName, toModelName string) (err error) {
@@ -916,5 +1014,131 @@ func (b *ModelBuilder) EventMiddleware(v eventMiddlewareFunc) *ModelBuilder {
 
 func (b *ModelBuilder) WrapEventMiddleware(w func(eventMiddlewareFunc) eventMiddlewareFunc) *ModelBuilder {
 	b.eventMiddleware = w(b.eventMiddleware)
+	return b
+}
+
+func (b *ModelBuilder) configListing() *ModelBuilder {
+	listing := b.mb.Listing()
+	rowMenu := listing.RowMenu()
+	type ctxKey struct{}
+	listing.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
+		return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
+			result, err = in(ctx, params)
+			if err != nil {
+				return
+			}
+			if b.isTemplate {
+				return
+			}
+			items := b.mb.NewModelSlice()
+			ids := make([]interface{}, 0)
+			reflectutils.ForEach(result.Nodes, func(node interface{}) {
+				ids = append(ids, reflectutils.MustGet(node, "ID"))
+			})
+			// Get locale from context
+			locale, _ := l10n.IsLocalizableFromContext(ctx.R.Context())
+
+			// Use subquery to find the latest record for each ID, prioritizing draft status
+			subQuery := b.db.Model(b.mb.NewModel()).
+				Select("*, ROW_NUMBER() OVER(PARTITION BY id ORDER BY CASE WHEN status = ? THEN 0 WHEN status = ? THEN 1 ELSE 2 END, created_at DESC) as row_num", publish.StatusDraft, publish.StatusOnline).
+				Where("id IN (?)", ids)
+
+			// Add locale condition if it exists
+			if locale != "" {
+				subQuery = subQuery.Where("locale_code = ?", locale)
+			}
+
+			// Get records with row_num=1 (the latest record for each ID)
+			err = b.db.Table("(?) as sub", subQuery).
+				Where("sub.row_num = ?", 1).
+				Find(items).Error
+			if err != nil {
+				return
+			}
+
+			// Create a map with ID string as key and item as value
+			itemMap := make(map[string]interface{})
+
+			// Use reflection to iterate items and populate the map
+			v := reflect.ValueOf(items)
+			if v.Kind() == reflect.Ptr {
+				v = v.Elem()
+			}
+
+			if v.Kind() == reflect.Slice {
+				for i := 0; i < v.Len(); i++ {
+					item := v.Index(i).Interface()
+					id := fmt.Sprintf("%v", reflectutils.MustGet(item, "ID"))
+					itemMap[id] = item
+				}
+			}
+
+			ctx.WithContextValue(ctxKey{}, itemMap)
+			return
+		}
+	})
+	rowMenu.RowMenuItem("Edit Last Draft").ComponentFunc(func(obj interface{}, id string, ctx *web.EventContext) (r h.HTMLComponent) {
+		if b.mb.Info().Verifier().Do(presets.PermGet).WithReq(ctx.R).IsAllowed() != nil {
+			return nil
+		}
+		if _, ok := obj.(publish.VersionInterface); !ok {
+			return nil
+		}
+
+		var (
+			msgr          = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+			modelID, _, _ = b.primaryColumnValuesBySlug(id)
+		)
+
+		// Get itemMap from context
+		itemMap, ok := ctx.ContextValue(ctxKey{}).(map[string]interface{})
+		if !ok {
+			return nil
+		}
+
+		// Find item corresponding to modelID
+		item, exists := itemMap[fmt.Sprintf("%v", modelID)]
+		if !exists {
+			return nil
+		}
+		statusObj, ok := item.(publish.StatusInterface)
+		if !ok {
+			return nil
+		}
+		status := statusObj.EmbedStatus().Status
+		onlineUrl := statusObj.EmbedStatus().OnlineUrl
+
+		// Check item status and generate different VListItem based on status
+		if status == publish.StatusDraft {
+			// If it's draft status, show edit button
+			return VListItem(
+				VListItemTitle(h.Text(msgr.EditLastDraft)),
+			).PrependIcon("mdi-pencil").Attr("@click", web.Plaid().
+				PushState(true).
+				URL(b.mb.Info().DetailingHref(item.(presets.SlugEncoder).PrimarySlug())).
+				Go())
+		} else if status == publish.StatusOnline {
+			fullUrl, err := b.builder.publisher.FullUrl(ctx.R.Context(), onlineUrl)
+			if err != nil {
+				return nil
+			}
+			previewItem := VListItem(
+				VListItemTitle(h.Text(msgr.Preview)),
+			).PrependIcon("mdi-eye").Href(fullUrl)
+			if b.builder.previewOpenNewTab {
+				previewItem.Attr("target", "_blank")
+			}
+			return previewItem
+		} else {
+			// If it's not draft status, show preview button
+			previewItem := VListItem(
+				VListItemTitle(h.Text(msgr.Preview)),
+			).PrependIcon("mdi-eye").Href(b.PreviewHref(ctx, item.(presets.SlugEncoder).PrimarySlug()))
+			if b.builder.previewOpenNewTab {
+				previewItem.Attr("target", "_blank")
+			}
+			return previewItem
+		}
+	})
 	return b
 }

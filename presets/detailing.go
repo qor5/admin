@@ -8,15 +8,16 @@ import (
 
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/perm"
-	. "github.com/qor5/x/v3/ui/vuetify"
+	v "github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
 
 	"github.com/qor5/admin/v3/presets/actions"
 )
 
 type (
-	DetailingStyle  string
-	DetailingLayout string
+	DetailingStyle          string
+	DetailingLayout         string
+	DetailingBreadcrumbFunc func(ctx *web.EventContext, obj any, id string) (BreadcrumbItemsFunc, error)
 )
 
 const (
@@ -42,13 +43,15 @@ type DetailingBuilder struct {
 	layouts                  []DetailingLayout
 	idCurrentActiveProcessor IdCurrentActiveProcessor
 	FieldsBuilder
+	breadcrumbFunc DetailingBreadcrumbFunc
 }
 
 type pageTitle interface {
 	PageTitle() string
 }
 
-// string / []string / *FieldsSection
+// Detailing configures the detailing builder with the given fields.
+// Accepts string / []string / *FieldsSection
 func (mb *ModelBuilder) Detailing(vs ...interface{}) (r *DetailingBuilder) {
 	r = mb.detailing
 	if !mb.hasDetailing && len(vs) == 0 {
@@ -69,13 +72,14 @@ func (b *DetailingBuilder) GetDrawer() bool {
 	return b.drawer
 }
 
-// let u easier to adjust the detailing page by each project
+// ContainerClass let u easier to adjust the detailing page by each project
 func (b *DetailingBuilder) ContainerClass(layoutVal DetailingLayout) (r *DetailingBuilder) {
 	b.layouts = append(b.layouts, layoutVal)
 	return b
 }
 
-// string / []string / *FieldsSection
+// Only specifies which fields to include in the detailing builder.
+// Accepts string / []string / *FieldsSection
 func (b *DetailingBuilder) Only(vs ...interface{}) (r *DetailingBuilder) {
 	r = b
 	r.FieldsBuilder = *r.FieldsBuilder.Only(vs...)
@@ -99,6 +103,11 @@ func (b *DetailingBuilder) PageFunc(pf web.PageFunc) (r *DetailingBuilder) {
 	return b
 }
 
+func (b *DetailingBuilder) WrapPageFunc(w func(in web.PageFunc) web.PageFunc) (r *DetailingBuilder) {
+	b.pageFunc = w(b.pageFunc)
+	return b
+}
+
 func (b *DetailingBuilder) FetchFunc(v FetchFunc) (r *DetailingBuilder) {
 	b.fetcher = v
 	return b
@@ -118,7 +127,7 @@ func (b *DetailingBuilder) Drawer(v bool) (r *DetailingBuilder) {
 	return b
 }
 
-// The title must not return empty, and titleCompo can return nil
+// Title must not return empty, and titleCompo can return nil
 func (b *DetailingBuilder) Title(f func(evCtx *web.EventContext, obj any, style DetailingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error)) (r *DetailingBuilder) {
 	b.titleFunc = f
 	return b
@@ -133,10 +142,7 @@ func (b *DetailingBuilder) AfterTitleCompFunc(v ObjectComponentFunc) (r *Detaili
 }
 
 func (b *DetailingBuilder) GetPageFunc() web.PageFunc {
-	if b.pageFunc != nil {
-		return b.pageFunc
-	}
-	return b.defaultPageFunc
+	return b.pageFunc
 }
 
 func (b *DetailingBuilder) AppendTabsPanelFunc(v TabComponentFunc) (r *DetailingBuilder) {
@@ -158,11 +164,21 @@ func (b *DetailingBuilder) SidePanelFunc(v ObjectComponentFunc) (r *DetailingBui
 	return b
 }
 
+func (b *DetailingBuilder) WrapSidePanel(w func(in ObjectComponentFunc) ObjectComponentFunc) (r *DetailingBuilder) {
+	if b.sidePanel == nil {
+		b.sidePanel = func(_ interface{}, _ *web.EventContext) h.HTMLComponent {
+			return nil
+		}
+	}
+	b.sidePanel = w(b.sidePanel)
+	return b
+}
+
 type ctxKeyDetailingStyle struct{}
 
 func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageResponse, err error) {
 	id := ctx.Param(ParamID)
-	r.Body = VContainer(h.Text(id))
+	r.Body = v.VContainer(h.Text(id))
 
 	obj := b.mb.NewModel()
 
@@ -208,7 +224,7 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 
 	var notice h.HTMLComponent
 	if msg, ok := ctx.Flash.(string); ok {
-		notice = VSnackbar(
+		notice = v.VSnackbar(
 			h.Div().Style("white-space: pre-wrap").Text(fmt.Sprintf(`{{%q}}`, msg)),
 		).ModelValue(true).Location("top").Color("success")
 	}
@@ -233,8 +249,8 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 			continue
 		}
 
-		actionButtons = append(actionButtons, VBtn(b.mb.getLabel(ba.NameLabel)).
-			Color(cmp.Or(ba.buttonColor, ColorPrimary)).Variant(VariantFlat).
+		actionButtons = append(actionButtons, v.VBtn(b.mb.getLabel(ba.NameLabel)).
+			Color(cmp.Or(ba.buttonColor, v.ColorPrimary)).Variant(v.VariantFlat).
 			Attr("@click", web.Plaid().
 				EventFunc(actions.Action).
 				Query(ParamID, id).
@@ -246,15 +262,21 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 	}
 	var actionButtonsCompo h.HTMLComponent
 	if len(actionButtons) > 0 {
-		actionButtonsCompo = h.Div(VSpacer()).Class("d-flex flex-row ga-2").AppendChildren(actionButtons...)
+		actionButtonsCompo = h.Div(v.VSpacer()).Class("d-flex flex-row ga-2").AppendChildren(actionButtons...)
 	}
 
 	layoutClass := make([]string, len(b.layouts))
 	for i, layout := range b.layouts {
 		layoutClass[i] = string(layout)
 	}
-
-	r.Body = VContainer().Children(
+	if b.breadcrumbFunc != nil {
+		itemFunc, err := b.breadcrumbFunc(ctx, obj, id)
+		if err != nil {
+			return r, err
+		}
+		ctx.WithContextValue(BreadcrumbItemsFuncKey{}, itemFunc)
+	}
+	r.Body = v.VContainer().Children(
 		notice,
 		h.Div().Class("d-flex flex-column", strings.Join(layoutClass, ", ")).Children(
 			actionButtonsCompo,
@@ -267,7 +289,7 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 
 func (b *DetailingBuilder) WrapIdCurrentActive(w func(IdCurrentActiveProcessor) IdCurrentActiveProcessor) (r *DetailingBuilder) {
 	if b.idCurrentActiveProcessor == nil {
-		b.idCurrentActiveProcessor = w(func(ctx *web.EventContext, current string) (string, error) {
+		b.idCurrentActiveProcessor = w(func(_ *web.EventContext, current string) (string, error) {
 			return current, nil
 		})
 	} else {
@@ -302,21 +324,21 @@ func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventRespo
 		ctx.WithContextValue(CtxPageTitleComponent, nil)
 	}
 	header := h.Div(titleCompo).Class("d-flex")
-	if v, ok := GetComponentFromContext(ctx, ctxDetailingAfterTitleComponent); ok {
-		header.AppendChildren(VSpacer(), v)
+	if val, ok := GetComponentFromContext(ctx, ctxDetailingAfterTitleComponent); ok {
+		header.AppendChildren(v.VSpacer(), val)
 	}
 
 	comp := web.Scope(
-		VLayout(
-			VAppBar(
-				VAppBarTitle(header).Class("pl-2 drawer-title"),
-				VBtn("").Icon("mdi-close").
+		v.VLayout(
+			v.VAppBar(
+				v.VAppBarTitle(header).Class("pl-2 drawer-title"),
+				v.VBtn("").Icon("mdi-close").
 					Attr("@click.stop", closeBtnVarScript),
 			).Color("white").Elevation(0),
 
-			VMain(
-				VSheet(
-					VCard(pr.Body).Flat(true).Class("pa-1"),
+			v.VMain(
+				v.VSheet(
+					v.VCard(pr.Body).Flat(true).Class("pa-1"),
 				).Class("pa-2"),
 			),
 		),
@@ -362,7 +384,7 @@ func (b *DetailingBuilder) fetchAction(ctx *web.EventContext, name string) (*Act
 func (b *DetailingBuilder) doAction(ctx *web.EventContext) (r web.EventResponse, err error) {
 	action, err := b.fetchAction(ctx, ctx.R.FormValue(ParamAction))
 	if err != nil {
-		ShowMessage(&r, err.Error(), ColorError)
+		ShowMessage(&r, err.Error(), v.ColorError)
 		return r, nil
 	}
 
@@ -385,7 +407,7 @@ func (b *DetailingBuilder) doAction(ctx *web.EventContext) (r web.EventResponse,
 func (b *DetailingBuilder) openActionDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 	action, err := b.fetchAction(ctx, ctx.R.FormValue(ParamAction))
 	if err != nil {
-		ShowMessage(&r, err.Error(), ColorError)
+		ShowMessage(&r, err.Error(), v.ColorError)
 		return r, nil
 	}
 
@@ -401,16 +423,16 @@ func (b *DetailingBuilder) actionForm(action *ActionBuilder, ctx *web.EventConte
 		panic("id required")
 	}
 
-	return VContainer(
-		VCard(
-			VCardText(
+	return v.VContainer(
+		v.VCard(
+			v.VCardText(
 				action.compFunc(id, ctx),
 			),
-			VCardActions(
-				VSpacer(),
-				VBtn(msgr.Update).
+			v.VCardActions(
+				v.VSpacer(),
+				v.VBtn(msgr.Update).
 					Theme("light").
-					Color(ColorPrimary).
+					Color(v.ColorPrimary).
 					Attr("@click", web.Plaid().
 						EventFunc(actions.DoAction).
 						Query(ParamID, id).
@@ -425,7 +447,7 @@ func (b *DetailingBuilder) actionForm(action *ActionBuilder, ctx *web.EventConte
 const fieldRefreshOnUpdate = "__RefreshOnUpdate__"
 
 func (b *DetailingBuilder) EnableRefreshOnUpdate() *DetailingBuilder {
-	b.Field(fieldRefreshOnUpdate).ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
+	b.Field(fieldRefreshOnUpdate).ComponentFunc(func(obj interface{}, _ *FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		slug := obj.(SlugEncoder).PrimarySlug()
 
 		qs := ctx.R.URL.Query()
@@ -452,5 +474,60 @@ func (b *DetailingBuilder) Section(sections ...*SectionBuilder) *DetailingBuilde
 
 		b.Field(sb.name).Component(sb)
 	}
+	return b
+}
+
+func (b *DetailingBuilder) defaultBreadcrumbFunc(ctx *web.EventContext, obj any, id string) (BreadcrumbItemsFunc, error) {
+	var (
+		msgr      = b.mb.mustGetMessages(ctx.R)
+		titleComp h.HTMLComponent
+		title     = msgr.DetailingObjectTitle(b.mb.Info().LabelName(ctx, true), getPageTitle(obj, id))
+	)
+	if b.titleFunc != nil {
+		style, ok := ctx.ContextValue(ctxKeyDetailingStyle{}).(DetailingStyle)
+		if !ok {
+			style = DetailingStylePage
+		}
+		xtitle, xtitleComp, err := b.titleFunc(ctx, obj, style, title)
+		if err != nil {
+			return nil, err
+		}
+		if xtitleComp != nil {
+			titleComp = xtitleComp
+		}
+		if xtitle != "" {
+			title = xtitle
+		}
+	}
+	if titleComp == nil {
+		titleComp = h.Text(title)
+	}
+	return func(ctx *web.EventContext, disableLast bool) (r []h.HTMLComponent) {
+		listingHref := b.mb.Info().ListingHref()
+		r = []h.HTMLComponent{
+			v.VBreadcrumbsItem(h.Text(b.mb.Info().LabelName(ctx, false))).
+				Href(listingHref),
+		}
+		if b.mb.hasDetailing && !b.drawer {
+			detailingHref := b.mb.Info().DetailingHref(ctx.Param(ParamID))
+			r = append(r, v.VBreadcrumbsItem(titleComp).
+				Href(detailingHref).
+				Disabled(disableLast))
+		}
+		return r
+	}, nil
+}
+
+func (b *DetailingBuilder) Breadcrumb(f DetailingBreadcrumbFunc) *DetailingBuilder {
+	b.breadcrumbFunc = f
+	return b
+}
+
+func (b *DetailingBuilder) GetBreadcrumb() DetailingBreadcrumbFunc {
+	return b.breadcrumbFunc
+}
+
+func (b *DetailingBuilder) WrapBreadcrumb(w func(DetailingBreadcrumbFunc) DetailingBreadcrumbFunc) *DetailingBuilder {
+	b.breadcrumbFunc = w(b.breadcrumbFunc)
 	return b
 }

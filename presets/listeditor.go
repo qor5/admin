@@ -24,6 +24,7 @@ type ListEditorBuilder struct {
 	removeListItemRowEvent string
 	sortListItemsEvent     string
 	maxItems               int
+	addRowBtnLabelFunc     func(*Messages) string
 }
 
 type ListSorter struct {
@@ -41,6 +42,9 @@ func NewListEditor(v *FieldContext) *ListEditorBuilder {
 		addListItemRowEvent:    actions.AddRowEvent,
 		removeListItemRowEvent: actions.RemoveRowEvent,
 		sortListItemsEvent:     actions.SortEvent,
+		addRowBtnLabelFunc: func(msgr *Messages) string {
+			return msgr.AddRow
+		},
 	}
 }
 
@@ -89,9 +93,28 @@ func (b *ListEditorBuilder) MaxItems(v int) (r *ListEditorBuilder) {
 	return b
 }
 
+func (b *ListEditorBuilder) AddRowBtnLabel(labelFunc interface{}) (r *ListEditorBuilder) {
+	if labelFunc == nil {
+		b.addRowBtnLabelFunc = func(msgr *Messages) string {
+			return msgr.AddRow
+		}
+	} else {
+		b.addRowBtnLabelFunc = labelFunc.(func(*Messages) string)
+	}
+	return b
+}
+
+// getAddRowBtnLabel returns the resolved label text based on the context
+func (b *ListEditorBuilder) getAddRowBtnLabel(ctx *web.EventContext) string {
+	msgr := MustGetMessages(ctx.R)
+	if b.addRowBtnLabelFunc == nil {
+		return msgr.AddRow
+	}
+	return b.addRowBtnLabelFunc(msgr)
+}
+
 func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error) {
 	ctx := web.MustGetEventContext(c)
-	msgr := MustGetMessages(ctx.R)
 
 	formKey := b.fieldContext.FormKey
 	var form h.HTMLComponent
@@ -217,7 +240,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 			h.Div(
 				form,
 				h.If(!b.fieldContext.Disabled,
-					VBtn(msgr.AddRow).
+					VBtn(b.getAddRowBtnLabel(ctx)).
 						Variant(VariantText).
 						Color("primary").
 						Attr("id", addRowBtnId).

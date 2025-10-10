@@ -38,6 +38,8 @@ const (
 	UpdateContainerEvent                = "page_builder_UpdateContainerEvent"
 	ReloadAddContainersListEvent        = "page_builder_ReloadAddContainersEvent"
 
+	ParamContainerCreate = "paramContainerCreate"
+
 	paramPageID          = "pageID"
 	paramPageVersion     = "pageVersion"
 	paramLocale          = "locale"
@@ -60,15 +62,19 @@ const (
 	DeviceTablet   = "tablet"
 	DeviceComputer = "computer"
 
-	EventUp     = "up"
-	EventDown   = "down"
-	EventDelete = "delete"
-	EventAdd    = "add"
-	EventEdit   = "edit"
+	EventUp                        = "up"
+	EventDown                      = "down"
+	EventDelete                    = "delete"
+	EventAdd                       = "add"
+	EventEdit                      = "edit"
+	EventClickOutsideWrapperShadow = "clickOutsideWrapperShadow"
 
 	paramIframeEventName  = "iframeEventName"
 	changeDeviceEventName = "change_device"
 	updateBodyEventName   = "update_body"
+
+	ActionAddContainer    = "AddContainer"
+	ActionDeleteContainer = "DeleteContainer"
 )
 
 const (
@@ -110,6 +116,7 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 		msgr            = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		title           string
 		err             error
+		ps              = ctx.Param(presets.ParamID)
 	)
 	if m.mb.Info().Verifier().Do(presets.PermGet).WithReq(ctx.R).IsAllowed() != nil {
 		return h.Text(perm.PermissionDenied.Error())
@@ -166,6 +173,29 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 	versionComponent = publish.DefaultVersionComponentFunc(m.mb, publish.VersionComponentConfig{
 		Top: true, DisableListeners: true,
 		DisableDataChangeTracking: true,
+		WrapActionButtons: func(ctx *web.EventContext, obj interface{}, actionButtons []h.HTMLComponent, phraseHasPresetsDataChanged string) []h.HTMLComponent {
+			if len(actionButtons) < 2 {
+				return actionButtons
+			}
+			previewDevelopUrl := m.PreviewHref(ctx, ps)
+			p, ok := obj.(publish.StatusInterface)
+			if !ok {
+				return actionButtons
+			}
+			if p.EmbedStatus().Status != publish.StatusDraft {
+				return actionButtons
+			}
+			btn := VBtn(msgr.Preview).
+				Attr(":disabled", phraseHasPresetsDataChanged).
+				Href(previewDevelopUrl).
+				Class("ml-2").
+				Class("rounded").
+				Variant(VariantElevated).Color(ColorPrimary).Height(36)
+			if b.previewOpenNewTab {
+				btn.Attr("target", "_blank")
+			}
+			return append([]h.HTMLComponent{btn}, actionButtons...)
+		},
 	})(obj, &presets.FieldContext{ModelInfo: m.mb.Info()}, ctx)
 	pageAppbarContent = h.Components(
 		h.Div(
@@ -232,6 +262,52 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 
 				vars.$PagebuilderResizeFn()
 				window.addEventListener('resize', vars.$PagebuilderResizeFn)
+
+				// common left drawer control function
+				vars.$pbLeftDrawerControl = (action = 'toggle') => {
+					switch(action) {
+						case 'show':
+							if (vars.$pbLeftDrawerFolded) {
+								vars.$pbLeftDrawerFolded = false
+								vars.$window.localStorage.setItem("$pbLeftDrawerFolded", "0")
+							}
+							break
+						case 'hide':
+							if (!vars.$pbLeftDrawerFolded) {
+								vars.$pbLeftDrawerFolded = true
+								vars.$window.localStorage.setItem("$pbLeftDrawerFolded", "1")
+							}
+							break
+						case 'toggle':
+						default:
+							vars.$pbLeftDrawerFolded = !vars.$pbLeftDrawerFolded
+							vars.$window.localStorage.setItem("$pbLeftDrawerFolded", vars.$pbLeftDrawerFolded ? "1": "0")
+							break
+					}
+				}
+
+				// 通用的右侧drawer控制函数
+				vars.$pbRightDrawerControl = (action = 'toggle') => {
+					switch(action) {
+						case 'show':
+							if (vars.$pbRightDrawerFolded) {
+								vars.$pbRightDrawerFolded = false
+								vars.$window.localStorage.setItem("$pbRightDrawerFolded", "0")
+							}
+							break
+						case 'hide':
+							if (!vars.$pbRightDrawerFolded) {
+								vars.$pbRightDrawerFolded = true
+								vars.$window.localStorage.setItem("$pbRightDrawerFolded", "1")
+							}
+							break
+						case 'toggle':
+						default:
+							vars.$pbRightDrawerFolded = !vars.$pbRightDrawerFolded
+							vars.$window.localStorage.setItem("$pbRightDrawerFolded", vars.$pbRightDrawerFolded ? "1": "0")
+							break
+					}
+				}
 
 				function addInlineStyle(css) {
 					const style = window.document.createElement('style');
@@ -327,10 +403,7 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 				web.Slot(
 					VBtn("").
 						Attr(":icon", "vars.$pbLeftIconName").
-						Attr("@click.stop", `() => {
-										vars.$pbLeftDrawerFolded = !vars.$pbLeftDrawerFolded
-										vars.$window.localStorage.setItem("$pbLeftDrawerFolded", vars.$pbLeftDrawerFolded ? "1": "0")
-									}`).
+						Attr("@click.stop", "vars.$pbLeftDrawerControl('toggle')").
 						Size(SizeSmall).
 						Class("pb-drawer-btn drawer-btn-left")).
 					Name("append"),
@@ -352,16 +425,14 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 						}`)).Attr("v-on-unmounted", `({el}) => {
 							el.parentElement.removeEventListener('scroll', el.__handleScroll);
 						}`),
+
 				web.Slot(
 					VBtn("").
 						Attr("v-if", "!vars.$pbRightDrawerIsDragging").
 						Attr(":icon", "vars.$pbRightIconName").
 						Attr("@mousemove.stop", "()=>{vars.$pbRightDrawerHighlight=false}").
 						Attr("@mousedown.stop", "()=>{vars.$pbRightDrawerHighlight=false}").
-						Attr("@click", `() => {
-									vars.$pbRightDrawerFolded = !vars.$pbRightDrawerFolded
-									vars.$window.localStorage.setItem("$pbRightDrawerFolded", vars.$pbRightDrawerFolded ? "1": "0")
-								}`).
+						Attr("@click", "vars.$pbRightDrawerControl('toggle')").
 						Size(SizeSmall).
 						Class("pb-drawer-btn drawer-btn-right")).
 					Name("append"),
@@ -378,7 +449,7 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 		),
 		VMain(
 			addOverlay,
-			vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction(ctx)),
+			h.If(!isStag, vx.VXMessageListener().ListenFunc(b.generateEditorBarJsFunction(ctx)).Name("message")),
 			tabContent.Body,
 		).Attr(web.VAssign("vars", "{overlayEl:$}")...).Class("ma-2"),
 	)
@@ -533,6 +604,7 @@ type (
 		ContainerId     string `json:"container_id"`
 		DisplayName     string `json:"display_name"`
 		ModelName       string `json:"model_name"`
+		ShowRightDrawer bool   `json:"show_right_drawer"`
 		isFirst         bool
 		isEnd           bool
 	}
@@ -546,6 +618,7 @@ func (b *postMessageBody) postMessage(msgType string) string {
 		return ""
 	}
 	b.MsgType = msgType
+	b.ShowRightDrawer = (msgType == EventEdit)
 	return fmt.Sprintf(`
 const {top, left, width, height} = event.target.getBoundingClientRect();
 const data= %s;

@@ -472,7 +472,7 @@ type (
 	languageOption struct {
 		Value string
 		Title string
-		Icon  string
+		// Icon  string
 	}
 )
 
@@ -495,41 +495,41 @@ func (c *ProfileCompo) switchLanguageCompo(ctx context.Context) h.HTMLComponent 
 	var languages []languageOption
 	for _, tag := range supportLanguages {
 
-		languageIcon := presets.EnLanguageIcon
+		// languageIcon := presets.EnLanguageIcon
 		switch tag.String() {
 		case language.SimplifiedChinese.String():
-			languageIcon = presets.ZhLanguageIcon
+			// languageIcon = presets.ZhLanguageIcon
 		case language.Japanese.String():
-			languageIcon = presets.JPIcon
+			// languageIcon = presets.JPIcon
 		}
 		languages = append(languages,
 			languageOption{
 				Title: display.Self.Name(tag),
 				Value: tag.String(),
-				Icon:  languageIcon,
+				// Icon:  languageIcon,
 			},
 		)
 	}
 
 	return vx.VXSelect(
-		web.Slot(
-			v.VIcon("").Size(v.SizeSmall).Children(
-				h.Div().Attr("v-html", "selectedItems[0]?.Icon || ''"),
-			).Class("mr-2").Attr("style", "--v-medium-emphasis-opacity:1"),
-		).Name("prepend-inner").Scope("{selectedItems}"),
-		web.Slot(
-			v.VListItem(
-				web.Slot(
-					v.VIcon("").Size(v.SizeSmall).Children(
-						h.Div().Attr("v-html", "item.raw.Icon"),
-					).Class("mr-n4").Attr("style", "--v-medium-emphasis-opacity:1"),
-				).Name(v.VSlotPrepend),
-			).Attr(":title", "item.raw.Title", "v-bind", "props"),
-		).Name("item").Scope("{props,item}"),
+	// web.Slot(
+	// 	v.VIcon("").Size(v.SizeSmall).Children(
+	// 		h.Div().Attr("v-html", "selectedItems[0]?.Icon || ''"),
+	// 	).Class("mr-2").Attr("style", "--v-medium-emphasis-opacity:1"),
+	// ).Name("prepend-inner").Scope("{selectedItems}"),
+	// web.Slot(
+	// 	v.VListItem(
+	// 		web.Slot(
+	// 			v.VIcon("").Size(v.SizeSmall).Children(
+	// 				h.Div().Attr("v-html", "item.raw.Icon"),
+	// 			).Class("mr-n4").Attr("style", "--v-medium-emphasis-opacity:1"),
+	// 		).Name(v.VSlotPrepend),
+	// 	).Attr(":title", "item.raw.Title", "v-bind", "props"),
+	// ).Name("item").Scope("{props,item}"),
 	).Items(languages).
 		ItemTitle("Title").
 		ItemValue("Value").
-		Attr(web.VField(queryName, lang)...).Type("autocomplete").
+		Attr(web.VField(queryName, lang)...).
 		Attr("@update:model-value",
 			web.Plaid().MergeQuery(true).Query(queryName, web.Var("$event")).Go())
 }

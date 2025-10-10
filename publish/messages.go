@@ -11,6 +11,9 @@ type Messages struct {
 	Unpublish                               string
 	Republish                               string
 	ConfirmPublish                          string
+	ConfirmUnpublish                        string
+	ConfirmRepublish                        string
+	ConfirmDuplicate                        string
 	ScheduledStartAt                        string
 	ScheduledEndAt                          string
 	ScheduledStartAtShouldLaterThanNow      string
@@ -87,6 +90,9 @@ var Messages_en_US = &Messages{
 	Unpublish:                               "Unpublish",
 	Republish:                               "Republish",
 	ConfirmPublish:                          "Are you sure you want to publish this page?",
+	ConfirmUnpublish:                        "Are you sure you want to unpublish this page?",
+	ConfirmRepublish:                        "Are you sure you want to republish this page?",
+	ConfirmDuplicate:                        "Are you sure you want to duplicate this page?",
 	ScheduledStartAt:                        "Start at",
 	ScheduledEndAt:                          "End at",
 	ScheduledStartAtShouldLaterThanNow:      "Start at should be later than now",
@@ -144,6 +150,9 @@ var Messages_zh_CN = &Messages{
 	Unpublish:                               "取消发布",
 	Republish:                               "重新发布",
 	ConfirmPublish:                          "你确定要发布此页面吗?",
+	ConfirmUnpublish:                        "你确定要取消发布此页面吗?",
+	ConfirmRepublish:                        "你确定要重新发布此页面吗?",
+	ConfirmDuplicate:                        "你确定要复制此页面吗?",
 	ScheduledStartAt:                        "发布时间",
 	ScheduledEndAt:                          "下线时间",
 	ScheduledStartAtShouldLaterThanNow:      "计划发布时间应当晚于现在时间",
@@ -201,6 +210,9 @@ var Messages_ja_JP = &Messages{
 	Unpublish:                               "非公開",
 	Republish:                               "再公開",
 	ConfirmPublish:                          "このページを公開してもよろしいですか？",
+	ConfirmUnpublish:                        "このページを非公開にしてもよろしいですか？",
+	ConfirmRepublish:                        "このページを再公開してもよろしいですか？",
+	ConfirmDuplicate:                        "このページを複製してもよろしいですか？",
 	ScheduledStartAt:                        "開始時刻",
 	ScheduledEndAt:                          "終了時刻",
 	ScheduledStartAtShouldLaterThanNow:      "開始時刻は現在より遅くなければならない",
