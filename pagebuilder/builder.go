@@ -1109,7 +1109,6 @@ func (b *ContainerBuilder) Install() {
 					).Class("d-flex align-center"),
 				).Name("activator").Scope(`{props:tooltip}`),
 			).Location(LocationBottom).Text(msgr.SharedContainerModificationWarning)
-
 		}
 		return comp
 	})
