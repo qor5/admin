@@ -1101,13 +1101,15 @@ func (b *ContainerBuilder) Install() {
 		comp := h.Span("{{vars.__pageBuilderRightContentTitle?vars.__pageBuilderRightContentTitle:vars.__pageBuilderRightDefaultContentTitle}}").
 			Attr(web.VAssign("vars", fmt.Sprintf("{__pageBuilderRightContentTitle:%q,__pageBuilderRightDefaultContentTitle:%q}", con.DisplayName, defaultTitle))...)
 		if isSharedContainer {
-			return h.Div(comp,
-				VTooltip(
-					web.Slot(
+			return VTooltip(
+				web.Slot(
+					h.Div(
+						comp,
 						VIcon("mdi-information-outline").Color(ColorWarning).Attr("v-bind", "tooltip").Class("ml-2").Size(SizeSmall),
-					).Name("activator").Scope(`{props:tooltip}`),
-				).Location(LocationBottom).Text(msgr.SharedContainerModificationWarning),
-			).Class("v-flex v-flex-row")
+					).Class("d-flex align-center"),
+				).Name("activator").Scope(`{props:tooltip}`),
+			).Location(LocationBottom).Text(msgr.SharedContainerModificationWarning)
+
 		}
 		return comp
 	})
