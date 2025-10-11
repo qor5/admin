@@ -98,6 +98,8 @@ type SlugEncoder interface {
 
 type FilterDataFunc func(ctx *web.EventContext) vuetifyx.FilterData
 
+type FilterNotificationFunc func(ctx *web.EventContext) h.HTMLComponent
+
 type FilterTab struct {
 	ID    string
 	Label string

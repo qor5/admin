@@ -187,6 +187,14 @@ func (c *ListingCompo) MarshalHTML(ctx context.Context) (r []byte, err error) {
 	).MarshalHTML(ctx)
 }
 
+func (c *ListingCompo) filterNotification(ctx context.Context) h.HTMLComponent {
+	if c.lb.filterNotificationFunc == nil {
+		return nil
+	}
+	evCtx, _ := c.MustGetEventContext(ctx)
+	return c.lb.filterNotificationFunc(evCtx)
+}
+
 func (c *ListingCompo) tabsFilter(ctx context.Context) h.HTMLComponent {
 	if c.lb.filterTabsFunc == nil {
 		return nil
@@ -710,6 +718,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 
 	return h.Components(
 		filterScript,
+		c.filterNotification(ctx),
 		dataBody,
 	)
 }
@@ -817,7 +826,7 @@ func CardDataTableFunc(lb *ListingBuilder, config *CardDataTableConfig) func(ctx
 					).Class("pa-0"),
 				)
 				var card h.HTMLComponent
-				if selectedActions != nil && len(selectedActions) > 0 {
+				if len(selectedActions) > 0 {
 					card = VHover(
 						web.Slot(
 							VCard(
