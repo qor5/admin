@@ -35,7 +35,7 @@ func CreateSEOBuilder(a *Handler, l10nBuilder *l10n.Builder) *seo.Builder {
 // CreatePublishStorage configures S3 storage for publishing
 func CreatePublishStorage(a *Handler) oss.StorageInterface {
 	a.S3Publish.ACL = string(types.ObjectCannedACLBucketOwnerFullControl)
-	return s3x.SetupClient(&a.S3Publish)
+	return s3x.SetupClient(&a.S3Publish, nil)
 }
 
 // CreatePublisher creates and configures the publisher

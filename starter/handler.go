@@ -143,7 +143,7 @@ func (a *Handler) autoMigrate(ctx context.Context) error {
 
 // configureMediaStorage configures S3 storage for media
 func (a *Handler) configureMediaStorage() {
-	media_oss.Storage = s3x.SetupClient(&a.S3)
+	media_oss.Storage = s3x.SetupClient(&a.S3, nil)
 }
 
 // createActivityBuilder creates and configures the activity builder
