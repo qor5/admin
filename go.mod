@@ -32,7 +32,7 @@ require (
 	github.com/qor5/imaging v1.6.4
 	github.com/qor5/web v1.3.2
 	github.com/qor5/web/v3 v3.0.12-0.20250618085230-3764d0e521a8
-	github.com/qor5/x/v3 v3.1.3-0.20250926032730-6eefd40d3d69
+	github.com/qor5/x/v3 v3.1.3-0.20251016020953-4d227d199456
 	github.com/samber/lo v1.50.0
 	github.com/shurcooL/sanitized_anchor_name v1.0.0
 	github.com/spf13/cast v1.7.1
@@ -43,7 +43,7 @@ require (
 	github.com/theplant/docgo v0.0.16
 	github.com/theplant/gofixtures v1.1.3
 	github.com/theplant/htmlgo v1.0.3
-	github.com/theplant/inject v1.0.2
+	github.com/theplant/inject v1.1.0
 	github.com/theplant/osenv v0.0.2
 	github.com/theplant/relay v0.4.3-0.20250424075128-61850ded6ace
 	github.com/theplant/sliceutils v0.0.0-20200406042209-89153d988eb1
