@@ -924,7 +924,7 @@ func TestPresetsDetailSaverValidation(t *testing.T) {
 					AddField("Name", "system").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"You can not use system as name"},
+			ExpectRunScriptContainsInOrder: []string{"You can not use system as name"},
 		},
 	}
 	for _, c := range cases {
