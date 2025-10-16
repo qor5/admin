@@ -443,7 +443,6 @@ func PresetsDetailSaverValidation(b *presets.Builder, db *gorm.DB) (
 	ce *presets.EditingBuilder,
 	dp *presets.DetailingBuilder,
 ) {
-
 	cust, cl, ce, dp = PresetsHelloWorld(b, db)
 	dp = cust.Detailing("Customer")
 	section := presets.NewSectionBuilder(cust, "Customer").Editing("Name", "Email")
