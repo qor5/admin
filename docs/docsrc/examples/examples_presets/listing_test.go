@@ -171,3 +171,27 @@ func TestPresetsListingDatatableFunc(t *testing.T) {
 		})
 	}
 }
+
+func TestPresetsListingFilterNotificationFunc(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsListingFilterNotificationFunc(pb, TestDB)
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "Filter Notification",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				listingDatatableData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers").
+					BuildEventFuncRequest()
+			},
+			ExpectPageBodyContainsInOrder: []string{`Filter Notification`},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}

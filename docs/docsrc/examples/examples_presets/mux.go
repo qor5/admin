@@ -47,8 +47,10 @@ func SamplesHandler(mux examples.Muxer) {
 	addExample(mux, db, PresetsEditingValidate)
 	addExample(mux, db, PresetsEditingSetter)
 	addExample(mux, db, PresetsEditingSection)
+	addExample(mux, db, PresetsEditingSaverValidation)
 	addExample(mux, db, PresetsListingCustomizationSearcher)
 	addExample(mux, db, PresetsListingDatatableFunc)
+	addExample(mux, db, PresetsListingFilterNotificationFunc)
 	addExample(mux, db, PresetsDetailInlineEditDetails)
 	addExample(mux, db, PresetsDetailSectionView)
 	addExample(mux, db, PresetsDetailTabsSection)
@@ -65,6 +67,7 @@ func SamplesHandler(mux examples.Muxer) {
 	addExample(mux, db, PresetsCustomPage)
 	addExample(mux, db, PresetsPlainNestedField)
 	addExample(mux, db, PresetsDetailDisableSave)
+	addExample(mux, db, PresetsDetailSaverValidation)
 	return
 }
 

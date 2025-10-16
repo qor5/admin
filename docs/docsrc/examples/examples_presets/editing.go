@@ -376,3 +376,23 @@ func PresetsEditingSection(b *presets.Builder, db *gorm.DB) (
 	edit.Section(section.Clone())
 	return
 }
+
+func PresetsEditingSaverValidation(b *presets.Builder, db *gorm.DB) (mb *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder) {
+	b.DataOperator(gorm2op.DataOperator(db))
+	db.AutoMigrate(&Company{})
+	mb = b.Model(&Company{})
+	mb.Editing().SaveFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+		ve := web.ValidationErrors{}
+		if obj.(*Company).Name == "system" {
+			ve.FieldError("Name", "You can not use system as name")
+		}
+		if ve.HaveErrors() {
+			return &ve
+		}
+		return nil
+	})
+	return
+}

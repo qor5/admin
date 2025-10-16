@@ -522,3 +522,27 @@ func TestCreateHTMLSanitizerSetterFunc(t *testing.T) {
 		t.Errorf("Expected %q, got %q", expected, customer.HTMLSanitizerPolicyTiptapInput)
 	}
 }
+
+func TestPresetsEditingSaver(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsEditingSaverValidation(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name: "saver return error",
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/companies?__execute_event__=presets_Update").
+					AddField("Name", "system").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{`You can not use system as name`},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}

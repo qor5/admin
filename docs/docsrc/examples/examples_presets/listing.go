@@ -480,3 +480,25 @@ func PresetsListingDatatableFunc(b *presets.Builder, db *gorm.DB) (
 }
 
 // @snippet_end
+
+// @snippet_begin(PresetsListingFilterNotificationFuncSample)
+
+func PresetsListingFilterNotificationFunc(b *presets.Builder, db *gorm.DB) (
+	mb *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	b.DataOperator(gorm2op.DataOperator(db))
+	err := db.AutoMigrate(&Customer{})
+	if err != nil {
+		panic(err)
+	}
+	mb = b.Model(&Customer{})
+	mb.Listing().FilterNotificationFunc(func(_ *web.EventContext) h.HTMLComponent {
+		return h.Div().Text("Filter Notification").Class(fmt.Sprintf("text-%s", v.ColorWarning))
+	})
+	return
+}
+
+// @snippet_end
