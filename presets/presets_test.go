@@ -186,7 +186,6 @@ func TestNewMuxHook(t *testing.T) {
 	assert.Equal(t, "next handler", w2.Body.String())
 }
 
-
 func TestServeHTTP_HandlerNilAfterOnce_Returns500(t *testing.T) {
 	b := New()
 
