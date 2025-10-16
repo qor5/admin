@@ -533,7 +533,7 @@ func (b *Builder) AddMenuTopItemFunc(key string, v ComponentFunc) (r *Builder) {
 }
 
 func (b *Builder) MenuComponentFunc(fn func(menus []h.HTMLComponent, menuGroupSelected, menuItemSelected string) h.HTMLComponent) (r *Builder) {
-	b.menuOrder.menuComponentFunc = fn
+	b.menuOrder.MenuComponentFunc(fn)
 	return b
 }
 
