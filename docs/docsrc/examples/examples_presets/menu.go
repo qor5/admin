@@ -1,6 +1,7 @@
 package examples_presets
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 
@@ -218,5 +219,42 @@ func PresetsGroupMenuWithPermission(b *presets.Builder, db *gorm.DB) (
 		).Icon("mdi-video"),
 	)
 	// @snippet_end
+	return
+}
+
+func PresetsMenuComponent(b *presets.Builder, db *gorm.DB) (
+	mb *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	PresetsGroupMenu(b, db)
+	b.MenuComponentFunc(func(menus []h.HTMLComponent, menuGroupSelected, menuItemSelected string) h.HTMLComponent {
+		return h.Div(
+			web.Scope(
+				vuetify.VList(menus...).
+					OpenStrategy("multiple").
+					Class("primary--text").
+					Density(vuetify.DensityCompact).
+					Attr("v-model:opened", "locals.menuOpened").
+					Attr("v-model:selected", "locals.selection").
+					Attr("color", "transparent"),
+			).VSlot("{ locals }").Init(
+				fmt.Sprintf(`{ menuOpened: [%q] }`, menuGroupSelected),
+				fmt.Sprintf(`{ selection: [%q] }`, menuItemSelected),
+			),
+		)
+	})
+	b.MenuOrder(
+		"books",
+		b.MenuGroup("Media1").SubItems(
+			"videos",
+			"musics",
+		).Icon("mdi-video"),
+		b.MenuGroup("Media2").SubItems(
+			"videos",
+			"musics",
+		).Icon("mdi-video"),
+	)
 	return
 }

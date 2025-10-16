@@ -534,6 +534,11 @@ func (b *Builder) AddMenuTopItemFunc(key string, v ComponentFunc) (r *Builder) {
 	return b
 }
 
+func (b *Builder) MenuComponentFunc(fn func(menus []h.HTMLComponent, menuGroupSelected, menuItemSelected string) h.HTMLComponent) (r *Builder) {
+	b.menuOrder.MenuComponentFunc(fn)
+	return b
+}
+
 func (b *Builder) RunSwitchLocalCodeFunc(ctx *web.EventContext) (r h.HTMLComponent) {
 	if b.switchLocaleFunc != nil {
 		return b.switchLocaleFunc(ctx)
