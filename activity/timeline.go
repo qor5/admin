@@ -88,11 +88,11 @@ func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog) h.HT
 						).Go()).Children(
 						v.VIcon("mdi-check").Size(16),
 					),
-				).Attr("v-on-mounted", fmt.Sprintf(`({watch}) => {
+				).Attr("v-on-mounted", `({watch}) => {
 					watch(form, (val) => {
 						toplocals.edited = true;
 					})
-				}`)),
+				}`),
 			),
 		)
 	case ActionView:
@@ -168,11 +168,11 @@ func (c *TimelineCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 							).Go()).Children(
 							v.VIcon("mdi-check").Size(16),
 						),
-					).Attr("v-on-mounted", fmt.Sprintf(`({watch}) => {
+					).Attr("v-on-mounted", `({watch}) => {
 						watch(form, (val) => {
 							toplocals.edited = true;
 						})
-					}`)),
+					}`),
 				),
 			),
 		),

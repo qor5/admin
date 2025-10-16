@@ -36,7 +36,7 @@ func relayPagination(f func(db *gorm.DB, opts ...gormrelay.Option[any]) relay.Ap
 		relay.EnsureLimits[any](presets.PerPageDefault, presets.PerPageMax),
 		relay.AppendCursorMiddleware(cursorMiddlewares...),
 	)
-	return func(ctx *web.EventContext) (relay.Pagination[any], error) {
+	return func(_ *web.EventContext) (relay.Pagination[any], error) {
 		return relay.PaginationFunc[any](func(ctx context.Context, req *relay.PaginateRequest[any]) (*relay.Connection[any], error) {
 			ctx = relay.WithSkip(ctx, relay.Skip{
 				Edges:      true,

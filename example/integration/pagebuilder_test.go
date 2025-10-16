@@ -40,11 +40,18 @@ func TestMain(m *testing.M) {
 
 var pageBuilderData = gofixtures.Data(gofixtures.Sql(`
 INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (1, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'category_123', '/12', '', 'Japan');
+INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (1, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'category_123', '/12', '', 'China');
 INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (2, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'category_456', '/45', '', 'Japan');
 INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (3, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'category_34', '/34', '', 'Japan');
-SELECT setval('page_builder_categories_id_seq', 3, true);
+INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (3, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'category_34', '/34', '', 'China');
+INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (4, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'test_change_category', '/category2', '', 'Japan');
+INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (5, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'compare_change_category', '/', '', 'Japan');
+INSERT INTO public.page_builder_categories (id, created_at, updated_at, deleted_at, name, path, description, locale_code) VALUES (6, '2024-05-17 15:25:31.134801 +00:00', '2024-05-17 15:25:31.134801 +00:00', null, 'no_page', '/no_page', '', 'Japan');
+SELECT setval('page_builder_categories_id_seq', 1, true);
 INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code, seo) VALUES (1, '2024-05-17 15:25:39.716658 +00:00', '2024-05-17 15:25:39.716658 +00:00', null, '12312', '/123', 1, 'draft', '', null, null, null, null, '2024-05-18-v01', '2024-05-18-v01', '', 'Japan', '{"OpenGraphImageFromMediaLibrary":{"ID":0,"Url":"","VideoLink":"","FileName":"","Description":""}}');
-SELECT setval('page_builder_pages_id_seq', 1, true);
+INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code, seo) VALUES (2, '2024-05-17 15:25:39.716658 +00:00', '2024-05-17 15:25:39.716658 +00:00', null, 'category', '/', 4, 'draft', '', null, null, null, null, '2024-05-18-v01', '2024-05-18-v01', '', 'Japan', '{"OpenGraphImageFromMediaLibrary":{"ID":0,"Url":"","VideoLink":"","FileName":"","Description":""}}');
+INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code, seo) VALUES (3, '2024-05-17 15:25:39.716658 +00:00', '2024-05-17 15:25:39.716658 +00:00', null, 'category', '/category', 5, 'draft', '', null, null, null, null, '2024-05-18-v01', '2024-05-18-v01', '', 'Japan', '{"OpenGraphImageFromMediaLibrary":{"ID":0,"Url":"","VideoLink":"","FileName":"","Description":""}}');
+SELECT setval('page_builder_pages_id_seq', 3, true);
 INSERT INTO public.page_builder_templates (id, created_at, updated_at, deleted_at, name, description, locale_code) VALUES (1, '2024-07-22 01:41:13.206348 +00:00', '2024-07-22 01:41:13.206348 +00:00', null, '123', '456', '');
 `, []string{"page_builder_pages", "page_builder_categories", "page_builder_templates"}))
 
@@ -74,6 +81,20 @@ INSERT INTO public.container_in_numbers (id, add_top_space, add_bottom_space, an
 INSERT INTO public.page_builder_demo_containers (id, created_at, updated_at, deleted_at, model_name, model_id, locale_code) VALUES (1, '2024-06-25 02:21:41.014915 +00:00', '2024-06-25 02:21:41.014915 +00:00', null, 'InNumbers', 1, 'Japan');
 INSERT INTO public.container_headings (id, add_top_space, add_bottom_space, anchor_id, heading, font_color, background_color, link, link_text, link_display_option, text) VALUES (1, false, false, '', '', '', '', '', '', '', '');
 `, []string{"page_builder_pages", "page_builder_containers", "container_in_numbers", "page_builder_demo_containers", "container_headings"}))
+
+var pageBuilderHiddenContainerTestData = gofixtures.Data(gofixtures.Sql(`
+INSERT INTO public.page_builder_pages (id, created_at, updated_at, deleted_at, title, slug, category_id, seo, status, online_url, scheduled_start_at, scheduled_end_at, actual_start_at, actual_end_at, version, version_name, parent_version, locale_code) VALUES 
+										(10, '2024-05-21 01:54:45.280106 +00:00', '2024-05-21 01:54:57.983233 +00:00', null, '1234567', '/12313', 0, '{"Title":"{{Title}}default","EnabledCustomize":true}', 'draft', '', null, null, null, null, '2024-05-21-v01', '2024-05-21-v01', '', 'Japan');
+SELECT setval('page_builder_pages_id_seq', 10, true);
+
+INSERT INTO public.page_builder_containers (id,created_at, updated_at, deleted_at, page_id, page_version, model_name, model_id, display_order, shared, hidden, display_name, locale_code, localize_from_model_id,page_model_name) VALUES 
+										   (11,'2024-05-21 01:55:06.952248 +00:00', '2024-05-21 01:55:06.952248 +00:00', null, 10, '2024-05-21-v01', 'Header', 10, 2, false, true, 'Header', 'Japan', 0,'pages')  ;
+SELECT setval('page_builder_containers_id_seq', 11, true);
+
+INSERT INTO public.container_headers (id, color) VALUES (10, 'black');
+SELECT setval('container_headers_id_seq', 10, true);
+
+`, []string{"page_builder_pages", "page_builder_containers", "container_headers"}))
 
 func TestPageBuilder(t *testing.T) {
 	h := admin.TestHandler(TestDB, nil)
@@ -112,7 +133,6 @@ func TestPageBuilder(t *testing.T) {
 			ExpectPageBodyContainsInOrder: []string{
 				`Page`, "Category", `SEO`, `Activity`,
 			},
-			ExpectPageBodyNotContains: []string{"_blank"},
 		},
 		{
 			Name:  "Page Builder Detail Page with invalid slug",
@@ -212,12 +232,63 @@ func TestPageBuilder(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				pageBuilderData.TruncatePut(dbr)
 				req := NewMultipartBuilder().
-					PageURL("/categories").
+					PageURL("/page_categories").
 					EventFunc(actions.Update).
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Name is required"},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Invalid Name"},
+		},
+		{
+			Name:  "Category Validate Page Same Path",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_categories").
+					EventFunc(actions.Update).
+					Query(presets.ParamID, "4_Japan").
+					AddField("Name", "InvalidPath").
+					AddField("LocaleCode", "Japan").
+					AddField("Path", "category2").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"Successfully Updated"},
+		},
+		{
+			Name:  "Category Validate No Page ",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_categories").
+					EventFunc(actions.Update).
+					Query(presets.ParamID, "6_Japan").
+					AddField("Name", "InvalidPath").
+					AddField("LocaleCode", "Japan").
+					AddField("Path", "no_page2").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"Successfully Updated"},
+		},
+		{
+			Name:  "Category Validate Page Invalid Path",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_categories").
+					EventFunc(actions.Update).
+					Query(presets.ParamID, "4_Japan").
+					AddField("Name", "InvalidPath").
+					AddField("LocaleCode", "Japan").
+					AddField("Path", "category").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"This path would cause URL conflicts with existing pages"},
 		},
 		{
 			Name:  "Page Builder Editor Page",
@@ -678,6 +749,7 @@ func TestPageBuilder(t *testing.T) {
 				return NewMultipartBuilder().
 					PageURL("/in-numbers").
 					EventFunc(actions.Update).
+					Query("demoContainer", "true").
 					Query(presets.ParamID, "1").
 					Query("status", "draft").
 					AddField("AnchorID", "test_in_numbers").
@@ -1210,7 +1282,7 @@ func TestPageBuilder(t *testing.T) {
 				req := NewMultipartBuilder().
 					PageURL("/page_categories").
 					EventFunc(l10n.DoLocalize).
-					Query(presets.ParamID, "1_Japan").
+					Query(presets.ParamID, "2_Japan").
 					AddField("localize_from", "Japan").
 					AddField("localize_to", "China").
 					BuildEventFuncRequest()
@@ -1346,6 +1418,37 @@ func TestPageBuilder(t *testing.T) {
 				return req
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Header", "PageTitle", "Shared"},
+		},
+		{
+			Name:  "Page Builder show hidden container",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderHiddenContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
+					EventFunc(pagebuilder.ShowSortedContainerDrawerEvent).
+					Query("status", "draft").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Header", "mdi-eye-off"},
+		},
+		{
+			Name:  "Page Builder Edit Same Form Container",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderHiddenContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/headers").
+					EventFunc(actions.Update).
+					Query(presets.ParamID, "10").
+					AddField("Color", "Black").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			ExpectRunScriptContainsInOrder: []string{"Successfully Updated"},
 		},
 	}
 

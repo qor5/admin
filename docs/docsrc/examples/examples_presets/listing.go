@@ -24,19 +24,23 @@ import (
 )
 
 type Customer struct {
-	ID              int
-	Name            string
-	Email           string
-	Description     string
-	CompanyID       int
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-	ApprovedAt      *time.Time
-	TermAgreedAt    *time.Time
-	ApprovalComment string
-	Avatar          media_library.MediaBox
-	CreditCards     []*CreditCard `gorm:"-"`
-	Notes           []*Note       `gorm:"-"`
+	ID                             int
+	Name                           string
+	Email                          string
+	Description                    string
+	CompanyID                      int
+	CreatedAt                      time.Time
+	UpdatedAt                      time.Time
+	ApprovedAt                     *time.Time
+	TermAgreedAt                   *time.Time
+	ApprovalComment                string
+	Avatar                         media_library.MediaBox
+	HTMLSanitizerPolicyTiptapInput string
+	HTMLSanitizerPolicyUGCInput    string
+	HTMLSanitizerPolicyStrictInput string
+	HTMLSanitizerPolicyCustomInput string
+	CreditCards                    []*CreditCard `gorm:"-"`
+	Notes                          []*Note       `gorm:"-"`
 }
 
 type Address struct {

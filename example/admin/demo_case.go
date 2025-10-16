@@ -563,6 +563,26 @@ func configVxDialog(detailing *presets.DetailingBuilder, mb *presets.ModelBuilde
 					dialogActivator("Open Dialog", "DisableOk", text, v.ColorSecondary).Title("Confirm").
 						DisableOk(true),
 				),
+				cardRows("Content Only Mode", 5,
+					// contentOnlyMode with no padding, using default text content
+					dialogActivator("Open Dialog", "contentOnlyMode (padding 0)", text, v.ColorSecondary).
+						ContentOnlyMode(true).
+						ContentPadding("0"),
+					// contentOnlyMode with custom padding and custom body content
+					vx.VXDialog(
+						web.Slot(
+							h.Div(
+								h.Div(h.Text("contentOnlyMode (padding 24px)")).Class("mb-2"),
+								v.VBtn("Open Dialog").Color(v.ColorSecondary).Attr("v-bind", "activatorProps"),
+							).Class("text-center"),
+						).Name("activator").Scope("{props: { activatorProps }}"),
+						h.Div(
+							h.Text("This dialog hides header, footer and close icon."),
+						).Class("text-body-2"),
+					).
+						ContentOnlyMode(true).
+						ContentPadding("24px"),
+				),
 			).Class("section-wrap with-border-b"),
 		).VSlot("{locals}").Init("{dialogVisible:false}")
 	})

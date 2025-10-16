@@ -21,6 +21,7 @@ import (
 	h "github.com/theplant/htmlgo"
 	"gorm.io/gorm"
 
+	"github.com/qor5/admin/v3/activity"
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
@@ -345,13 +346,17 @@ func (b *ModelBuilder) addContainer(ctx *web.EventContext) (r web.EventResponse,
 		containerID                 = ctx.Param(paramContainerID)
 		newContainerID              string
 		pageID, pageVersion, locale = b.getPrimaryColumnValuesBySlug(ctx)
+		obj                         interface{}
 	)
+	if obj, err = b.getObjFromSlug(ctx); err != nil {
+		return
+	}
 
 	if sharedContainer == "true" {
-		newContainerID, err = b.addSharedContainerToPage(pageID, containerID, pageVersion, locale, modelName, uint(modelID))
+		newContainerID, err = b.addSharedContainerToPage(ctx, obj, pageID, containerID, pageVersion, locale, modelName, uint(modelID))
 	} else {
 		var newModelId uint
-		newModelId, newContainerID, err = b.addContainerToPage(ctx, pageID, containerID, pageVersion, locale, modelName)
+		newModelId, newContainerID, err = b.addContainerToPage(ctx, obj, pageID, containerID, pageVersion, locale, modelName)
 		modelID = int(newModelId)
 	}
 	cb := b.builder.ContainerByName(modelName)
@@ -442,15 +447,49 @@ func (b *ModelBuilder) moveUpDownContainer(ctx *web.EventContext) (r web.EventRe
 }
 
 func (b *ModelBuilder) toggleContainerVisibility(ctx *web.EventContext) (r web.EventResponse, err error) {
-	var container Container
 	var (
+		container   Container
 		paramID     = ctx.R.FormValue(paramContainerID)
 		cs          = container.PrimaryColumnValuesBySlug(paramID)
 		containerID = cs[presets.ParamID]
 		locale      = cs[l10n.SlugLocaleCode]
+		obj         interface{}
 	)
+	if obj, err = b.getObjFromSlug(ctx); err != nil {
+		return
+	}
 
-	err = b.db.Exec("UPDATE page_builder_containers SET hidden = NOT(coalesce(hidden,FALSE)) WHERE id = ? AND locale_code = ?", containerID, locale).Error
+	if err = b.db.Where("id = ? AND locale_code = ?", containerID, locale).First(&container).Error; err != nil {
+		return
+	}
+	diffs := []activity.Diff{
+		{Field: fmt.Sprintf("[%s %v].Hidden", container.DisplayName, container.ModelID), Old: fmt.Sprint(container.Hidden), New: fmt.Sprint(!container.Hidden)},
+	}
+	container.Hidden = !container.Hidden
+	if err = b.db.Updates(&container).Error; err != nil {
+		return
+	}
+	defer func() {
+		if b.builder.ab != nil && b.builder.editorActivityProcessor != nil {
+			detail := &EditorLogInput{
+				Action:     activity.ActionEdit,
+				PageObject: obj,
+				Container:  container,
+				Detail:     diffs,
+			}
+			if b.builder.editorActivityProcessor != nil {
+				detail = b.builder.editorActivityProcessor(ctx, detail)
+			}
+			if detail == nil {
+				return
+			}
+			mb, ok := b.builder.ab.GetModelBuilder(b.mb)
+			if !ok {
+				return
+			}
+			mb.Log(ctx.R.Context(), detail.Action, detail.PageObject, detail.Detail)
+		}
+	}()
 
 	web.AppendRunScripts(&r,
 		web.Plaid().
@@ -502,8 +541,15 @@ func (b *ModelBuilder) deleteContainer(ctx *web.EventContext) (r web.EventRespon
 		containerID            = cs[presets.ParamID]
 		locale                 = cs[l10n.SlugLocaleCode]
 		count                  int64
+		obj                    interface{}
 	)
+	if obj, err = b.getObjFromSlug(ctx); err != nil {
+		return
+	}
 	if err = b.db.Transaction(func(tx *gorm.DB) (dbErr error) {
+		if dbErr = tx.Where("id = ? AND locale_code = ?", containerID, locale).First(&container).Error; dbErr != nil {
+			return
+		}
 		if dbErr = tx.Delete(&Container{}, "id = ? AND locale_code = ?", containerID, locale).Error; err != nil {
 			return
 		}
@@ -511,7 +557,25 @@ func (b *ModelBuilder) deleteContainer(ctx *web.EventContext) (r web.EventRespon
 	}); err != nil {
 		return
 	}
-
+	if b.builder.ab != nil && b.builder.editorActivityProcessor != nil {
+		mb, ok := b.builder.ab.GetModelBuilder(b.mb)
+		if !ok {
+			return
+		}
+		detail := &EditorLogInput{
+			Action:     ActionDeleteContainer,
+			PageObject: obj,
+			Container:  container,
+			Detail:     fmt.Sprintf("%s %s", container.DisplayName, container.PrimarySlug()),
+		}
+		if b.builder.editorActivityProcessor != nil {
+			detail = b.builder.editorActivityProcessor(ctx, detail)
+		}
+		if detail == nil {
+			return
+		}
+		mb.Log(ctx.R.Context(), detail.Action, detail.PageObject, detail.Detail)
+	}
 	web.AppendRunScripts(&r,
 		web.Plaid().PushState(true).ClearMergeQuery([]string{paramContainerID, paramContainerDataID}).RunPushState(),
 		web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).Go(),
@@ -749,22 +813,44 @@ func (b *ModelBuilder) renameContainer(ctx *web.EventContext) (r web.EventRespon
 		containerID = cs[presets.ParamID]
 		locale      = cs[l10n.SlugLocaleCode]
 		name        = ctx.R.FormValue(paramDisplayName)
+		obj         interface{}
 	)
+	if obj, err = b.getObjFromSlug(ctx); err != nil {
+		return
+	}
 	err = b.db.First(&container, "id = ? AND locale_code = ?  ", containerID, locale).Error
 	if err != nil {
 		return
 	}
-	if container.Shared {
-		err = b.db.Model(&Container{}).Where("model_name = ? AND model_id = ? AND locale_code = ?", container.ModelName, container.ModelID, locale).Update("display_name", name).Error
-		if err != nil {
-			return
-		}
-	} else {
-		err = b.db.Model(&Container{}).Where("id = ? AND locale_code = ?", containerID, locale).Update("display_name", name).Error
-		if err != nil {
-			return
-		}
+	diffs := []activity.Diff{
+		{Field: fmt.Sprintf("[%s %v].DisplayName", container.DisplayName, container.ModelID), Old: container.DisplayName, New: name},
 	}
+	err = b.db.Model(&Container{}).Where("model_name = ? AND model_id = ? AND locale_code = ?", container.ModelName, container.ModelID, locale).Update("display_name", name).Error
+	if err != nil {
+		return
+	}
+	defer func() {
+		if container.DisplayName != name && b.builder.ab != nil && b.builder.editorActivityProcessor != nil {
+			detail := &EditorLogInput{
+				Action:          activity.ActionEdit,
+				PageObject:      obj,
+				Container:       container,
+				ContainerObject: nil,
+				Detail:          diffs,
+			}
+			if b.builder.editorActivityProcessor != nil {
+				detail = b.builder.editorActivityProcessor(ctx, detail)
+			}
+			if detail == nil {
+				return
+			}
+			mb, ok := b.builder.ab.GetModelBuilder(b.mb)
+			if !ok {
+				return
+			}
+			mb.Log(ctx.R.Context(), detail.Action, detail.PageObject, detail.Detail)
+		}
+	}()
 	web.AppendRunScripts(&r,
 		fmt.Sprintf("vars.__pageBuilderRightContentTitle=%q", name),
 		web.Plaid().EventFunc(ShowSortedContainerDrawerEvent).MergeQuery(true).Query(paramStatus, ctx.Param(paramStatus)).Go(),

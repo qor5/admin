@@ -21,6 +21,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/text/language"
 
+	"github.com/qor5/admin/v3/common"
 	"github.com/qor5/admin/v3/presets/actions"
 )
 
@@ -62,6 +63,7 @@ type Builder struct {
 	menuGroups                            MenuGroups
 	menuOrder                             *MenuOrderBuilder
 	wrapHandlers                          map[string]func(in http.Handler) (out http.Handler)
+	handlerHook                           common.Hook[http.Handler]
 	plugins                               []Plugin
 	notFoundHandler                       http.Handler
 	customBuilders                        []*CustomBuilder
@@ -69,6 +71,10 @@ type Builder struct {
 }
 
 type AssetFunc func(ctx *web.EventContext)
+type (
+	BreadcrumbItemsFuncKey struct{}
+	BreadcrumbItemsFunc    func(ctx *web.EventContext, disableLast bool) (r []h.HTMLComponent)
+)
 
 type extraAsset struct {
 	path        string
@@ -720,13 +726,15 @@ func (b *Builder) dialog(ctx *web.EventContext, r *web.EventResponse, comp h.HTM
 		Name: DialogPortalName,
 		Body: web.Scope(
 			activeWatcher,
-			VDialog(
+			vuetifyx.VXDialog(
 				h.Div().Class("overflow-y-auto").Children(
 					web.Portal(comp).Name(dialogContentPortalName),
 				),
 			).
+				ContentOnlyMode(true).
+				ContentPadding("0 2px 9px").
 				Attr("v-model", "vars.presetsDialog").
-				Width(width),
+				Attr(":width", width),
 		).VSlot("{ form }"),
 	})
 	r.RunScript = "setTimeout(function(){ vars.presetsDialog = true }, 100)"
@@ -952,6 +960,10 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 		innerPageTitleCompo, ok := ctx.ContextValue(CtxPageTitleComponent).(h.HTMLComponent)
 		if !ok {
 			innerPageTitleCompo = VToolbarTitle(innerPr.PageTitle) // Class("text-h6 font-weight-regular"),
+			breadcrumbFunc, ok := ctx.ContextValue(BreadcrumbItemsFuncKey{}).(BreadcrumbItemsFunc)
+			if ok {
+				innerPageTitleCompo = CreateVXBreadcrumbs(ctx, breadcrumbFunc)
+			}
 		} else {
 			ctx.WithContextValue(CtxPageTitleComponent, nil)
 		}
@@ -1210,6 +1222,9 @@ func (b *Builder) initMux() {
 	// b.handler = mux
 	// Handle 404
 	b.handler = b.notFound(mux)
+	if b.handlerHook != nil {
+		b.handler = b.handlerHook(b.handler)
+	}
 }
 
 type responseWriterWrapper struct {
@@ -1252,6 +1267,24 @@ func (b *Builder) WrapNotFoundHandler(w func(in http.Handler) (out http.Handler)
 
 func (b *Builder) NotFoundHandler() http.Handler {
 	return b.notFoundHandler
+}
+
+func (b *Builder) WithHandlerHook(hooks ...common.Hook[http.Handler]) *Builder {
+	b.handlerHook = common.ChainHookWith(b.handlerHook, hooks...)
+	return b
+}
+
+// NewMuxHook creates a handler wrapper for sub-modules that have their own mux and prefix
+func (b *Builder) NewMuxHook(mux *http.ServeMux) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if _, pattern := mux.Handler(r); pattern != "" {
+				mux.ServeHTTP(w, r)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
 func (b *Builder) AddWrapHandler(key string, f func(in http.Handler) (out http.Handler)) {
@@ -1381,4 +1414,18 @@ func redirectSlashes(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func CreateVXBreadcrumbs(ctx *web.EventContext, f BreadcrumbItemsFunc) h.HTMLComponent {
+	items := f(ctx, true)
+
+	joinedItems := make([]h.HTMLComponent, 0, len(items)*2-1)
+	for i, item := range items {
+		joinedItems = append(joinedItems, item)
+		if i < len(items)-1 {
+			joinedItems = append(joinedItems, VBreadcrumbsDivider(h.Text("»")))
+		}
+	}
+
+	return vuetifyx.VXBreadcrumbs(joinedItems...).Class("pa-0", W100)
 }

@@ -304,7 +304,14 @@ func NewConfig(db *gorm.DB, enableWork bool, opts ...ConfigOption) Config {
 	pageBuilder.
 		Media(mediab).
 		L10n(l10nBuilder).
+		PreviewOpenNewTab(true).
 		Activity(ab).
+		EditorActivityProcessor(func(ctx *web.EventContext, input *pagebuilder.EditorLogInput) *pagebuilder.EditorLogInput {
+			return input
+		}).
+		DemoContainerActivityProcessor(func(ctx *web.EventContext, input *pagebuilder.DemoContainerLogInput) *pagebuilder.DemoContainerLogInput {
+			return input
+		}).
 		Publisher(publisher).
 		SEO(seoBuilder).
 		WrapPageInstall(func(in presets.ModelInstallFunc) presets.ModelInstallFunc {
@@ -635,7 +642,7 @@ func configPost(
 			{
 				Key:          "created",
 				Label:        "Create Time",
-				ItemType:     vx.ItemTypeDatetimeRange,
+				ItemType:     vx.ItemTypeDatetimeRangePicker,
 				SQLCondition: `created_at %s ?`,
 			},
 			{

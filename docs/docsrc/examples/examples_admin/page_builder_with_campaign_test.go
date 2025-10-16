@@ -1056,6 +1056,59 @@ func TestPageBuilderCampaign(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"2025-04-16-v01", "Offline"},
 			ExpectPortalUpdate0NotContains:     []string{`<v-btn :disabled='true' :prepend-icon='"mdi-rename-box"`, `<v-btn :disabled='true' :prepend-icon='"mdi-delete"' `},
 		},
+
+		{
+			Name:  "Campaign toggle visibility",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/campaigns/1_2024-05-20-v01").
+					EventFunc(pagebuilder.ToggleContainerVisibilityEvent).
+					Query("containerID", "1").
+					Query("status", "draft").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var container pagebuilder.Container
+				if err := TestDB.First(&container, 1).Error; err != nil {
+					t.Error(err)
+					return
+				}
+				if !container.Hidden {
+					t.Fatalf("containers not hidden %#+v", container)
+					return
+				}
+			},
+		},
+		{
+			Name:  "Campaign MarkAsSharedContainerEvent",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/campaigns/1_2024-05-20-v01").
+					EventFunc(pagebuilder.MarkAsSharedContainerEvent).
+					Query("containerID", "1").
+					Query("status", "draft").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var container pagebuilder.Container
+				if err := TestDB.First(&container, 1).Error; err != nil {
+					t.Error(err)
+					return
+				}
+				if !container.Shared {
+					t.Fatalf("containers not shared %#+v", container)
+					return
+				}
+			},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
