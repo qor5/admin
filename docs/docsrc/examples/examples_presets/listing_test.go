@@ -218,5 +218,4 @@ func TestPresetsDataOperatorWithGRPC(t *testing.T) {
 			multipartestutils.RunCase(t, c, pb)
 		})
 	}
-
 }

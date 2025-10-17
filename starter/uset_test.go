@@ -115,7 +115,6 @@ func TestUsers(t *testing.T) {
 			Name:  "User Update With Google Provider",
 			Debug: true,
 			ReqFunc: func() *http.Request {
-
 				req := NewMultipartBuilder().
 					PageURL("/users").
 					EventFunc(actions.Update).
