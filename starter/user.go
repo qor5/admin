@@ -115,11 +115,11 @@ func (a *Handler) createUserModelBuilder(presetsBuilder *presets.Builder, activi
 	// Event: Revoke TOTP
 	umb.RegisterEventFunc("eventRevokeTOTP", func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		uid := ctx.R.FormValue("id")
-		var u User
+		var u *User
 		if err := a.DB.WithContext(ctx.R.Context()).Where("id = ?", uid).First(&u).Error; err != nil {
 			return r, errors.Wrap(err, "failed to find user")
 		}
-		err = login.RevokeTOTP(&u, a.DB, &User{}, fmt.Sprint(u.ID))
+		err = login.RevokeTOTP(u, a.DB, &User{}, fmt.Sprint(u.ID))
 		if err != nil {
 			return r, errors.WithStack(err)
 		}
