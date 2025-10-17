@@ -22,7 +22,7 @@ func TestUsers(t *testing.T) {
 					BuildEventFuncRequest()
 				return req
 			},
-			ExpectPageBodyContainsInOrder: []string{ `qor@theplant.jp`},
+			ExpectPageBodyContainsInOrder: []string{`qor@theplant.jp`},
 		},
 	}
 
