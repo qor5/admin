@@ -63,7 +63,7 @@ func TestAuthChangePasswordAndProfileRename(t *testing.T) {
 }
 
 func TestRolesIndex_AdminAndEditorVisibility(t *testing.T) {
-	env := newTestEnv(t)
+	env := newTestEnv(t, starter.SetupPageBuilderForHandler)
 	suite := inject.MustResolve[*gormx.TestSuite](env.lc)
 	db := suite.DB()
 	// Admin should see Admin/Manager roles
@@ -109,7 +109,7 @@ func TestRolesIndex_AdminAndEditorVisibility(t *testing.T) {
 }
 
 func TestUsersListing_FilterAdminManagerForNonAdmin(t *testing.T) {
-	env := newTestEnv(t)
+	env := newTestEnv(t, starter.SetupPageBuilderForHandler)
 	suite := inject.MustResolve[*gormx.TestSuite](env.lc)
 	db := suite.DB()
 
@@ -142,4 +142,30 @@ func TestUsersListing_FilterAdminManagerForNonAdmin(t *testing.T) {
 	t.Run(c.Name, func(t *testing.T) {
 		multipartestutils.RunCase(t, c, env.handler)
 	})
+}
+
+type unloginKey struct{}
+
+func TestAuthLoginPage(t *testing.T) {
+	env := newTestEnv(t, starter.SetupPageBuilderForHandler, func(handler *starter.Handler) *unloginKey {
+		handler.WithHandlerHook(func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				r.Header.Set("Cookie", "")
+				next.ServeHTTP(w, r)
+			})
+		})
+		return &unloginKey{}
+	})
+	c := multipartestutils.TestCase{
+		Name:  "Login Page",
+		Debug: true,
+		ReqFunc: func() *http.Request {
+			return httptest.NewRequest("GET", "/auth/login", http.NoBody)
+		},
+		ExpectPageBodyContainsInOrder: []string{"Sign in with Google", "Sign in with Microsoft", "Sign in with Github"},
+	}
+	t.Run(c.Name, func(t *testing.T) {
+		multipartestutils.RunCase(t, c, env.handler)
+	})
+
 }
