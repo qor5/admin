@@ -502,3 +502,25 @@ func PresetsListingFilterNotificationFunc(b *presets.Builder, db *gorm.DB) (
 }
 
 // @snippet_end
+
+func PresetsDataOperatorWithGRPC(b *presets.Builder, db *gorm.DB) (
+	mb *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	err := db.AutoMigrate(
+		&Customer{},
+		&Company{},
+		&Address{},
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	b.DataOperator(presets.DataOperatorWithGRPC(gorm2op.DataOperator(db)))
+	mb = b.Model(&Customer{})
+	cl = mb.Listing()
+	ce = mb.Editing()
+	return
+}

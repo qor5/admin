@@ -51,6 +51,7 @@ func SamplesHandler(mux examples.Muxer) {
 	addExample(mux, db, PresetsListingCustomizationSearcher)
 	addExample(mux, db, PresetsListingDatatableFunc)
 	addExample(mux, db, PresetsListingFilterNotificationFunc)
+	addExample(mux, db, PresetsDataOperatorWithGRPC)
 	addExample(mux, db, PresetsDetailInlineEditDetails)
 	addExample(mux, db, PresetsDetailSectionView)
 	addExample(mux, db, PresetsDetailTabsSection)

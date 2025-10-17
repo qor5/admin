@@ -195,3 +195,28 @@ func TestPresetsListingFilterNotificationFunc(t *testing.T) {
 		})
 	}
 }
+
+func TestPresetsDataOperatorWithGRPC(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsListingFilterNotificationFunc(pb, TestDB)
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "custom page basic",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				listingDatatableData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers").
+					BuildEventFuncRequest()
+			},
+			ExpectPageBodyContainsInOrder: []string{`v-card`, `Felix 1`, `abc@example.com`},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+
+}
