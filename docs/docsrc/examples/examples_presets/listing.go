@@ -14,6 +14,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/qor5/x/v3/i18n"
+	"github.com/qor5/x/v3/statusx"
 	v "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/qor5/x/v3/ui/vuetifyx"
 
@@ -489,7 +490,7 @@ func PresetsListingFilterNotificationFunc(b *presets.Builder, db *gorm.DB) (
 	ce *presets.EditingBuilder,
 	dp *presets.DetailingBuilder,
 ) {
-	b.DataOperator(presets.DataOperatorWithGRPC(gorm2op.DataOperator(db)))
+	b.DataOperator(gorm2op.DataOperator(db))
 	err := db.AutoMigrate(&Customer{})
 	if err != nil {
 		panic(err)
@@ -502,3 +503,49 @@ func PresetsListingFilterNotificationFunc(b *presets.Builder, db *gorm.DB) (
 }
 
 // @snippet_end
+type mockGRPCDataOperatorWrapper struct {
+	next presets.DataOperator
+}
+
+func mockGRPCDataOperator(next presets.DataOperator) presets.DataOperator {
+	return &mockGRPCDataOperatorWrapper{next: next}
+}
+
+func (w *mockGRPCDataOperatorWrapper) Search(eventCtx *web.EventContext, params *presets.SearchParams) (*presets.SearchResult, error) {
+	return w.next.Search(eventCtx, params)
+}
+
+func (w *mockGRPCDataOperatorWrapper) Fetch(obj any, id string, eventCtx *web.EventContext) (any, error) {
+	return w.next.Fetch(obj, id, eventCtx)
+}
+
+func (w *mockGRPCDataOperatorWrapper) Save(obj any, id string, eventCtx *web.EventContext) error {
+	var fvs statusx.FieldViolations
+	p := obj.(*Customer)
+	if p.Name == "system" {
+		fvs = append(fvs, statusx.NewFieldViolation("Name", "name can`t set system", "name can`t set system"))
+		return statusx.BadRequest(fvs).Err()
+	}
+	return nil
+}
+
+func (w *mockGRPCDataOperatorWrapper) Delete(obj any, id string, eventCtx *web.EventContext) error {
+	return w.next.Delete(obj, id, eventCtx)
+}
+
+func PresetsDataOperatorWithGRPC(b *presets.Builder, db *gorm.DB) (
+	mb *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	b.DataOperator(presets.DataOperatorWithGRPC(mockGRPCDataOperator(gorm2op.DataOperator(db))))
+	err := db.AutoMigrate(&Customer{})
+	if err != nil {
+		panic(err)
+	}
+	mb = b.Model(&Customer{})
+	cl = mb.Listing()
+	ce = mb.Editing()
+	return
+}

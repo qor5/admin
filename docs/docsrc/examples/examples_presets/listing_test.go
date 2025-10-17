@@ -9,6 +9,7 @@ import (
 	"github.com/theplant/gofixtures"
 
 	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 )
 
@@ -198,10 +199,10 @@ func TestPresetsListingFilterNotificationFunc(t *testing.T) {
 
 func TestPresetsDataOperatorWithGRPC(t *testing.T) {
 	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
-	PresetsListingFilterNotificationFunc(pb, TestDB)
+	PresetsDataOperatorWithGRPC(pb, TestDB)
 	cases := []multipartestutils.TestCase{
 		{
-			Name:  "custom page basic",
+			Name:  "Index Customer",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				listingDatatableData.TruncatePut(SqlDB)
@@ -210,6 +211,33 @@ func TestPresetsDataOperatorWithGRPC(t *testing.T) {
 					BuildEventFuncRequest()
 			},
 			ExpectPageBodyContainsInOrder: []string{`v-card`, `Felix 1`, `abc@example.com`},
+		},
+		{
+			Name:  "Update Customer",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				listingDatatableData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers").
+					Query(presets.ParamID, "12").
+					EventFunc(actions.Update).
+					AddField("Name", "system").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"invalid argument"},
+		},
+		{
+			Name:  "Delete Customer",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				listingDatatableData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers").
+					Query(presets.ParamID, "12").
+					EventFunc(actions.DoDelete).
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{"PresetsNotifModelsDeletedexamplesPresetsCustomer"},
 		},
 	}
 

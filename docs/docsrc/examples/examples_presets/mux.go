@@ -68,6 +68,7 @@ func SamplesHandler(mux examples.Muxer) {
 	addExample(mux, db, PresetsPlainNestedField)
 	addExample(mux, db, PresetsDetailDisableSave)
 	addExample(mux, db, PresetsDetailSaverValidation)
+	addExample(mux, db, PresetsDataOperatorWithGRPC)
 	return
 }
 
