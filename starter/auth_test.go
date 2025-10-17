@@ -167,5 +167,4 @@ func TestAuthLoginPage(t *testing.T) {
 	t.Run(c.Name, func(t *testing.T) {
 		multipartestutils.RunCase(t, c, env.handler)
 	})
-
 }
