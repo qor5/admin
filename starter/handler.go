@@ -16,6 +16,7 @@ import (
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/role"
 	"github.com/qor5/admin/v3/utils"
+	"github.com/qor5/confx"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/hook"
 	"github.com/qor5/x/v3/login"
@@ -301,4 +302,15 @@ func (a *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.handler.ServeHTTP(w, r)
+}
+
+//go:embed embed/default-conf.yaml
+var defaultConfigYAML string
+
+func InitializeConfig(opts ...confx.Option) (confx.Loader[*Config], error) {
+	def, err := confx.Read[*Config]("yaml", strings.NewReader(defaultConfigYAML))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to load default config from embedded YAML")
+	}
+	return confx.Initialize(def, opts...)
 }
