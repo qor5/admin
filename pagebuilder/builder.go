@@ -1086,12 +1086,11 @@ func (b *ContainerBuilder) Install() {
 	})
 	editing.EditingTitleFunc(func(obj interface{}, defaultTitle string, ctx *web.EventContext) h.HTMLComponent {
 		var (
-			modelID           = reflectutils.MustGet(obj, "ID")
-			locale            = ctx.ContextValue(l10n.LocaleCode)
-			localeCode        string
-			con               Container
-			isSharedContainer = ctx.Param(paramOpenFromSharedContainer) == "1"
-			msgr              = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+			modelID    = reflectutils.MustGet(obj, "ID")
+			locale     = ctx.ContextValue(l10n.LocaleCode)
+			localeCode string
+			con        Container
+			msgr       = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		)
 
 		if locale != nil {
@@ -1100,7 +1099,7 @@ func (b *ContainerBuilder) Install() {
 		b.builder.db.Where("model_id = ? and model_name = ? and locale_code = ?", modelID, b.name, localeCode).First(&con)
 		comp := h.Span("{{vars.__pageBuilderRightContentTitle?vars.__pageBuilderRightContentTitle:vars.__pageBuilderRightDefaultContentTitle}}").
 			Attr(web.VAssign("vars", fmt.Sprintf("{__pageBuilderRightContentTitle:%q,__pageBuilderRightDefaultContentTitle:%q}", con.DisplayName, defaultTitle))...)
-		if isSharedContainer {
+		if con.Shared {
 			return VTooltip(
 				web.Slot(
 					h.Div(
