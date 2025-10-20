@@ -284,7 +284,6 @@ func TestDoResetPassword_FailedByInitialUser(t *testing.T) {
 	suite := inject.MustResolve[*gormx.TestSuite](env.lc)
 	db := suite.DB()
 
-	// Prepare a dedicated user for reset flow to avoid affecting other tests
 	ctx := context.Background()
 	usr, err := starter.UpsertUser(ctx, db, &starter.UpsertUserOptions{
 		Email:    "qor@theplant.jp",
@@ -349,7 +348,6 @@ func TestDoResetPassword_PasswordMismatch(t *testing.T) {
 	require.True(t, strings.Contains(loc, "id="))
 	require.True(t, strings.Contains(loc, "token="))
 
-	// Login with attempted new password should fail
 	loginFormNew := url.Values{}
 	loginFormNew.Set("account", "resetmismatch@example.com")
 	loginFormNew.Set("password", "NEW123456789")
