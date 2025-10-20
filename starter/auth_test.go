@@ -312,83 +312,35 @@ func TestDoResetPassword_FailedByInitialUser(t *testing.T) {
 	})
 }
 
-func TestDoResetPassword_PasswordMismatch(t *testing.T) {
+func TestDoResetPassword_FailedByLessPassword(t *testing.T) {
 	env := newTestEnv(t, starter.SetupPageBuilderForHandler)
 	suite := inject.MustResolve[*gormx.TestSuite](env.lc)
 	db := suite.DB()
 
 	ctx := context.Background()
 	usr, err := starter.UpsertUser(ctx, db, &starter.UpsertUserOptions{
-		Email:    "resetmismatch@example.com",
-		Password: "origPassword5678",
+		Email:    "resetuser@theplant.jp",
+		Password: "admin123456789",
 		Role:     []string{starter.RoleViewer},
 	})
 	require.NoError(t, err)
 	require.NotNil(t, usr)
 
+	// Generate reset token
 	token, err := usr.GenerateResetPasswordToken(db, &starter.User{})
 	require.NoError(t, err)
 	userID := strconv.Itoa(int(usr.ID))
 
+	// Call do-reset-password
 	form := url.Values{}
 	form.Set("user_id", userID)
 	form.Set("token", token)
-	form.Set("password", "NEW123456789")
-	form.Set("confirm_password", "DIFFxxxx")
+	form.Set("password", "newPassword")
+	form.Set("confirm_password", "newPassword")
 	req := httptest.NewRequest("POST", "/auth/do-reset-password", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	rr := httptest.NewRecorder()
-	env.handler.ServeHTTP(rr, req)
-	res := rr.Result()
-	defer res.Body.Close()
-
-	require.Equal(t, http.StatusFound, res.StatusCode)
-	loc := res.Header.Get("Location")
-	require.True(t, strings.HasPrefix(loc, "/auth/reset-password?"))
-	require.True(t, strings.Contains(loc, "id="))
-	require.True(t, strings.Contains(loc, "token="))
-
-	loginFormNew := url.Values{}
-	loginFormNew.Set("account", "resetmismatch@example.com")
-	loginFormNew.Set("password", "NEW123456789")
-	loginReqNew := httptest.NewRequest("POST", "/auth/userpass/login", strings.NewReader(loginFormNew.Encode()))
-	loginReqNew.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	loginRRNew := httptest.NewRecorder()
-	env.handler.ServeHTTP(loginRRNew, loginReqNew)
-	loginResNew := loginRRNew.Result()
-	defer loginResNew.Body.Close()
-	require.Equal(t, http.StatusFound, loginResNew.StatusCode)
-	require.Equal(t, "/auth/logout", loginResNew.Header.Get("Location"))
-
-	// Follow logout redirect to login page
-	logoutReq2 := httptest.NewRequest("GET", "/auth/logout", http.NoBody)
-	logoutRR2 := httptest.NewRecorder()
-	env.handler.ServeHTTP(logoutRR2, logoutReq2)
-	logoutRes2 := logoutRR2.Result()
-	defer logoutRes2.Body.Close()
-	require.Equal(t, http.StatusFound, logoutRes2.StatusCode)
-	require.Equal(t, "/auth/login", logoutRes2.Header.Get("Location"))
-
-	// Old password still works
-	loginFormOld := url.Values{}
-	loginFormOld.Set("account", "resetmismatch@example.com")
-	loginFormOld.Set("password", "origPassword5678")
-	loginReqOld := httptest.NewRequest("POST", "/auth/userpass/login", strings.NewReader(loginFormOld.Encode()))
-	loginReqOld.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	loginRROld := httptest.NewRecorder()
-	env.handler.ServeHTTP(loginRROld, loginReqOld)
-	loginResOld := loginRROld.Result()
-	defer loginResOld.Body.Close()
-
-	require.Equal(t, http.StatusFound, loginResOld.StatusCode)
-	require.Equal(t, "/", loginResOld.Header.Get("Location"))
-
-	var hasAuthCookie bool
-	for _, c := range loginResOld.Cookies() {
-		if c.Name == "auth" && c.Value != "" {
-			hasAuthCookie = true
-			break
-		}
-	}
-	require.True(t, hasAuthCookie)
+	require.Panics(t, func() {
+		env.handler.ServeHTTP(rr, req)
+	})
 }
