@@ -96,12 +96,13 @@ type Messages struct {
 	Name                       string
 	Description                string
 
-	CategoryDeleteConfirmationText string
-	TheResourceCanNotBeModified    string
-	MarkAsShared                   string
-	Copy                           string
-	SharedContainerHasBeenUpdated  string
-	TemplateFixedAreaMessage       string
+	CategoryDeleteConfirmationText     string
+	TheResourceCanNotBeModified        string
+	MarkAsShared                       string
+	Copy                               string
+	SharedContainerHasBeenUpdated      string
+	TemplateFixedAreaMessage           string
+	SharedContainerModificationWarning string
 }
 
 var Messages_en_US = &Messages{
@@ -190,15 +191,16 @@ var Messages_en_US = &Messages{
 	AreWantDeleteContainer: func(v string) string {
 		return fmt.Sprintf("Are you sure you want to delete %v?", v)
 	},
-	AddPageTemplate:                "Add Page Template",
-	Name:                           "Name",
-	Description:                    "Description",
-	CategoryDeleteConfirmationText: "this will remove all the records in all localized languages",
-	TheResourceCanNotBeModified:    "The resource can not be modified",
-	MarkAsShared:                   "Mark As Shared",
-	Copy:                           "Copy",
-	SharedContainerHasBeenUpdated:  "The shared container on this page has been updated. You may notice differences between the preview and the live page.",
-	TemplateFixedAreaMessage:       "This container is fixed and cannot be updated",
+	AddPageTemplate:                    "Add Page Template",
+	Name:                               "Name",
+	Description:                        "Description",
+	CategoryDeleteConfirmationText:     "this will remove all the records in all localized languages",
+	TheResourceCanNotBeModified:        "The resource can not be modified",
+	MarkAsShared:                       "Mark As Shared",
+	Copy:                               "Copy",
+	SharedContainerHasBeenUpdated:      "The shared container on this page has been updated. You may notice differences between the preview and the live page.",
+	TemplateFixedAreaMessage:           "This container is fixed and cannot be updated",
+	SharedContainerModificationWarning: "This is a shared container. Any modifications you make will apply to all pages that use it",
 }
 
 var Messages_zh_CN = &Messages{
@@ -291,12 +293,13 @@ var Messages_zh_CN = &Messages{
 	Name:            "名称",
 	Description:     "说明",
 
-	CategoryDeleteConfirmationText: "这将删除所有本地化语言中的所有记录",
-	TheResourceCanNotBeModified:    "该资源无法被修改",
-	MarkAsShared:                   "标记为已共享",
-	Copy:                           "复制",
-	SharedContainerHasBeenUpdated:  "此页面上的共享容器已更新。您可能会注意到预览和实时页面之间的差异。",
-	TemplateFixedAreaMessage:       "此区域由模板固定，无法编辑。",
+	CategoryDeleteConfirmationText:     "这将删除所有本地化语言中的所有记录",
+	TheResourceCanNotBeModified:        "该资源无法被修改",
+	MarkAsShared:                       "标记为已共享",
+	Copy:                               "复制",
+	SharedContainerHasBeenUpdated:      "此页面上的共享容器已更新。您可能会注意到预览和实时页面之间的差异。",
+	TemplateFixedAreaMessage:           "此区域由模板固定，无法编辑。",
+	SharedContainerModificationWarning: "这是一个共享容器。您所做的任何修改都将应用于使用它的所有页面",
 }
 
 var Messages_ja_JP = &Messages{
@@ -384,15 +387,16 @@ var Messages_ja_JP = &Messages{
 	AreWantDeleteContainer: func(v string) string {
 		return fmt.Sprintf("%v を削除してもよろしいですか?", v)
 	},
-	AddPageTemplate:                "ページテンプレートを追加",
-	Name:                           "名前",
-	Description:                    "説明",
-	CategoryDeleteConfirmationText: "これは、すべてのローカライズされた言語のすべてのレコードを削除します",
-	TheResourceCanNotBeModified:    "このリソースは変更できません",
-	MarkAsShared:                   "共有済みとしてマーク",
-	Copy:                           "コピー",
-	SharedContainerHasBeenUpdated:  "このページの共有コンテナが更新されました。プレビューとライブページの間に違いがあるかもしれません。",
-	TemplateFixedAreaMessage:       "この領域はテンプレートによって固定されており、編集できません。",
+	AddPageTemplate:                    "ページテンプレートを追加",
+	Name:                               "名前",
+	Description:                        "説明",
+	CategoryDeleteConfirmationText:     "これは、すべてのローカライズされた言語のすべてのレコードを削除します",
+	TheResourceCanNotBeModified:        "このリソースは変更できません",
+	MarkAsShared:                       "共有済みとしてマーク",
+	Copy:                               "コピー",
+	SharedContainerHasBeenUpdated:      "このページの共有コンテナが更新されました。プレビューとライブページの間に違いがあるかもしれません。",
+	TemplateFixedAreaMessage:           "この領域はテンプレートによって固定されており、編集できません。",
+	SharedContainerModificationWarning: "これは共有コンテナです。行った変更は、それを使用するすべてのページに適用されます",
 }
 
 type ModelsI18nModulePage struct {

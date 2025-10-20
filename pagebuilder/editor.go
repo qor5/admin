@@ -38,6 +38,8 @@ const (
 	UpdateContainerEvent                = "page_builder_UpdateContainerEvent"
 	ReloadAddContainersListEvent        = "page_builder_ReloadAddContainersEvent"
 
+	ParamContainerCreate = "paramContainerCreate"
+
 	paramPageID          = "pageID"
 	paramPageVersion     = "pageVersion"
 	paramLocale          = "locale"

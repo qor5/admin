@@ -807,7 +807,6 @@ func (b *Builder) configSharedContainer(pb *presets.Builder) {
 			return in(evCtx, cell, id, obj)
 		}
 	})
-
 	if b.ab != nil {
 		b.ab.RegisterModel(pm)
 	}
@@ -936,7 +935,7 @@ func (b *Builder) firstOrCreateDemoContainers(ctx *web.EventContext, cons ...*Co
 		cons = b.containerBuilders
 	}
 	for _, con := range cons {
-		if err := con.firstOrCreate(slices.Concat(localeCodes)); err != nil {
+		if err := con.firstOrCreate(ctx, slices.Concat(localeCodes)); err != nil {
 			continue
 		}
 	}
@@ -1091,14 +1090,26 @@ func (b *ContainerBuilder) Install() {
 			locale     = ctx.ContextValue(l10n.LocaleCode)
 			localeCode string
 			con        Container
+			msgr       = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 		)
 
 		if locale != nil {
 			localeCode = locale.(string)
 		}
 		b.builder.db.Where("model_id = ? and model_name = ? and locale_code = ?", modelID, b.name, localeCode).First(&con)
-		return h.Span("{{vars.__pageBuilderRightContentTitle?vars.__pageBuilderRightContentTitle:vars.__pageBuilderRightDefaultContentTitle}}").
+		comp := h.Span("{{vars.__pageBuilderRightContentTitle?vars.__pageBuilderRightContentTitle:vars.__pageBuilderRightDefaultContentTitle}}").
 			Attr(web.VAssign("vars", fmt.Sprintf("{__pageBuilderRightContentTitle:%q,__pageBuilderRightDefaultContentTitle:%q}", con.DisplayName, defaultTitle))...)
+		if con.Shared {
+			return VTooltip(
+				web.Slot(
+					h.Div(
+						comp,
+						VIcon("mdi-information-outline").Color(ColorWarning).Attr("v-bind", "tooltip").Class("ml-2").Size(SizeSmall),
+					).Class("d-flex align-center"),
+				).Name("activator").Scope(`{props:tooltip}`),
+			).Location(LocationBottom).Text(msgr.SharedContainerModificationWarning)
+		}
+		return comp
 	})
 	editing.AppendHiddenFunc(func(obj interface{}, ctx *web.EventContext) h.HTMLComponent {
 		if portalName := ctx.Param(presets.ParamPortalName); portalName != pageBuilderRightContentPortal {
@@ -1320,20 +1331,25 @@ func (b *ContainerBuilder) getContainerDataID(modelID int, primarySlug string) s
 	return fmt.Sprintf(inflection.Plural(strcase.ToKebab(b.name))+"_%v_%v", modelID, primarySlug)
 }
 
-func (b *ContainerBuilder) firstOrCreate(localeCodes []string) (err error) {
+func (b *ContainerBuilder) firstOrCreate(ctx *web.EventContext, localeCodes []string) (err error) {
 	var (
-		db   = b.builder.db
-		obj  = b.mb.NewModel()
-		cons []*DemoContainer
-		m    = &DemoContainer{}
+		db    = b.builder.db
+		obj   = b.mb.NewModel()
+		cons  []*DemoContainer
+		m     = &DemoContainer{}
+		saver = b.mb.Editing().Creating().Saver
 	)
 	if len(localeCodes) == 0 {
 		return
 	}
+	ctx.R.Form.Set(ParamContainerCreate, "1")
 	return db.Transaction(func(tx *gorm.DB) (vErr error) {
+		ctx.WithContextValue(gorm2op.CtxKeyDB{}, tx)
+		defer ctx.WithContextValue(gorm2op.CtxKeyDB{}, nil)
 		tx.Where("model_name = ? and locale_code in ? ", b.name, localeCodes).Find(&cons)
+
 		if len(cons) == 0 {
-			if vErr = tx.Create(obj).Error; vErr != nil {
+			if vErr = saver(obj, "", ctx); vErr != nil {
 				return
 			}
 			modelID := reflectutils.MustGet(obj, "ID").(uint)
@@ -1364,7 +1380,7 @@ func (b *ContainerBuilder) firstOrCreate(localeCodes []string) (err error) {
 				continue
 			}
 			obj = b.mb.NewModel()
-			if vErr = tx.Create(obj).Error; vErr != nil {
+			if vErr = saver(obj, "", ctx); vErr != nil {
 				return
 			}
 			modelID := reflectutils.MustGet(obj, "ID").(uint)
@@ -1550,6 +1566,7 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 		device  = ctx.Param(paramDevice)
 		devices = b.getDevices()
 		pMsgr   = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+		isDraft = ctx.Param(paramStatus) == publish.StatusDraft
 	)
 
 	for _, d := range devices {
@@ -1575,7 +1592,7 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 			Query(paramIframeEventName, changeDeviceEventName).
 			Query(paramContainerDataID, containerDataID).
 			AfterScript("vars.__pageBuilderEditingUnPassed=false;toggleLocals.oldDevice = toggleLocals.activeDevice;").
-			ThenScript(fmt.Sprintf(`if(%s!==""){%s}`, containerDataID,
+			ThenScript(fmt.Sprintf(`if(%v && %s!==""){%s}`, isDraft, containerDataID,
 				web.Plaid().EventFunc(EditContainerEvent).
 					MergeQuery(true).
 					Query(paramContainerDataID, containerDataID).
