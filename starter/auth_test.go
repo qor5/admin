@@ -4,10 +4,14 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strconv"
+	"strings"
 	"testing"
 
+	. "github.com/qor5/web/v3/multipartestutils"
+
 	"github.com/qor5/admin/v3/starter"
-	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/qor5/x/v3/gormx"
 	"github.com/stretchr/testify/require"
 	"github.com/theplant/inject"
@@ -19,10 +23,10 @@ func TestAuthChangePasswordAndProfileRename(t *testing.T) {
 	suite := inject.MustResolve[*gormx.TestSuite](env.lc)
 	db := suite.DB()
 
-	cases := []multipartestutils.TestCase{
+	cases := []TestCase{
 		{
 			Name:  "Change Password Page",
-			Debug: false,
+			Debug: true,
 			ReqFunc: func() *http.Request {
 				return httptest.NewRequest("GET", "/auth/change-password", http.NoBody)
 			},
@@ -30,10 +34,10 @@ func TestAuthChangePasswordAndProfileRename(t *testing.T) {
 		},
 		{
 			Name:  "Profile Rename",
-			Debug: false,
+			Debug: true,
 			ReqFunc: func() *http.Request {
 				// Send a stateful action to rename current user
-				return multipartestutils.NewMultipartBuilder().
+				return NewMultipartBuilder().
 					PageURL("/?__execute_event__=__dispatch_stateful_action__").
 					AddField("__action__", `
 {
@@ -47,7 +51,7 @@ func TestAuthChangePasswordAndProfileRename(t *testing.T) {
 					`).
 					BuildEventFuncRequest()
 			},
-			EventResponseMatch: func(t *testing.T, er *multipartestutils.TestEventResponse) {
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
 				var u starter.User
 				require.NoError(t, db.Where("account = ?", "test@example.com").First(&u).Error)
 				require.Equal(t, "renamed@example.com", u.Name)
@@ -57,7 +61,7 @@ func TestAuthChangePasswordAndProfileRename(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-			multipartestutils.RunCase(t, c, env.handler)
+			RunCase(t, c, env.handler)
 		})
 	}
 }
@@ -68,16 +72,16 @@ func TestRolesIndex_AdminAndEditorVisibility(t *testing.T) {
 	db := suite.DB()
 	// Admin should see Admin/Manager roles
 	{
-		c := multipartestutils.TestCase{
+		c := TestCase{
 			Name:  "Roles Visible For Admin",
-			Debug: false,
+			Debug: true,
 			ReqFunc: func() *http.Request {
 				return httptest.NewRequest("GET", "/roles", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"Viewer", "Editor", "Manager", ">Admin<"},
 		}
 		t.Run(c.Name, func(t *testing.T) {
-			multipartestutils.RunCase(t, c, env.handler)
+			RunCase(t, c, env.handler)
 		})
 	}
 
@@ -93,9 +97,9 @@ func TestRolesIndex_AdminAndEditorVisibility(t *testing.T) {
 		require.NoError(t, db.Exec("DELETE FROM user_role_join WHERE user_id = ?", cur.ID).Error)
 		require.NoError(t, db.Exec("INSERT INTO user_role_join(user_id, role_id) VALUES(?, ?)", cur.ID, editorRoleID).Error)
 
-		c := multipartestutils.TestCase{
+		c := TestCase{
 			Name:  "Roles Hidden For Editor",
-			Debug: false,
+			Debug: true,
 			ReqFunc: func() *http.Request {
 				return httptest.NewRequest("GET", "/roles", http.NoBody)
 			},
@@ -103,7 +107,7 @@ func TestRolesIndex_AdminAndEditorVisibility(t *testing.T) {
 			ExpectPageBodyNotContains:     []string{"Manager", ">Admin<"},
 		}
 		t.Run(c.Name, func(t *testing.T) {
-			multipartestutils.RunCase(t, c, env.handler)
+			RunCase(t, c, env.handler)
 		})
 	}
 }
@@ -131,16 +135,16 @@ func TestUsersListing_FilterAdminManagerForNonAdmin(t *testing.T) {
 	require.NoError(t, db.Exec("INSERT INTO user_role_join(user_id, role_id) VALUES(?, ?)", cur.ID, editorRoleID).Error)
 
 	// As Editor, Manager users should be filtered out in listing
-	c := multipartestutils.TestCase{
+	c := TestCase{
 		Name:  "Users listing hides Admin/Manager for non-admin",
-		Debug: false,
+		Debug: true,
 		ReqFunc: func() *http.Request {
 			return httptest.NewRequest("GET", "/users", http.NoBody)
 		},
 		ExpectPageBodyNotContains: []string{"manager@example.com"},
 	}
 	t.Run(c.Name, func(t *testing.T) {
-		multipartestutils.RunCase(t, c, env.handler)
+		RunCase(t, c, env.handler)
 	})
 }
 
@@ -156,7 +160,7 @@ func TestAuthLoginPage(t *testing.T) {
 		})
 		return &unloginKey{}
 	})
-	c := multipartestutils.TestCase{
+	c := TestCase{
 		Name:  "Login Page",
 		Debug: true,
 		ReqFunc: func() *http.Request {
@@ -165,6 +169,101 @@ func TestAuthLoginPage(t *testing.T) {
 		ExpectPageBodyContainsInOrder: []string{"Sign in with Google", "Sign in with Microsoft", "Sign in with Github"},
 	}
 	t.Run(c.Name, func(t *testing.T) {
-		multipartestutils.RunCase(t, c, env.handler)
+		RunCase(t, c, env.handler)
 	})
+}
+
+func TestAuthLoigin(t *testing.T) {
+	env := newTestEnv(t, starter.SetupPageBuilderForHandler, func(handler *starter.Handler) *unloginKey {
+		handler.WithHandlerHook(func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				r.Header.Set("Cookie", "")
+				next.ServeHTTP(w, r)
+			})
+		})
+		return &unloginKey{}
+	})
+	form := url.Values{}
+	form.Set("account", "qor@theplant.jp")
+	form.Set("password", "admin123456789")
+	req := httptest.NewRequest("POST", "/auth/userpass/login", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	rr := httptest.NewRecorder()
+	env.handler.ServeHTTP(rr, req)
+
+	res := rr.Result()
+	defer res.Body.Close()
+
+	require.Equal(t, http.StatusFound, res.StatusCode)
+	require.Equal(t, "/", res.Header.Get("Location"))
+
+	var hasAuthCookie bool
+	for _, c := range res.Cookies() {
+		if c.Name == "auth" && c.Value != "" {
+			hasAuthCookie = true
+			break
+		}
+	}
+	require.True(t, hasAuthCookie)
+}
+
+func TestDoResetPassword_Success(t *testing.T) {
+	env := newTestEnv(t, starter.SetupPageBuilderForHandler)
+	suite := inject.MustResolve[*gormx.TestSuite](env.lc)
+	db := suite.DB()
+
+	// Prepare a dedicated user for reset flow to avoid affecting other tests
+	ctx := context.Background()
+	usr, err := starter.UpsertUser(ctx, db, &starter.UpsertUserOptions{
+		Email:    "resetuser@example.com",
+		Password: "origPassword1234",
+		Role:     []string{starter.RoleViewer},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, usr)
+
+	// Generate reset token
+	token, err := usr.GenerateResetPasswordToken(db, &starter.User{})
+	require.NoError(t, err)
+	userID := strconv.Itoa(int(usr.ID))
+
+	// Call do-reset-password
+	form := url.Values{}
+	form.Set("user_id", userID)
+	form.Set("token", token)
+	form.Set("password", "newPassword1234")
+	form.Set("confirm_password", "newPassword1234")
+	req := httptest.NewRequest("POST", "/auth/do-reset-password", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rr := httptest.NewRecorder()
+	env.handler.ServeHTTP(rr, req)
+	res := rr.Result()
+	defer res.Body.Close()
+
+	require.Equal(t, http.StatusFound, res.StatusCode)
+	require.Equal(t, "/auth/login", res.Header.Get("Location"))
+
+	// Verify new password works by logging in
+	loginForm := url.Values{}
+	loginForm.Set("account", "resetuser@example.com")
+	loginForm.Set("password", "newPassword1234")
+	loginReq := httptest.NewRequest("POST", "/auth/userpass/login", strings.NewReader(loginForm.Encode()))
+	loginReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	loginRR := httptest.NewRecorder()
+	env.handler.ServeHTTP(loginRR, loginReq)
+	loginRes := loginRR.Result()
+	defer loginRes.Body.Close()
+
+	require.Equal(t, http.StatusFound, loginRes.StatusCode)
+	require.Equal(t, "/", loginRes.Header.Get("Location"))
+
+	var hasAuthCookie bool
+	for _, c := range loginRes.Cookies() {
+		if c.Name == "auth" && c.Value != "" {
+			hasAuthCookie = true
+			break
+		}
+	}
+	require.True(t, hasAuthCookie)
 }

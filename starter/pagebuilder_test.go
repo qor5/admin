@@ -26,7 +26,7 @@ func TestPageBuilder(t *testing.T) {
 	cases := []multipartestutils.TestCase{
 		{
 			Name:  "Index Page",
-			Debug: false,
+			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderTestData.TruncatePut(dbr)
 				return httptest.NewRequest("GET", "/pages", nil)
