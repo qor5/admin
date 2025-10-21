@@ -90,8 +90,8 @@ func EditSetterFunc(obj interface{}, field *presets.FieldContext, ctx *web.Event
 
 func (collection *Collection) EditingComponentFunc(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 	var (
-		msgr               = i18n.MustGetModuleMessages(ctx.R, I18nSeoKey, Messages_en_US).(*Messages)
-		fieldPrefix string = field.Name
+		msgr        = i18n.MustGetModuleMessages(ctx.R, I18nSeoKey, Messages_en_US).(*Messages)
+		fieldPrefix string
 		setting     Setting
 		db          = collection.getDBFromContext(ctx.R.Context())
 		locale, _   = l10n.IsLocalizableFromCtx(ctx.R.Context())
@@ -104,8 +104,15 @@ func (collection *Collection) EditingComponentFunc(obj interface{}, field *prese
 
 	value := reflect.Indirect(reflect.ValueOf(obj))
 	for i := 0; i < value.NumField(); i++ {
-		if s, ok := value.Field(i).Interface().(Setting); ok && fieldPrefix == value.Type().Field(i).Name {
+		s, ok := value.Field(i).Interface().(Setting)
+		if field == nil && ok {
 			setting = s
+			fieldPrefix = value.Type().Field(i).Name
+			break
+		} else if ok && field.Name == value.Type().Field(i).Name {
+			setting = s
+			fieldPrefix = field.Name
+			break
 		}
 	}
 	if !setting.EnabledCustomize && setting.IsEmpty() {
