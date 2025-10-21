@@ -503,30 +503,28 @@ func defaultResetPasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.Pag
 		if id == "" {
 			r.Body = Div(Text("user not found"))
 			return r, nil
-		} else {
-			user, err = vh.FindUserByID(id)
-			if err != nil {
-				if err == login.ErrUserNotFound {
-					r.Body = Div(Text("user not found"))
-					return r, nil
-				}
-				panic(err)
+		}
+		user, err = vh.FindUserByID(id)
+		if err != nil {
+			if err == login.ErrUserNotFound {
+				r.Body = Div(Text("user not found"))
+				return r, nil
 			}
+			panic(err)
 		}
 		token := query.Get("token")
 		if token == "" {
 			r.Body = Div(Text("invalid token"))
 			return r, nil
-		} else {
-			storedToken, _, expired := user.(login.UserPasser).GetResetPasswordToken()
-			if expired {
-				r.Body = Div(Text("token expired"))
-				return r, nil
-			}
-			if token != storedToken {
-				r.Body = Div(Text("invalid token"))
-				return r, nil
-			}
+		}
+		storedToken, _, expired := user.(login.UserPasser).GetResetPasswordToken()
+		if expired {
+			r.Body = Div(Text("token expired"))
+			return r, nil
+		}
+		if token != storedToken {
+			r.Body = Div(Text("invalid token"))
+			return r, nil
 		}
 
 		r.Body = Div(

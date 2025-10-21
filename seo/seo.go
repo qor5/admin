@@ -217,19 +217,18 @@ func (seo *SEO) getFinalMetaProps() map[string]ContextVarFunc {
 	}
 	if seo.finalMetaPropsCache != nil {
 		return seo.finalMetaPropsCache
-	} else {
-		seo.finalMetaPropsCache = make(map[string]ContextVarFunc)
-		for propName, propFunc := range seo.metaProps {
+	}
+	seo.finalMetaPropsCache = make(map[string]ContextVarFunc)
+	for propName, propFunc := range seo.metaProps {
+		seo.finalMetaPropsCache[propName] = propFunc
+	}
+	cacheOfParent := seo.parent.getFinalMetaProps()
+	for propName, propFunc := range cacheOfParent {
+		if _, isExist := seo.finalMetaPropsCache[propName]; !isExist {
 			seo.finalMetaPropsCache[propName] = propFunc
 		}
-		cacheOfParent := seo.parent.getFinalMetaProps()
-		for propName, propFunc := range cacheOfParent {
-			if _, isExist := seo.finalMetaPropsCache[propName]; !isExist {
-				seo.finalMetaPropsCache[propName] = propFunc
-			}
-		}
-		return seo.finalMetaPropsCache
 	}
+	return seo.finalMetaPropsCache
 }
 
 func (seo *SEO) getAvailableVars() map[string]struct{} {
@@ -238,19 +237,18 @@ func (seo *SEO) getAvailableVars() map[string]struct{} {
 	}
 	if seo.finalAvailableVarsCache != nil {
 		return seo.finalAvailableVarsCache
-	} else {
-		seo.finalAvailableVarsCache = make(map[string]struct{})
-		for varName := range seo.settingVars {
-			seo.finalAvailableVarsCache[varName] = struct{}{}
-		}
-		for varName := range seo.contextVars {
-			seo.finalAvailableVarsCache[varName] = struct{}{}
-		}
-		for varName := range seo.parent.getAvailableVars() {
-			seo.finalAvailableVarsCache[varName] = struct{}{}
-		}
-		return seo.finalAvailableVarsCache
 	}
+	seo.finalAvailableVarsCache = make(map[string]struct{})
+	for varName := range seo.settingVars {
+		seo.finalAvailableVarsCache[varName] = struct{}{}
+	}
+	for varName := range seo.contextVars {
+		seo.finalAvailableVarsCache[varName] = struct{}{}
+	}
+	for varName := range seo.parent.getAvailableVars() {
+		seo.finalAvailableVarsCache[varName] = struct{}{}
+	}
+	return seo.finalAvailableVarsCache
 }
 
 func (seo *SEO) getLocaleFinalQorSEOSetting(locale string, db *gorm.DB) *QorSEOSetting {
@@ -326,19 +324,18 @@ func (seo *SEO) getFinalContextVars() map[string]ContextVarFunc {
 	}
 	if seo.finalContextVarsCache != nil {
 		return seo.finalContextVarsCache
-	} else {
-		seo.finalContextVarsCache = make(map[string]ContextVarFunc)
-		for varName, varFunc := range seo.contextVars {
+	}
+	seo.finalContextVarsCache = make(map[string]ContextVarFunc)
+	for varName, varFunc := range seo.contextVars {
+		seo.finalContextVarsCache[varName] = varFunc
+	}
+	contextVarsOfParent := seo.parent.getFinalContextVars()
+	for varName, varFunc := range contextVarsOfParent {
+		if _, isExist := seo.finalContextVarsCache[varName]; !isExist {
 			seo.finalContextVarsCache[varName] = varFunc
 		}
-		contextVarsOfParent := seo.parent.getFinalContextVars()
-		for varName, varFunc := range contextVarsOfParent {
-			if _, isExist := seo.finalContextVarsCache[varName]; !isExist {
-				seo.finalContextVarsCache[varName] = varFunc
-			}
-		}
-		return seo.finalContextVarsCache
 	}
+	return seo.finalContextVarsCache
 }
 
 func (seo *SEO) checkConflict(varName string, isContextVar bool) {
