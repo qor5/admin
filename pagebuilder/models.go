@@ -23,6 +23,8 @@ type Page struct {
 	publish.Schedule
 	publish.Version
 	l10n.Locale
+
+	CustomizedPageKind string
 }
 
 func (p *Page) GetID() uint {
