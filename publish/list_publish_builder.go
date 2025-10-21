@@ -163,8 +163,7 @@ func (b *ListPublishBuilder) Run(ctx context.Context, model interface{}) (err er
 
 	needPublishResults, indexResult := getNeedPublishResultsAndIndexResult(oldResult, newResult, republishResult)
 
-	var objs []*PublishAction
-	objs = b.publishActionsFunc(b.db, lp, needPublishResults, indexResult)
+	objs := b.publishActionsFunc(b.db, lp, needPublishResults, indexResult)
 
 	err = utils.Transact(b.db, func(tx *gorm.DB) (err1 error) {
 		if err1 = UploadOrDelete(ctx, objs, b.storage); err1 != nil {
