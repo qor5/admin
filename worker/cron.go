@@ -47,8 +47,8 @@ func NewCronQueue() Queue {
 func (c *cron) parseJobs() []*cronJob {
 	c.mutex.Lock()
 
-	c.Jobs = []*cronJob{}
-	c.CronJobs = []string{}
+	c.Jobs = nil
+	c.CronJobs = nil
 	if out, err := exec.Command("crontab", "-l").Output(); err == nil {
 		var inQorJob bool
 		for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
@@ -122,12 +122,13 @@ func (c *cron) Add(ctx context.Context, job QueJobInterface) (err error) {
 				JobID:   jobInfo.JobID,
 				Command: fmt.Sprintf("%d %d %d %d * cd %v; %v --qor-job %v\n", scheduleTime.Minute(), scheduleTime.Hour(), scheduleTime.Day(), scheduleTime.Month(), currentPath, binaryFile, jobInfo.JobID),
 			})
-		} else {
-			cmd := exec.Command(binaryFile, "--qor-job", jobInfo.JobID)
-			if err = cmd.Start(); err == nil {
-				jobs = append(jobs, &cronJob{JobID: jobInfo.JobID, Pid: cmd.Process.Pid})
-				cmd.Process.Release()
-			}
+			c.Jobs = jobs
+			return nil
+		}
+		cmd := exec.Command(binaryFile, "--qor-job", jobInfo.JobID)
+		if err = cmd.Start(); err == nil {
+			jobs = append(jobs, &cronJob{JobID: jobInfo.JobID, Pid: cmd.Process.Pid})
+			cmd.Process.Release()
 		}
 		c.Jobs = jobs
 	}

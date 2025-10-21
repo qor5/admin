@@ -216,9 +216,9 @@ func (db *DiffBuilder) diffLoop(old, new reflect.Value, prefixField string) erro
 		var (
 			oldKeys     = old.MapKeys()
 			newKeys     = new.MapKeys()
-			sameKeys    = []reflect.Value{}
-			addedKeys   = []reflect.Value{}
-			deletedKeys = []reflect.Value{}
+			sameKeys    []reflect.Value
+			addedKeys   []reflect.Value
+			deletedKeys []reflect.Value
 		)
 
 		for _, oldKey := range oldKeys {

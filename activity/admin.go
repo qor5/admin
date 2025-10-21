@@ -111,7 +111,7 @@ func setupListing(b *presets.Builder, lb *presets.ListingBuilder, op *gorm2op.Da
 					modelLabels = append(modelLabels, m.label())
 				}
 			}
-			signsNoPerm := []string{}
+			var signsNoPerm []string
 			modelLabels = lo.Uniq(modelLabels)
 			for _, resourceSign := range modelLabels {
 				if resourceSign == "" || resourceSign == NopModelLabel {

@@ -59,7 +59,7 @@ func configOrder(pb *presets.Builder, db *gorm.DB) {
 	})
 
 	lb.FilterDataFunc(func(ctx *web.EventContext) vuetifyx.FilterData {
-		statusOptions := []*vuetifyx.SelectItem{}
+		var statusOptions []*vuetifyx.SelectItem
 		for _, status := range models.OrderStatuses {
 			statusOptions = append(statusOptions, &vuetifyx.SelectItem{Value: string(status), Text: string(status)})
 		}

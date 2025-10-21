@@ -100,7 +100,7 @@ func getNotesCounts(db *gorm.DB, tablePrefix string, uid string, modelName strin
 	GROUP BY n.model_name, n.model_keys
 	ORDER BY min_created_at ASC;`, tableName, explictWhere, tableName, explictWhere)
 
-	counts := []*NoteCount{}
+	var counts []*NoteCount
 	if err := db.Raw(raw, args...).Scan(&counts).Error; err != nil {
 		return nil, err
 	}

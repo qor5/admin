@@ -30,7 +30,7 @@ func configCategory(b *presets.Builder, db *gorm.DB, publisher *publish.Builder)
 
 	eb.Field("Products").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			selectedItems := []productItem{}
+			var selectedItems []productItem
 			c, ok := obj.(*models.Category)
 			if ok {
 				var ps []models.Product
