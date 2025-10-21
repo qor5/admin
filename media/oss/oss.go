@@ -67,11 +67,10 @@ var DefaultRetrieveHandler = func(oss OSS, path string) (base.FileInterface, err
 	}
 
 	if err == nil {
-		buf := []byte{}
-		if buf, err = io.ReadAll(result); err == nil {
-			result := ClosingReadSeeker{bytes.NewReader(buf)}
-			result.Seek(0, 0)
-			return result, err
+		if buf, err := io.ReadAll(result); err == nil {
+			rs := ClosingReadSeeker{bytes.NewReader(buf)}
+			rs.Seek(0, 0)
+			return rs, nil
 		}
 	}
 	return nil, err
