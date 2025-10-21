@@ -139,8 +139,6 @@ func (b *ListPublishBuilder) Run(ctx context.Context, model interface{}) (err er
 			}
 			newItems = append(newItems, item)
 		}
-	} else {
-		newItems = oldItems
 	}
 
 	if len(addItems) != 0 {
