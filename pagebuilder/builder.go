@@ -846,7 +846,7 @@ func fillCategoryIndentLevels(cats []*Category) {
 func (b *Builder) ConfigCategory(pb *presets.Builder, db *gorm.DB, l10nB *l10n.Builder) (pm *presets.ModelBuilder) {
 	pm = pb.Model(&Category{}).URIName("page_categories").Label("Categories")
 
-	lb := pm.Listing("Name", "Path", "Description")
+	lb := pm.Listing("Name", "Path", "Description", "IsParking")
 
 	oldSearcher := lb.Searcher
 	lb.SearchFunc(func(model interface{}, params *presets.SearchParams, ctx *web.EventContext) (r interface{}, totalCount int, err error) {
@@ -875,7 +875,7 @@ func (b *Builder) ConfigCategory(pb *presets.Builder, db *gorm.DB, l10nB *l10n.B
 		)
 	})
 
-	eb := pm.Editing("Name", "Path", "Description")
+	eb := pm.Editing("Name", "Path", "Description", "IsParking")
 
 	eb.Field("Path").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		var vErr web.ValidationErrors
