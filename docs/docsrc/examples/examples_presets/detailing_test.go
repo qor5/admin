@@ -908,3 +908,28 @@ func TestPresetsDetailDisableSave(t *testing.T) {
 		})
 	}
 }
+
+func TestPresetsDetailSaverValidation(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsDetailSaverValidation(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name: "detail saver validation",
+			ReqFunc: func() *http.Request {
+				customPageData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers").
+					EventFunc("section_save_Customer").
+					AddField("Name", "system").
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{"You can not use system as name"},
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}

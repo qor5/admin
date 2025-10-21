@@ -1,0 +1,20 @@
+database:
+  dsn: "placeholder"
+
+s3:
+  bucket: "qor5-test-example"
+  region: "ap-northeast-1"
+  endpoint: "https://cdn.qor5.theplant-dev.com"
+s3Publish:
+  bucket: "qor5-test-example"
+  region: "ap-northeast-1"
+  endpoint: "https://cdn.qor5.theplant-dev.com"
+auth:
+  secret: "test"
+  googleClientKey: "test"
+  googleClientSecret: "test"
+  microsoftClientKey: "test"
+  microsoftClientSecret: "test"
+  githubClientKey: "test"
+  githubClientSecret: "test"
+

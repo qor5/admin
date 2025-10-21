@@ -1,6 +1,7 @@
 package presets
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -567,7 +568,12 @@ func (b *EditingBuilder) doUpdate(
 
 	err1 := usingB.Saver(obj, id, ctx)
 	if err1 != nil {
-		usingB.UpdateOverlayContent(ctx, r, obj, "", err1)
+		var ve *web.ValidationErrors
+		if errors.As(err1, &ve) {
+			usingB.UpdateOverlayContent(ctx, r, obj, "", ve)
+		} else {
+			usingB.UpdateOverlayContent(ctx, r, obj, "", err1)
+		}
 		return created, err1
 	}
 

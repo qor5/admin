@@ -1,0 +1,43 @@
+
+database:
+  dsn: ""
+  debug: false
+  tracing:
+    excludeQuery: false
+    excludeQueryVars: false
+  maxIdleConns: 20
+  maxOpenConns: 200
+  connMaxLifetime: "30m"
+  connMaxIdleTime: "10m"
+  authMethod: "password" # password, iam
+
+prefix: ""
+s3:
+  accessID: "" # AWS access ID, if not provided, will use AWS default config
+  accessKey: "" # AWS access key, if not provided, will use AWS default config
+  bucket: ""
+  region: ""
+  endpoint: ""
+s3Publish:
+  accessID: "" # AWS access ID, if not provided, will use AWS default config
+  accessKey: "" # AWS access key, if not provided, will use AWS default config
+  bucket: ""
+  region: ""
+  endpoint: ""
+auth:
+  secret: "test"
+  baseURL: "http://localhost:10001"
+  initialUserEmail: "qor@theplant.jp"
+  initialUserPassword: "admin123456789"
+  initialUserRole: "Admin"
+  googleClientKey: ""
+  googleClientSecret: ""
+  microsoftClientKey: ""
+  microsoftClientSecret: "ts"
+  githubClientKey: ""
+  githubClientSecret: "ts"
+  enableRecaptcha: false
+  recaptchaSiteKey: ""
+  recaptchaSecretKey: ""
+  maxRetryCount: 5
+  enableTOTP: false

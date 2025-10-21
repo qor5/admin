@@ -436,3 +436,28 @@ func PresetsDetailDisableSave(b *presets.Builder, db *gorm.DB) (
 	dpc.Section(sec)
 	return
 }
+
+func PresetsDetailSaverValidation(b *presets.Builder, db *gorm.DB) (
+	cust *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	cust, cl, ce, dp = PresetsHelloWorld(b, db)
+	dp = cust.Detailing("Customer")
+	section := presets.NewSectionBuilder(cust, "Customer").Editing("Name", "Email")
+	section.WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (err error) {
+			ve := web.ValidationErrors{}
+			if obj.(*Customer).Name == "system" {
+				ve.GlobalError("You can not use system as name")
+			}
+			if ve.HaveErrors() {
+				return &ve
+			}
+			return in(obj, id, ctx)
+		}
+	})
+	dp.Section(section)
+	return
+}

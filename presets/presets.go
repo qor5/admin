@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
@@ -30,6 +31,7 @@ type Builder struct {
 	prefix                                string
 	models                                []*ModelBuilder
 	handler                               http.Handler
+	warmupOnce                            sync.Once
 	builder                               *web.Builder
 	dc                                    *stateful.DependencyCenter
 	i18nBuilder                           *i18n.Builder
@@ -1393,8 +1395,15 @@ func (b *Builder) LookUpModelBuilder(uriName string) *ModelBuilder {
 }
 
 func (b *Builder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	b.warmupOnce.Do(func() {
+		if b.handler == nil {
+			b.Build()
+		}
+	})
 	if b.handler == nil {
-		b.Build()
+		log.Printf("presets: Builder.handler is nil after Build; cannot serve request for %s", r.URL.Path)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
 	}
 	redirectSlashes(b.handler).ServeHTTP(w, r)
 }

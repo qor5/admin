@@ -67,7 +67,7 @@ func TestPresetsPresetsMenuComponent(t *testing.T) {
 	cases := []multipartestutils.TestCase{
 		{
 			Name:  "multiple openStrategy",
-			Debug: false,
+			Debug: true,
 			ReqFunc: func() *http.Request {
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/presets-menu-component/books").
