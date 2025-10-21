@@ -30,7 +30,7 @@ var DefaultURLTemplateHandler = func(oss OSS, option *base.Option) (url string) 
 		url = URLTemplate
 	}
 
-	url = strings.Join([]string{strings.TrimSuffix(Storage.GetEndpoint(context.Background()), "/"), strings.TrimPrefix(url, "/")}, "/")
+	url = strings.TrimSuffix(Storage.GetEndpoint(context.Background()), "/") + "/" + strings.TrimPrefix(url, "/")
 	if strings.HasPrefix(url, "/") {
 		return url
 	}

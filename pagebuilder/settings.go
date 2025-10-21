@@ -164,7 +164,6 @@ func detailPageEditor(dp *presets.DetailingBuilder, mb *presets.ModelBuilder, b 
 			)
 			if p.Status.Status == publish.StatusOnline || p.Status.Status == publish.StatusOffline {
 				err.GlobalError(msgr.TheResourceCanNotBeModified)
-				return
 			}
 
 			if err = pageValidator(ctx, p, db, b.l10n); err.HaveErrors() {
@@ -243,5 +242,5 @@ func detailPageEditor(dp *presets.DetailingBuilder, mb *presets.ModelBuilder, b 
 		})
 	}
 	dp.Section(section)
-	return
+
 }

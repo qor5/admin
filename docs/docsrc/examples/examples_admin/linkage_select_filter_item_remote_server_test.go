@@ -11,7 +11,7 @@ import (
 func TestLinkageSelectFilterItemRemoteServer(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
-	req, err := http.NewRequest("GET", "/", nil)
+	req, err := http.NewRequest("GET", "/", http.NoBody)
 	if err != nil {
 		t.Fatalf("Could not create request: %v", err)
 		return

@@ -242,12 +242,12 @@ func (c *cron) Listen(_ []*QorJobDefinition, getJob func(qorJobID uint) (QueJobI
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		if err := c.doRunJob(context.Background(), job); err == nil {
+		err = c.doRunJob(context.Background(), job)
+		if err == nil {
 			os.Exit(0)
-		} else {
-			fmt.Println(err)
-			os.Exit(1)
 		}
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	return nil
@@ -267,11 +267,11 @@ func (c *cron) doRunJob(ctx context.Context, job QueJobInterface) error {
 	}
 
 	if err := job.SetStatus(JobStatusRunning); err == nil {
-		if err := c.run(ctx, job); err == nil {
+		if runErr := c.run(ctx, job); runErr == nil {
 			return job.SetStatus(JobStatusDone)
 		}
 
-		job.SetProgressText(err.Error())
+		job.SetProgressText("job failed")
 		job.SetStatus(JobStatusException)
 	}
 

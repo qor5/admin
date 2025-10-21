@@ -3,6 +3,7 @@ package activity
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -378,8 +379,8 @@ func TestMutliModelBuilder(t *testing.T) {
 	// add create record
 	db.Create(data1)
 	builder.OnCreate(ctx, data1)
-	pageModel2.Editing().Saver(data2, "", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", nil).WithContext(context.WithValue(context.Background(), "user", "Test User"))})
-	pageModel3.Editing().Saver(data3, "", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-02/3", nil).WithContext(context.WithValue(context.Background(), "user", "Test User"))})
+	pageModel2.Editing().Saver(data2, "", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", http.NoBody).WithContext(context.WithValue(context.Background(), "user", "Test User"))})
+	pageModel3.Editing().Saver(data3, "", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-02/3", http.NoBody).WithContext(context.WithValue(context.Background(), "user", "Test User"))})
 	{
 		for _, id := range []string{"1", "2"} {
 			var log ActivityLog
@@ -406,11 +407,11 @@ func TestMutliModelBuilder(t *testing.T) {
 
 	data2.Title = "test2-1"
 	data2.Description = "Description2-1"
-	pageModel2.Editing().Saver(data2, "2", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", nil).WithContext(context.WithValue(context.Background(), "user", "Test User"))})
+	pageModel2.Editing().Saver(data2, "2", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", http.NoBody).WithContext(context.WithValue(context.Background(), "user", "Test User"))})
 
 	data3.Title = "test3-1"
 	data3.Description = "Description3-1"
-	pageModel3.Editing().Saver(data3, "3", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-02/3", nil).WithContext(context.WithValue(context.Background(), "user", "Test User"))})
+	pageModel3.Editing().Saver(data3, "3", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-02/3", http.NoBody).WithContext(context.WithValue(context.Background(), "user", "Test User"))})
 
 	{
 		var log1 ActivityLog
@@ -449,8 +450,8 @@ func TestMutliModelBuilder(t *testing.T) {
 	// add delete record
 	db.Delete(data1)
 	builder.OnDelete(ctx, data1)
-	pageModel2.Editing().Deleter(data2, "2", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", nil).WithContext(context.WithValue(context.Background(), "user", "Test User"))})
-	pageModel3.Editing().Deleter(data3, "3", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-02/3", nil).WithContext(context.WithValue(context.Background(), "user", "Test User"))})
+	pageModel2.Editing().Deleter(data2, "2", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-01/2", http.NoBody).WithContext(context.WithValue(context.Background(), "user", "Test User"))})
+	pageModel3.Editing().Deleter(data3, "3", &web.EventContext{R: httptest.NewRequest("POST", "/admin/page-02/3", http.NoBody).WithContext(context.WithValue(context.Background(), "user", "Test User"))})
 	{
 		for _, id := range []string{"1", "3"} {
 			var log ActivityLog

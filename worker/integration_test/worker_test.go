@@ -15,7 +15,7 @@ import (
 )
 
 func TestJobSelectList(t *testing.T) {
-	r := httptest.NewRequest(http.MethodPost, "/workers?__execute_event__=presets_New", nil)
+	r := httptest.NewRequest(http.MethodPost, "/workers?__execute_event__=presets_New", http.NoBody)
 	w := httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
 	body := w.Body.String()
@@ -28,7 +28,7 @@ func TestJobSelectList(t *testing.T) {
 }
 
 func TestJobForm(t *testing.T) {
-	r := httptest.NewRequest(http.MethodPost, "/workers?__execute_event__=worker_selectJob&jobName=argJob", nil)
+	r := httptest.NewRequest(http.MethodPost, "/workers?__execute_event__=worker_selectJob&jobName=argJob", http.NoBody)
 	w := httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
 	body := w.Body.String()
@@ -47,7 +47,7 @@ func TestJobLog(t *testing.T) {
 	})
 	integration.ConsumeQueItem()
 	j := mustGetFirstJob()
-	r := httptest.NewRequest(http.MethodPost, fmt.Sprintf(`/workers?__execute_event__=worker_updateJobProgressing&job=noArgJob&jobID=%d`, j.ID), nil)
+	r := httptest.NewRequest(http.MethodPost, fmt.Sprintf(`/workers?__execute_event__=worker_updateJobProgressing&job=noArgJob&jobID=%d`, j.ID), http.NoBody)
 	w := httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
 	body := w.Body.String()
@@ -67,7 +67,7 @@ func TestJobLog(t *testing.T) {
 	})
 	integration.ConsumeQueItem()
 	j = mustGetFirstJob()
-	r = httptest.NewRequest(http.MethodPost, fmt.Sprintf(`/workers?__execute_event__=worker_updateJobProgressing&job=argJob&jobID=%d`, j.ID), nil)
+	r = httptest.NewRequest(http.MethodPost, fmt.Sprintf(`/workers?__execute_event__=worker_updateJobProgressing&job=argJob&jobID=%d`, j.ID), http.NoBody)
 	w = httptest.NewRecorder()
 	pb.ServeHTTP(w, r)
 	body = w.Body.String()
@@ -89,11 +89,11 @@ func TestJobActions(t *testing.T) {
 		j := mustGetFirstJob()
 		go integration.ConsumeQueItem()
 		time.Sleep(time.Second)
-		r := httptest.NewRequest(http.MethodPost, fmt.Sprintf(`/workers/%d?__execute_event__=worker_abortJob&job=longRunningJob&jobID=%d`, j.ID, j.ID), nil)
+		r := httptest.NewRequest(http.MethodPost, fmt.Sprintf(`/workers/%d?__execute_event__=worker_abortJob&job=longRunningJob&jobID=%d`, j.ID, j.ID), http.NoBody)
 		w := httptest.NewRecorder()
 		pb.ServeHTTP(w, r)
 		time.Sleep(2 * time.Second)
-		r = httptest.NewRequest(http.MethodPost, fmt.Sprintf(`/workers?__execute_event__=worker_updateJobProgressing&job=longRunningJob&jobID=%d`, j.ID), nil)
+		r = httptest.NewRequest(http.MethodPost, fmt.Sprintf(`/workers?__execute_event__=worker_updateJobProgressing&job=longRunningJob&jobID=%d`, j.ID), http.NoBody)
 		w = httptest.NewRecorder()
 		pb.ServeHTTP(w, r)
 		body := w.Body.String()
@@ -116,7 +116,7 @@ func TestJobActions(t *testing.T) {
 		if j.Status != worker.JobStatusDone {
 			t.Fatalf("want status %q, got %q", worker.JobStatusDone, j.Status)
 		}
-		r := httptest.NewRequest(http.MethodPost, fmt.Sprintf(`/workers/%d?__execute_event__=worker_rerunJob&job=noArgJob&jobID=%d`, j.ID, j.ID), nil)
+		r := httptest.NewRequest(http.MethodPost, fmt.Sprintf(`/workers/%d?__execute_event__=worker_rerunJob&job=noArgJob&jobID=%d`, j.ID, j.ID), http.NoBody)
 		w := httptest.NewRecorder()
 		pb.ServeHTTP(w, r)
 		j = mustGetFirstJob()
@@ -142,7 +142,7 @@ func TestJobActions(t *testing.T) {
 		r.Header.Add("Content-Type", fmt.Sprintf("multipart/form-data; boundary=%s", mw.Boundary()))
 		w := httptest.NewRecorder()
 		pb.ServeHTTP(w, r)
-		r = httptest.NewRequest(http.MethodGet, fmt.Sprintf(`/workers/%d`, j.ID), nil)
+		r = httptest.NewRequest(http.MethodGet, fmt.Sprintf(`/workers/%d`, j.ID), http.NoBody)
 		w = httptest.NewRecorder()
 		pb.ServeHTTP(w, r)
 		if !strings.Contains(w.Body.String(), st) {

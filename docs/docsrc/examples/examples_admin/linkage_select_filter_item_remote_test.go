@@ -88,7 +88,7 @@ func TestLinkageSelectFilter(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				linkageSelectFilterData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/addresses?f_province_city_district=", nil)
+				return httptest.NewRequest("GET", "/addresses?f_province_city_district=", http.NoBody)
 			},
 			ExpectPageBodyNotContains: []string{`"selected":true`},
 		},
