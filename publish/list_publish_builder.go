@@ -124,8 +124,9 @@ func (b *ListPublishBuilder) Run(ctx context.Context, model interface{}) (err er
 		return
 	}
 
-	var newItems []interface{}
+	newItems := oldItems
 	if len(deleteItems) != 0 {
+		newItems = nil
 		deleteMap := make(map[int][]int)
 		for _, item := range deleteItems {
 			lp := item.(ListInterface)
@@ -149,15 +150,19 @@ func (b *ListPublishBuilder) Run(ctx context.Context, model interface{}) (err er
 	lp := model.(ListPublisher)
 	lp.Sort(newItems)
 
-	var oldResult []*OnePageItems
-	if len(oldItems) > 0 {
-		oldResult = paginate(oldItems)
-	}
+	oldResult := func() []*OnePageItems {
+		if len(oldItems) > 0 {
+			return paginate(oldItems)
+		}
+		return nil
+	}()
 
-	var republishResult []*OnePageItems
-	if len(republishItems) > 0 {
-		republishResult = paginate(republishItems)
-	}
+	republishResult := func() []*OnePageItems {
+		if len(republishItems) > 0 {
+			return paginate(republishItems)
+		}
+		return nil
+	}()
 
 	newResult := rePaginate(newItems, b.totalNumberPerPage, b.needNextPageFunc)
 

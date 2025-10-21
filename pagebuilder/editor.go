@@ -3,7 +3,6 @@ package pagebuilder
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/i18n"
@@ -140,7 +139,7 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 			Query(paramContainerDataID, containerDataID).
 			Query(presets.ParamPortalName, pageBuilderRightContentPortal).
 			Query(presets.ParamOverlay, actions.Content).Go()
-		editContainerDrawer = web.RunScript(fmt.Sprintf(`function(){%s}`, editEvent))
+		editContainerDrawer = web.RunScript("function(){" + editEvent + "}")
 	} else {
 		editContainerDrawer = b.emptyEdit(ctx)
 	}
@@ -157,11 +156,11 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 	}
 	afterLeaveEvent := removeVirtualElement()
 	addOverlay := web.Scope(
-		h.Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf(`({watch})=>{
-					watch(() => vars.overlay, (value) => {
-						if(value){xLocals.add=false;%s}
-						})
-				}`, web.Plaid().EventFunc(ReloadAddContainersListEvent).Query(paramStatus, ctx.Param(paramStatus)).Go())),
+		h.Div().Style("display:none").Attr("v-on-mounted", `({watch})=>{
+                    watch(() => vars.overlay, (value) => {
+                        if(value){xLocals.add=false;`+web.Plaid().EventFunc(ReloadAddContainersListEvent).Query(paramStatus, ctx.Param(paramStatus)).Go()+`}
+                        })
+                }`),
 		vx.VXOverlay(
 			m.newContainerContent(ctx),
 		).
@@ -221,15 +220,15 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 	}
 	body = h.Components(
 		h.Div().Style("display:none").
-			Attr("v-on-unmounted", fmt.Sprintf(`({window})=>{
+			Attr("v-on-unmounted", `({window})=>{
 				vars.$pbRightDrawerOnMouseLeave = null
 				vars.$pbRightDrawerOnMouseDown = null
 				vars.$pbRightDrawerOnMouseMove = null
 				window.removeEventListener('resize', vars.$PagebuilderResizeFn)
 				vars.$PagebuilderResizeFn = null
 				vars.$pbRightThrottleTimer = null
-			}`)).
-			Attr("v-on-mounted", fmt.Sprintf(`({ref, window, computed})=>{
+            }`).
+			Attr("v-on-mounted", `({ref, window, computed})=>{
 				const rightDrawerExpendMinWidth = 350 + 56 // 56 is the width of the gap, 390 is the actual size
 				const leftDrawerExpendMinWidth = 350
 
@@ -389,7 +388,7 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 
 					vars.$pbRightDrawerHighlight = isOnLeftBorder(event)
 				}
-			}`)),
+            }`),
 		VAppBar(
 			h.Div(
 				pageAppbarContent...,
@@ -411,7 +410,7 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 				Permanent(true).
 				Attr(":width", "vars.$pbLeftDrawerWidth"),
 			VNavigationDrawer(
-				h.Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf(`({el,window}) => {
+				h.Div().Style("display:none").Attr("v-on-mounted", `({el,window}) => {
 							el.__handleScroll = (event) => {
 								locals.__pageBuilderRightContentScrollTop = event.target.scrollTop;
 							}
@@ -422,7 +421,7 @@ func (b *Builder) editorBody(ctx *web.EventContext, m *ModelBuilder) (body h.HTM
 							window.setTimeout(()=>{
   							el.parentElement.scrollTop = scrollTop;	
 							},0)							}
-						}`)).Attr("v-on-unmounted", `({el}) => {
+                        }`).Attr("v-on-unmounted", `({el}) => {
 							el.parentElement.removeEventListener('scroll', el.__handleScroll);
 						}`),
 
@@ -631,11 +630,11 @@ func addVirtualELeToContainer(containerDataID interface{}) string {
 }
 
 func removeVirtualElement() string {
-	return fmt.Sprintf(`vars.el.refs.scrollIframe.removeVirtualElement();`)
+	return "vars.el.refs.scrollIframe.removeVirtualElement();"
 }
 
 func appendVirtualElement() string {
-	return fmt.Sprintf(`vars.el.refs.scrollIframe.appendVirtualElement();`)
+	return "vars.el.refs.scrollIframe.appendVirtualElement();"
 }
 
 func newListenerVersionSelected(evCtx *web.EventContext, mb *presets.ModelBuilder, path, slug string) h.HTMLComponent {
@@ -660,10 +659,7 @@ func newListenerVersionSelected(evCtx *web.EventContext, mb *presets.ModelBuilde
 		%s
 	`,
 		slug,
-		strings.Join([]string{
-			presets.CloseRightDrawerVarScript,
-			drawerToSlug.Go(),
-		}, ";"),
+		presets.CloseRightDrawerVarScript+";"+drawerToSlug.Go(),
 		web.Plaid().PushState(true).URL(web.Var(fmt.Sprintf(`%q + "/" + payload.slug`, path))).Go(),
 	))
 }

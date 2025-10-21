@@ -213,7 +213,7 @@ func (seo *SEO) RegisterMetaProperty(propName string, propFunc ContextVarFunc) *
 
 func (seo *SEO) getFinalMetaProps() map[string]ContextVarFunc {
 	if seo == nil {
-		return nil
+		return map[string]ContextVarFunc{}
 	}
 	if seo.finalMetaPropsCache != nil {
 		return seo.finalMetaPropsCache
@@ -234,7 +234,7 @@ func (seo *SEO) getFinalMetaProps() map[string]ContextVarFunc {
 
 func (seo *SEO) getAvailableVars() map[string]struct{} {
 	if seo == nil {
-		return nil
+		return map[string]struct{}{}
 	}
 	if seo.finalAvailableVarsCache != nil {
 		return seo.finalAvailableVarsCache
@@ -322,7 +322,7 @@ func (seo *SEO) getFinalQorSEOSetting(db *gorm.DB) map[string]*QorSEOSetting {
 
 func (seo *SEO) getFinalContextVars() map[string]ContextVarFunc {
 	if seo == nil {
-		return nil
+		return map[string]ContextVarFunc{}
 	}
 	if seo.finalContextVarsCache != nil {
 		return seo.finalContextVarsCache

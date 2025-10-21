@@ -144,7 +144,7 @@ func TestWithHandlerHook(t *testing.T) {
 
 	finalHandler := b.handlerHook(testHandler)
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest("GET", "/", nil)
+	r := httptest.NewRequest("GET", "/", http.NoBody)
 	finalHandler.ServeHTTP(w, r)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -173,14 +173,14 @@ func TestNewMuxHook(t *testing.T) {
 
 	// Test mux route
 	w1 := httptest.NewRecorder()
-	r1 := httptest.NewRequest("GET", "/api/test", nil)
+	r1 := httptest.NewRequest("GET", "/api/test", http.NoBody)
 	wrappedHandler.ServeHTTP(w1, r1)
 	assert.Equal(t, http.StatusOK, w1.Code)
 	assert.Equal(t, "mux response", w1.Body.String())
 
 	// Test fallback to next handler
 	w2 := httptest.NewRecorder()
-	r2 := httptest.NewRequest("GET", "/other", nil)
+	r2 := httptest.NewRequest("GET", "/other", http.NoBody)
 	wrappedHandler.ServeHTTP(w2, r2)
 	assert.Equal(t, http.StatusOK, w2.Code)
 	assert.Equal(t, "next handler", w2.Body.String())
@@ -199,7 +199,7 @@ func TestServeHTTP_HandlerNilAfterOnce_Returns500(t *testing.T) {
 	defer log.SetOutput(orig)
 
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest("GET", "/foo", nil)
+	r := httptest.NewRequest("GET", "/foo", http.NoBody)
 
 	b.ServeHTTP(w, r)
 

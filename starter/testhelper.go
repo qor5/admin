@@ -73,7 +73,7 @@ func createDummyAuthCookies(ctx context.Context, user *User, secret string, sess
 	})
 
 	if sessionBuilder != nil {
-		r := httptest.NewRequest("GET", "/", nil).WithContext(ctx)
+		r := httptest.NewRequest("GET", "/", http.NoBody).WithContext(ctx)
 		for _, cookie := range cookies {
 			r.AddCookie(cookie)
 		}
