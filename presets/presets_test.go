@@ -1,6 +1,8 @@
 package presets
 
 import (
+	"bytes"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -182,4 +184,27 @@ func TestNewMuxHook(t *testing.T) {
 	wrappedHandler.ServeHTTP(w2, r2)
 	assert.Equal(t, http.StatusOK, w2.Code)
 	assert.Equal(t, "next handler", w2.Body.String())
+}
+
+func TestServeHTTP_HandlerNilAfterOnce_Returns500(t *testing.T) {
+	b := New()
+
+	// Mark warmupOnce as done to skip Build() so that handler stays nil.
+	b.warmupOnce.Do(func() {})
+
+	// Capture log output.
+	var buf bytes.Buffer
+	orig := log.Writer()
+	log.SetOutput(&buf)
+	defer log.SetOutput(orig)
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "/foo", nil)
+
+	b.ServeHTTP(w, r)
+
+	require.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Contains(t, w.Body.String(), "Internal Server Error")
+	assert.Contains(t, buf.String(), "Builder.handler is nil after Build")
+	assert.Contains(t, buf.String(), "/foo")
 }

@@ -24,7 +24,7 @@ func TestLogin(t *testing.T) {
 	cases := []multipartestutils.TestCase{
 		{
 			Name:  "view by en",
-			Debug: false,
+			Debug: true,
 			ReqFunc: func() *http.Request {
 				req := multipartestutils.NewMultipartBuilder().
 					PageURL("/auth/login").
@@ -36,7 +36,7 @@ func TestLogin(t *testing.T) {
 		},
 		{
 			Name:  "view by zh",
-			Debug: false,
+			Debug: true,
 			ReqFunc: func() *http.Request {
 				req := multipartestutils.NewMultipartBuilder().
 					PageURL("/auth/login").
@@ -48,7 +48,7 @@ func TestLogin(t *testing.T) {
 		},
 		{
 			Name:  "view by ja",
-			Debug: false,
+			Debug: true,
 			ReqFunc: func() *http.Request {
 				req := multipartestutils.NewMultipartBuilder().
 					PageURL("/auth/login").
@@ -60,7 +60,7 @@ func TestLogin(t *testing.T) {
 		},
 		{
 			Name:  "view by en (customized)",
-			Debug: false,
+			Debug: true,
 			HandlerMaker: func() http.Handler {
 				mux := http.NewServeMux()
 				c := admin.NewConfig(TestDB, false)

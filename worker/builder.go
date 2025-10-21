@@ -322,12 +322,18 @@ func (b *Builder) Install(pb *presets.Builder) error {
 			}
 		}
 
+		// Set initial refresh interval based on job status
+		initialInterval := 0
+		if inst.Status == JobStatusNew || inst.Status == JobStatusRunning {
+			initialInterval = 2000
+		}
+
 		return Div(
 			Div(Text(getTJob(ctx.R, qorJob.Job))).Class("mb-3 text-h6 font-weight-regular"),
-			If(inst.Status == JobStatusScheduled,
-				scheduledJobDetailing...,
-			).Else(
-				web.Scope(
+			web.Scope(
+				If(inst.Status == JobStatusScheduled,
+					scheduledJobDetailing...,
+				).Else(
 					web.Portal().
 						Loader(web.Plaid().EventFunc("worker_updateJobProgressing").
 							URL(eURL).
@@ -335,8 +341,8 @@ func (b *Builder) Install(pb *presets.Builder) error {
 							Query("job", qorJob.Job),
 						).
 						AutoReloadInterval("loaderLocals.worker_updateJobProgressingInterval"),
-				).VSlot(" { locals : loaderLocals }").Init("{worker_updateJobProgressingInterval: 0}"),
-			),
+				),
+			).VSlot(" { locals : loaderLocals }").Init(fmt.Sprintf("{worker_updateJobProgressingInterval: %d}", initialInterval)),
 			web.Portal().Name("worker_snackbar"),
 		)
 	})
@@ -498,7 +504,6 @@ func (b *Builder) eventAbortJob(ctx *web.EventContext) (er web.EventResponse, er
 	}
 
 	er.Reload = true
-	er.RunScript = "vars.worker_updateJobProgressingInterval = 2000"
 
 	if b.ab != nil {
 		action := "Abort"
@@ -567,7 +572,6 @@ func (b *Builder) eventRerunJob(ctx *web.EventContext) (er web.EventResponse, er
 	}
 
 	er.Reload = true
-	er.RunScript = "vars.worker_updateJobProgressingInterval = 2000"
 
 	if b.ab != nil {
 		b.ab.Log(ctx.R.Context(), "Rerun", &QorJob{
@@ -636,7 +640,6 @@ func (b *Builder) eventUpdateJob(ctx *web.EventContext) (er web.EventResponse, e
 	}
 
 	er.Reload = true
-	er.RunScript = "vars.worker_updateJobProgressingInterval = 2000"
 	if b.ab != nil {
 		b.ab.OnEdit(
 			ctx.R.Context(),
@@ -699,11 +702,6 @@ func (b *Builder) eventUpdateJobProgressing(ctx *web.EventContext) (er web.Event
 		}
 	}
 	er.Body = b.jobProgressing(canEdit, msgr, qorJobID, qorJobName, inst.Status, inst.Progress, logs, hasMoreLogs, inst.ProgressText)
-	if inst.Status != JobStatusNew && inst.Status != JobStatusRunning && inst.Status != JobStatusKilled {
-		er.RunScript = "vars.worker_updateJobProgressingInterval = 0"
-	} else {
-		er.RunScript = "vars.worker_updateJobProgressingInterval = 2000"
-	}
 	return er, nil
 }
 
@@ -777,7 +775,18 @@ func (b *Builder) jobProgressing(
 	}
 	inRefresh := status == JobStatusNew || status == JobStatusRunning
 	eURL := path.Join(b.mb.Info().ListingHref(), fmt.Sprint(id))
+
+	// Set refresh interval based on job status
+	interval := 0
+	if inRefresh {
+		interval = 2000
+	}
+
 	return Div(
+		// Portal passes parent Scope's loaderLocals as "locals" to its body
+		// Use v-on-mounted to set interval when Portal body renders
+		Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf("() => { locals.worker_updateJobProgressingInterval = %d }", interval)),
+
 		Div(Text(msgr.DetailTitleStatus)).Class("text-caption"),
 		Div().Class("d-flex align-center mb-5").Children(
 			Div().Style("width: 120px").Children(

@@ -40,23 +40,24 @@ type OrderableField struct {
 }
 
 type ListingBuilder struct {
-	mb              *ModelBuilder
-	bulkActions     []*BulkActionBuilder
-	footerActions   []*FooterActionBuilder
-	actions         []*ActionBuilder
-	actionsAsMenu   bool
-	rowMenu         *RowMenuBuilder
-	filterDataFunc  FilterDataFunc
-	filterTabsFunc  FilterTabsFunc
-	newBtnFunc      ComponentFunc
-	pageFunc        web.PageFunc
-	cellWrapperFunc vx.CellWrapperFunc
-	cellProcessor   CellProcessor
-	rowProcessor    RowProcessor
-	tableProcessor  TableProcessor
-	Searcher        SearchFunc
-	searchColumns   []string
-	titleFunc       func(evCtx *web.EventContext, style ListingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error)
+	mb                     *ModelBuilder
+	bulkActions            []*BulkActionBuilder
+	footerActions          []*FooterActionBuilder
+	actions                []*ActionBuilder
+	actionsAsMenu          bool
+	rowMenu                *RowMenuBuilder
+	filterDataFunc         FilterDataFunc
+	filterTabsFunc         FilterTabsFunc
+	filterNotificationFunc FilterNotificationFunc
+	newBtnFunc             ComponentFunc
+	pageFunc               web.PageFunc
+	cellWrapperFunc        vx.CellWrapperFunc
+	cellProcessor          CellProcessor
+	rowProcessor           RowProcessor
+	tableProcessor         TableProcessor
+	Searcher               SearchFunc
+	searchColumns          []string
+	titleFunc              func(evCtx *web.EventContext, style ListingStyle, defaultTitle string) (title string, titleCompo h.HTMLComponent, err error)
 
 	// perPage is the number of records per page.
 	// if request query param "per_page" is set, it will be set to that value.
@@ -220,6 +221,11 @@ func (b *ListingBuilder) DefaultOrderBys(v ...relay.OrderBy) (r *ListingBuilder)
 
 func (b *ListingBuilder) RelayPagination(v RelayPagination) (r *ListingBuilder) {
 	b.relayPagination = v
+	return b
+}
+
+func (b *ListingBuilder) FilterNotificationFunc(v FilterNotificationFunc) (r *ListingBuilder) {
+	b.filterNotificationFunc = v
 	return b
 }
 

@@ -59,3 +59,28 @@ func TestPresetsCustomizeMenuWithPermission(t *testing.T) {
 		})
 	}
 }
+
+func TestPresetsPresetsMenuComponent(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsMenuComponent(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "multiple openStrategy",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/presets-menu-component/books").
+					BuildEventFuncRequest()
+			},
+			ExpectPageBodyContainsInOrder: []string{`:open-strategy='"multiple"'`},
+			ExpectPageBodyNotContains:     []string{`:open-strategy='"single"'`},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}

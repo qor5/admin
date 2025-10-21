@@ -42,7 +42,7 @@ func NotifModelsDeleted(v any) string {
 }
 
 func (*ModelBuilder) NotifRowUpdated() string {
-	return fmt.Sprintf("presets_NotifRowUpdated")
+	return "presets_NotifRowUpdated"
 }
 
 type PayloadRowUpdated struct {
