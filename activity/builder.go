@@ -208,7 +208,7 @@ func (ab *Builder) findUsers(ctx context.Context, ids []string) (map[string]*Use
 	if ab.findUsersFunc != nil {
 		return ab.findUsersFunc(ctx, ids)
 	}
-	vs := []*ActivityUser{}
+	var vs []*ActivityUser
 	err := ab.db.Where("id IN ?", ids).Find(&vs).Error
 	if err != nil {
 		return nil, err

@@ -102,7 +102,7 @@ func listingExample(b *presets.Builder, db *gorm.DB, customize func(mb *presets.
 		})
 
 	postModelBuilder.Editing().Field("CategoryID").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		categories := []Category{}
+		var categories []Category
 		if err := db.Find(&categories).Error; err != nil {
 			// ignore err for now
 		}
@@ -161,7 +161,7 @@ func listingPostWithCategory(b *presets.Builder, db *gorm.DB, customize func(mb 
 
 	eb := mb.Editing("Title", "Body", "Disabled", "Status", "CategoryID")
 	eb.Field("CategoryID").Label("Category").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		categories := []Category{}
+		var categories []Category
 		if err := db.Find(&categories).Error; err != nil {
 			panic(err)
 		}
