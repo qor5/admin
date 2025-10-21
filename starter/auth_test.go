@@ -298,7 +298,7 @@ func TestDoResetPassword_FailedByInitialUser(t *testing.T) {
 	require.NoError(t, err)
 	userID := strconv.Itoa(int(usr.ID))
 
-	// Call do-reset-password
+	// Call do-reset-password and expect redirect back to reset page
 	form := url.Values{}
 	form.Set("user_id", userID)
 	form.Set("token", token)
@@ -307,9 +307,15 @@ func TestDoResetPassword_FailedByInitialUser(t *testing.T) {
 	req := httptest.NewRequest("POST", "/auth/do-reset-password", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	rr := httptest.NewRecorder()
-	require.Panics(t, func() {
-		env.handler.ServeHTTP(rr, req)
-	})
+	env.handler.ServeHTTP(rr, req)
+	res := rr.Result()
+	defer res.Body.Close()
+
+	require.Equal(t, http.StatusFound, res.StatusCode)
+	loc := res.Header.Get("Location")
+	require.True(t, strings.HasPrefix(loc, "/auth/reset-password?"))
+	require.True(t, strings.Contains(loc, "id="))
+	require.True(t, strings.Contains(loc, "token="))
 }
 
 func TestDoResetPassword_FailedByLessPassword(t *testing.T) {
@@ -340,7 +346,13 @@ func TestDoResetPassword_FailedByLessPassword(t *testing.T) {
 	req := httptest.NewRequest("POST", "/auth/do-reset-password", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	rr := httptest.NewRecorder()
-	require.Panics(t, func() {
-		env.handler.ServeHTTP(rr, req)
-	})
+	env.handler.ServeHTTP(rr, req)
+	res := rr.Result()
+	defer res.Body.Close()
+
+	require.Equal(t, http.StatusFound, res.StatusCode)
+	loc := res.Header.Get("Location")
+	require.True(t, strings.HasPrefix(loc, "/auth/reset-password?"))
+	require.True(t, strings.Contains(loc, "id="))
+	require.True(t, strings.Contains(loc, "token="))
 }
