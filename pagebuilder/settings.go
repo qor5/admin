@@ -33,7 +33,6 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc 
 			),
 			vx.DetailColumn(
 				vx.DetailField(vx.OptionalText(p.Slug).ZeroLabel("No Slug")).Label("Slug"),
-				vx.DetailField(vx.OptionalText(p.CustomizedPageKind).ZeroLabel("apartment")).Label("CustomizedPageKind"),
 			),
 		)
 		var start, end, se string

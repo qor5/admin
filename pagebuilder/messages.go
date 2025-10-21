@@ -26,7 +26,6 @@ type Messages struct {
 	FilterTabOnlineVersion         string
 	FilterTabNamedVersions         string
 	Rename                         string
-	CustomizedPageKind             string
 }
 
 var Messages_en_US = &Messages{
@@ -51,7 +50,6 @@ var Messages_en_US = &Messages{
 	FilterTabOnlineVersion:         "Online Version",
 	FilterTabNamedVersions:         "Named Versions",
 	Rename:                         "Rename",
-	CustomizedPageKind:             "CustomizedPageKind",
 }
 
 var Messages_zh_CN = &Messages{
@@ -76,7 +74,6 @@ var Messages_zh_CN = &Messages{
 	FilterTabOnlineVersion:         "在线版本",
 	FilterTabNamedVersions:         "已命名版本",
 	Rename:                         "重命名",
-	CustomizedPageKind:             "CustomizedPageKind",
 }
 
 var Messages_ja_JP = &Messages{
@@ -100,5 +97,4 @@ var Messages_ja_JP = &Messages{
 	FilterTabOnlineVersion:         "オンラインバージョン",
 	FilterTabNamedVersions:         "名付け済みバージョン",
 	Rename:                         "名前の変更",
-	CustomizedPageKind:             "CustomizedPageKind",
 }

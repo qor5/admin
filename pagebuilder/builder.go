@@ -490,7 +490,7 @@ function(e){
 	pm.RegisterEventFunc(createNoteEvent, createNote(db, pm))
 	pm.RegisterEventFunc(editSEODialogEvent, editSEODialog(db, pm, seoCollection))
 	pm.RegisterEventFunc(updateSEOEvent, updateSEO(db, pm))
-	eb := pm.Editing("TemplateSelection", "Title", "CategoryID", "Slug", "CustomizedPageKind")
+	eb := pm.Editing("TemplateSelection", "Title", "CategoryID", "Slug")
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		c := obj.(*Page)
 		err = pageValidator(ctx.R.Context(), c, db, l10nB)
@@ -531,21 +531,6 @@ function(e){
 			Multiple(false).Chips(false).
 			Items(categories).Value(p.CategoryID).ItemText("Path").ItemValue("ID").
 			ErrorMessages(vErr.GetFieldErrors("Page.Category")...)
-	})
-
-	eb.Field("CustomizedPageKind").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		p := obj.(*Page)
-		var vErr web.ValidationErrors
-		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
-			vErr = *ve
-		}
-
-		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-
-		return vx.VXAutocomplete().Label(msgr.CustomizedPageKind).FieldName(field.Name).
-			Multiple(false).Chips(false).
-			Items([]string{"apartment", "parking"}).Value(p.CustomizedPageKind).ItemText("CustomizedPageKind").
-			ErrorMessages(vErr.GetFieldErrors("Page.CustomizedPageKind")...)
 	})
 
 	eb.Field("TemplateSelection").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
