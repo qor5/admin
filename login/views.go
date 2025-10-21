@@ -665,13 +665,12 @@ func defaultTOTPSetupPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFun
 		var QRCode bytes.Buffer
 
 		// Generate key from TOTPSecret
-		var key *otp.Key
 		totpSecret := u.GetTOTPSecret()
 		if totpSecret == "" {
 			r.Body = DefaultViewCommon.ErrorBody("need setup totp")
 			return
 		}
-		key, err = otp.NewKeyFromURL(
+		key, err := otp.NewKeyFromURL(
 			fmt.Sprintf("otpauth://totp/%s:%s?issuer=%s&secret=%s",
 				url.PathEscape(vh.TOTPIssuer()),
 				url.PathEscape(u.GetAccountName()),
@@ -679,6 +678,10 @@ func defaultTOTPSetupPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFun
 				url.QueryEscape(totpSecret),
 			),
 		)
+		if err != nil {
+			r.Body = DefaultViewCommon.ErrorBody(err.Error())
+			return
+		}
 
 		img, err := key.Image(200, 200)
 		if err != nil {

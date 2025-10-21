@@ -218,7 +218,6 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 
 	ed.Field("Roles").
 		ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			selectedItems := []DefaultOptionItem{}
 			var values []string
 			u, ok := obj.(*models.User)
 			if ok {
@@ -226,10 +225,6 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 				db.Model(u).Association("Roles").Find(&roles)
 				for _, r := range roles {
 					values = append(values, fmt.Sprint(r.ID))
-					selectedItems = append(selectedItems, DefaultOptionItem{
-						Text:  r.Name,
-						Value: fmt.Sprint(r.ID),
-					})
 				}
 			}
 
