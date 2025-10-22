@@ -340,9 +340,9 @@ func (b *Builder) Install(pb *presets.Builder) error {
 							Query("jobID", fmt.Sprintf("%d", qorJob.ID)).
 							Query("job", qorJob.Job),
 						).
-						AutoReloadInterval("loaderLocals.worker_updateJobProgressingInterval"),
+						AutoReloadInterval("locals.worker_updateJobProgressingInterval"),
 				),
-			).VSlot(" { locals : loaderLocals }").Init(fmt.Sprintf("{worker_updateJobProgressingInterval: %d}", initialInterval)),
+			).VSlot("{ locals }").Init(fmt.Sprintf("{worker_updateJobProgressingInterval: %d}", initialInterval)),
 			web.Portal().Name("worker_snackbar"),
 		)
 	})
@@ -783,7 +783,7 @@ func (b *Builder) jobProgressing(
 	}
 
 	return Div(
-		// Portal passes parent Scope's loaderLocals as "locals" to its body
+		// Portal passes parent Scope's locals to its body
 		// Use v-on-mounted to set interval when Portal body renders
 		Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf("() => { locals.worker_updateJobProgressingInterval = %d }", interval)),
 
