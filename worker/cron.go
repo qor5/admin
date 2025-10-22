@@ -47,8 +47,8 @@ func NewCronQueue() Queue {
 func (c *cron) parseJobs() []*cronJob {
 	c.mutex.Lock()
 
-	c.Jobs = nil
-	c.CronJobs = nil
+	c.Jobs = []*cronJob{}
+	c.CronJobs = []string{}
 	if out, err := exec.Command("crontab", "-l").Output(); err == nil {
 		var inQorJob bool
 		for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {

@@ -65,15 +65,16 @@ var DefaultRetrieveHandler = func(oss OSS, path string) (base.FileInterface, err
 	if f, ok := result.(base.FileInterface); ok {
 		return f, err
 	}
-
-	if err == nil {
-		if buf, err := io.ReadAll(result); err == nil {
-			rs := ClosingReadSeeker{bytes.NewReader(buf)}
-			rs.Seek(0, 0)
-			return rs, nil
-		}
+	if err != nil {
+		return nil, err
 	}
-	return nil, err
+	buf, err := io.ReadAll(result)
+	if err != nil {
+		return nil, err
+	}
+	rs := ClosingReadSeeker{bytes.NewReader(buf)}
+	rs.Seek(0, 0)
+	return rs, nil
 }
 
 // Retrieve retrieve file content with url

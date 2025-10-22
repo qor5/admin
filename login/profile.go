@@ -231,7 +231,7 @@ func (c *ProfileCompo) MarshalHTML(ctx context.Context) ([]byte, error) {
 		return nil, err
 	}
 
-	var children []h.HTMLComponent
+	children := []h.HTMLComponent{}
 	if c.b.prependCompo != nil {
 		prependCompo, err := c.b.prependCompo(ctx, c, nil)
 		if err != nil {
@@ -283,7 +283,7 @@ func (c *ProfileCompo) bellCompo(ctx context.Context, notifCounts []*activity.No
 	unreadBy := func(item *activity.NoteCount) int { return int(item.UnreadNotesCount) }
 	unreadCount := lo.SumBy(notifCounts, unreadBy)
 
-	var listItems []h.HTMLComponent
+	listItems := []h.HTMLComponent{}
 	groups := lo.GroupBy(notifCounts, func(item *activity.NoteCount) string {
 		return item.ModelName
 	})
