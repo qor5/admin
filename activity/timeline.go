@@ -100,7 +100,7 @@ func (c *TimelineCompo) humanContent(ctx context.Context, log *ActivityLog) h.HT
 	case ActionCreate:
 		return h.Div(h.Text(msgr.Created))
 	case ActionEdit:
-		var diffs []Diff
+		diffs := []Diff{}
 		if err := json.Unmarshal([]byte(log.Detail), &diffs); err != nil {
 			return h.Text(fmt.Sprintf("Failed to unmarshal detail: %v", err))
 		}
