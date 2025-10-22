@@ -230,7 +230,7 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 
 			var roles []role.Role
 			db.Find(&roles)
-			var allRoleItems []DefaultOptionItem
+			allRoleItems := []DefaultOptionItem{}
 			for _, r := range roles {
 				allRoleItems = append(allRoleItems, DefaultOptionItem{
 					Text:  r.Name,

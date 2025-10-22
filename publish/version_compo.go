@@ -71,7 +71,7 @@ func DefaultVersionComponentFunc(mb *presets.ModelBuilder, cfg ...VersionCompone
 			panic("obj should be SlugEncoder")
 		}
 		slug := primarySlugger.PrimarySlug()
-		var actionButtons []h.HTMLComponent
+		actionButtons := []h.HTMLComponent{}
 
 		div := h.Div().Class("tagList-bar-warp")
 

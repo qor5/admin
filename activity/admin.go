@@ -111,7 +111,7 @@ func setupListing(b *presets.Builder, lb *presets.ListingBuilder, op *gorm2op.Da
 					modelLabels = append(modelLabels, m.label())
 				}
 			}
-			var signsNoPerm []string
+			signsNoPerm := []string{}
 			modelLabels = lo.Uniq(modelLabels)
 			for _, resourceSign := range modelLabels {
 				if resourceSign == "" || resourceSign == NopModelLabel {
@@ -424,7 +424,7 @@ func setupDetailing(b *presets.Builder, dp *presets.DetailingBuilder, op *gorm2o
 }
 
 func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
-	var diffs []Diff
+	diffs := []Diff{}
 	err := json.Unmarshal([]byte(diffstr), &diffs)
 	if err != nil {
 		return nil

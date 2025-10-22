@@ -82,7 +82,7 @@ func ReplaceAllSubmatchFunc(pattern, str string, repl func(match string, groups 
 	var builder strings.Builder
 	var lastIndex int
 	for _, v := range MustCompile(pattern).FindAllSubmatchIndex([]byte(str), -1) {
-		var groups [][]int
+		groups := [][]int{}
 		first := v[0]
 		for i := 0; i < len(v); i += 2 {
 			groups = append(groups, []int{v[i] - first, v[i+1] - first})

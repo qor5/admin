@@ -159,7 +159,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 	}
 
 	var sorterData ContainerSorter
-	sorterData.Items = nil
+	sorterData.Items = []ContainerSorterItem{}
 
 	for i, c := range cons {
 		vicon := "mdi-eye"
