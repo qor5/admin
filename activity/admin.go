@@ -424,7 +424,7 @@ func setupDetailing(b *presets.Builder, dp *presets.DetailingBuilder, op *gorm2o
 }
 
 func DiffComponent(diffstr string, req *http.Request) h.HTMLComponent {
-	diffs := []Diff{}
+	var diffs []Diff
 	err := json.Unmarshal([]byte(diffstr), &diffs)
 	if err != nil {
 		return nil
