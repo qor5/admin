@@ -268,11 +268,12 @@ func (c *cron) doRunJob(ctx context.Context, job QueJobInterface) error {
 	}
 
 	if err := job.SetStatus(JobStatusRunning); err == nil {
-		if runErr := c.run(ctx, job); runErr == nil {
+		runErr := c.run(ctx, job)
+		if runErr == nil {
 			return job.SetStatus(JobStatusDone)
 		}
 
-		job.SetProgressText("job failed")
+		job.SetProgressText(runErr.Error())
 		job.SetStatus(JobStatusException)
 	}
 
