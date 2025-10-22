@@ -236,19 +236,19 @@ func (c *cron) Listen(_ []*QorJobDefinition, getJob func(qorJobID uint) (QueJobI
 		id, err := cast.ToUintE(*qorJobID)
 		if err != nil {
 			fmt.Println(err)
-			os.Exit(1)
+			return err
 		}
 		job, err := getJob(id)
 		if err != nil {
 			fmt.Println(err)
-			os.Exit(1)
+			return err
 		}
 		err = c.doRunJob(context.Background(), job)
 		if err == nil {
-			os.Exit(0)
+			return nil
 		}
 		fmt.Println(err)
-		os.Exit(1)
+		return err
 	}
 
 	return nil
