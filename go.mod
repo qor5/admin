@@ -37,7 +37,7 @@ require (
 	github.com/samber/lo v1.50.0
 	github.com/shurcooL/sanitized_anchor_name v1.0.0
 	github.com/spf13/cast v1.7.1
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/sunfmin/reflectutils v1.0.6
 	github.com/sunfmin/snippetgo v0.0.3
 	github.com/theplant/bimg v1.1.1
@@ -46,7 +46,7 @@ require (
 	github.com/theplant/htmlgo v1.0.3
 	github.com/theplant/inject v1.1.0
 	github.com/theplant/osenv v0.0.2
-	github.com/theplant/relay v0.4.3-0.20250424075128-61850ded6ace
+	github.com/theplant/relay v0.7.4
 	github.com/theplant/sliceutils v0.0.0-20200406042209-89153d988eb1
 	github.com/theplant/testenv v0.2.1
 	github.com/theplant/testingutils v0.0.2
@@ -219,9 +219,9 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.62.0 // indirect
-	go.opentelemetry.io/otel v1.37.0 // indirect
-	go.opentelemetry.io/otel/metric v1.37.0 // indirect
-	go.opentelemetry.io/otel/trace v1.37.0 // indirect
+	go.opentelemetry.io/otel v1.38.0 // indirect
+	go.opentelemetry.io/otel/metric v1.38.0 // indirect
+	go.opentelemetry.io/otel/trace v1.38.0 // indirect
 	go4.org v0.0.0-20230225012048-214862532bf5 // indirect
 	golang.org/x/crypto v0.41.0 // indirect
 	golang.org/x/image v0.23.0 // indirect
@@ -240,3 +240,5 @@ require (
 // replace github.com/qor5/web/v3 => ../web
 
 // replace github.com/qor5/x/v3 => ../x
+
+replace github.com/theplant/relay => ../../theplant/relay

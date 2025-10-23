@@ -14,15 +14,15 @@ import (
 	"github.com/qor5/admin/v3/presets"
 )
 
-func OffsetBasedPagination(skipTotalCount bool, cursorMiddlewares ...relay.CursorMiddleware[any]) presets.RelayPagination {
-	return relayPagination(gormrelay.NewOffsetAdapter[any], skipTotalCount, cursorMiddlewares...)
+func OffsetBasedPagination(skipTotalCount bool, cursorHooks ...func(next relay.ApplyCursorsFunc[any]) relay.ApplyCursorsFunc[any]) presets.RelayPagination {
+	return relayPagination(gormrelay.NewOffsetAdapter[any], skipTotalCount, cursorHooks...)
 }
 
-func KeysetBasedPagination(skipTotalCount bool, cursorMiddlewares ...relay.CursorMiddleware[any]) presets.RelayPagination {
-	return relayPagination(gormrelay.NewKeysetAdapter[any], skipTotalCount, cursorMiddlewares...)
+func KeysetBasedPagination(skipTotalCount bool, cursorHooks ...func(next relay.ApplyCursorsFunc[any]) relay.ApplyCursorsFunc[any]) presets.RelayPagination {
+	return relayPagination(gormrelay.NewKeysetAdapter[any], skipTotalCount, cursorHooks...)
 }
 
-func relayPagination(f func(db *gorm.DB, opts ...gormrelay.Option[any]) relay.ApplyCursorsFunc[any], skipTotalCount bool, cursorMiddlewares ...relay.CursorMiddleware[any]) presets.RelayPagination {
+func relayPagination(f func(db *gorm.DB, opts ...gormrelay.Option[any]) relay.ApplyCursorsFunc[any], skipTotalCount bool, cursorHooks ...func(next relay.ApplyCursorsFunc[any]) relay.ApplyCursorsFunc[any]) presets.RelayPagination {
 	p := relay.New(
 		func(ctx context.Context, req *relay.ApplyCursorsRequest) (*relay.ApplyCursorsResponse[any], error) {
 			db, ok := ctx.Value(ctxKeyDBForRelay{}).(*gorm.DB)
@@ -34,10 +34,10 @@ func relayPagination(f func(db *gorm.DB, opts ...gormrelay.Option[any]) relay.Ap
 			return cursor.Base64(f(db, opts...))(ctx, req)
 		},
 		relay.EnsureLimits[any](presets.PerPageDefault, presets.PerPageMax),
-		relay.AppendCursorMiddleware(cursorMiddlewares...),
+		relay.PrependCursorHook(cursorHooks...),
 	)
-	return func(_ *web.EventContext) (relay.Pagination[any], error) {
-		return relay.PaginationFunc[any](func(ctx context.Context, req *relay.PaginateRequest[any]) (*relay.Connection[any], error) {
+	return func(_ *web.EventContext) (relay.Paginator[any], error) {
+		return relay.PaginatorFunc[any](func(ctx context.Context, req *relay.PaginateRequest[any]) (*relay.Connection[any], error) {
 			ctx = relay.WithSkip(ctx, relay.Skip{
 				Edges:      true,
 				TotalCount: skipTotalCount,
@@ -61,18 +61,18 @@ type ctxKeyRelayOptions struct{}
 // 	return ctx.WithContextValue(ctxKeyRelayOptions{}, opts)
 // }
 
-type ctxKeyRelayPaginationMiddlewares struct{}
+type ctxKeyRelayPaginationHook struct{}
 
-func AppendRelayPaginationMiddlewares(ctx context.Context, mws ...relay.PaginationMiddleware[any]) context.Context {
-	existingMws, _ := ctx.Value(ctxKeyRelayPaginationMiddlewares{}).([]relay.PaginationMiddleware[any])
-	mws = append(existingMws, mws...)
-	return context.WithValue(ctx, ctxKeyRelayPaginationMiddlewares{}, mws)
+func WithRelayPaginationHooks(ctx context.Context, hooks ...common.Hook[relay.Paginator[any]]) context.Context {
+	previousHook, _ := ctx.Value(ctxKeyRelayPaginationHook{}).(common.Hook[relay.Paginator[any]])
+	hook := common.ChainHookWith(previousHook, hooks...)
+	return context.WithValue(ctx, ctxKeyRelayPaginationHook{}, hook)
 }
 
-func EventContextAppendRelayPaginationMiddlewares(ctx *web.EventContext, mws ...relay.PaginationMiddleware[any]) *web.EventContext {
-	existingMws, _ := ctx.ContextValue(ctxKeyRelayPaginationMiddlewares{}).([]relay.PaginationMiddleware[any])
-	mws = append(existingMws, mws...)
-	return ctx.WithContextValue(ctxKeyRelayPaginationMiddlewares{}, mws)
+func EventContextWithRelayPaginationHooks(ctx *web.EventContext, hooks ...common.Hook[relay.Paginator[any]]) *web.EventContext {
+	previousHook, _ := ctx.ContextValue(ctxKeyRelayPaginationHook{}).(common.Hook[relay.Paginator[any]])
+	hook := common.ChainHookWith(previousHook, hooks...)
+	return ctx.WithContextValue(ctxKeyRelayPaginationHook{}, hook)
 }
 
 type ctxKeyRelayComputedHook struct{}
@@ -93,8 +93,8 @@ func appendWithComputedIfHasHook(ctx context.Context, opts []gormrelay.Option[an
 	computedHook, _ := ctx.Value(ctxKeyRelayComputedHook{}).(common.Hook[*gormrelay.Computed[any]])
 	if computedHook != nil {
 		computed := &gormrelay.Computed[any]{
-			Columns: gormrelay.ComputedColumns(map[string]string{}),
-			ForScan: gormrelay.DefaultForScan[any],
+			Columns:      gormrelay.ComputedColumns(map[string]string{}),
+			SetupScanner: gormrelay.NewScanner[any],
 		}
 		computed = computedHook(computed)
 		opts = append(opts, gormrelay.WithComputed(computed))

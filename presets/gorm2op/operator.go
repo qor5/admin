@@ -77,7 +77,7 @@ func (op *DataOperatorBuilder) Search(evCtx *web.EventContext, params *presets.S
 		wh = hook(wh.Session(&gorm.Session{}))
 	}
 
-	var p relay.Pagination[any]
+	var p relay.Paginator[any]
 	var req *relay.PaginateRequest[any]
 	ctx := evCtx.R.Context()
 	if params.RelayPagination != nil {
@@ -102,7 +102,7 @@ func (op *DataOperatorBuilder) Search(evCtx *web.EventContext, params *presets.S
 			relay.EnsureLimits[any](presets.PerPageDefault, presets.PerPageMax),
 		)
 		req = &relay.PaginateRequest[any]{
-			OrderBys: params.OrderBys,
+			OrderBy: params.OrderBy,
 		}
 		if params.PerPage > 0 {
 			req.First = lo.ToPtr(int(params.PerPage))
@@ -118,9 +118,9 @@ func (op *DataOperatorBuilder) Search(evCtx *web.EventContext, params *presets.S
 		ctx = relay.WithSkip(ctx, relay.Skip{Edges: true})
 	}
 
-	mws, _ := ctx.Value(ctxKeyRelayPaginationMiddlewares{}).([]relay.PaginationMiddleware[any])
-	if len(mws) > 0 {
-		p = relay.Wrap(p, mws...)
+	paginationHook, _ := ctx.Value(ctxKeyRelayPaginationHook{}).(common.Hook[relay.Paginator[any]])
+	if paginationHook != nil {
+		p = paginationHook(p)
 	}
 	resp, err := p.Paginate(ctx, req)
 	if err != nil {
