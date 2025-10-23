@@ -105,9 +105,9 @@ func (b *Builder) localizeMenu(obj interface{}, chips h.HTMLComponents, field *p
 				h.If(img != "", h.RawHTML(img)),
 				h.Text(MustGetTranslation(ctx.R, b.GetLocaleLabel(locale))),
 			).Class("d-flex align-center ga-2"),
-			web.Slot(VIcon("mdi-check").Attr("v-show", fmt.Sprintf(`menuLocals.locales.includes("%s")`, locale)).Size(SizeSmall)).Name(VSlotAppend),
+			web.Slot(VIcon("mdi-check").Attr("v-show", fmt.Sprintf(`menuLocals.locales.includes(%q)`, locale)).Size(SizeSmall)).Name(VSlotAppend),
 		).Disabled(disable).Attr("@click",
-			fmt.Sprintf(`menuLocals.locales.includes("%s")?menuLocals.locales.splice(menuLocals.locales.indexOf("%s"), 1):menuLocals.locales.push("%s");`, locale, locale, locale)),
+			fmt.Sprintf(`menuLocals.locales.includes(%q)?menuLocals.locales.splice(menuLocals.locales.indexOf(%q), 1):menuLocals.locales.push(%q);`, locale, locale, locale)),
 		)
 	}
 	return web.Scope(

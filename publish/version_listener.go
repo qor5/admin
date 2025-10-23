@@ -2,7 +2,6 @@ package publish
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
@@ -44,10 +43,7 @@ func NewListenerVersionSelected(evCtx *web.EventContext, mb *presets.ModelBuilde
 		%s
 	`,
 		slug,
-		strings.Join([]string{
-			presets.CloseRightDrawerVarScript,
-			drawerToSlug.Go(),
-		}, ";"),
+		presets.CloseRightDrawerVarScript+";"+drawerToSlug.Go(),
 		web.Plaid().PushState(true).URL(web.Var(fmt.Sprintf(`%q + "/" + payload.slug`, mb.Info().ListingHref()))).Go(),
 	))
 }

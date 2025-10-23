@@ -1,6 +1,7 @@
 package activity
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -279,8 +280,8 @@ func TestDiff(t *testing.T) {
 			}
 			w, _ := json.Marshal(test.want)
 			d, _ := json.Marshal(diffs)
-			if string(w) != string(d) {
-				t.Fatalf("want: %v, but got: %v", string(w), string(d))
+			if !bytes.Equal(w, d) {
+				t.Fatalf("want: %s, but got: %s", string(w), string(d))
 			}
 		})
 	}

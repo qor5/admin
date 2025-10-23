@@ -116,8 +116,7 @@ func defaultLoginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 		}
 
 		r.PageTitle = msgr.LoginPageTitle
-		var bodyForm HTMLComponent
-		bodyForm = Div(
+		bodyForm := Div(
 			userPassHTML,
 			oauthHTML,
 			If(len(langs) > 0,
@@ -504,30 +503,28 @@ func defaultResetPasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.Pag
 		if id == "" {
 			r.Body = Div(Text("user not found"))
 			return r, nil
-		} else {
-			user, err = vh.FindUserByID(id)
-			if err != nil {
-				if err == login.ErrUserNotFound {
-					r.Body = Div(Text("user not found"))
-					return r, nil
-				}
-				panic(err)
+		}
+		user, err = vh.FindUserByID(id)
+		if err != nil {
+			if err == login.ErrUserNotFound {
+				r.Body = Div(Text("user not found"))
+				return r, nil
 			}
+			panic(err)
 		}
 		token := query.Get("token")
 		if token == "" {
 			r.Body = Div(Text("invalid token"))
 			return r, nil
-		} else {
-			storedToken, _, expired := user.(login.UserPasser).GetResetPasswordToken()
-			if expired {
-				r.Body = Div(Text("token expired"))
-				return r, nil
-			}
-			if token != storedToken {
-				r.Body = Div(Text("invalid token"))
-				return r, nil
-			}
+		}
+		storedToken, _, expired := user.(login.UserPasser).GetResetPasswordToken()
+		if expired {
+			r.Body = Div(Text("token expired"))
+			return r, nil
+		}
+		if token != storedToken {
+			r.Body = Div(Text("invalid token"))
+			return r, nil
 		}
 
 		r.Body = Div(
@@ -665,13 +662,12 @@ func defaultTOTPSetupPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFun
 		var QRCode bytes.Buffer
 
 		// Generate key from TOTPSecret
-		var key *otp.Key
 		totpSecret := u.GetTOTPSecret()
 		if totpSecret == "" {
 			r.Body = DefaultViewCommon.ErrorBody("need setup totp")
 			return
 		}
-		key, err = otp.NewKeyFromURL(
+		key, err := otp.NewKeyFromURL(
 			fmt.Sprintf("otpauth://totp/%s:%s?issuer=%s&secret=%s",
 				url.PathEscape(vh.TOTPIssuer()),
 				url.PathEscape(u.GetAccountName()),
@@ -679,6 +675,10 @@ func defaultTOTPSetupPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFun
 				url.QueryEscape(totpSecret),
 			),
 		)
+		if err != nil {
+			r.Body = DefaultViewCommon.ErrorBody(err.Error())
+			return
+		}
 
 		img, err := key.Image(200, 200)
 		if err != nil {

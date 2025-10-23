@@ -29,7 +29,7 @@ func TestPageBuilder(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderTestData.TruncatePut(dbr)
-				return httptest.NewRequest("GET", "/pages", nil)
+				return httptest.NewRequest("GET", "/pages", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{"1234567"},
 		},
