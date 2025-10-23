@@ -5,12 +5,12 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/hook"
 	"github.com/theplant/relay"
 	"github.com/theplant/relay/cursor"
 	"github.com/theplant/relay/gormrelay"
 	"gorm.io/gorm"
 
-	"github.com/qor5/admin/v3/common"
 	"github.com/qor5/admin/v3/presets"
 )
 
@@ -63,34 +63,34 @@ type ctxKeyRelayOptions struct{}
 
 type ctxKeyRelayPaginationHook struct{}
 
-func WithRelayPaginationHooks(ctx context.Context, hooks ...common.Hook[relay.Paginator[any]]) context.Context {
-	previousHook, _ := ctx.Value(ctxKeyRelayPaginationHook{}).(common.Hook[relay.Paginator[any]])
-	hook := common.ChainHookWith(previousHook, hooks...)
+func WithRelayPaginationHooks(ctx context.Context, hooks ...hook.Hook[relay.Paginator[any]]) context.Context {
+	previousHook, _ := ctx.Value(ctxKeyRelayPaginationHook{}).(hook.Hook[relay.Paginator[any]])
+	hook := hook.Prepend(previousHook, hooks...)
 	return context.WithValue(ctx, ctxKeyRelayPaginationHook{}, hook)
 }
 
-func EventContextWithRelayPaginationHooks(ctx *web.EventContext, hooks ...common.Hook[relay.Paginator[any]]) *web.EventContext {
-	previousHook, _ := ctx.ContextValue(ctxKeyRelayPaginationHook{}).(common.Hook[relay.Paginator[any]])
-	hook := common.ChainHookWith(previousHook, hooks...)
+func EventContextWithRelayPaginationHooks(ctx *web.EventContext, hooks ...hook.Hook[relay.Paginator[any]]) *web.EventContext {
+	previousHook, _ := ctx.ContextValue(ctxKeyRelayPaginationHook{}).(hook.Hook[relay.Paginator[any]])
+	hook := hook.Prepend(previousHook, hooks...)
 	return ctx.WithContextValue(ctxKeyRelayPaginationHook{}, hook)
 }
 
 type ctxKeyRelayComputedHook struct{}
 
-func WithRelayComputedHook(ctx context.Context, hooks ...common.Hook[*gormrelay.Computed[any]]) context.Context {
-	previousHook, _ := ctx.Value(ctxKeyRelayComputedHook{}).(common.Hook[*gormrelay.Computed[any]])
-	hook := common.ChainHookWith(previousHook, hooks...)
+func WithRelayComputedHook(ctx context.Context, hooks ...hook.Hook[*gormrelay.Computed[any]]) context.Context {
+	previousHook, _ := ctx.Value(ctxKeyRelayComputedHook{}).(hook.Hook[*gormrelay.Computed[any]])
+	hook := hook.Prepend(previousHook, hooks...)
 	return context.WithValue(ctx, ctxKeyRelayComputedHook{}, hook)
 }
 
-func EventContextWithRelayComputedHook(ctx *web.EventContext, hooks ...common.Hook[*gormrelay.Computed[any]]) *web.EventContext {
-	previousHook, _ := ctx.ContextValue(ctxKeyRelayComputedHook{}).(common.Hook[*gormrelay.Computed[any]])
-	hook := common.ChainHookWith(previousHook, hooks...)
+func EventContextWithRelayComputedHook(ctx *web.EventContext, hooks ...hook.Hook[*gormrelay.Computed[any]]) *web.EventContext {
+	previousHook, _ := ctx.ContextValue(ctxKeyRelayComputedHook{}).(hook.Hook[*gormrelay.Computed[any]])
+	hook := hook.Prepend(previousHook, hooks...)
 	return ctx.WithContextValue(ctxKeyRelayComputedHook{}, hook)
 }
 
 func appendWithComputedIfHasHook(ctx context.Context, opts []gormrelay.Option[any]) []gormrelay.Option[any] {
-	computedHook, _ := ctx.Value(ctxKeyRelayComputedHook{}).(common.Hook[*gormrelay.Computed[any]])
+	computedHook, _ := ctx.Value(ctxKeyRelayComputedHook{}).(hook.Hook[*gormrelay.Computed[any]])
 	if computedHook != nil {
 		computed := &gormrelay.Computed[any]{
 			Columns:      gormrelay.ComputedColumns(map[string]string{}),

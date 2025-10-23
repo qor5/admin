@@ -12,9 +12,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/activity"
-	"github.com/qor5/admin/v3/common"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/hook"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/login"
 	"github.com/qor5/x/v3/perm"
@@ -82,8 +82,8 @@ type SessionBuilder struct {
 	pb                  *presets.Builder
 	isPublicUser        func(user any) bool
 	parseIPFunc         func(ctx context.Context, lang language.Tag, addr string) (string, error)
-	validateSessionHook common.Hook[ValidateSessionFunc]
-	sessionTableHook    common.Hook[SessionTableFunc]
+	validateSessionHook hook.Hook[ValidateSessionFunc]
+	sessionTableHook    hook.Hook[SessionTableFunc]
 }
 
 func NewSessionBuilder(lb *login.Builder, db *gorm.DB) *SessionBuilder {
@@ -163,8 +163,8 @@ type (
 	ValidateSessionFunc   func(ctx context.Context, input *ValidateSessionInput) (*ValidateSessionOutput, error)
 )
 
-func (b *SessionBuilder) WithValidateSessionHook(hooks ...common.Hook[ValidateSessionFunc]) *SessionBuilder {
-	b.validateSessionHook = common.ChainHookWith(b.validateSessionHook, hooks...)
+func (b *SessionBuilder) WithValidateSessionHook(hooks ...hook.Hook[ValidateSessionFunc]) *SessionBuilder {
+	b.validateSessionHook = hook.Prepend(b.validateSessionHook, hooks...)
 	return b
 }
 
@@ -176,8 +176,8 @@ type (
 	SessionTableFunc func(ctx context.Context, input *SessionTableInput) (*SessionTableOutput, error)
 )
 
-func (b *SessionBuilder) WithSessionTableHook(hooks ...common.Hook[SessionTableFunc]) *SessionBuilder {
-	b.sessionTableHook = common.ChainHookWith(b.sessionTableHook, hooks...)
+func (b *SessionBuilder) WithSessionTableHook(hooks ...hook.Hook[SessionTableFunc]) *SessionBuilder {
+	b.sessionTableHook = hook.Prepend(b.sessionTableHook, hooks...)
 	return b
 }
 

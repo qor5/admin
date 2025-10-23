@@ -527,6 +527,12 @@ github.com/theplant/inject v1.1.0 h1:Bxiu4rXQN0BJSwNHAMPszkiySmozPTYZvbhaOKJr+lg
 github.com/theplant/inject v1.1.0/go.mod h1:vuuYp7lKifex8HfI4izobKSqulfhpWIvGvW2/pP4Rqo=
 github.com/theplant/osenv v0.0.2 h1:SI2I/gLQQj5pQgpBQ8YKx/u4i7KE7yG2Gmr/ZORuxn8=
 github.com/theplant/osenv v0.0.2/go.mod h1:gUdlLzvmJb/dyBmXk+qEWiIhAN1tmVhYktzK1HHEz3c=
+github.com/theplant/relay v0.6.2-0.20251023184040-2e48ede059fb h1:UnANy70FfEOm7kedjDp4tDeSyd8u5mxSy61DHtmh2E4=
+github.com/theplant/relay v0.6.2-0.20251023184040-2e48ede059fb/go.mod h1:foaZGFIC3gXypZEhCD3Aan8Y5F/s9Whhz+AmYXEMaUs=
+github.com/theplant/relay v0.7.5-0.20251023185902-fe0c23910e89 h1:7k7ICcymzvKqYxGncBEXJ0ENY750dkMKkccHLMju738=
+github.com/theplant/relay v0.7.5-0.20251023185902-fe0c23910e89/go.mod h1:foaZGFIC3gXypZEhCD3Aan8Y5F/s9Whhz+AmYXEMaUs=
+github.com/theplant/relay v0.7.5-0.20251023193221-8e80db2f7a51 h1:8mixntviVj510FX4wy725aljchmZ3TvD6X7nRQJcAKc=
+github.com/theplant/relay v0.7.5-0.20251023193221-8e80db2f7a51/go.mod h1:foaZGFIC3gXypZEhCD3Aan8Y5F/s9Whhz+AmYXEMaUs=
 github.com/theplant/sliceutils v0.0.0-20200406042209-89153d988eb1 h1:EP+XW/tiUH8Cr1MSu7wKhpUnt4QzbVv5J5CoB6R32S4=
 github.com/theplant/sliceutils v0.0.0-20200406042209-89153d988eb1/go.mod h1:+y978w//UsVK85wVF9XJey9qTGDv+4kQc8v3Mf/ZjmE=
 github.com/theplant/testenv v0.2.1 h1:GL80bSN7GHs4tl98W1ufdd2YcQ0BkHncWSgsOZsNY6U=

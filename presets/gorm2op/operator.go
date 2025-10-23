@@ -10,13 +10,13 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/hook"
 	"github.com/samber/lo"
 	"github.com/theplant/relay"
 	"github.com/theplant/relay/cursor"
 	"github.com/theplant/relay/gormrelay"
 	"gorm.io/gorm"
 
-	"github.com/qor5/admin/v3/common"
 	"github.com/qor5/admin/v3/presets"
 )
 
@@ -33,15 +33,15 @@ type (
 	ctxKeyHook       struct{}
 )
 
-func WithHook(ctx context.Context, hooks ...common.Hook[*gorm.DB]) context.Context {
-	previousHook, _ := ctx.Value(ctxKeyHook{}).(common.Hook[*gorm.DB])
-	hook := common.ChainHookWith(previousHook, hooks...)
+func WithHook(ctx context.Context, hooks ...hook.Hook[*gorm.DB]) context.Context {
+	previousHook, _ := ctx.Value(ctxKeyHook{}).(hook.Hook[*gorm.DB])
+	hook := hook.Prepend(previousHook, hooks...)
 	return context.WithValue(ctx, ctxKeyHook{}, hook)
 }
 
-func EventContextWithHook(ctx *web.EventContext, hooks ...common.Hook[*gorm.DB]) *web.EventContext {
-	previousHook, _ := ctx.ContextValue(ctxKeyHook{}).(common.Hook[*gorm.DB])
-	hook := common.ChainHookWith(previousHook, hooks...)
+func EventContextWithHook(ctx *web.EventContext, hooks ...hook.Hook[*gorm.DB]) *web.EventContext {
+	previousHook, _ := ctx.ContextValue(ctxKeyHook{}).(hook.Hook[*gorm.DB])
+	hook := hook.Prepend(previousHook, hooks...)
 	return ctx.WithContextValue(ctxKeyHook{}, hook)
 }
 
@@ -72,9 +72,9 @@ func (op *DataOperatorBuilder) Search(evCtx *web.EventContext, params *presets.S
 		wh = wh.Where(strings.ReplaceAll(cond.Query, " ILIKE ", " "+ilike+" "), cond.Args...)
 	}
 
-	hook, _ := evCtx.ContextValue(ctxKeyHook{}).(common.Hook[*gorm.DB])
-	if hook != nil {
-		wh = hook(wh.Session(&gorm.Session{}))
+	dbHook, _ := evCtx.ContextValue(ctxKeyHook{}).(hook.Hook[*gorm.DB])
+	if dbHook != nil {
+		wh = dbHook(wh.Session(&gorm.Session{}))
 	}
 
 	var p relay.Paginator[any]
@@ -118,7 +118,7 @@ func (op *DataOperatorBuilder) Search(evCtx *web.EventContext, params *presets.S
 		ctx = relay.WithSkip(ctx, relay.Skip{Edges: true})
 	}
 
-	paginationHook, _ := ctx.Value(ctxKeyRelayPaginationHook{}).(common.Hook[relay.Paginator[any]])
+	paginationHook, _ := ctx.Value(ctxKeyRelayPaginationHook{}).(hook.Hook[relay.Paginator[any]])
 	if paginationHook != nil {
 		p = paginationHook(p)
 	}
