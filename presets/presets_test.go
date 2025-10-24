@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/qor5/admin/v3/common"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/hook"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -118,14 +118,14 @@ func TestWithHandlerHook(t *testing.T) {
 	b := New()
 
 	// Create hooks
-	hook1 := common.Hook[http.Handler](func(next http.Handler) http.Handler {
+	hook1 := hook.Hook[http.Handler](func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("X-Hook-1", "first")
 			next.ServeHTTP(w, r)
 		})
 	})
 
-	hook2 := common.Hook[http.Handler](func(next http.Handler) http.Handler {
+	hook2 := hook.Hook[http.Handler](func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("X-Hook-2", "second")
 			next.ServeHTTP(w, r)

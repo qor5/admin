@@ -60,7 +60,7 @@ type SQLCondition struct {
 }
 
 type (
-	RelayPagination func(ctx *web.EventContext) (relay.Pagination[any], error)
+	RelayPagination func(ctx *web.EventContext) (relay.Paginator[any], error)
 	SearchParams    struct {
 		Model   any
 		PageURL *url.URL
@@ -69,11 +69,11 @@ type (
 		Keyword        string
 		SQLConditions  []*SQLCondition
 
-		Page     int64
-		PerPage  int64
-		OrderBys []relay.OrderBy
+		Page    int64
+		PerPage int64
+		OrderBy []relay.Order
 
-		// Both must exist simultaneously, and when they do, Page, PerPage, and OrderBys will be ignored
+		// Both must exist simultaneously, and when they do, Page, PerPage, and OrderBy will be ignored
 		// Or you can use the default pagination
 		RelayPaginateRequest *relay.PaginateRequest[any]
 		RelayPagination      RelayPagination

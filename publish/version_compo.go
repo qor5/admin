@@ -361,7 +361,7 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 		})).
 		SearchColumns("version", "version_name").
 		PerPage(10).
-		DefaultOrderBys(relay.OrderBy{Field: "CreatedAt", Desc: true}).
+		DefaultOrderBy(relay.Order{Field: "CreatedAt", Direction: relay.OrderDirectionDesc}).
 		WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
 			return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
 				compo := presets.ListingCompoFromEventContext(ctx)
@@ -394,11 +394,11 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 					}
 					return computed
 				})
-				ctx = gorm2op.EventContextAppendRelayPaginationMiddlewares(ctx, func(next relay.Pagination[any]) relay.Pagination[any] {
-					return relay.PaginationFunc[any](func(ctx context.Context, req *relay.PaginateRequest[any]) (*relay.Connection[any], error) {
-						req.OrderBys = slices.Concat([]relay.OrderBy{
-							{Field: VersionListDialogStatusSortOrderComputedField, Desc: false},
-						}, req.OrderBys)
+				ctx = gorm2op.EventContextWithRelayPaginationHooks(ctx, func(next relay.Paginator[any]) relay.Paginator[any] {
+					return relay.PaginatorFunc[any](func(ctx context.Context, req *relay.PaginateRequest[any]) (*relay.Connection[any], error) {
+						req.OrderBy = slices.Concat([]relay.Order{
+							{Field: VersionListDialogStatusSortOrderComputedField, Direction: relay.OrderDirectionAsc},
+						}, req.OrderBy)
 						return next.Paginate(ctx, req)
 					})
 				})

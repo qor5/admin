@@ -75,6 +75,7 @@ type ListingBuilder struct {
 	// If empty, regular pagination will be used
 	relayPagination RelayPagination
 
+	defaultOrderBy    []relay.Order
 	defaultOrderBys   []relay.OrderBy
 	orderableFields   []*OrderableField
 	selectableColumns bool
@@ -214,6 +215,12 @@ func (b *ListingBuilder) PerPage(v int64) (r *ListingBuilder) {
 	return b
 }
 
+func (b *ListingBuilder) DefaultOrderBy(v ...relay.Order) (r *ListingBuilder) {
+	b.defaultOrderBy = v
+	return b
+}
+
+// Deprecated: Use DefaultOrderBy instead.
 func (b *ListingBuilder) DefaultOrderBys(v ...relay.OrderBy) (r *ListingBuilder) {
 	b.defaultOrderBys = v
 	return b
