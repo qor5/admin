@@ -73,7 +73,7 @@ type (
 		PerPage int64
 		OrderBy []relay.Order
 
-		// Both must exist simultaneously, and when they do, Page, PerPage, and OrderBys will be ignored
+		// Both must exist simultaneously, and when they do, Page, PerPage, and OrderBy will be ignored
 		// Or you can use the default pagination
 		RelayPaginateRequest *relay.PaginateRequest[any]
 		RelayPagination      RelayPagination
