@@ -13,6 +13,7 @@ import (
 	"github.com/jinzhu/inflection"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/stateful"
+	"github.com/qor5/x/v3/hook"
 	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
@@ -22,7 +23,6 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/text/language"
 
-	"github.com/qor5/admin/v3/common"
 	"github.com/qor5/admin/v3/presets/actions"
 )
 
@@ -65,7 +65,7 @@ type Builder struct {
 	menuGroups                            MenuGroups
 	menuOrder                             *MenuOrderBuilder
 	wrapHandlers                          map[string]func(in http.Handler) (out http.Handler)
-	handlerHook                           common.Hook[http.Handler]
+	handlerHook                           hook.Hook[http.Handler]
 	plugins                               []Plugin
 	notFoundHandler                       http.Handler
 	customBuilders                        []*CustomBuilder
@@ -1271,8 +1271,8 @@ func (b *Builder) NotFoundHandler() http.Handler {
 	return b.notFoundHandler
 }
 
-func (b *Builder) WithHandlerHook(hooks ...common.Hook[http.Handler]) *Builder {
-	b.handlerHook = common.ChainHookWith(b.handlerHook, hooks...)
+func (b *Builder) WithHandlerHook(hooks ...hook.Hook[http.Handler]) *Builder {
+	b.handlerHook = hook.Prepend(b.handlerHook, hooks...)
 	return b
 }
 

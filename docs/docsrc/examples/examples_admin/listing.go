@@ -184,7 +184,7 @@ func listingPostWithCategory(b *presets.Builder, db *gorm.DB, customize func(mb 
 			{FieldName: "ID"},
 			{FieldName: "CategoryName"},
 		}).
-		DefaultOrderBys(relay.OrderBy{Field: "ID", Desc: true})
+		DefaultOrderBy(relay.Order{Field: "ID", Direction: relay.OrderDirectionDesc})
 
 	lb.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
 		return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {

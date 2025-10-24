@@ -95,9 +95,9 @@ func (b *Builder) Install(pb *presets.Builder) (err error) {
 	})
 	listing.WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
 		return func(ctx *web.EventContext, params *presets.SearchParams) (result *presets.SearchResult, err error) {
-			params.OrderBys = append(params.OrderBys, relay.OrderBy{
-				Field: "CreatedAt",
-				Desc:  true,
+			params.OrderBy = append(params.OrderBy, relay.Order{
+				Field:     "CreatedAt",
+				Direction: relay.OrderDirectionDesc,
 			})
 			return in(ctx, params)
 		}

@@ -421,22 +421,32 @@ func (c *ListingCompo) defaultCellWrapperFunc(cell h.MutableAttrHTMLComponent, i
 	return cell
 }
 
-func (c *ListingCompo) getOrderBys(colOrderBys []ColOrderBy, orderableFieldMap map[string]bool) []relay.OrderBy {
-	var orderBys []relay.OrderBy
+func (c *ListingCompo) getOrderBy(colOrderBys []ColOrderBy, orderableFieldMap map[string]bool) []relay.Order {
+	var orderBy []relay.Order
 	for _, ob := range colOrderBys {
 		if orderableFieldMap[ob.FieldName] {
-			orderBys = append(orderBys, relay.OrderBy{
-				Field: ob.FieldName,
-				Desc:  ob.OrderBy == OrderByDESC,
+			direction := relay.OrderDirectionAsc
+			if ob.OrderBy == OrderByDESC {
+				direction = relay.OrderDirectionDesc
+			}
+			orderBy = append(orderBy, relay.Order{
+				Field:     ob.FieldName,
+				Direction: direction,
 			})
 		}
 	}
-	primaryOrderBys := c.lb.defaultOrderBys
-	if len(primaryOrderBys) == 0 && c.lb.mb.primaryField != "" {
-		primaryOrderBys = []relay.OrderBy{{Field: c.lb.mb.primaryField, Desc: true}}
+	var primaryOrderBy []relay.Order
+	if len(c.lb.defaultOrderBy) > 0 {
+		primaryOrderBy = c.lb.defaultOrderBy
+	} else {
+		// fallback to deprecated defaultOrderBys
+		primaryOrderBy = relay.OrderByFromOrderBys(c.lb.defaultOrderBys)
 	}
-	orderBys = relay.AppendPrimaryOrderBy(orderBys, primaryOrderBys...)
-	return orderBys
+	if len(primaryOrderBy) == 0 && c.lb.mb.primaryField != "" {
+		primaryOrderBy = []relay.Order{{Field: c.lb.mb.primaryField, Direction: relay.OrderDirectionDesc}}
+	}
+	orderBy = relay.AppendPrimaryOrderBy(orderBy, primaryOrderBy...)
+	return orderBy
 }
 
 func (c *ListingCompo) processFilter(evCtx *web.EventContext) (h.HTMLComponent, []*SQLCondition) {
@@ -454,8 +464,8 @@ func (c *ListingCompo) processFilter(evCtx *web.EventContext) (h.HTMLComponent, 
 	return nil, nil
 }
 
-func (c *ListingCompo) prepareRelayPaginateRequest(orderBys []relay.OrderBy, perPage int) *relay.PaginateRequest[any] {
-	req := &relay.PaginateRequest[any]{After: c.After, Before: c.Before, OrderBys: orderBys}
+func (c *ListingCompo) prepareRelayPaginateRequest(orderBy []relay.Order, perPage int) *relay.PaginateRequest[any] {
+	req := &relay.PaginateRequest[any]{After: c.After, Before: c.Before, OrderBy: orderBy}
 	if c.Before != nil {
 		req.Last = lo.ToPtr(perPage)
 	} else {
@@ -626,7 +636,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		orderableFieldMap[v.FieldName] = true
 	}
 
-	searchParams.OrderBys = c.getOrderBys(colOrderBys, orderableFieldMap)
+	searchParams.OrderBy = c.getOrderBy(colOrderBys, orderableFieldMap)
 
 	if !c.lb.disablePagination {
 		perPage := c.PerPage
@@ -655,7 +665,7 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 	if c.lb.relayPagination != nil {
 		searchParams.RelayPagination = c.lb.relayPagination
 
-		pr := c.prepareRelayPaginateRequest(searchParams.OrderBys, int(searchParams.PerPage))
+		pr := c.prepareRelayPaginateRequest(searchParams.OrderBy, int(searchParams.PerPage))
 		searchParams.RelayPaginateRequest = pr
 
 		var err error
@@ -671,8 +681,8 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 			nodesValue := reflect.ValueOf(searchResult.Nodes)
 			if nodesValue.Kind() == reflect.Slice && nodesValue.Len() < *(pr.Last) {
 				searchParams.RelayPaginateRequest = &relay.PaginateRequest[any]{
-					First:    pr.Last,
-					OrderBys: searchParams.OrderBys,
+					First:   pr.Last,
+					OrderBy: searchParams.OrderBy,
 				}
 				searchResult, err = c.lb.Searcher(evCtx, searchParams)
 				if err != nil {
