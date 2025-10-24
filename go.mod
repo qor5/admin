@@ -46,7 +46,7 @@ require (
 	github.com/theplant/htmlgo v1.0.3
 	github.com/theplant/inject v1.1.0
 	github.com/theplant/osenv v0.0.2
-	github.com/theplant/relay v0.7.5-0.20251023193221-8e80db2f7a51
+	github.com/theplant/relay v0.8.0
 	github.com/theplant/sliceutils v0.0.0-20200406042209-89153d988eb1
 	github.com/theplant/testenv v0.2.1
 	github.com/theplant/testingutils v0.0.2
@@ -240,5 +240,3 @@ require (
 // replace github.com/qor5/web/v3 => ../web
 
 // replace github.com/qor5/x/v3 => ../x
-
-// replace github.com/theplant/relay => ../../theplant/relay

@@ -93,8 +93,8 @@ func appendWithComputedIfHasHook(ctx context.Context, opts []gormrelay.Option[an
 	computedHook, _ := ctx.Value(ctxKeyRelayComputedHook{}).(hook.Hook[*gormrelay.Computed[any]])
 	if computedHook != nil {
 		computed := &gormrelay.Computed[any]{
-			Columns:      gormrelay.ComputedColumns(map[string]string{}),
-			SetupScanner: gormrelay.NewScanner[any],
+			Columns: gormrelay.NewComputedColumns(map[string]string{}),
+			Scanner: gormrelay.NewComputedScanner[any],
 		}
 		computed = computedHook(computed)
 		opts = append(opts, gormrelay.WithComputed(computed))
