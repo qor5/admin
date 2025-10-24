@@ -30,7 +30,7 @@ var DefaultURLTemplateHandler = func(oss OSS, option *base.Option) (url string) 
 		url = URLTemplate
 	}
 
-	url = strings.Join([]string{strings.TrimSuffix(Storage.GetEndpoint(context.Background()), "/"), strings.TrimPrefix(url, "/")}, "/")
+	url = strings.TrimSuffix(Storage.GetEndpoint(context.Background()), "/") + "/" + strings.TrimPrefix(url, "/")
 	if strings.HasPrefix(url, "/") {
 		return url
 	}
@@ -65,16 +65,16 @@ var DefaultRetrieveHandler = func(oss OSS, path string) (base.FileInterface, err
 	if f, ok := result.(base.FileInterface); ok {
 		return f, err
 	}
-
-	if err == nil {
-		buf := []byte{}
-		if buf, err = io.ReadAll(result); err == nil {
-			result := ClosingReadSeeker{bytes.NewReader(buf)}
-			result.Seek(0, 0)
-			return result, err
-		}
+	if err != nil {
+		return nil, err
 	}
-	return nil, err
+	buf, err := io.ReadAll(result)
+	if err != nil {
+		return nil, err
+	}
+	rs := ClosingReadSeeker{bytes.NewReader(buf)}
+	rs.Seek(0, 0)
+	return rs, nil
 }
 
 // Retrieve retrieve file content with url

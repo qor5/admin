@@ -44,11 +44,10 @@ func configOrder(pb *presets.Builder, db *gorm.DB) {
 
 	lb.Field(CheckInDateAttr).Label("Check In Date").ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 		pTime := field.Value(obj)
-		if pTime != nil {
-			return h.Td(h.Text((*pTime.(*time.Time)).Local().Format("2006-01-02 15:04:05")))
-		} else {
-			return h.Td(h.Text(""))
+		if t, ok := pTime.(*time.Time); ok && t != nil {
+			return h.Td(h.Text(t.Local().Format("2006-01-02 15:04:05")))
 		}
+		return h.Td(h.Text(""))
 	})
 
 	lb.Field(StatusAttr).ComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {

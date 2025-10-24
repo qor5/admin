@@ -229,7 +229,6 @@ func (a *Handler) createUserModelBuilder(presetsBuilder *presets.Builder, activi
 
 	editing.Field("Roles").
 		ComponentFunc(func(obj any, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			var selectedItems []v.DefaultOptionItem
 			var values []string
 			u, ok := obj.(*User)
 			if ok && u.ID != 0 {
@@ -241,10 +240,6 @@ func (a *Handler) createUserModelBuilder(presetsBuilder *presets.Builder, activi
 				}
 				for _, r := range userWithRoles.Roles {
 					values = append(values, fmt.Sprint(r.ID))
-					selectedItems = append(selectedItems, v.DefaultOptionItem{
-						Text:  r.Name,
-						Value: fmt.Sprint(r.ID),
-					})
 				}
 			}
 

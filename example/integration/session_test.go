@@ -64,7 +64,7 @@ func TestSession(t *testing.T) {
 		before := db.NowFunc()
 
 		// create session
-		r, err := http.NewRequest("GET", "/", nil)
+		r, err := http.NewRequest("GET", "/", http.NoBody)
 		require.NoError(t, err)
 		r.AddCookie(&http.Cookie{Name: "auth", Value: "token0"})
 		err = sb.CreateSession(r, uid)
@@ -86,7 +86,7 @@ func TestSession(t *testing.T) {
 		before := db.NowFunc()
 
 		// extend session
-		r, err := http.NewRequest("GET", "/", nil)
+		r, err := http.NewRequest("GET", "/", http.NoBody)
 		require.NoError(t, err)
 		r.AddCookie(&http.Cookie{Name: "auth", Value: "token0"})
 		err = sb.ExtendSession(r, uid, "token0", "token1")
@@ -108,7 +108,7 @@ func TestSession(t *testing.T) {
 
 	{
 		// valid for new token hash
-		r, err := http.NewRequest("GET", "/", nil)
+		r, err := http.NewRequest("GET", "/", http.NoBody)
 		require.NoError(t, err)
 		r.AddCookie(&http.Cookie{Name: "auth", Value: "token1"})
 		err = sb.IsSessionValid(r, uid)
@@ -130,7 +130,7 @@ func TestSession(t *testing.T) {
 
 	{
 		// valid for last token hash
-		r, err := http.NewRequest("GET", "/", nil)
+		r, err := http.NewRequest("GET", "/", http.NoBody)
 		require.NoError(t, err)
 		r.AddCookie(&http.Cookie{Name: "auth", Value: "token0"})
 		err = sb.IsSessionValid(r, uid)
@@ -142,7 +142,7 @@ func TestSession(t *testing.T) {
 		require.NoError(t, err)
 
 		// invalid for last token hash
-		r, err = http.NewRequest("GET", "/", nil)
+		r, err = http.NewRequest("GET", "/", http.NoBody)
 		require.NoError(t, err)
 		r.AddCookie(&http.Cookie{Name: "auth", Value: "token0"})
 		err = sb.IsSessionValid(r, uid)
@@ -151,7 +151,7 @@ func TestSession(t *testing.T) {
 
 	{
 		// change ip
-		r, err := http.NewRequest("GET", "/", nil)
+		r, err := http.NewRequest("GET", "/", http.NoBody)
 		require.NoError(t, err)
 		r.AddCookie(&http.Cookie{Name: "auth", Value: "token1"})
 		r.Header.Set("X-Forwarded-For", "192.168.1.1")
@@ -177,7 +177,7 @@ func TestSession(t *testing.T) {
 		require.Equal(t, 1, lo.CountBy(sessions, func(session *login.LoginSession) bool { return session.ExpiredAt.Before(before) }))
 
 		// expire other sessions
-		r, err := http.NewRequest("GET", "/", nil)
+		r, err := http.NewRequest("GET", "/", http.NoBody)
 		require.NoError(t, err)
 		r.AddCookie(&http.Cookie{Name: "auth", Value: "token1"})
 		err = sb.ExpireOtherSessions(r, uid)
@@ -195,7 +195,7 @@ func TestSession(t *testing.T) {
 	}
 
 	{
-		r, err := http.NewRequest("GET", "/", nil)
+		r, err := http.NewRequest("GET", "/", http.NoBody)
 		require.NoError(t, err)
 		r.AddCookie(&http.Cookie{Name: "auth", Value: "token1"})
 
@@ -270,7 +270,7 @@ func TestSession(t *testing.T) {
 			Update("expired_at", db.NowFunc().Add(10*time.Minute)).Error
 		require.NoError(t, err)
 
-		r, err := http.NewRequest("GET", "/", nil)
+		r, err := http.NewRequest("GET", "/", http.NoBody)
 		require.NoError(t, err)
 		r.AddCookie(&http.Cookie{Name: "auth", Value: "token1"})
 

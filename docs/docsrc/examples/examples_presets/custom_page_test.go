@@ -38,7 +38,7 @@ func TestPresetsCustomPage(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				customPageData.TruncatePut(SqlDB)
-				return httptest.NewRequest("GET", "/custom/12?name=vuetify", nil)
+				return httptest.NewRequest("GET", "/custom/12?name=vuetify", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{`New Custom Page Param`, `12`, `vuetify`},
 		},
@@ -47,7 +47,7 @@ func TestPresetsCustomPage(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				customPageData.TruncatePut(SqlDB)
-				return httptest.NewRequest("GET", "/custom-menu", nil)
+				return httptest.NewRequest("GET", "/custom-menu", http.NoBody)
 			},
 			ExpectPageBodyContainsInOrder: []string{`New Custom Page Show Menu`},
 		},

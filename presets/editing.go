@@ -267,7 +267,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 	title = h.Text(msgr.CreatingObjectTitle(
 		labelName,
 	))
-	if len(id) > 0 {
+	if id != "" {
 		if obj == nil {
 			var err error
 			obj, err = b.Fetcher(b.mb.NewModel(), id, ctx)
@@ -298,7 +298,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		var text string
 		var color string
 		if msg, ok := ctx.Flash.(string); ok {
-			if len(msg) > 0 {
+			if msg != "" {
 				text = msg
 				color = "success"
 			}
@@ -306,7 +306,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		vErr, ok := ctx.Flash.(*web.ValidationErrors)
 		if ok {
 			gErr := vErr.GetGlobalError()
-			if len(gErr) > 0 {
+			if gErr != "" {
 				text = gErr
 				color = "error"
 			}
@@ -473,7 +473,7 @@ func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, e
 	}
 
 	ids := ctx.R.FormValue(ParamID)
-	if len(ids) > 0 {
+	if ids != "" {
 		deletedIds := strings.Split(ids, ",")
 		for _, id := range deletedIds {
 			obj := b.mb.NewModel()
@@ -505,7 +505,7 @@ func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, e
 
 func (b *EditingBuilder) FetchAndUnmarshal(id string, removeDeletedAndSort bool, ctx *web.EventContext) (obj interface{}, vErr web.ValidationErrors) {
 	obj = b.mb.NewModel()
-	if len(id) > 0 {
+	if id != "" {
 		var err1 error
 		obj, err1 = b.Fetcher(obj, id, ctx)
 		if err1 != nil {
@@ -543,7 +543,7 @@ func (b *EditingBuilder) doUpdate(
 		return created, &vErr
 	}
 	vErrSetter := vErr
-	if len(id) > 0 {
+	if id != "" {
 		if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
 			b.UpdateOverlayContent(ctx, r, obj, "", perm.PermissionDenied)
 			return created, perm.PermissionDenied

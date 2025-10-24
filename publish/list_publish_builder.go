@@ -124,8 +124,9 @@ func (b *ListPublishBuilder) Run(ctx context.Context, model interface{}) (err er
 		return
 	}
 
-	var newItems []interface{}
+	newItems := oldItems
 	if len(deleteItems) != 0 {
+		newItems = []interface{}{}
 		deleteMap := make(map[int][]int)
 		for _, item := range deleteItems {
 			lp := item.(ListInterface)
@@ -138,8 +139,6 @@ func (b *ListPublishBuilder) Run(ctx context.Context, model interface{}) (err er
 			}
 			newItems = append(newItems, item)
 		}
-	} else {
-		newItems = oldItems
 	}
 
 	if len(addItems) != 0 {
@@ -163,8 +162,7 @@ func (b *ListPublishBuilder) Run(ctx context.Context, model interface{}) (err er
 
 	needPublishResults, indexResult := getNeedPublishResultsAndIndexResult(oldResult, newResult, republishResult)
 
-	var objs []*PublishAction
-	objs = b.publishActionsFunc(b.db, lp, needPublishResults, indexResult)
+	objs := b.publishActionsFunc(b.db, lp, needPublishResults, indexResult)
 
 	err = utils.Transact(b.db, func(tx *gorm.DB) (err1 error) {
 		if err1 = UploadOrDelete(ctx, objs, b.storage); err1 != nil {

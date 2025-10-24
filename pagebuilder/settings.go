@@ -243,5 +243,4 @@ func detailPageEditor(dp *presets.DetailingBuilder, mb *presets.ModelBuilder, b 
 		})
 	}
 	dp.Section(section)
-	return
 }

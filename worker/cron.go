@@ -122,12 +122,13 @@ func (c *cron) Add(ctx context.Context, job QueJobInterface) (err error) {
 				JobID:   jobInfo.JobID,
 				Command: fmt.Sprintf("%d %d %d %d * cd %v; %v --qor-job %v\n", scheduleTime.Minute(), scheduleTime.Hour(), scheduleTime.Day(), scheduleTime.Month(), currentPath, binaryFile, jobInfo.JobID),
 			})
-		} else {
-			cmd := exec.Command(binaryFile, "--qor-job", jobInfo.JobID)
-			if err = cmd.Start(); err == nil {
-				jobs = append(jobs, &cronJob{JobID: jobInfo.JobID, Pid: cmd.Process.Pid})
-				cmd.Process.Release()
-			}
+			c.Jobs = jobs
+			return nil
+		}
+		cmd := exec.Command(binaryFile, "--qor-job", jobInfo.JobID)
+		if err = cmd.Start(); err == nil {
+			jobs = append(jobs, &cronJob{JobID: jobInfo.JobID, Pid: cmd.Process.Pid})
+			cmd.Process.Release()
 		}
 		c.Jobs = jobs
 	}
@@ -235,19 +236,19 @@ func (c *cron) Listen(_ []*QorJobDefinition, getJob func(qorJobID uint) (QueJobI
 		id, err := cast.ToUintE(*qorJobID)
 		if err != nil {
 			fmt.Println(err)
-			os.Exit(1)
+			return err
 		}
 		job, err := getJob(id)
 		if err != nil {
 			fmt.Println(err)
-			os.Exit(1)
+			return err
 		}
-		if err := c.doRunJob(context.Background(), job); err == nil {
-			os.Exit(0)
-		} else {
-			fmt.Println(err)
-			os.Exit(1)
+		err = c.doRunJob(context.Background(), job)
+		if err == nil {
+			return nil
 		}
+		fmt.Println(err)
+		return err
 	}
 
 	return nil
@@ -267,11 +268,12 @@ func (c *cron) doRunJob(ctx context.Context, job QueJobInterface) error {
 	}
 
 	if err := job.SetStatus(JobStatusRunning); err == nil {
-		if err := c.run(ctx, job); err == nil {
+		runErr := c.run(ctx, job)
+		if runErr == nil {
 			return job.SetStatus(JobStatusDone)
 		}
 
-		job.SetProgressText(err.Error())
+		job.SetProgressText(runErr.Error())
 		job.SetStatus(JobStatusException)
 	}
 

@@ -25,10 +25,9 @@ import (
 	"github.com/qor5/admin/v3/presets"
 )
 
-const (
-	I18nSeoKey         i18n.ModuleKey = "I18nSeoKey"
-	SeoDetailFieldName                = "SEO"
-)
+const I18nSeoKey i18n.ModuleKey = "I18nSeoKey"
+
+const SeoDetailFieldName = "SEO"
 
 var permVerifier *perm.Verifier
 
