@@ -2,7 +2,7 @@ package admin
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -143,7 +143,7 @@ func configInputDemo(b *presets.Builder, db *gorm.DB) {
 			}
 			defer f.Close()
 
-			b, err := ioutil.ReadAll(f)
+			b, err := io.ReadAll(f)
 			if err != nil {
 				panic(err)
 			}
