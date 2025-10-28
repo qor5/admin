@@ -492,7 +492,7 @@ func insertIfNotExists(db *gorm.DB, seoName string, locales []string) error {
 
 func (b *Builder) AutoMigrate() (r *Builder) {
 	if err := AutoMigrate(b, b.db); err != nil {
-		return
+		return nil
 	}
 	return b
 }

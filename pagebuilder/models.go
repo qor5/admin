@@ -119,7 +119,7 @@ func (p *Page) PrimaryColumnValuesBySlug(slug string) map[string]string {
 
 var PagePermissionRN = func(p *Page) []string {
 	rn := []string{"pages", strconv.Itoa(int(p.ID)), p.Version.Version}
-	if len(p.LocaleCode) > 0 {
+	if p.LocaleCode != "" {
 		rn = append(rn, p.LocaleCode)
 	}
 	return rn

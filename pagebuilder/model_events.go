@@ -197,7 +197,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 				Query(presets.ParamOverlay, actions.Content).
 				Query(presets.ParamPortalName, pageBuilderRightContentPortal).
 				Go() + ";" + pushState.RunPushState() +
-			";" + scrollToContainer(fmt.Sprintf(`element.container_data_id`))
+			";" + scrollToContainer(`element.container_data_id`)
 	}
 	renameEvent := web.Plaid().
 		EventFunc(RenameContainerEvent).Query(paramStatus, status).Query(paramContainerID, web.Var("element.param_id")).Go()
@@ -298,7 +298,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
 					).Attr("#item", " { element } "),
 				),
 			),
-		).Class("px-4 overflow-y-auto").MaxHeight("86vh").Attr("v-on-mounted", fmt.Sprintf(`({ el, window }) => {
+		).Class("px-4 overflow-y-auto").MaxHeight("86vh").Attr("v-on-mounted", `({ el, window }) => {
       locals.__pageBuilderLeftContentKeepScroll = (container_data_id) => {
 			if (container_data_id){
 				const container = el.querySelector("div[data-container-id='" + container_data_id + "']")
@@ -316,7 +316,7 @@ func (b *ModelBuilder) renderContainersSortedList(ctx *web.EventContext) (r h.HT
         locals.__pageBuilderLeftContentScrollTop = event.target.scrollTop;
     }
     el.addEventListener('scroll', el.__handleScroll)
-}`)).
+}`).
 			Attr("v-on-unmounted", `({el}) => {
 				el.removeEventListener('scroll', el.__handleScroll);
 						}`),

@@ -157,7 +157,7 @@ func statusChip(status string, msgr *Messages) *VChipBuilder {
 
 const statusNext = "Next"
 
-func liveChips(status string, toStatus string, msgr *Messages) h.HTMLComponent {
+func liveChips(status, toStatus string, msgr *Messages) h.HTMLComponent {
 	if toStatus != "" {
 		return h.Components(
 			liveChip(status, true, msgr, false).Class("rounded-s"),

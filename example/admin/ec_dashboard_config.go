@@ -119,7 +119,7 @@ func configECDashboard(pb *presets.Builder, db *gorm.DB) {
 					h.Div(h.Strong("Order Status")).Class("mt-2 col col-12"),
 					h.Div(
 						h.RawHTML(
-							strings.Replace(pieBuffer.String(), `width="1024" height="1024"`, `width="100%" height="100%" viewBox="-85 -80 1200 1200"`, -1)),
+							strings.ReplaceAll(pieBuffer.String(), `width="1024" height="1024"`, `width="100%" height="100%" viewBox="-85 -80 1200 1200"`)),
 					).Class("v-card v-sheet theme--light").Style("height: 300px;"),
 				).Class("col col-6"),
 			),

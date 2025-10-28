@@ -217,7 +217,6 @@ func configureDemoCase(b *presets.Builder, db *gorm.DB) {
 	configVXChip(detailing, mb)
 	configVXBreadCrumb(detailing, mb)
 	configVXTreeView(detailing, mb)
-	return
 }
 
 // configs

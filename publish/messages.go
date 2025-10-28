@@ -67,14 +67,14 @@ func (msgr *Messages) DeleteVersionConfirmationText(versionName string) string {
 		Replace(msgr.DeleteVersionConfirmationTextTemplate)
 }
 
-func (msgr *Messages) ToStatusOnline(versionName string, scheduleTime string) string {
+func (msgr *Messages) ToStatusOnline(versionName, scheduleTime string) string {
 	return strings.NewReplacer(
 		"{VersionName}", versionName,
 		"{ScheduleTime}", scheduleTime,
 	).Replace(msgr.ToStatusOnlineTemplate)
 }
 
-func (msgr *Messages) ToStatusOffline(versionName string, scheduleTime string) string {
+func (msgr *Messages) ToStatusOffline(versionName, scheduleTime string) string {
 	return strings.NewReplacer(
 		"{VersionName}", versionName,
 		"{ScheduleTime}", scheduleTime,

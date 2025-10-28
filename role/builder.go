@@ -175,7 +175,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 	})
 
 	ed.DeleteFunc(func(obj interface{}, id string, ctx *web.EventContext) (err error) {
-		err = b.db.Transaction(func(tx *gorm.DB) error {
+		return b.db.Transaction(func(tx *gorm.DB) error {
 			if err := tx.Delete(&perm.DefaultDBPolicy{}, "refer_id = ?", id).Error; err != nil {
 				return err
 			}
@@ -185,8 +185,6 @@ func (b *Builder) Install(pb *presets.Builder) error {
 
 			return nil
 		})
-
-		return
 	})
 
 	if b.AfterInstallFunc != nil {

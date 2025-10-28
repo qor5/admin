@@ -203,7 +203,7 @@ func (b *MenuOrderBuilder) buildMenuGroupActivator(v *MenuGroupBuilder, ctx *web
 	).Attr("v-slot:activator", "{ props }")
 }
 
-func (b *MenuOrderBuilder) getActiveMenuState(ctx *web.EventContext, inOrderMap map[string]menuOrderItem) (menuGroupSelected string, menuItemSelected string) {
+func (b *MenuOrderBuilder) getActiveMenuState(ctx *web.EventContext, inOrderMap map[string]menuOrderItem) (menuGroupSelected, menuItemSelected string) {
 	for _, v := range inOrderMap {
 		if b.isMenuItemActive(v.model, ctx) {
 			menuGroupSelected = v.groupName
