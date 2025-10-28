@@ -52,7 +52,7 @@ func RunPublisher(ctx context.Context, db *gorm.DB, storage oss.StorageInterface
 	}
 }
 
-func RunJob(jobName string, interval time.Duration, timeout time.Duration, f func()) {
+func RunJob(jobName string, interval, timeout time.Duration, f func()) {
 	second := 1
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()

@@ -93,8 +93,6 @@ func main() {
 	default:
 		panic(fmt.Errorf("wrong option"))
 	}
-
-	return
 }
 
 func copyAndReplaceFiles(box embed.FS, dir string, template string, pkg string) {
@@ -138,7 +136,6 @@ func copyAndReplaceFiles(box embed.FS, dir string, template string, pkg string) 
 		runCmd(dir, "go", "mod", "init", pkg)
 		runCmd(dir, "go", "get", "./...")
 	}
-	return
 }
 
 func runCmd(dir string, name string, args ...string) {
@@ -176,7 +173,7 @@ func replaceInFile(filepath, from, to string) {
 		panic(err)
 	}
 
-	newContents := strings.Replace(string(read), from, to, -1)
+	newContents := strings.ReplaceAll(string(read), from, to)
 
 	// fmt.Println(newContents)
 

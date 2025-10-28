@@ -336,14 +336,10 @@ func (job *QorJobInstance) SetProgressText(s string) error {
 }
 
 func (job *QorJobInstance) AddLog(log string) error {
-	if err := job.jb.b.db.Create(&QorJobLog{
+	return job.jb.b.db.Create(&QorJobLog{
 		QorJobInstanceID: job.ID,
 		Log:              log,
-	}).Error; err != nil {
-		return err
-	}
-
-	return nil
+	}).Error
 }
 
 func (job *QorJobInstance) AddLogf(format string, a ...interface{}) error {

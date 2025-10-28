@@ -259,7 +259,7 @@ func (b *ModelBuilder) pageContent(ctx *web.EventContext) (r web.PageResponse, e
 	return
 }
 
-func (b *ModelBuilder) getPrimaryColumnValuesBySlug(ctx *web.EventContext) (pageID int, pageVersion string, locale string) {
+func (b *ModelBuilder) getPrimaryColumnValuesBySlug(ctx *web.EventContext) (pageID int, pageVersion, locale string) {
 	return b.primaryColumnValuesBySlug(ctx.Param(presets.ParamID))
 }
 
@@ -281,7 +281,7 @@ func (b *ModelBuilder) getObjFromSlug(ctx *web.EventContext) (obj interface{}, e
 	return
 }
 
-func (b *ModelBuilder) primaryColumnValuesBySlug(slug string) (pageID int, pageVersion string, locale string) {
+func (b *ModelBuilder) primaryColumnValuesBySlug(slug string) (pageID int, pageVersion, locale string) {
 	var (
 		ps map[string]string
 

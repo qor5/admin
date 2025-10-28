@@ -71,7 +71,6 @@ func TestExample(t *testing.T) {
 				if u.Name != "Felix11" {
 					t.Error(u)
 				}
-				return
 			},
 		},
 		{
@@ -96,7 +95,6 @@ func TestExample(t *testing.T) {
 				if u.Name != "Felix" {
 					t.Error(u)
 				}
-				return
 			},
 		},
 
@@ -132,8 +130,6 @@ func TestExample(t *testing.T) {
 				if u.Number != "12345678" {
 					t.Error(u)
 				}
-
-				return
 			},
 		},
 
@@ -170,8 +166,6 @@ func TestExample(t *testing.T) {
 				if u.OwnerName != "owner1" {
 					t.Error(u)
 				}
-
-				return
 			},
 		},
 
@@ -191,7 +185,6 @@ func TestExample(t *testing.T) {
 				if !strings.Contains(partial, `v-model='form["Agree"]' v-assign='[form, {"Agree":""}]'`) {
 					t.Error(`can't find v-model='form["Agree"]' v-assign='[form, {"Agree":""}]'`, partial)
 				}
-				return
 			},
 		},
 
@@ -216,7 +209,6 @@ func TestExample(t *testing.T) {
 				if u.TermAgreedAt == nil {
 					t.Error(fmt.Sprintf("%#+v", u))
 				}
-				return
 			},
 		},
 

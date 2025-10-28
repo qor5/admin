@@ -52,7 +52,7 @@ func ConfirmDialog(payload UtilDialogPayloadType) h.HTMLComponent {
 		Attr("v-model", "locals.commonConfirmDialog")
 }
 
-func DeleteDialog(msg string, okAction string, msgr *Messages) h.HTMLComponent {
+func DeleteDialog(msg, okAction string, msgr *Messages) h.HTMLComponent {
 	return web.Scope(
 		vx.VXDialog().
 			Title(msgr.ModalTitleConfirm).

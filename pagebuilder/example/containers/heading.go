@@ -87,7 +87,7 @@ func RegisterHeadingContainer(pb *pagebuilder.Builder, db *gorm.DB) {
 				return
 			}
 			p := obj.(*Heading)
-			p.LinkText = strings.Replace(p.LinkText, "{{Name}}", field.Name, -1)
+			p.LinkText = strings.ReplaceAll(p.LinkText, "{{Name}}", field.Name)
 			return
 		}
 	})

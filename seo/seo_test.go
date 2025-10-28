@@ -227,9 +227,7 @@ func TestSEO_RegisterContextVariable(t *testing.T) {
 						t.Errorf("The context func for %v is different from what was expected", varName)
 					}
 				}
-				for _, child := range cur.children {
-					que = append(que, child)
-				}
+				que = append(que, cur.children...)
 			}
 			if cnt != len(c.expected) {
 				t.Errorf("The number of seo nodes does not match the expectation")
@@ -314,9 +312,7 @@ func TestSEO_RegisterSettingVariables(t *testing.T) {
 						t.Errorf("The setting var %v should not exist", varName)
 					}
 				}
-				for _, child := range cur.children {
-					que = append(que, child)
-				}
+				que = append(que, cur.children...)
 			}
 			if cnt != len(c.expected) {
 				t.Errorf("The number of seo nodes does not match the expectation")
@@ -678,9 +674,7 @@ func check(seoRoot *SEO, expected [][]string, t *testing.T) {
 				if cur.children == nil {
 					que = append(que, nil)
 				} else {
-					for _, child := range cur.children {
-						que = append(que, child)
-					}
+					que = append(que, cur.children...)
 				}
 			}
 			que = que[1:]

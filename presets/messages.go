@@ -108,7 +108,7 @@ func (msgr *Messages) CreatingObjectTitle(modelName string) string {
 		Replace(msgr.CreatingObjectTitleTemplate)
 }
 
-func (msgr *Messages) EditingObjectTitle(label string, name string) string {
+func (msgr *Messages) EditingObjectTitle(label, name string) string {
 	return strings.NewReplacer("{id}", name, "{modelName}", label).
 		Replace(msgr.EditingObjectTitleTemplate)
 }
@@ -118,7 +118,7 @@ func (msgr *Messages) ListingObjectTitle(label string) string {
 		Replace(msgr.ListingObjectTitleTemplate)
 }
 
-func (msgr *Messages) DetailingObjectTitle(label string, name string) string {
+func (msgr *Messages) DetailingObjectTitle(label, name string) string {
 	return strings.NewReplacer("{id}", name, "{modelName}", label).
 		Replace(msgr.DetailingObjectTitleTemplate)
 }

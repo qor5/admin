@@ -122,11 +122,9 @@ func TestMedia(t *testing.T) {
 				var m *media_library.MediaLibrary
 				if err := TestDB.Order("id desc").First(&m).Error; err != nil {
 					t.Fatalf("create directory err : %v", err)
-					return
 				}
 				if !m.Folder || m.File.FileName != "test_create_directory" {
 					t.Fatalf("create directory : %#+v", m)
-					return
 				}
 			},
 		},
@@ -211,11 +209,9 @@ func TestMedia(t *testing.T) {
 				var count int64
 				if err := TestDB.Where("id in (1,2,3) and parent_id=5 ").Model(media_library.MediaLibrary{}).Count(&count).Error; err != nil {
 					t.Fatalf("move to folder err : %v", err)
-					return
 				}
 				if count != 3 {
 					t.Fatalf("move to folder count : %d", count)
-					return
 				}
 			},
 		},
@@ -251,11 +247,9 @@ func TestMedia(t *testing.T) {
 				var count int64
 				if err := TestDB.Model(media_library.MediaLibrary{}).Where("id=1").Count(&count).Error; err != nil {
 					t.Fatalf("delete object err : %v", err)
-					return
 				}
 				if count != 0 {
 					t.Fatalf("not delete object count : %d", count)
-					return
 				}
 			},
 		},
@@ -276,11 +270,9 @@ func TestMedia(t *testing.T) {
 				var m media_library.MediaLibrary
 				if err := TestDB.First(&m, 5).Error; err != nil {
 					t.Fatalf("find object err : %v", err)
-					return
 				}
 				if m.ParentId != 0 {
 					t.Fatalf("not update no parent folder %v", m.ParentId)
-					return
 				}
 			},
 		},
@@ -301,11 +293,9 @@ func TestMedia(t *testing.T) {
 				var count int64
 				if err := TestDB.Model(media_library.MediaLibrary{}).Where("id in (1,2,3,4,5,6)").Count(&count).Error; err != nil {
 					t.Fatalf("delete objects err : %v", err)
-					return
 				}
 				if count != 0 {
 					t.Fatalf("not delete objects count : %d", count)
-					return
 				}
 			},
 		},
@@ -358,11 +348,9 @@ func TestMedia(t *testing.T) {
 				var m media_library.MediaLibrary
 				if err := TestDB.First(&m, "1").Error; err != nil {
 					t.Fatalf("rename err : %v", err)
-					return
 				}
 				if m.File.FileName != "1.png" {
 					t.Fatalf("rename failed need:<1.png>,got <%s>", m.File.FileName)
-					return
 				}
 			},
 		},
@@ -384,11 +372,9 @@ func TestMedia(t *testing.T) {
 				var m media_library.MediaLibrary
 				if err := TestDB.First(&m, "6").Error; err != nil {
 					t.Fatalf("rename err : %v", err)
-					return
 				}
 				if m.File.FileName != "test" {
 					t.Fatalf("rename failed need:<test>,got <%s>", m.File.FileName)
-					return
 				}
 			},
 		},
@@ -425,11 +411,9 @@ func TestMedia(t *testing.T) {
 				var m media_library.MediaLibrary
 				if err := TestDB.First(&m, "1").Error; err != nil {
 					t.Fatalf("update description err : %v", err)
-					return
 				}
 				if m.File.Description != "321" {
 					t.Fatalf("update description failed need:<321>,got <%s>", m.File.Description)
-					return
 				}
 			},
 		},
@@ -623,12 +607,10 @@ func TestMedia(t *testing.T) {
 				media_oss.Storage = filesystem.New("/tmp/media_test")
 				if m.File.FileName != "test2.txt" {
 					t.Fatalf("except filename: test2.txt but got %v", m.File.FileName)
-					return
 				}
 				if m.UserID != 888 {
 					t.Fatalf("except user_id: 888 but got %v", m.UserID)
 				}
-				return
 			},
 		},
 		{
@@ -652,7 +634,6 @@ func TestMedia(t *testing.T) {
 				if m.File.FileName != "test2.txt" {
 					t.Fatalf("except filename: test2.txt but got %v", m.File.FileName)
 				}
-				return
 			},
 		},
 		{

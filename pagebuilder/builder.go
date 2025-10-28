@@ -599,7 +599,7 @@ func (b *Builder) configDetailLayoutFunc(
 	})
 }
 
-func versionCount(db *gorm.DB, obj interface{}, id string, localCode string) (count int64) {
+func versionCount(db *gorm.DB, obj interface{}, id, localCode string) (count int64) {
 	db.Model(obj).Where("id = ? and locale_code = ?", id, localCode).Count(&count)
 	return
 }
@@ -1583,7 +1583,7 @@ func (b *Builder) deviceToggle(ctx *web.EventContext) h.HTMLComponent {
 		device = b.getDevices()[0].Name
 	}
 	containerDataID := web.Var(fmt.Sprintf("vars.%s", paramContainerDataID))
-	reloadBodyEditingEvent := fmt.Sprintf("const device = toggleLocals.devices.find(device => device.Name === toggleLocals.activeDevice);vars.__scrollIframeWidth=device ? device.Width : '';") +
+	reloadBodyEditingEvent := "const device = toggleLocals.devices.find(device => device.Name === toggleLocals.activeDevice);vars.__scrollIframeWidth=device ? device.Width : '';" +
 		web.Plaid().EventFunc(ReloadRenderPageOrTemplateBodyEvent).
 			BeforeScript(
 				web.Plaid().
@@ -1790,7 +1790,7 @@ func (b *ContainerBuilder) logDemoContainerActivity(tx *gorm.DB, old, new interf
 	return nil
 }
 
-func (b *ContainerBuilder) logContainerActivity(tx *gorm.DB, old, new interface{}, id string, uid string, diffs []activity.Diff, now time.Time, ctx *web.EventContext) error {
+func (b *ContainerBuilder) logContainerActivity(tx *gorm.DB, old, new interface{}, id, uid string, diffs []activity.Diff, now time.Time, ctx *web.EventContext) error {
 	var containers []Container
 	if err := tx.Where("model_id = ? AND model_name = ?", id, b.name).Find(&containers).Error; err != nil {
 		return err

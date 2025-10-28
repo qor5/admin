@@ -85,7 +85,6 @@ func Router(db *gorm.DB) http.Handler {
 	mux.Handle("/", c.pb)
 	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		w.Write(favicon)
-		return
 	})
 
 	mux.Handle(exportOrdersURL, exportOrders(db))
