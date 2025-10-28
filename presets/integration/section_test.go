@@ -292,7 +292,6 @@ func TestDetailFieldBuilder(t *testing.T) {
 			if diff := testingutils.PrettyJsonDiff(ps.FormSetting, c.Want.FormSetting); diff != "" {
 				t.Error(diff)
 			}
-			return
 		})
 	}
 }

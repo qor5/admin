@@ -207,7 +207,7 @@ func deleteVersion(mb *presets.ModelBuilder, db *gorm.DB) web.EventFunc {
 		}()
 
 		slug := ctx.R.FormValue(presets.ParamID)
-		if len(slug) <= 0 {
+		if slug == "" {
 			return r, errors.New("no delete_id")
 		}
 		obj := mb.NewModel()

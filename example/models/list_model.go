@@ -100,7 +100,6 @@ func (this ListModel) Sort(array []interface{}) {
 	for k, v := range temp {
 		array[k] = v
 	}
-	return
 }
 
 type SliceListModel []*ListModel

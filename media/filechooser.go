@@ -580,7 +580,7 @@ func (mb *Builder) mediaLibraryFilter(tab, selectedType, keyword, orderByVal str
 		}
 	}
 
-	if len(keyword) > 0 {
+	if keyword != "" {
 		wh = wh.Where("file::json->>'FileName' ILIKE ?", fmt.Sprintf("%%%s%%", keyword))
 	}
 

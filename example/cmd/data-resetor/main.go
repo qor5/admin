@@ -10,5 +10,4 @@ func main() {
 	admin.EmptyDB(db, tbs)
 	admin.InitDB(db, tbs)
 	admin.ErasePublicUsersData(db)
-	return
 }
