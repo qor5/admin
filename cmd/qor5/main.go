@@ -93,7 +93,6 @@ func main() {
 	default:
 		panic(fmt.Errorf("wrong option"))
 	}
-
 }
 
 func copyAndReplaceFiles(box embed.FS, dir string, template string, pkg string) {
