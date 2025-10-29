@@ -37,67 +37,22 @@ var operatorAliases = map[string][]string{
 	"IsNull":     {"IsNull"},
 }
 
-// findOperatorField tries to locate the struct field for the given operator name using the alias registry.
-func findOperatorField(target reflect.Value, opName string) (reflect.Value, bool) {
-	if !target.IsValid() {
-		return reflect.Value{}, false
-	}
-	// try canonical directly first
-	if f, ok := findExportedFieldByName(target, opName); ok {
-		return f, true
-	}
-	// try aliases
-	aliases, ok := operatorAliases[opName]
-	if !ok {
-		// fall back: unknown op, try name itself
-		return findExportedFieldByName(target, opName)
-	}
-	for _, alt := range aliases {
-		if f, ok := findExportedFieldByName(target, alt); ok {
-			return f, true
-		}
-	}
-	return reflect.Value{}, false
+// Types for query aggregation (extracted to reduce function complexity)
+type filterItem struct {
+	field  string
+	mod    string
+	values []string
+	isNot  bool
 }
 
-var (
-	// timestamp types for robust detection instead of relying on PkgPath/Name string checks
-	_tsPtrType = reflect.TypeOf((*timestamppb.Timestamp)(nil))
-	_tsValType = reflect.TypeOf(timestamppb.Timestamp{})
-)
+type filterGroupAgg struct {
+	items   []filterItem
+	foldMap map[string]bool
+	op      string
+}
 
-const (
-	FilterOperatorEq         FilterOperator = "Eq"
-	FilterOperatorNeq        FilterOperator = "Neq"
-	FilterOperatorLt         FilterOperator = "Lt"
-	FilterOperatorLte        FilterOperator = "Lte"
-	FilterOperatorGt         FilterOperator = "Gt"
-	FilterOperatorGte        FilterOperator = "Gte"
-	FilterOperatorIn         FilterOperator = "In"
-	FilterOperatorNotIn      FilterOperator = "NotIn"
-	FilterOperatorIsNull     FilterOperator = "IsNull"
-	FilterOperatorContains   FilterOperator = "Contains"
-	FilterOperatorStartsWith FilterOperator = "StartsWith"
-	FilterOperatorEndsWith   FilterOperator = "EndsWith"
-	FilterOperatorFold       FilterOperator = "Fold"
-)
-
-// BuildFiltersFromQuery transforms a filter query string to a slice of Filters.
-// It supports:
-// - Groups: <group>.<field>.<mod>=value and <group>.__op in {and,or}
-// - NOT: not.<field>.<mod>=value
-// - FOLD: <field>.fold=true|1
-// - IN/NOT IN: value is CSV
-func BuildFiltersFromQuery(_ vuetifyx.FilterData, qs string) []*Filter {
-	if qs == "" {
-		return nil
-	}
-	values, err := url.ParseQuery(qs)
-	if err != nil {
-		return nil
-	}
-
-	// detect group ops
+// Helper: detect group operators from query values
+func detectGroupOps(values url.Values) map[string]string {
 	groupOp := map[string]string{}
 	for k, arr := range values {
 		segs := strings.Split(k, ".")
@@ -107,23 +62,16 @@ func BuildFiltersFromQuery(_ vuetifyx.FilterData, qs string) []*Filter {
 			}
 		}
 	}
+	return groupOp
+}
 
-	type item struct {
-		field  string
-		mod    string
-		values []string
-		isNot  bool
-	}
-	type groupAgg struct {
-		items   []item
-		foldMap map[string]bool
-		op      string
-	}
-	groups := map[string]*groupAgg{}
-	getGroup := func(gid string) *groupAgg {
+// Helper: aggregate query into groups
+func aggregateGroups(values url.Values, groupOp map[string]string) map[string]*filterGroupAgg {
+	groups := map[string]*filterGroupAgg{}
+	getGroup := func(gid string) *filterGroupAgg {
 		g := groups[gid]
 		if g == nil {
-			g = &groupAgg{foldMap: map[string]bool{}, op: strings.ToLower(groupOp[gid])}
+			g = &filterGroupAgg{foldMap: map[string]bool{}, op: strings.ToLower(groupOp[gid])}
 			if g.op == "" {
 				g.op = "and"
 			}
@@ -131,8 +79,6 @@ func BuildFiltersFromQuery(_ vuetifyx.FilterData, qs string) []*Filter {
 		}
 		return g
 	}
-
-	// parse
 	for k, arr := range values {
 		segs := strings.Split(k, ".")
 		if len(segs) == 0 {
@@ -171,10 +117,13 @@ func BuildFiltersFromQuery(_ vuetifyx.FilterData, qs string) []*Filter {
 			}
 			continue
 		}
-		g.items = append(g.items, item{field: field, mod: mod, values: arr, isNot: isNot})
+		g.items = append(g.items, filterItem{field: field, mod: mod, values: arr, isNot: isNot})
 	}
+	return groups
+}
 
-	// build
+// Helper: build filters from groups
+func buildFiltersFromGroups(groups map[string]*filterGroupAgg) []*Filter {
 	var out []*Filter
 	buildChild := func(field string, mod string, sv string, foldOn bool, isNot bool) *Filter {
 		op := mapModToOperator(mod)
@@ -245,6 +194,70 @@ func BuildFiltersFromQuery(_ vuetifyx.FilterData, qs string) []*Filter {
 		out = append(out, groupNode)
 	}
 	return out
+}
+
+// findOperatorField tries to locate the struct field for the given operator name using the alias registry.
+func findOperatorField(target reflect.Value, opName string) (reflect.Value, bool) {
+	if !target.IsValid() {
+		return reflect.Value{}, false
+	}
+	// try canonical directly first
+	if f, ok := findExportedFieldByName(target, opName); ok {
+		return f, true
+	}
+	// try aliases
+	aliases, ok := operatorAliases[opName]
+	if !ok {
+		// fall back: unknown op, try name itself
+		return findExportedFieldByName(target, opName)
+	}
+	for _, alt := range aliases {
+		if f, ok := findExportedFieldByName(target, alt); ok {
+			return f, true
+		}
+	}
+	return reflect.Value{}, false
+}
+
+var (
+	// timestamp types for robust detection instead of relying on PkgPath/Name string checks
+	_tsPtrType = reflect.TypeOf((*timestamppb.Timestamp)(nil))
+	_tsValType = reflect.TypeOf(timestamppb.Timestamp{})
+)
+
+const (
+	FilterOperatorEq         FilterOperator = "Eq"
+	FilterOperatorNeq        FilterOperator = "Neq"
+	FilterOperatorLt         FilterOperator = "Lt"
+	FilterOperatorLte        FilterOperator = "Lte"
+	FilterOperatorGt         FilterOperator = "Gt"
+	FilterOperatorGte        FilterOperator = "Gte"
+	FilterOperatorIn         FilterOperator = "In"
+	FilterOperatorNotIn      FilterOperator = "NotIn"
+	FilterOperatorIsNull     FilterOperator = "IsNull"
+	FilterOperatorContains   FilterOperator = "Contains"
+	FilterOperatorStartsWith FilterOperator = "StartsWith"
+	FilterOperatorEndsWith   FilterOperator = "EndsWith"
+	FilterOperatorFold       FilterOperator = "Fold"
+)
+
+// BuildFiltersFromQuery transforms a filter query string to a slice of Filters.
+// It supports:
+// - Groups: <group>.<field>.<mod>=value and <group>.__op in {and,or}
+// - NOT: not.<field>.<mod>=value
+// - FOLD: <field>.fold=true|1
+// - IN/NOT IN: value is CSV
+func BuildFiltersFromQuery(_ vuetifyx.FilterData, qs string) []*Filter {
+	if qs == "" {
+		return nil
+	}
+	values, err := url.ParseQuery(qs)
+	if err != nil {
+		return nil
+	}
+	groupOp := detectGroupOps(values)
+	groups := aggregateGroups(values, groupOp)
+	return buildFiltersFromGroups(groups)
 }
 
 func mapModToOperator(mod string) FilterOperator {

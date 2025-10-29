@@ -447,45 +447,150 @@ func TestBuildFiltersFromQuery_DefaultEqAndMultiGroups(t *testing.T) {
 	}
 }
 
-// Fold=false should clear/toggle to false instead of true
-func TestUnmarshal_FoldFalse(t *testing.T) {
-	sp := &SearchParams{Filter: &Filter{And: []*Filter{
-		{Condition: FieldCondition{Field: "Name", Operator: FilterOperatorContains, Value: "abc"}},
-		{Condition: FieldCondition{Field: "Name", Operator: FilterOperatorFold, Value: false}},
-	}}}
-	var req ListProductsRequest
-	if err := sp.Unmarshal(&req.Filter); err != nil {
-		t.Fatalf("Unmarshal error: %v", err)
+// mapModToOperator should map all supported modifiers
+func TestBuildFiltersFromQuery_ModifiersFullFlow(t *testing.T) {
+	type Case struct {
+		qs    string
+		check func(*testing.T, *ListProductsRequest)
 	}
-	if req.Filter == nil || req.Filter.Name == nil || req.Filter.Name.Contains == nil || req.Filter.Name.Fold {
-		t.Fatalf("expect Name.Contains set and Fold=false, got %#v", req.Filter.Name)
+	cases := []Case{
+		{"status.in=A,B", func(t *testing.T, req *ListProductsRequest) {
+			if req.Filter == nil || req.Filter.Status == nil || len(req.Filter.Status.In) != 2 {
+				t.Fatalf("expect Status.In [A B], got %#v", req.Filter)
+			}
+		}},
+		{"status.notin=C", func(t *testing.T, req *ListProductsRequest) {
+			if req.Filter == nil || req.Filter.Status == nil || len(req.Filter.Status.NotIn) != 1 || req.Filter.Status.NotIn[0] != "C" {
+				t.Fatalf("expect Status.NotIn [C], got %#v", req.Filter)
+			}
+		}},
+		{"name.ilike=nova&name.fold=1", func(t *testing.T, req *ListProductsRequest) {
+			if req.Filter == nil || req.Filter.Name == nil || req.Filter.Name.Contains == nil || *req.Filter.Name.Contains != "nova" || !req.Filter.Name.Fold {
+				t.Fatalf("expect Name.Contains nova + Fold=true, got %#v", req.Filter)
+			}
+		}},
+		{"name=Alpha", func(t *testing.T, req *ListProductsRequest) {
+			if req.Filter == nil || req.Filter.Name == nil || req.Filter.Name.Eq == nil || *req.Filter.Name.Eq != "Alpha" {
+				t.Fatalf("expect Name.Eq Alpha, got %#v", req.Filter)
+			}
+		}},
+		{"created_at.lte=2025-10-20T12:00:00Z", func(t *testing.T, req *ListProductsRequest) {
+			if req.Filter == nil || req.Filter.CreatedAt == nil || req.Filter.CreatedAt.Lte == nil {
+				t.Fatalf("expect CreatedAt.Lte set, got %#v", req.Filter.CreatedAt)
+			}
+		}},
+	}
+	for _, c := range cases {
+		filters := BuildFiltersFromQuery(nil, c.qs)
+		var root *Filter
+		if len(filters) == 1 {
+			root = filters[0]
+		} else if len(filters) > 1 {
+			root = &Filter{And: filters}
+		}
+		sp := &SearchParams{Filter: root}
+		var req ListProductsRequest
+		if err := sp.Unmarshal(&req.Filter); err != nil {
+			t.Fatalf("Unmarshal error: %v", err)
+		}
+		c.check(t, &req)
 	}
 }
 
-// Unknown operator should be ignored and not panic
-func TestUnmarshal_UnknownOperatorIgnored(t *testing.T) {
-	sp := &SearchParams{Filter: &Filter{And: []*Filter{
-		{Condition: FieldCondition{Field: "Name", Operator: FilterOperator("UnknownOp"), Value: "x"}},
-	}}}
+// coerceFromString direct coverage (success and failure)
+func TestBuildFiltersFromQuery_CoerceFromStringPaths(t *testing.T) {
+	// bool true via eq
+	qs := "is_published.eq=true"
+	filters := BuildFiltersFromQuery(nil, qs)
+	var root *Filter
+	if len(filters) == 1 {
+		root = filters[0]
+	} else if len(filters) > 1 {
+		root = &Filter{And: filters}
+	}
+	sp := &SearchParams{Filter: root}
 	var req ListProductsRequest
 	if err := sp.Unmarshal(&req.Filter); err != nil {
 		t.Fatalf("Unmarshal error: %v", err)
 	}
-	if req.Filter != nil && req.Filter.Name != nil && req.Filter.Name.Eq != nil {
-		t.Fatalf("unknown operator should be ignored, got %#v", req.Filter.Name)
+	if req.Filter == nil || req.Filter.IsPublished == nil || req.Filter.IsPublished.Eq == nil || *req.Filter.IsPublished.Eq != true {
+		t.Fatalf("expect IsPublished.Eq=true, got %#v", req.Filter)
 	}
 }
 
-// Field name insensitivity: created_at -> CreatedAt
-func TestUnmarshal_FieldNameInsensitive(t *testing.T) {
-	sp := &SearchParams{Filter: &Filter{And: []*Filter{
-		{Condition: FieldCondition{Field: "created_at", Operator: FilterOperatorLte, Value: "2025-10-20T12:00:00Z"}},
-	}}}
+// Numeric comparators full-flow via custom mirror filter
+func TestBuildFiltersFromQuery_NumericComparators_FullFlow(t *testing.T) {
+	type PriceOps struct{ Eq, Gt, Gte, Lt, Lte *float64 }
+	type MirrorFilter struct{ Price *PriceOps }
+	type Req struct{ Filter *MirrorFilter }
+
+	qs := "price.gt=10&price.gte=11&price.lt=20&price.lte=19"
+	filters := BuildFiltersFromQuery(nil, qs)
+	var root *Filter
+	if len(filters) == 1 {
+		root = filters[0]
+	} else if len(filters) > 1 {
+		root = &Filter{And: filters}
+	}
+	sp := &SearchParams{Filter: root}
+	var req Req
+	if err := sp.Unmarshal(&req.Filter); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+
+	if req.Filter == nil || req.Filter.Price == nil || req.Filter.Price.Gt == nil || *req.Filter.Price.Gt != 10 {
+		t.Fatalf("expect Price.Gt=10, got %#v", req.Filter)
+	}
+	if req.Filter.Price.Gte == nil || *req.Filter.Price.Gte != 11 {
+		t.Fatalf("expect Price.Gte=11, got %#v", req.Filter.Price)
+	}
+	if req.Filter.Price.Lt == nil || *req.Filter.Price.Lt != 20 {
+		t.Fatalf("expect Price.Lt=20, got %#v", req.Filter.Price)
+	}
+	if req.Filter.Price.Lte == nil || *req.Filter.Price.Lte != 19 {
+		t.Fatalf("expect Price.Lte=19, got %#v", req.Filter.Price)
+	}
+}
+
+// NOT name eq full-flow
+func TestBuildFiltersFromQuery_NotNameEq(t *testing.T) {
+	qs := "not.name.eq=Alpha"
+	filters := BuildFiltersFromQuery(nil, qs)
+	var root *Filter
+	if len(filters) == 1 {
+		root = filters[0]
+	} else if len(filters) > 1 {
+		root = &Filter{And: filters}
+	}
+	sp := &SearchParams{Filter: root}
 	var req ListProductsRequest
 	if err := sp.Unmarshal(&req.Filter); err != nil {
 		t.Fatalf("Unmarshal error: %v", err)
 	}
-	if req.Filter == nil || req.Filter.CreatedAt == nil || req.Filter.CreatedAt.Lte == nil {
-		t.Fatalf("expect CreatedAt.Lte set, got %#v", req.Filter.CreatedAt)
+	if req.Filter == nil || req.Filter.Not == nil || req.Filter.Not.Name == nil || req.Filter.Not.Name.Eq == nil || *req.Filter.Not.Name.Eq != "Alpha" {
+		t.Fatalf("expect Not.Name.Eq=Alpha, got %#v", req.Filter)
+	}
+}
+
+// fold=false via URL should keep Fold=false
+func TestBuildFiltersFromQuery_FoldFalseViaQuery(t *testing.T) {
+	qs := "name.ilike=ab&name.fold=0"
+	filters := BuildFiltersFromQuery(nil, qs)
+	var root *Filter
+	if len(filters) == 1 {
+		root = filters[0]
+	} else if len(filters) > 1 {
+		root = &Filter{And: filters}
+	}
+	sp := &SearchParams{Filter: root}
+	var req ListProductsRequest
+	if err := sp.Unmarshal(&req.Filter); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+	if req.Filter == nil || req.Filter.Name == nil || req.Filter.Name.Contains == nil || *req.Filter.Name.Contains != "ab" {
+		t.Fatalf("expect Name.Contains=ab, got %#v", req.Filter.Name)
+	}
+	if req.Filter.Name.Fold {
+		t.Fatalf("expect Name.Fold=false, got true")
 	}
 }
