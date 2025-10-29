@@ -419,3 +419,73 @@ func TestBuildFiltersFromQuery_WithNotAndGroups(t *testing.T) {
 		t.Fatalf("expect not.status.in=[C], got %#v", req.Filter.Not)
 	}
 }
+
+// name=Alpha (default eq), g1.code.in=A,B, g2.not.locale_code.eq=zh
+func TestBuildFiltersFromQuery_DefaultEqAndMultiGroups(t *testing.T) {
+	qs := "name=Alpha&g1.code.in=A,B&g1.__op=and&g2.not.locale_code.eq=zh&g2.__op=and"
+	filters := BuildFiltersFromQuery(nil, qs)
+	var root *Filter
+	if len(filters) == 1 {
+		root = filters[0]
+	} else if len(filters) > 1 {
+		root = &Filter{And: filters}
+	}
+	sp := &SearchParams{Filter: root}
+
+	var req ListProductsRequest
+	if err := sp.Unmarshal(&req.Filter); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+	if req.Filter == nil || req.Filter.Name == nil || req.Filter.Name.Eq == nil || *req.Filter.Name.Eq != "Alpha" {
+		t.Fatalf("expect Name.Eq=Alpha, got %#v", req.Filter)
+	}
+	if req.Filter.Code == nil || len(req.Filter.Code.In) != 2 || req.Filter.Code.In[0] != "A" || req.Filter.Code.In[1] != "B" {
+		t.Fatalf("expect Code.In=[A B], got %#v", req.Filter.Code)
+	}
+	if req.Filter.Not == nil || req.Filter.Not.LocaleCode == nil || req.Filter.Not.LocaleCode.Eq == nil || *req.Filter.Not.LocaleCode.Eq != "zh" {
+		t.Fatalf("expect Not.LocaleCode.Eq=zh, got %#v", req.Filter.Not)
+	}
+}
+
+// Fold=false should clear/toggle to false instead of true
+func TestUnmarshal_FoldFalse(t *testing.T) {
+	sp := &SearchParams{Filter: &Filter{And: []*Filter{
+		{Condition: FieldCondition{Field: "Name", Operator: FilterOperatorContains, Value: "abc"}},
+		{Condition: FieldCondition{Field: "Name", Operator: FilterOperatorFold, Value: false}},
+	}}}
+	var req ListProductsRequest
+	if err := sp.Unmarshal(&req.Filter); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+	if req.Filter == nil || req.Filter.Name == nil || req.Filter.Name.Contains == nil || req.Filter.Name.Fold {
+		t.Fatalf("expect Name.Contains set and Fold=false, got %#v", req.Filter.Name)
+	}
+}
+
+// Unknown operator should be ignored and not panic
+func TestUnmarshal_UnknownOperatorIgnored(t *testing.T) {
+	sp := &SearchParams{Filter: &Filter{And: []*Filter{
+		{Condition: FieldCondition{Field: "Name", Operator: FilterOperator("UnknownOp"), Value: "x"}},
+	}}}
+	var req ListProductsRequest
+	if err := sp.Unmarshal(&req.Filter); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+	if req.Filter != nil && req.Filter.Name != nil && req.Filter.Name.Eq != nil {
+		t.Fatalf("unknown operator should be ignored, got %#v", req.Filter.Name)
+	}
+}
+
+// Field name insensitivity: created_at -> CreatedAt
+func TestUnmarshal_FieldNameInsensitive(t *testing.T) {
+	sp := &SearchParams{Filter: &Filter{And: []*Filter{
+		{Condition: FieldCondition{Field: "created_at", Operator: FilterOperatorLte, Value: "2025-10-20T12:00:00Z"}},
+	}}}
+	var req ListProductsRequest
+	if err := sp.Unmarshal(&req.Filter); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+	if req.Filter == nil || req.Filter.CreatedAt == nil || req.Filter.CreatedAt.Lte == nil {
+		t.Fatalf("expect CreatedAt.Lte set, got %#v", req.Filter.CreatedAt)
+	}
+}

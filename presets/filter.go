@@ -275,95 +275,105 @@ func applyFilterRecursively(src *Filter, dst reflect.Value) error {
 	if !dst.IsValid() || dst.Kind() != reflect.Struct {
 		return errors.New("dst must be a struct value")
 	}
-
-	// Handle logical groups first
-	if len(src.And) > 0 {
-		// Flatten AND: merge all children into current node
-		for _, ch := range src.And {
-			if err := applyFilterRecursively(ch, dst); err != nil {
-				return err
-			}
-		}
+	if err := handleAndGroup(src, dst); err != nil {
+		return err
 	}
-	if len(src.Or) > 0 {
-		if err := appendChildren(fieldOr, src.Or, dst); err != nil {
+	if err := handleOrGroup(src, dst); err != nil {
+		return err
+	}
+	if err := handleNotGroup(src, dst); err != nil {
+		return err
+	}
+	return handleFieldCondition(src, dst)
+}
+
+func handleAndGroup(src *Filter, dst reflect.Value) error {
+	if len(src.And) == 0 {
+		return nil
+	}
+	for _, ch := range src.And {
+		if err := applyFilterRecursively(ch, dst); err != nil {
 			return err
 		}
 	}
-	if src.Not != nil {
-		// Field name Not
-		f, ok := findExportedFieldByName(dst, fieldNot)
-		if ok {
-			// Ensure pointer to struct
-			if f.Kind() == reflect.Ptr {
-				if f.IsNil() {
-					f.Set(reflect.New(f.Type().Elem()))
-				}
-				if err := applyFilterRecursively(src.Not, f.Elem()); err != nil {
-					return err
-				}
-			} else if f.Kind() == reflect.Struct {
-				if err := applyFilterRecursively(src.Not, f); err != nil {
-					return err
-				}
-			}
-		}
+	return nil
+}
+
+func handleOrGroup(src *Filter, dst reflect.Value) error {
+	if len(src.Or) == 0 {
+		return nil
 	}
+	return appendChildren(fieldOr, src.Or, dst)
+}
 
-	// Handle field condition
-	if src.Condition.Field != "" {
-		fieldName := strcase.ToCamel(src.Condition.Field)
-		fv, ok := findExportedFieldByName(dst, fieldName)
-		if !ok {
-			// Try alternate name without underscores/case-insensitivity
-			if fv, ok = findExportedFieldByInsensitive(dst, src.Condition.Field); !ok {
-				return nil // Silently ignore unknown fields
-			}
+func handleNotGroup(src *Filter, dst reflect.Value) error {
+	if src.Not == nil {
+		return nil
+	}
+	f, ok := findExportedFieldByName(dst, fieldNot)
+	if !ok {
+		return nil
+	}
+	if f.Kind() == reflect.Ptr {
+		if f.IsNil() {
+			f.Set(reflect.New(f.Type().Elem()))
 		}
+		return applyFilterRecursively(src.Not, f.Elem())
+	}
+	if f.Kind() == reflect.Struct {
+		return applyFilterRecursively(src.Not, f)
+	}
+	return nil
+}
 
-		// Ensure we have a struct to write operator fields into
-		if fv.Kind() == reflect.Ptr {
-			if fv.IsNil() {
-				fv.Set(reflect.New(fv.Type().Elem()))
-			}
-			fv = fv.Elem()
-		}
-		if fv.Kind() != reflect.Struct {
-			return errors.Errorf("field %s is not a struct for operators", fieldName)
-		}
-
-		opName := string(src.Condition.Operator)
-		if strings.EqualFold(opName, fieldFold) {
-			// Special handling: Fold is a boolean flag on the field filter struct
-			// If the target struct has a bool field named Fold, set it to true (or bool value if provided)
-			if foldField, ok := findExportedFieldByName(fv, fieldFold); ok {
-				val := true
-				if b, ok2 := src.Condition.Value.(bool); ok2 {
-					val = b
-				}
-				if foldField.Kind() == reflect.Bool {
-					foldField.SetBool(val)
-				} else if foldField.Kind() == reflect.Ptr && foldField.Type().Elem().Kind() == reflect.Bool {
-					if foldField.IsNil() {
-						foldField.Set(reflect.New(foldField.Type().Elem()))
-					}
-					foldField.Elem().SetBool(val)
-				}
-			}
+func handleFieldCondition(src *Filter, dst reflect.Value) error {
+	if src.Condition.Field == "" {
+		return nil
+	}
+	fieldName := strcase.ToCamel(src.Condition.Field)
+	fv, ok := findExportedFieldByName(dst, fieldName)
+	if !ok {
+		if fv, ok = findExportedFieldByInsensitive(dst, src.Condition.Field); !ok {
 			return nil
 		}
-
-		if opName == "" {
-			opName = "Eq"
+	}
+	if fv.Kind() == reflect.Ptr {
+		if fv.IsNil() {
+			fv.Set(reflect.New(fv.Type().Elem()))
 		}
-		of, ok := findOperatorField(fv, opName)
-		if !ok {
-			return nil // Operator not supported by target, ignore
-		}
+		fv = fv.Elem()
+	}
+	if fv.Kind() != reflect.Struct {
+		return errors.Errorf("field %s is not a struct for operators", fieldName)
+	}
 
-		// Set value
-		if err := setValueForField(of, src.Condition.Value, opName); err != nil {
-			return err
+	opName := string(src.Condition.Operator)
+	if strings.EqualFold(opName, fieldFold) {
+		return setFoldFlag(fv, src)
+	}
+	if opName == "" {
+		opName = "Eq"
+	}
+	of, ok := findOperatorField(fv, opName)
+	if !ok {
+		return nil
+	}
+	return setValueForField(of, src.Condition.Value, opName)
+}
+
+func setFoldFlag(target reflect.Value, src *Filter) error {
+	if foldField, ok := findExportedFieldByName(target, fieldFold); ok {
+		val := true
+		if b, ok2 := src.Condition.Value.(bool); ok2 {
+			val = b
+		}
+		if foldField.Kind() == reflect.Bool {
+			foldField.SetBool(val)
+		} else if foldField.Kind() == reflect.Ptr && foldField.Type().Elem().Kind() == reflect.Bool {
+			if foldField.IsNil() {
+				foldField.Set(reflect.New(foldField.Type().Elem()))
+			}
+			foldField.Elem().SetBool(val)
 		}
 	}
 	return nil
@@ -489,94 +499,102 @@ func coerceScalar(t reflect.Type, v any) (reflect.Value, error) {
 
 	rv := reflect.ValueOf(v)
 	if !rv.IsValid() {
-		// zero
 		return reflect.Zero(t), nil
 	}
 
-	// Special-case protobuf Timestamp using concrete types (avoid fragile package/name string checks)
-	if t == _tsValType || t.AssignableTo(_tsPtrType) {
-		// Accept time.Time or various string/int inputs and convert via timestamppb.New
-		var tm time.Time
-		switch x := v.(type) {
-		case time.Time:
-			tm = x
-		case *time.Time:
-			if x != nil {
-				tm = *x
-			}
-		case string:
-			// try common formats
-			layouts := []string{time.RFC3339, "2006-01-02 15:04:05", "2006-01-02T15:04:05Z07:00", "2006-01-02"}
-			var parsed bool
-			xs := strings.TrimSpace(x)
-			for _, layout := range layouts {
-				if t1, e := time.Parse(layout, xs); e == nil {
-					tm = t1
-					parsed = true
-					break
-				}
-			}
-			if !parsed {
-				// try seconds since epoch
-				if sec, err := strconv.ParseInt(xs, 10, 64); err == nil {
-					tm = time.Unix(sec, 0)
-					parsed = true
-				}
-			}
-			if !parsed {
-				return reflect.Value{}, errors.Errorf("cannot parse time: %q", x)
-			}
-		default:
-			// Try integer seconds or RFC3339 from generic string representation
-			s := fmt.Sprint(v)
-			if sec, err := strconv.ParseInt(strings.TrimSpace(s), 10, 64); err == nil {
-				tm = time.Unix(sec, 0)
-			} else {
-				t1, err2 := time.Parse(time.RFC3339, strings.TrimSpace(s))
-				if err2 != nil {
-					return reflect.Value{}, errors.Wrap(err2, "parse time")
-				}
-				tm = t1
-			}
-		}
-		pb := timestamppb.New(tm)
-		if t.Kind() == reflect.Ptr {
-			return reflect.ValueOf(pb), nil
-		}
-		// target is non-pointer timestamppb.Timestamp (value)
-		return reflect.Indirect(reflect.ValueOf(pb)).Convert(t), nil
+	if val, ok := coerceTimestampValue(t, v); ok {
+		return val, nil
 	}
 
-	// Directly assignable
+	if val, ok := coerceDirectOrConvertible(t, rv); ok {
+		return val, nil
+	}
+
+	if val, ok := coerceFromString(t, fmt.Sprint(v)); ok {
+		return val, nil
+	}
+
+	return reflect.Value{}, errors.Errorf("cannot coerce %T to %s", v, t.String())
+}
+
+func coerceTimestampValue(t reflect.Type, v any) (reflect.Value, bool) {
+	if !(t == _tsValType || t.AssignableTo(_tsPtrType)) {
+		return reflect.Value{}, false
+	}
+	var tm time.Time
+	switch x := v.(type) {
+	case time.Time:
+		tm = x
+	case *time.Time:
+		if x != nil {
+			tm = *x
+		}
+	case string:
+		layouts := []string{time.RFC3339, "2006-01-02 15:04:05", "2006-01-02T15:04:05Z07:00", "2006-01-02"}
+		xs := strings.TrimSpace(x)
+		for _, layout := range layouts {
+			if t1, e := time.Parse(layout, xs); e == nil {
+				tm = t1
+				break
+			}
+		}
+		if tm.IsZero() {
+			if sec, err := strconv.ParseInt(xs, 10, 64); err == nil {
+				tm = time.Unix(sec, 0)
+			}
+		}
+		if tm.IsZero() {
+			return reflect.Value{}, true
+		}
+	default:
+		s := strings.TrimSpace(fmt.Sprint(v))
+		if sec, err := strconv.ParseInt(s, 10, 64); err == nil {
+			tm = time.Unix(sec, 0)
+		} else if t1, err2 := time.Parse(time.RFC3339, s); err2 == nil {
+			tm = t1
+		} else {
+			return reflect.Value{}, true
+		}
+	}
+	pb := timestamppb.New(tm)
+	if t.Kind() == reflect.Ptr {
+		return reflect.ValueOf(pb), true
+	}
+	return reflect.Indirect(reflect.ValueOf(pb)).Convert(t), true
+}
+
+func coerceDirectOrConvertible(t reflect.Type, rv reflect.Value) (reflect.Value, bool) {
 	if rv.Type().AssignableTo(t) {
-		return rv.Convert(t), nil
+		return rv.Convert(t), true
 	}
-	// Convertible
 	if rv.Type().ConvertibleTo(t) {
-		return rv.Convert(t), nil
+		return rv.Convert(t), true
 	}
-	// Try string based conversions
-	s := fmt.Sprint(v)
+	return reflect.Value{}, false
+}
+
+func coerceFromString(t reflect.Type, s string) (reflect.Value, bool) {
+	s = strings.TrimSpace(s)
 	switch t.Kind() {
 	case reflect.String:
-		return reflect.ValueOf(s).Convert(t), nil
+		return reflect.ValueOf(s).Convert(t), true
 	case reflect.Bool:
-		b := strings.EqualFold(s, "true") || strings.TrimSpace(s) == "1"
-		return reflect.ValueOf(b).Convert(t), nil
+		b := strings.EqualFold(s, "true") || s == "1"
+		return reflect.ValueOf(b).Convert(t), true
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		if iv, err := strconv.ParseInt(strings.TrimSpace(s), 10, 64); err == nil {
-			return reflect.ValueOf(iv).Convert(t), nil
+		if iv, err := strconv.ParseInt(s, 10, 64); err == nil {
+			return reflect.ValueOf(iv).Convert(t), true
 		}
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		if iv, err := strconv.ParseUint(strings.TrimSpace(s), 10, 64); err == nil {
-			return reflect.ValueOf(iv).Convert(t), nil
+		if iv, err := strconv.ParseUint(s, 10, 64); err == nil {
+			return reflect.ValueOf(iv).Convert(t), true
 		}
 	case reflect.Float32, reflect.Float64:
-		if fv, err := strconv.ParseFloat(strings.TrimSpace(s), 64); err == nil {
-			return reflect.ValueOf(fv).Convert(t), nil
+		if fv, err := strconv.ParseFloat(s, 64); err == nil {
+			return reflect.ValueOf(fv).Convert(t), true
 		}
 	}
-	return reflect.Value{}, errors.Errorf("cannot coerce %T to %s", v, t.String())
+	return reflect.Value{}, false
 }
 
 func findExportedFieldByName(v reflect.Value, name string) (reflect.Value, bool) {
