@@ -267,6 +267,7 @@ func TestListingCompo_ProcessFilter_QueryToSQLConditions(t *testing.T) {
 }
 
 // Verify that URL query can be converted into Filters tree (AND/OR) and then mapped to request filter struct
+// merged into TestBuildFiltersFromQuery_QSSubtests
 func TestBuildFiltersFromQuery_ToRequestFilter(t *testing.T) {
 	// name.ilike=Alpha&name.ilike=Beta => OR for Name.Contains
 	// status.in=A,B => In slice
@@ -314,6 +315,7 @@ func TestBuildFiltersFromQuery_ToRequestFilter(t *testing.T) {
 }
 
 // NOT and groups: g1 (or) with two names (fold true each), and not.status.in=C
+// merged into TestBuildFiltersFromQuery_QSSubtests
 func TestBuildFiltersFromQuery_WithNotAndGroups(t *testing.T) {
 	qs := "g1.name.ilike=Alpha&g1.name.ilike=Beta&g1.__op=or&g1.name.fold=1&not.status.in=C"
 	filters := BuildFiltersFromQuery(nil, qs)
@@ -360,6 +362,7 @@ func TestBuildFiltersFromQuery_WithNotAndGroups(t *testing.T) {
 }
 
 // name=Alpha (default eq), g1.code.in=A,B, g2.not.locale_code.eq=zh
+// merged into TestBuildFiltersFromQuery_QSSubtests
 func TestBuildFiltersFromQuery_DefaultEqAndMultiGroups(t *testing.T) {
 	qs := "name=Alpha&g1.code.in=A,B&g1.__op=and&g2.not.locale_code.eq=zh&g2.__op=and"
 	filters := BuildFiltersFromQuery(nil, qs)
@@ -420,21 +423,80 @@ func TestBuildFiltersFromQuery_QSSubtests(t *testing.T) {
 				t.Fatalf("expect CreatedAt.Lte set, got %#v", req.Filter.CreatedAt)
 			}
 		}},
+		{"NameIlikeTwoVals_StatusIn", "name.ilike=Alpha&name.ilike=Beta&status.in=A,B&name.fold=true", func(req *ListProductsRequest) {
+			if req.Filter == nil || len(req.Filter.Or) != 2 {
+				t.Fatalf("expect 2 OR children, got %#v", req.Filter)
+			}
+			assertStatusIn(t, *req, []string{"A", "B"})
+		}},
+		{"WithNotAndGroups", "g1.name.ilike=Alpha&g1.name.ilike=Beta&g1.__op=or&g1.name.fold=1&not.status.in=C", func(req *ListProductsRequest) {
+			if req.Filter == nil || len(req.Filter.Or) == 0 {
+				t.Fatalf("expect OR group for g1")
+			}
+			if req.Filter.Not == nil || req.Filter.Not.Status == nil || len(req.Filter.Not.Status.In) != 1 || req.Filter.Not.Status.In[0] != "C" {
+				t.Fatalf("expect not.status.in=[C], got %#v", req.Filter.Not)
+			}
+		}},
+		{"DefaultEqAndMultiGroups", "name=Alpha&g1.code.in=A,B&g1.__op=and&g2.not.locale_code.eq=zh&g2.__op=and", func(req *ListProductsRequest) {
+			assertNameEqFold(t, *req, "Alpha", false)
+			if req.Filter.Code == nil || len(req.Filter.Code.In) != 2 || req.Filter.Code.In[0] != "A" || req.Filter.Code.In[1] != "B" {
+				t.Fatalf("expect Code.In=[A B], got %#v", req.Filter.Code)
+			}
+			if req.Filter.Not == nil || req.Filter.Not.LocaleCode == nil || req.Filter.Not.LocaleCode.Eq == nil || *req.Filter.Not.LocaleCode.Eq != "zh" {
+				t.Fatalf("expect Not.LocaleCode.Eq=zh, got %#v", req.Filter.Not)
+			}
+		}},
+		{"IsPublishedEqTrue", "is_published.eq=true", func(req *ListProductsRequest) {
+			if req.Filter == nil || req.Filter.IsPublished == nil || req.Filter.IsPublished.Eq == nil || *req.Filter.IsPublished.Eq != true {
+				t.Fatalf("expect IsPublished.Eq=true, got %#v", req.Filter)
+			}
+		}},
+		{"FoldFalseViaQuery", "name.ilike=ab&name.fold=0", func(req *ListProductsRequest) {
+			if req.Filter == nil || req.Filter.Name == nil || req.Filter.Name.Contains == nil || *req.Filter.Name.Contains != "ab" {
+				t.Fatalf("expect Name.Contains=ab, got %#v", req.Filter.Name)
+			}
+			if req.Filter.Name.Fold {
+				t.Fatalf("expect Name.Fold=false, got true")
+			}
+		}},
+		{"EqWithFold", "name.eq=ABC&name.fold=1", func(req *ListProductsRequest) { assertNameEqFold(t, *req, "ABC", true) }},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) { runQS(t, c.qs, c.check) })
 	}
-}
-
-// Cover buildFiltersFromGroups: IN branch + group op = or (append to groupNode.Or)
-func TestQS_GroupOr_StatusIn(t *testing.T) {
-	qs := "g1.status.in=A,B&g1.__op=or"
-	runQS(t, qs, func(req *ListProductsRequest) {
-		if req.Filter == nil || len(req.Filter.Or) == 0 {
-			t.Fatalf("expect OR group for g1 with status.in, got %#v", req.Filter)
+	t.Run("KeywordQS_FoldImplicit", func(t *testing.T) {
+		// inline variant: parse keyword and set on SearchParams
+		qs := "keyword=Nova&name.eq=Exact&name.fold=1"
+		v, _ := url.ParseQuery(qs)
+		filters := BuildFiltersFromQuery(nil, qs)
+		var root *Filter
+		if len(filters) == 1 {
+			root = filters[0]
+		} else if len(filters) > 1 {
+			root = &Filter{And: filters}
+		}
+		sp := &SearchParams{Filter: root, Keyword: v.Get("keyword"), KeywordColumns: []string{"Name", "Code"}}
+		var req ListProductsRequest
+		if err := sp.Unmarshal(&req.Filter); err != nil {
+			t.Fatalf("Unmarshal error: %v", err)
+		}
+		if req.Filter == nil || req.Filter.Name == nil || req.Filter.Name.Eq == nil || *req.Filter.Name.Eq != "Exact" || !req.Filter.Name.Fold {
+			t.Fatalf("expect Name.Eq=Exact and Fold=true, got %#v", req.Filter.Name)
+		}
+		var keywordOK bool
+		for _, ch := range req.Filter.Or {
+			if ch.Name != nil && ch.Name.Contains != nil && *ch.Name.Contains == "Nova" && ch.Name.Fold {
+				keywordOK = true
+			}
+		}
+		if !keywordOK {
+			t.Fatalf("expect OR child from keyword with Name.Contains and Fold=true, got %#v", req.Filter.Or)
 		}
 	})
 }
+
+// Cover buildFiltersFromGroups: IN branch + group op = or (append to groupNode.Or)
+// merged into TestBuildFiltersFromQuery_QSSubtests
 
 // Cover handleNotGroup: destination Not field is struct (not pointer)
 func TestUnmarshal_NotWithStructField(t *testing.T) {
@@ -476,10 +538,23 @@ func TestUnmarshal_OrWithStructSlice(t *testing.T) {
 	}
 }
 
-// coerceFromString direct coverage (success and failure)
-func TestBuildFiltersFromQuery_CoerceFromStringPaths(t *testing.T) {
-	// bool true via eq
-	qs := "is_published.eq=true"
+// Cover coerceFromString branches: string, bool, int, uint, float via full QS pipeline
+func TestBuildFiltersFromQuery_CoerceFromString_AllKinds(t *testing.T) {
+	type StrOps struct{ Eq *string }
+	type BoolOps struct{ Eq *bool }
+	type IntOps struct{ Eq *int64 }
+	type UintOps struct{ Eq *uint64 }
+	type FloatOps struct{ Eq *float64 }
+	type Dest struct {
+		Nstr   *StrOps
+		Nbool  *BoolOps
+		Nint   *IntOps
+		Nuint  *UintOps
+		Nfloat *FloatOps
+	}
+	type Req struct{ Filter *Dest }
+
+	qs := "nstr=hello&nbool=true&nint=123&nuint=456&nfloat=1.25"
 	filters := BuildFiltersFromQuery(nil, qs)
 	var root *Filter
 	if len(filters) == 1 {
@@ -488,14 +563,31 @@ func TestBuildFiltersFromQuery_CoerceFromStringPaths(t *testing.T) {
 		root = &Filter{And: filters}
 	}
 	sp := &SearchParams{Filter: root}
-	var req ListProductsRequest
+	var req Req
 	if err := sp.Unmarshal(&req.Filter); err != nil {
 		t.Fatalf("Unmarshal error: %v", err)
 	}
-	if req.Filter == nil || req.Filter.IsPublished == nil || req.Filter.IsPublished.Eq == nil || *req.Filter.IsPublished.Eq != true {
-		t.Fatalf("expect IsPublished.Eq=true, got %#v", req.Filter)
+
+	if req.Filter == nil || req.Filter.Nstr == nil || req.Filter.Nstr.Eq == nil || *req.Filter.Nstr.Eq != "hello" {
+		t.Fatalf("expect nstr.eq=hello, got %#v", req.Filter)
+	}
+	if req.Filter.Nbool == nil || req.Filter.Nbool.Eq == nil || *req.Filter.Nbool.Eq != true {
+		t.Fatalf("expect nbool.eq=true, got %#v", req.Filter)
+	}
+	if req.Filter.Nint == nil || req.Filter.Nint.Eq == nil || *req.Filter.Nint.Eq != 123 {
+		t.Fatalf("expect nint.eq=123, got %#v", req.Filter)
+	}
+	if req.Filter.Nuint == nil || req.Filter.Nuint.Eq == nil || *req.Filter.Nuint.Eq != 456 {
+		t.Fatalf("expect nuint.eq=456, got %#v", req.Filter)
+	}
+	if req.Filter.Nfloat == nil || req.Filter.Nfloat.Eq == nil || *req.Filter.Nfloat.Eq != 1.25 {
+		t.Fatalf("expect nfloat.eq=1.25, got %#v", req.Filter)
 	}
 }
+
+// coerceFromString direct coverage (success and failure)
+// merged into TestBuildFiltersFromQuery_QSSubtests
+func TestBuildFiltersFromQuery_CoerceFromStringPaths(t *testing.T) {}
 
 // ---------- helpers to reduce per-test complexity ----------
 
@@ -677,91 +769,6 @@ func TestBuildFiltersFromQuery_NotNameEq(t *testing.T) {
 	}
 	if req.Filter == nil || req.Filter.Not == nil || req.Filter.Not.Name == nil || req.Filter.Not.Name.Eq == nil || *req.Filter.Not.Name.Eq != "Alpha" {
 		t.Fatalf("expect Not.Name.Eq=Alpha, got %#v", req.Filter)
-	}
-}
-
-// fold=false via URL should keep Fold=false
-func TestBuildFiltersFromQuery_FoldFalseViaQuery(t *testing.T) {
-	qs := "name.ilike=ab&name.fold=0"
-	filters := BuildFiltersFromQuery(nil, qs)
-	var root *Filter
-	if len(filters) == 1 {
-		root = filters[0]
-	} else if len(filters) > 1 {
-		root = &Filter{And: filters}
-	}
-	sp := &SearchParams{Filter: root}
-	var req ListProductsRequest
-	if err := sp.Unmarshal(&req.Filter); err != nil {
-		t.Fatalf("Unmarshal error: %v", err)
-	}
-	if req.Filter == nil || req.Filter.Name == nil || req.Filter.Name.Contains == nil || *req.Filter.Name.Contains != "ab" {
-		t.Fatalf("expect Name.Contains=ab, got %#v", req.Filter.Name)
-	}
-	if req.Filter.Name.Fold {
-		t.Fatalf("expect Name.Fold=false, got true")
-	}
-}
-
-// Keyword in qs should map to OR Contains with Fold=true by default
-func TestBuildFiltersFromQuery_KeywordQS_FoldImplicit(t *testing.T) {
-	qs := "keyword=Nova&name.eq=Exact&name.fold=1"
-	// parse keyword from qs
-	filters := BuildFiltersFromQuery(nil, qs)
-	var root *Filter
-	if len(filters) == 1 {
-		root = filters[0]
-	} else if len(filters) > 1 {
-		root = &Filter{And: filters}
-	}
-	// extract keyword
-	v, _ := url.ParseQuery(qs)
-	kw := v.Get("keyword")
-
-	sp := &SearchParams{Filter: root}
-	sp.Keyword = kw
-	sp.KeywordColumns = []string{"Name", "Code"}
-
-	var req ListProductsRequest
-	if err := sp.Unmarshal(&req.Filter); err != nil {
-		t.Fatalf("Unmarshal error: %v", err)
-	}
-	if req.Filter == nil {
-		t.Fatalf("filter nil")
-	}
-	// Expect Name.Eq=Exact with Fold=true from explicit name.fold=1
-	if req.Filter.Name == nil || req.Filter.Name.Eq == nil || *req.Filter.Name.Eq != "Exact" || !req.Filter.Name.Fold {
-		t.Fatalf("expect Name.Eq=Exact and Fold=true, got %#v", req.Filter.Name)
-	}
-	// Keyword should add OR children: Name.Contains=Nova (Fold=true) and possibly Code if supported
-	var keywordOK bool
-	for _, ch := range req.Filter.Or {
-		if ch.Name != nil && ch.Name.Contains != nil && *ch.Name.Contains == kw && ch.Name.Fold {
-			keywordOK = true
-		}
-	}
-	if !keywordOK {
-		t.Fatalf("expect OR child from keyword with Name.Contains and Fold=true, got %#v", req.Filter.Or)
-	}
-}
-
-// Eq with fold should set Fold=true and carry Eq value
-func TestBuildFiltersFromQuery_EqWithFold(t *testing.T) {
-	qs := "name.eq=ABC&name.fold=1"
-	filters := BuildFiltersFromQuery(nil, qs)
-	var root *Filter
-	if len(filters) == 1 {
-		root = filters[0]
-	} else if len(filters) > 1 {
-		root = &Filter{And: filters}
-	}
-	sp := &SearchParams{Filter: root}
-	var req ListProductsRequest
-	if err := sp.Unmarshal(&req.Filter); err != nil {
-		t.Fatalf("Unmarshal error: %v", err)
-	}
-	if req.Filter == nil || req.Filter.Name == nil || req.Filter.Name.Eq == nil || *req.Filter.Name.Eq != "ABC" || !req.Filter.Name.Fold {
-		t.Fatalf("expect Name.Eq=ABC and Fold=true, got %#v", req.Filter.Name)
 	}
 }
 
