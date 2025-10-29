@@ -483,9 +483,37 @@ func TestBuildFiltersFromQuery_QSSubtests(t *testing.T) {
 		if req.Filter == nil || req.Filter.Name == nil || req.Filter.Name.Eq == nil || *req.Filter.Name.Eq != "Exact" || !req.Filter.Name.Fold {
 			t.Fatalf("expect Name.Eq=Exact and Fold=true, got %#v", req.Filter.Name)
 		}
+
+		if len(req.Filter.Or) != 1 {
+			t.Fatalf("expect only Name OR child for keyword, got %#v", req.Filter.Or)
+		}
+		if !(req.Filter.Or[0].Name != nil && req.Filter.Or[0].Name.Contains != nil && *req.Filter.Or[0].Name.Contains == "Nova" && req.Filter.Or[0].Name.Fold) {
+			t.Fatalf("expect OR Name.Contains=Nova Fold=true, got %#v", req.Filter.Or[0])
+		}
+	})
+	t.Run("KeywordQS_FoldFalse", func(t *testing.T) {
+		// inline variant: parse keyword and set on SearchParams
+		qs := "keyword=Nova&name.fold=0"
+		v, _ := url.ParseQuery(qs)
+		filters := BuildFiltersFromQuery(nil, qs)
+		var root *Filter
+		if len(filters) == 1 {
+			root = filters[0]
+		} else if len(filters) > 1 {
+			root = &Filter{And: filters}
+		}
+		sp := &SearchParams{Filter: root, Keyword: v.Get("keyword"), KeywordColumns: []string{"Name"}}
+		var req ListProductsRequest
+		if err := sp.Unmarshal(&req.Filter); err != nil {
+			t.Fatalf("Unmarshal error: %v", err)
+		}
+		if len(req.Filter.Or) != 1 {
+			t.Fatalf("expect 1 OR child, got %#v", req.Filter.Or)
+		}
+
 		var keywordOK bool
 		for _, ch := range req.Filter.Or {
-			if ch.Name != nil && ch.Name.Contains != nil && *ch.Name.Contains == "Nova" && ch.Name.Fold {
+			if ch.Name != nil && ch.Name.Contains != nil && *ch.Name.Contains == "Nova" && !ch.Name.Fold {
 				keywordOK = true
 			}
 		}
@@ -598,18 +626,20 @@ func assertFilterInitialized(t *testing.T, req ListProductsRequest) {
 }
 
 func assertNameContains(t *testing.T, req ListProductsRequest, val string) {
-	if req.Filter.Name == nil || req.Filter.Name.Contains == nil || *req.Filter.Name.Contains != val {
-		t.Fatalf("expect name.contains=%s, got %#v", val, req.Filter.Name)
+	nf := findNameFilter(req.Filter)
+	if nf == nil || nf.Contains == nil || *nf.Contains != val {
+		t.Fatalf("expect name.contains=%s, got %#v", val, req.Filter)
 	}
 }
 
 func assertCodeIn(t *testing.T, req ListProductsRequest, want []string) {
-	if req.Filter.Code == nil || len(req.Filter.Code.In) != len(want) {
-		t.Fatalf("expect code.in len=%d, got %#v", len(want), req.Filter.Code)
+	cf := findCodeFilter(req.Filter)
+	if cf == nil || len(cf.In) != len(want) {
+		t.Fatalf("expect code.in len=%d, got %#v", len(want), req.Filter)
 	}
 	for i := range want {
-		if req.Filter.Code.In[i] != want[i] {
-			t.Fatalf("unexpected code.in at %d: %s (want %s)", i, req.Filter.Code.In[i], want[i])
+		if cf.In[i] != want[i] {
+			t.Fatalf("unexpected code.in at %d: %s (want %s)", i, cf.In[i], want[i])
 		}
 	}
 }
@@ -631,52 +661,143 @@ func assertCreatedAtLtDate(t *testing.T, req ListProductsRequest, year int, mont
 }
 
 func assertKeywordOrNameContains(t *testing.T, req ListProductsRequest, kw string) {
-	if len(req.Filter.Or) == 0 {
-		t.Fatalf("expect OR children for keyword")
-	}
 	var ok bool
-	for _, ch := range req.Filter.Or {
-		if ch.Name != nil && ch.Name.Contains != nil && *ch.Name.Contains == kw {
+	var visit func(*ProductFilter)
+	visit = func(p *ProductFilter) {
+		if p == nil {
+			return
+		}
+		if p.Name != nil && p.Name.Contains != nil && *p.Name.Contains == kw {
 			ok = true
 		}
+		for _, ch := range p.Or {
+			visit(ch)
+		}
+		for _, ch := range p.And {
+			visit(ch)
+		}
+		if p.Not != nil {
+			visit(p.Not)
+		}
 	}
+	visit(req.Filter)
 	if !ok {
-		t.Fatalf("expect OR child with name.contains=%s, got %#v", kw, req.Filter.Or)
+		t.Fatalf("expect OR child with name.contains=%s, got %#v", kw, req.Filter)
 	}
 }
 
 func assertStatusIn(t *testing.T, req ListProductsRequest, want []string) {
-	if req.Filter == nil || req.Filter.Status == nil || len(req.Filter.Status.In) != len(want) {
+	sf := findStatusFilter(req.Filter)
+	if sf == nil || len(sf.In) != len(want) {
 		t.Fatalf("expect Status.In len=%d, got %#v", len(want), req.Filter)
 	}
 	for i := range want {
-		if req.Filter.Status.In[i] != want[i] {
-			t.Fatalf("unexpected Status.In[%d]=%s (want %s)", i, req.Filter.Status.In[i], want[i])
+		if sf.In[i] != want[i] {
+			t.Fatalf("unexpected Status.In[%d]=%s (want %s)", i, sf.In[i], want[i])
 		}
 	}
 }
 
 func assertStatusNotIn(t *testing.T, req ListProductsRequest, want []string) {
-	if req.Filter == nil || req.Filter.Status == nil || len(req.Filter.Status.NotIn) != len(want) {
+	sf := findStatusFilter(req.Filter)
+	if sf == nil || len(sf.NotIn) != len(want) {
 		t.Fatalf("expect Status.NotIn len=%d, got %#v", len(want), req.Filter)
 	}
 	for i := range want {
-		if req.Filter.Status.NotIn[i] != want[i] {
-			t.Fatalf("unexpected Status.NotIn[%d]=%s (want %s)", i, req.Filter.Status.NotIn[i], want[i])
+		if sf.NotIn[i] != want[i] {
+			t.Fatalf("unexpected Status.NotIn[%d]=%s (want %s)", i, sf.NotIn[i], want[i])
 		}
 	}
 }
 
 func assertNameContainsFold(t *testing.T, req ListProductsRequest, val string, fold bool) {
-	if req.Filter == nil || req.Filter.Name == nil || req.Filter.Name.Contains == nil || *req.Filter.Name.Contains != val || req.Filter.Name.Fold != fold {
+	nf := findNameFilter(req.Filter)
+	if nf == nil || nf.Contains == nil || *nf.Contains != val || nf.Fold != fold {
 		t.Fatalf("expect Name.Contains=%s Fold=%v, got %#v", val, fold, req.Filter)
 	}
 }
 
 func assertNameEqFold(t *testing.T, req ListProductsRequest, val string, fold bool) {
-	if req.Filter == nil || req.Filter.Name == nil || req.Filter.Name.Eq == nil || *req.Filter.Name.Eq != val || req.Filter.Name.Fold != fold {
+	nf := findNameFilter(req.Filter)
+	if nf == nil || nf.Eq == nil || *nf.Eq != val || nf.Fold != fold {
 		t.Fatalf("expect Name.Eq=%s Fold=%v, got %#v", val, fold, req.Filter)
 	}
+}
+
+// find helpers to adapt to preserved AND/OR structure
+func findNameFilter(p *ProductFilter) *NameFilter {
+	if p == nil {
+		return nil
+	}
+	if p.Name != nil {
+		return p.Name
+	}
+	for _, ch := range p.And {
+		if nf := findNameFilter(ch); nf != nil {
+			return nf
+		}
+	}
+	for _, ch := range p.Or {
+		if nf := findNameFilter(ch); nf != nil {
+			return nf
+		}
+	}
+	if p.Not != nil {
+		if nf := findNameFilter(p.Not); nf != nil {
+			return nf
+		}
+	}
+	return nil
+}
+
+func findStatusFilter(p *ProductFilter) *StatusFilter {
+	if p == nil {
+		return nil
+	}
+	if p.Status != nil {
+		return p.Status
+	}
+	for _, ch := range p.And {
+		if sf := findStatusFilter(ch); sf != nil {
+			return sf
+		}
+	}
+	for _, ch := range p.Or {
+		if sf := findStatusFilter(ch); sf != nil {
+			return sf
+		}
+	}
+	if p.Not != nil {
+		if sf := findStatusFilter(p.Not); sf != nil {
+			return sf
+		}
+	}
+	return nil
+}
+
+func findCodeFilter(p *ProductFilter) *CodeFilter {
+	if p == nil {
+		return nil
+	}
+	if p.Code != nil {
+		return p.Code
+	}
+	for _, ch := range p.And {
+		if cf := findCodeFilter(ch); cf != nil {
+			return cf
+		}
+	}
+	for _, ch := range p.Or {
+		if cf := findCodeFilter(ch); cf != nil {
+			return cf
+		}
+	}
+	if p.Not != nil {
+		if cf := findCodeFilter(p.Not); cf != nil {
+			return cf
+		}
+	}
+	return nil
 }
 
 func assertPriceComparators(t *testing.T, gtPtr, gtePtr, ltPtr, ltePtr *float64, gt, gte, lt, lte float64) {

@@ -144,6 +144,7 @@ func buildFiltersFromGroups(groups map[string]*filterGroupAgg) []*Filter {
 	for gid, g := range groups {
 		_ = gid
 		groupNode := &Filter{}
+		usedFields := map[string]bool{}
 		for _, it := range g.items {
 			var foldOn bool
 			if bv, ok := g.foldMap[it.field]; ok && bv != nil {
@@ -151,6 +152,7 @@ func buildFiltersFromGroups(groups map[string]*filterGroupAgg) []*Filter {
 			} else if strings.EqualFold(it.mod, "ilike") {
 				foldOn = true
 			}
+			usedFields[it.field] = true
 			if (mapModToOperator(it.mod) == FilterOperatorIn || mapModToOperator(it.mod) == FilterOperatorNotIn) && len(it.values) > 0 {
 				sv := it.values[len(it.values)-1]
 				var valAny any
@@ -194,6 +196,18 @@ func buildFiltersFromGroups(groups map[string]*filterGroupAgg) []*Filter {
 			} else {
 				groupNode.And = append(groupNode.And, node)
 			}
+		}
+		// Emit standalone Fold nodes when provided without any other operator for that field
+		for field, pv := range g.foldMap {
+			if pv == nil {
+				continue
+			}
+			if usedFields[field] {
+				continue
+			}
+			node := &Filter{Condition: FieldCondition{Field: field, Operator: FilterOperatorFold, Value: *pv}}
+			// place under AND so it applies alongside other group criteria regardless of group op
+			groupNode.And = append(groupNode.And, node)
 		}
 		if len(groupNode.And) == 0 && len(groupNode.Or) == 0 && groupNode.Not == nil && groupNode.Condition.Field == "" {
 			continue
@@ -357,28 +371,45 @@ func handleFieldCondition(src *Filter, dst reflect.Value) error {
 			return nil
 		}
 	}
-	if fv.Kind() == reflect.Ptr {
-		if fv.IsNil() {
-			fv.Set(reflect.New(fv.Type().Elem()))
-		}
-		fv = fv.Elem()
+	baseType := fv.Type()
+	if baseType.Kind() == reflect.Ptr {
+		baseType = baseType.Elem()
 	}
-	if fv.Kind() != reflect.Struct {
+	if baseType.Kind() != reflect.Struct {
 		return errors.Errorf("field %s is not a struct for operators", fieldName)
 	}
 
 	opName := string(src.Condition.Operator)
+	tmp := reflect.New(baseType).Elem()
 	if strings.EqualFold(opName, fieldFold) {
+		if _, ok := findExportedFieldByName(tmp, fieldFold); !ok {
+			return nil
+		}
+		// allocate only when fold exists
+		if fv.Kind() == reflect.Ptr {
+			if fv.IsNil() {
+				fv.Set(reflect.New(fv.Type().Elem()))
+			}
+			return setFoldFlag(fv.Elem(), src)
+		}
 		return setFoldFlag(fv, src)
 	}
 	if opName == "" {
 		opName = "Eq"
 	}
-	of, ok := findOperatorField(fv, opName)
-	if !ok {
-		return nil
+	if _, ok := findOperatorField(tmp, opName); ok {
+		if fv.Kind() == reflect.Ptr {
+			if fv.IsNil() {
+				fv.Set(reflect.New(fv.Type().Elem()))
+			}
+			actual := fv.Elem()
+			targetField, _ := findOperatorField(actual, opName)
+			return setValueForField(targetField, src.Condition.Value, opName)
+		}
+		targetField, _ := findOperatorField(fv, opName)
+		return setValueForField(targetField, src.Condition.Value, opName)
 	}
-	return setValueForField(of, src.Condition.Value, opName)
+	return nil
 }
 
 func setFoldFlag(target reflect.Value, src *Filter) error {
@@ -418,10 +449,17 @@ func appendChildren(field string, children []*Filter, dst reflect.Value) error {
 			if err := applyFilterRecursively(child, childVal.Elem()); err != nil {
 				return err
 			}
+			// skip empty children (no effective fields mapped)
+			if childVal.Elem().IsZero() {
+				continue
+			}
 		} else if elemType.Kind() == reflect.Struct {
 			childVal = reflect.New(elemType).Elem()
 			if err := applyFilterRecursively(child, childVal); err != nil {
 				return err
+			}
+			if childVal.IsZero() {
+				continue
 			}
 		} else {
 			continue
@@ -687,14 +725,50 @@ func (p *SearchParams) buildAugmentedFilters() []*Filter {
 	}
 	if p.Keyword != "" && len(p.KeywordColumns) > 0 {
 		or := &Filter{}
+		// collect fold preferences from existing filter tree
+		prefs := map[string]*bool{}
+		if p.Filter != nil {
+			collectFoldPrefs(p.Filter, prefs)
+		}
 		for _, col := range p.KeywordColumns {
-			// Keyword is case-insensitive by default: Contains + Fold=true
+			// default fold is true; override if preference exists
+			fv := true
+			if pv, ok := prefs[strcase.ToCamel(col)]; ok && pv != nil {
+				fv = *pv
+			}
 			or.Or = append(or.Or, &Filter{And: []*Filter{
 				{Condition: FieldCondition{Field: col, Operator: FilterOperatorContains, Value: p.Keyword}},
-				{Condition: FieldCondition{Field: col, Operator: FilterOperatorFold, Value: true}},
+				{Condition: FieldCondition{Field: col, Operator: FilterOperatorFold, Value: fv}},
 			}})
 		}
 		r = append(r, or)
 	}
 	return r
+}
+
+// collectFoldPrefs walks the filter tree and records Fold preferences per field.
+func collectFoldPrefs(f *Filter, prefs map[string]*bool) {
+	if f == nil {
+		return
+	}
+	if f.Condition.Field != "" && strings.EqualFold(string(f.Condition.Operator), string(FilterOperatorFold)) {
+		// normalize field name to Camel
+		field := strcase.ToCamel(f.Condition.Field)
+		// value may be bool or missing; default to true
+		val := true
+		if b, ok := f.Condition.Value.(bool); ok {
+			val = b
+		}
+		bv := val
+		prefs[field] = &bv
+	}
+	for _, ch := range f.And {
+		collectFoldPrefs(ch, prefs)
+	}
+	for _, ch := range f.Or {
+		collectFoldPrefs(ch, prefs)
+	}
+	if f.Not != nil {
+		collectFoldPrefs(f.Not, prefs)
+	}
 }
