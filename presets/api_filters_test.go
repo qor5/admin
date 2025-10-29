@@ -426,6 +426,56 @@ func TestBuildFiltersFromQuery_QSSubtests(t *testing.T) {
 	}
 }
 
+// Cover buildFiltersFromGroups: IN branch + group op = or (append to groupNode.Or)
+func TestQS_GroupOr_StatusIn(t *testing.T) {
+	qs := "g1.status.in=A,B&g1.__op=or"
+	runQS(t, qs, func(req *ListProductsRequest) {
+		if req.Filter == nil || len(req.Filter.Or) == 0 {
+			t.Fatalf("expect OR group for g1 with status.in, got %#v", req.Filter)
+		}
+	})
+}
+
+// Cover handleNotGroup: destination Not field is struct (not pointer)
+func TestUnmarshal_NotWithStructField(t *testing.T) {
+	type NameOps struct{ Eq *string }
+	type Dest struct {
+		// Not as struct to cover f.Kind()==reflect.Struct branch
+		Not struct {
+			Name *NameOps
+		}
+	}
+
+	sp := &SearchParams{Filter: &Filter{Not: &Filter{Condition: FieldCondition{Field: "Name", Operator: FilterOperatorEq, Value: "X"}}}}
+	var dst Dest
+	if err := sp.Unmarshal(&dst); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+	if dst.Not.Name == nil || dst.Not.Name.Eq == nil || *dst.Not.Name.Eq != "X" {
+		t.Fatalf("expect Not.Name.Eq=X, got %#v", dst.Not)
+	}
+}
+
+// Cover appendChildren: Or slice element type is struct (not pointer)
+func TestUnmarshal_OrWithStructSlice(t *testing.T) {
+	type NameOps struct{ Contains *string }
+	type Child struct{ Name *NameOps }
+	type Dest struct{ Or []Child }
+
+	// Build two OR name.contains
+	sp := &SearchParams{Filter: &Filter{Or: []*Filter{
+		{Condition: FieldCondition{Field: "Name", Operator: FilterOperatorContains, Value: "A"}},
+		{Condition: FieldCondition{Field: "Name", Operator: FilterOperatorContains, Value: "B"}},
+	}}}
+	var dst Dest
+	if err := sp.Unmarshal(&dst); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+	if len(dst.Or) != 2 || dst.Or[0].Name == nil || dst.Or[1].Name == nil {
+		t.Fatalf("expect 2 struct OR children with Name set, got %#v", dst.Or)
+	}
+}
+
 // coerceFromString direct coverage (success and failure)
 func TestBuildFiltersFromQuery_CoerceFromStringPaths(t *testing.T) {
 	// bool true via eq
