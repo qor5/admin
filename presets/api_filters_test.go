@@ -1,6 +1,7 @@
 package presets
 
 import (
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -469,6 +470,11 @@ func TestBuildFiltersFromQuery_ModifiersFullFlow(t *testing.T) {
 				t.Fatalf("expect Name.Contains nova + Fold=true, got %#v", req.Filter)
 			}
 		}},
+		{"name.ilike=MiXeD", func(t *testing.T, req *ListProductsRequest) { // ilike implies Fold=true even without explicit fold
+			if req.Filter == nil || req.Filter.Name == nil || req.Filter.Name.Contains == nil || *req.Filter.Name.Contains != "MiXeD" || !req.Filter.Name.Fold {
+				t.Fatalf("expect Name.Contains MiXeD + implicit Fold=true, got %#v", req.Filter)
+			}
+		}},
 		{"name=Alpha", func(t *testing.T, req *ListProductsRequest) {
 			if req.Filter == nil || req.Filter.Name == nil || req.Filter.Name.Eq == nil || *req.Filter.Name.Eq != "Alpha" {
 				t.Fatalf("expect Name.Eq Alpha, got %#v", req.Filter)
@@ -592,5 +598,97 @@ func TestBuildFiltersFromQuery_FoldFalseViaQuery(t *testing.T) {
 	}
 	if req.Filter.Name.Fold {
 		t.Fatalf("expect Name.Fold=false, got true")
+	}
+}
+
+// Keyword in qs should map to OR Contains with Fold=true by default
+func TestBuildFiltersFromQuery_KeywordQS_FoldImplicit(t *testing.T) {
+	qs := "keyword=Nova&name.eq=Exact&name.fold=1"
+	// parse keyword from qs
+	filters := BuildFiltersFromQuery(nil, qs)
+	var root *Filter
+	if len(filters) == 1 {
+		root = filters[0]
+	} else if len(filters) > 1 {
+		root = &Filter{And: filters}
+	}
+	// extract keyword
+	v, _ := url.ParseQuery(qs)
+	kw := v.Get("keyword")
+
+	sp := &SearchParams{Filter: root}
+	sp.Keyword = kw
+	sp.KeywordColumns = []string{"Name", "Code"}
+
+	var req ListProductsRequest
+	if err := sp.Unmarshal(&req.Filter); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+	if req.Filter == nil {
+		t.Fatalf("filter nil")
+	}
+	// Expect Name.Eq=Exact with Fold=true from explicit name.fold=1
+	if req.Filter.Name == nil || req.Filter.Name.Eq == nil || *req.Filter.Name.Eq != "Exact" || !req.Filter.Name.Fold {
+		t.Fatalf("expect Name.Eq=Exact and Fold=true, got %#v", req.Filter.Name)
+	}
+	// Keyword should add OR children: Name.Contains=Nova (Fold=true) and possibly Code if supported
+	var keywordOK bool
+	for _, ch := range req.Filter.Or {
+		if ch.Name != nil && ch.Name.Contains != nil && *ch.Name.Contains == kw && ch.Name.Fold {
+			keywordOK = true
+		}
+	}
+	if !keywordOK {
+		t.Fatalf("expect OR child from keyword with Name.Contains and Fold=true, got %#v", req.Filter.Or)
+	}
+}
+
+// Eq with fold should set Fold=true and carry Eq value
+func TestBuildFiltersFromQuery_EqWithFold(t *testing.T) {
+	qs := "name.eq=ABC&name.fold=1"
+	filters := BuildFiltersFromQuery(nil, qs)
+	var root *Filter
+	if len(filters) == 1 {
+		root = filters[0]
+	} else if len(filters) > 1 {
+		root = &Filter{And: filters}
+	}
+	sp := &SearchParams{Filter: root}
+	var req ListProductsRequest
+	if err := sp.Unmarshal(&req.Filter); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+	if req.Filter == nil || req.Filter.Name == nil || req.Filter.Name.Eq == nil || *req.Filter.Name.Eq != "ABC" || !req.Filter.Name.Fold {
+		t.Fatalf("expect Name.Eq=ABC and Fold=true, got %#v", req.Filter.Name)
+	}
+}
+
+// IN/NotIn with CSV string values should be split and coerced via coerceToSlice string path
+func TestUnmarshal_In_CSVString(t *testing.T) {
+	sp := &SearchParams{Filter: &Filter{And: []*Filter{
+		{Condition: FieldCondition{Field: "Code", Operator: FilterOperatorIn, Value: "A, B ,C"}},
+	}}}
+	var req ListProductsRequest
+	if err := sp.Unmarshal(&req.Filter); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+	if req.Filter == nil || req.Filter.Code == nil || len(req.Filter.Code.In) != 3 {
+		t.Fatalf("expect Code.In len=3, got %#v", req.Filter.Code)
+	}
+	if req.Filter.Code.In[0] != "A" || req.Filter.Code.In[1] != "B" || req.Filter.Code.In[2] != "C" {
+		t.Fatalf("unexpected Code.In: %#v", req.Filter.Code.In)
+	}
+}
+
+func TestUnmarshal_NotIn_CSVString(t *testing.T) {
+	sp := &SearchParams{Filter: &Filter{And: []*Filter{
+		{Condition: FieldCondition{Field: "Status", Operator: FilterOperatorNotIn, Value: "X,Y"}},
+	}}}
+	var req ListProductsRequest
+	if err := sp.Unmarshal(&req.Filter); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+	if req.Filter == nil || req.Filter.Status == nil || len(req.Filter.Status.NotIn) != 2 || req.Filter.Status.NotIn[0] != "X" || req.Filter.Status.NotIn[1] != "Y" {
+		t.Fatalf("expect Status.NotIn=[X Y], got %#v", req.Filter.Status)
 	}
 }

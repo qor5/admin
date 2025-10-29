@@ -46,8 +46,9 @@ type filterItem struct {
 }
 
 type filterGroupAgg struct {
-	items   []filterItem
-	foldMap map[string]bool
+	items []filterItem
+	// tri-state: nil=unset, true/false=explicit via field.fold
+	foldMap map[string]*bool
 	op      string
 }
 
@@ -71,7 +72,7 @@ func aggregateGroups(values url.Values, groupOp map[string]string) map[string]*f
 	getGroup := func(gid string) *filterGroupAgg {
 		g := groups[gid]
 		if g == nil {
-			g = &filterGroupAgg{foldMap: map[string]bool{}, op: strings.ToLower(groupOp[gid])}
+			g = &filterGroupAgg{foldMap: map[string]*bool{}, op: strings.ToLower(groupOp[gid])}
 			if g.op == "" {
 				g.op = "and"
 			}
@@ -112,8 +113,9 @@ func aggregateGroups(values url.Values, groupOp map[string]string) map[string]*f
 		g := getGroup(gid)
 		if mod == "fold" {
 			if len(arr) > 0 {
-				v := arr[len(arr)-1]
-				g.foldMap[field] = strings.EqualFold(v, "true") || v == "1"
+				v := strings.TrimSpace(arr[len(arr)-1])
+				val := strings.EqualFold(v, "true") || v == "1"
+				g.foldMap[field] = &val
 			}
 			continue
 		}
@@ -131,7 +133,7 @@ func buildFiltersFromGroups(groups map[string]*filterGroupAgg) []*Filter {
 		if foldOn {
 			node = &Filter{And: []*Filter{
 				node,
-				{Condition: FieldCondition{Field: field, Operator: FilterOperatorFold, Value: true}},
+				{Condition: FieldCondition{Field: field, Operator: mapModToOperator("fold"), Value: true}},
 			}}
 		}
 		if isNot {
@@ -143,7 +145,12 @@ func buildFiltersFromGroups(groups map[string]*filterGroupAgg) []*Filter {
 		_ = gid
 		groupNode := &Filter{}
 		for _, it := range g.items {
-			foldOn := g.foldMap[it.field]
+			var foldOn bool
+			if bv, ok := g.foldMap[it.field]; ok && bv != nil {
+				foldOn = *bv
+			} else if strings.EqualFold(it.mod, "ilike") {
+				foldOn = true
+			}
 			if (mapModToOperator(it.mod) == FilterOperatorIn || mapModToOperator(it.mod) == FilterOperatorNotIn) && len(it.values) > 0 {
 				sv := it.values[len(it.values)-1]
 				var valAny any
@@ -681,7 +688,11 @@ func (p *SearchParams) buildAugmentedFilters() []*Filter {
 	if p.Keyword != "" && len(p.KeywordColumns) > 0 {
 		or := &Filter{}
 		for _, col := range p.KeywordColumns {
-			or.Or = append(or.Or, &Filter{Condition: FieldCondition{Field: col, Operator: FilterOperatorContains, Value: p.Keyword}})
+			// Keyword is case-insensitive by default: Contains + Fold=true
+			or.Or = append(or.Or, &Filter{And: []*Filter{
+				{Condition: FieldCondition{Field: col, Operator: FilterOperatorContains, Value: p.Keyword}},
+				{Condition: FieldCondition{Field: col, Operator: FilterOperatorFold, Value: true}},
+			}})
 		}
 		r = append(r, or)
 	}
