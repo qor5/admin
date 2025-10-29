@@ -4,15 +4,61 @@ import (
 	"fmt"
 	"net/url"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
 	"github.com/qor5/x/v3/ui/vuetifyx"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+const (
+	fieldOr   = "Or"
+	fieldNot  = "Not"
+	fieldFold = "Fold"
+)
+
+// operatorAliases defines canonical operator field name -> acceptable alias field names on target structs.
+// This centralizes all hardcoded alternatives.
+var operatorAliases = map[string][]string{
+	"Contains":   {"Contains", "Ilike"},
+	"StartsWith": {"StartsWith"},
+	"EndsWith":   {"EndsWith"},
+	"Eq":         {"Eq"},
+	"Neq":        {"Neq"},
+	"Lt":         {"Lt"},
+	"Lte":        {"Lte"},
+	"Gt":         {"Gt"},
+	"Gte":        {"Gte"},
+	"In":         {"In"},
+	"NotIn":      {"NotIn"},
+	"IsNull":     {"IsNull"},
+}
+
+// findOperatorField tries to locate the struct field for the given operator name using the alias registry.
+func findOperatorField(target reflect.Value, opName string) (reflect.Value, bool) {
+	if !target.IsValid() {
+		return reflect.Value{}, false
+	}
+	// try canonical directly first
+	if f, ok := findExportedFieldByName(target, opName); ok {
+		return f, true
+	}
+	// try aliases
+	aliases, ok := operatorAliases[opName]
+	if !ok {
+		// fall back: unknown op, try name itself
+		return findExportedFieldByName(target, opName)
+	}
+	for _, alt := range aliases {
+		if f, ok := findExportedFieldByName(target, alt); ok {
+			return f, true
+		}
+	}
+	return reflect.Value{}, false
+}
 
 var (
 	// timestamp types for robust detection instead of relying on PkgPath/Name string checks
@@ -112,7 +158,7 @@ func BuildFiltersFromQuery(_ vuetifyx.FilterData, qs string) []*Filter {
 		if idx >= len(segs) {
 			continue
 		}
-		field := toCamel(segs[idx])
+		field := strcase.ToCamel(segs[idx])
 		mod := ""
 		if idx+1 < len(segs) {
 			mod = strings.ToLower(segs[idx+1])
@@ -240,13 +286,13 @@ func applyFilterRecursively(src *Filter, dst reflect.Value) error {
 		}
 	}
 	if len(src.Or) > 0 {
-		if err := appendChildren("Or", src.Or, dst); err != nil {
+		if err := appendChildren(fieldOr, src.Or, dst); err != nil {
 			return err
 		}
 	}
 	if src.Not != nil {
 		// Field name Not
-		f, ok := findExportedFieldByName(dst, "Not")
+		f, ok := findExportedFieldByName(dst, fieldNot)
 		if ok {
 			// Ensure pointer to struct
 			if f.Kind() == reflect.Ptr {
@@ -266,7 +312,7 @@ func applyFilterRecursively(src *Filter, dst reflect.Value) error {
 
 	// Handle field condition
 	if src.Condition.Field != "" {
-		fieldName := toCamel(src.Condition.Field)
+		fieldName := strcase.ToCamel(src.Condition.Field)
 		fv, ok := findExportedFieldByName(dst, fieldName)
 		if !ok {
 			// Try alternate name without underscores/case-insensitivity
@@ -287,10 +333,10 @@ func applyFilterRecursively(src *Filter, dst reflect.Value) error {
 		}
 
 		opName := string(src.Condition.Operator)
-		if strings.EqualFold(opName, "Fold") {
+		if strings.EqualFold(opName, fieldFold) {
 			// Special handling: Fold is a boolean flag on the field filter struct
 			// If the target struct has a bool field named Fold, set it to true (or bool value if provided)
-			if foldField, ok := findExportedFieldByName(fv, "Fold"); ok {
+			if foldField, ok := findExportedFieldByName(fv, fieldFold); ok {
 				val := true
 				if b, ok2 := src.Condition.Value.(bool); ok2 {
 					val = b
@@ -310,20 +356,9 @@ func applyFilterRecursively(src *Filter, dst reflect.Value) error {
 		if opName == "" {
 			opName = "Eq"
 		}
-		of, ok := findExportedFieldByName(fv, opName)
+		of, ok := findOperatorField(fv, opName)
 		if !ok {
-			// Some schemas may use ilike for contains; try alternative mappings
-			alt := operatorAlternatives(opName)
-			var found bool
-			for _, an := range alt {
-				if of, ok = findExportedFieldByName(fv, an); ok {
-					found = true
-					break
-				}
-			}
-			if !found {
-				return nil // Operator not supported by target, ignore
-			}
+			return nil // Operator not supported by target, ignore
 		}
 
 		// Set value
@@ -411,9 +446,12 @@ func coerceToSlice(elemType reflect.Type, v any) (reflect.Value, error) {
 	switch rv.Kind() {
 	case reflect.String:
 		s := rv.String()
-		// split by comma if present
-		parts := splitCSV(s)
+		parts := strings.Split(s, ",")
 		for _, p := range parts {
+			p = strings.TrimSpace(p)
+			if p == "" {
+				continue
+			}
 			if err := push(p); err != nil {
 				return reflect.Value{}, err
 			}
@@ -480,7 +518,7 @@ func coerceScalar(t reflect.Type, v any) (reflect.Value, error) {
 			}
 			if !parsed {
 				// try seconds since epoch
-				if sec, err := parseInt64(xs); err == nil {
+				if sec, err := strconv.ParseInt(xs, 10, 64); err == nil {
 					tm = time.Unix(sec, 0)
 					parsed = true
 				}
@@ -489,19 +527,16 @@ func coerceScalar(t reflect.Type, v any) (reflect.Value, error) {
 				return reflect.Value{}, errors.Errorf("cannot parse time: %q", x)
 			}
 		default:
-			if s, ok := toString(v); ok {
-				if sec, err := parseInt64(s); err == nil {
-					tm = time.Unix(sec, 0)
-				} else {
-					// fallback: RFC3339
-					t1, err2 := time.Parse(time.RFC3339, s)
-					if err2 != nil {
-						return reflect.Value{}, errors.Wrap(err2, "parse time")
-					}
-					tm = t1
-				}
+			// Try integer seconds or RFC3339 from generic string representation
+			s := fmt.Sprint(v)
+			if sec, err := strconv.ParseInt(strings.TrimSpace(s), 10, 64); err == nil {
+				tm = time.Unix(sec, 0)
 			} else {
-				return reflect.Value{}, errors.Errorf("unsupported time value type: %T", v)
+				t1, err2 := time.Parse(time.RFC3339, strings.TrimSpace(s))
+				if err2 != nil {
+					return reflect.Value{}, errors.Wrap(err2, "parse time")
+				}
+				tm = t1
 			}
 		}
 		pb := timestamppb.New(tm)
@@ -521,50 +556,27 @@ func coerceScalar(t reflect.Type, v any) (reflect.Value, error) {
 		return rv.Convert(t), nil
 	}
 	// Try string based conversions
-	if s, ok := toString(v); ok {
-		switch t.Kind() {
-		case reflect.String:
-			return reflect.ValueOf(s).Convert(t), nil
-		case reflect.Bool:
-			b := strings.EqualFold(s, "true") || s == "1"
-			return reflect.ValueOf(b).Convert(t), nil
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			if iv, err := parseInt64(s); err == nil {
-				return reflect.ValueOf(iv).Convert(t), nil
-			}
-		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			if iv, err := parseUint64(s); err == nil {
-				return reflect.ValueOf(iv).Convert(t), nil
-			}
-		case reflect.Float32, reflect.Float64:
-			if fv, err := parseFloat64(s); err == nil {
-				return reflect.ValueOf(fv).Convert(t), nil
-			}
+	s := fmt.Sprint(v)
+	switch t.Kind() {
+	case reflect.String:
+		return reflect.ValueOf(s).Convert(t), nil
+	case reflect.Bool:
+		b := strings.EqualFold(s, "true") || strings.TrimSpace(s) == "1"
+		return reflect.ValueOf(b).Convert(t), nil
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		if iv, err := strconv.ParseInt(strings.TrimSpace(s), 10, 64); err == nil {
+			return reflect.ValueOf(iv).Convert(t), nil
+		}
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		if iv, err := strconv.ParseUint(strings.TrimSpace(s), 10, 64); err == nil {
+			return reflect.ValueOf(iv).Convert(t), nil
+		}
+	case reflect.Float32, reflect.Float64:
+		if fv, err := strconv.ParseFloat(strings.TrimSpace(s), 64); err == nil {
+			return reflect.ValueOf(fv).Convert(t), nil
 		}
 	}
 	return reflect.Value{}, errors.Errorf("cannot coerce %T to %s", v, t.String())
-}
-
-var nonWord = regexp.MustCompile(`[^A-Za-z0-9]+`)
-
-func toCamel(s string) string {
-	if s == "" {
-		return s
-	}
-	// If contains non-word separators, convert each segment to Title-case
-	if nonWord.MatchString(s) {
-		s = nonWord.ReplaceAllString(s, "_")
-		parts := strings.Split(s, "_")
-		for i := range parts {
-			if parts[i] == "" {
-				continue
-			}
-			parts[i] = strings.ToUpper(parts[i][:1]) + strings.ToLower(parts[i][1:])
-		}
-		return strings.Join(parts, "")
-	}
-	// Otherwise, treat as already camelCase/CamelCase: only uppercase the first rune
-	return strings.ToUpper(s[:1]) + s[1:]
 }
 
 func findExportedFieldByName(v reflect.Value, name string) (reflect.Value, bool) {
@@ -579,72 +591,8 @@ func findExportedFieldByName(v reflect.Value, name string) (reflect.Value, bool)
 }
 
 func findExportedFieldByInsensitive(v reflect.Value, raw string) (reflect.Value, bool) {
-	camel := toCamel(raw)
+	camel := strcase.ToCamel(raw)
 	return findExportedFieldByName(v, camel)
-}
-
-func operatorAlternatives(op string) []string {
-	switch op {
-	case "Contains":
-		return []string{"Contains", "Ilike"}
-	default:
-		return []string{op}
-	}
-}
-
-func splitCSV(s string) []string {
-	s = strings.TrimSpace(s)
-	if s == "" {
-		return nil
-	}
-	segs := strings.Split(s, ",")
-	out := make([]string, 0, len(segs))
-	for _, seg := range segs {
-		seg = strings.TrimSpace(seg)
-		if seg != "" {
-			out = append(out, seg)
-		}
-	}
-	return out
-}
-
-func toString(v any) (string, bool) {
-	switch x := v.(type) {
-	case string:
-		return x, true
-	case fmt.Stringer:
-		return x.String(), true
-	default:
-		rv := reflect.ValueOf(v)
-		if !rv.IsValid() {
-			return "", false
-		}
-		return fmt.Sprint(v), true
-	}
-}
-
-func parseInt64(s string) (int64, error)     { return strconvParseInt(s, 10, 64) }
-func parseUint64(s string) (uint64, error)   { return strconvParseUint(s, 10, 64) }
-func parseFloat64(s string) (float64, error) { return strconvParseFloat(s, 64) }
-
-// Minimal wrappers to avoid importing strconv directly in multiple places
-func strconvParseInt(s string, base int, bitSize int) (int64, error) {
-	return parseInt(s, base, bitSize)
-}
-func strconvParseUint(s string, base int, bitSize int) (uint64, error) {
-	return parseUint(s, base, bitSize)
-}
-func strconvParseFloat(s string, bitSize int) (float64, error) { return parseFloat(s, bitSize) }
-
-// Thin helpers backed by strconv
-func parseInt(s string, base int, bitSize int) (int64, error) {
-	return strconv.ParseInt(strings.TrimSpace(s), base, bitSize)
-}
-func parseUint(s string, base int, bitSize int) (uint64, error) {
-	return strconv.ParseUint(strings.TrimSpace(s), base, bitSize)
-}
-func parseFloat(s string, bitSize int) (float64, error) {
-	return strconv.ParseFloat(strings.TrimSpace(s), bitSize)
 }
 
 // Unmarshal populates dst with the content of Filters (plus Keyword/KeywordColumns as OR contains conditions).
