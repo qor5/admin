@@ -95,47 +95,12 @@ func TestUnmarshalFilters_ProductFilterBasic(t *testing.T) {
 		t.Fatalf("Unmarshal error: %v", err)
 	}
 
-	if req.Filter == nil {
-		t.Fatalf("Filter should be initialized")
-	}
-	// name contains
-	if req.Filter.Name == nil || req.Filter.Name.Contains == nil || *req.Filter.Name.Contains != "abc" {
-		t.Fatalf("expect name.contains=abc, got %#v", req.Filter.Name)
-	}
-	// code in
-	if req.Filter.Code == nil || len(req.Filter.Code.In) != 2 || req.Filter.Code.In[0] != "A" || req.Filter.Code.In[1] != "B" {
-		t.Fatalf("expect code.in=[A B], got %#v", req.Filter.Code)
-	}
-	// not is_published eq true
-	if req.Filter.Not == nil || req.Filter.Not.IsPublished == nil || req.Filter.Not.IsPublished.Eq == nil || *req.Filter.Not.IsPublished.Eq != true {
-		t.Fatalf("expect not.is_published.eq=true, got %#v", req.Filter.Not)
-	}
-	// created_at lt
-	if req.Filter.CreatedAt == nil || req.Filter.CreatedAt.Lt == nil {
-		t.Fatalf("expect created_at.lt set, got %#v", req.Filter.CreatedAt)
-	}
-	if got := req.Filter.CreatedAt.Lt.AsTime().UTC(); got.IsZero() || got.Year() != 2025 || got.Month() != time.October || got.Day() != 20 {
-		t.Fatalf("unexpected created_at.lt time: %v", got)
-	}
-
-	// keyword OR mapping
-	if len(req.Filter.Or) != 2 {
-		t.Fatalf("expect 2 OR children for keyword, got %d", len(req.Filter.Or))
-	}
-	// One child should be name.contains=kw, the other code.contains=kw
-	var nameOK bool
-	for _, ch := range req.Filter.Or {
-		if ch.Name != nil && ch.Name.Contains != nil && *ch.Name.Contains == sp.Keyword {
-			nameOK = true
-		}
-		if ch.Code != nil && len(ch.Code.In) == 0 && ch.Name == nil { // code.contains is represented under NameFilter? No. We follow Contains on struct that has Contains field.
-			// Our CodeFilter does not define Contains; keyword for code should map to Contains too, but CodeFilter lacks Contains in proto.
-		}
-		// CodeFilter in this local mirror does not support Contains; we only assert name.Contains.
-	}
-	if !nameOK {
-		t.Fatalf("expect OR child with name.contains=kw, got %#v", req.Filter.Or)
-	}
+	assertFilterInitialized(t, req)
+	assertNameContains(t, req, "abc")
+	assertCodeIn(t, req, []string{"A", "B"})
+	assertNotIsPublishedEq(t, req, true)
+	assertCreatedAtLtDate(t, req, 2025, time.October, 20)
+	assertKeywordOrNameContains(t, req, sp.Keyword)
 }
 
 // This test verifies Unmarshal when SearchParams resides in a wrapper request
@@ -256,36 +221,9 @@ func TestUnmarshalFilters_AllOperators(t *testing.T) {
 		t.Fatalf("Unmarshal error: %v", err)
 	}
 
-	if dst.Price == nil || dst.Price.Gt == nil || *dst.Price.Gt != 10 {
-		t.Fatalf("gt not set correctly: %#v", dst.Price)
-	}
-	if dst.Price == nil || dst.Price.Gte == nil || *dst.Price.Gte != 11 {
-		t.Fatalf("gte not set correctly: %#v", dst.Price)
-	}
-	if dst.Price == nil || dst.Price.Lt == nil || *dst.Price.Lt != 20 {
-		t.Fatalf("lt not set correctly: %#v", dst.Price)
-	}
-	if dst.Price == nil || dst.Price.Lte == nil || *dst.Price.Lte != 19 {
-		t.Fatalf("lte not set correctly: %#v", dst.Price)
-	}
-	if dst.Status == nil || len(dst.Status.In) != 2 || dst.Status.In[0] != "A" {
-		t.Fatalf("in not set: %#v", dst.Status)
-	}
-	if dst.Status == nil || len(dst.Status.NotIn) != 1 || dst.Status.NotIn[0] != "C" {
-		t.Fatalf("notIn not set: %#v", dst.Status)
-	}
-	if dst.Name == nil || dst.Name.Contains == nil || *dst.Name.Contains != "nova" {
-		t.Fatalf("contains not set: %#v", dst.Name)
-	}
-	if dst.Name == nil || dst.Name.StartsWith == nil || *dst.Name.StartsWith != "Super" {
-		t.Fatalf("startsWith not set: %#v", dst.Name)
-	}
-	if dst.Name == nil || dst.Name.EndsWith == nil || *dst.Name.EndsWith != "Star" {
-		t.Fatalf("endsWith not set: %#v", dst.Name)
-	}
-	if dst.Name == nil || !dst.Name.Fold {
-		t.Fatalf("fold not set true: %#v", dst.Name)
-	}
+	assertPriceComparators(t, dst.Price.Gt, dst.Price.Gte, dst.Price.Lt, dst.Price.Lte, 10, 11, 20, 19)
+	assertStatusSets(t, dst.Status.In, dst.Status.NotIn, []string{"A", "B"}, []string{"C"})
+	assertNameStringOps(t, dst.Name.Contains, dst.Name.StartsWith, dst.Name.EndsWith, dst.Name.Fold, "nova", "Super", "Star", true)
 }
 
 // Verify processFilter end-to-end: ListingCompo with FilterQuery -> SQLConditions
@@ -449,57 +387,42 @@ func TestBuildFiltersFromQuery_DefaultEqAndMultiGroups(t *testing.T) {
 }
 
 // mapModToOperator should map all supported modifiers
-func TestBuildFiltersFromQuery_ModifiersFullFlow(t *testing.T) {
-	type Case struct {
-		qs    string
-		check func(*testing.T, *ListProductsRequest)
+// Shared runner to execute qs -> filters -> unmarshal pipeline
+func runQS(t *testing.T, qs string, check func(*ListProductsRequest)) {
+	filters := BuildFiltersFromQuery(nil, qs)
+	var root *Filter
+	if len(filters) == 1 {
+		root = filters[0]
+	} else if len(filters) > 1 {
+		root = &Filter{And: filters}
 	}
-	cases := []Case{
-		{"status.in=A,B", func(t *testing.T, req *ListProductsRequest) {
-			if req.Filter == nil || req.Filter.Status == nil || len(req.Filter.Status.In) != 2 {
-				t.Fatalf("expect Status.In [A B], got %#v", req.Filter)
-			}
-		}},
-		{"status.notin=C", func(t *testing.T, req *ListProductsRequest) {
-			if req.Filter == nil || req.Filter.Status == nil || len(req.Filter.Status.NotIn) != 1 || req.Filter.Status.NotIn[0] != "C" {
-				t.Fatalf("expect Status.NotIn [C], got %#v", req.Filter)
-			}
-		}},
-		{"name.ilike=nova&name.fold=1", func(t *testing.T, req *ListProductsRequest) {
-			if req.Filter == nil || req.Filter.Name == nil || req.Filter.Name.Contains == nil || *req.Filter.Name.Contains != "nova" || !req.Filter.Name.Fold {
-				t.Fatalf("expect Name.Contains nova + Fold=true, got %#v", req.Filter)
-			}
-		}},
-		{"name.ilike=MiXeD", func(t *testing.T, req *ListProductsRequest) { // ilike implies Fold=true even without explicit fold
-			if req.Filter == nil || req.Filter.Name == nil || req.Filter.Name.Contains == nil || *req.Filter.Name.Contains != "MiXeD" || !req.Filter.Name.Fold {
-				t.Fatalf("expect Name.Contains MiXeD + implicit Fold=true, got %#v", req.Filter)
-			}
-		}},
-		{"name=Alpha", func(t *testing.T, req *ListProductsRequest) {
-			if req.Filter == nil || req.Filter.Name == nil || req.Filter.Name.Eq == nil || *req.Filter.Name.Eq != "Alpha" {
-				t.Fatalf("expect Name.Eq Alpha, got %#v", req.Filter)
-			}
-		}},
-		{"created_at.lte=2025-10-20T12:00:00Z", func(t *testing.T, req *ListProductsRequest) {
+	sp := &SearchParams{Filter: root}
+	var req ListProductsRequest
+	if err := sp.Unmarshal(&req.Filter); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+	check(&req)
+}
+
+func TestBuildFiltersFromQuery_QSSubtests(t *testing.T) {
+	cases := []struct {
+		name  string
+		qs    string
+		check func(*ListProductsRequest)
+	}{
+		{"StatusIn", "status.in=A,B", func(req *ListProductsRequest) { assertStatusIn(t, *req, []string{"A", "B"}) }},
+		{"StatusNotIn", "status.notin=C", func(req *ListProductsRequest) { assertStatusNotIn(t, *req, []string{"C"}) }},
+		{"NameIlikeWithFold", "name.ilike=nova&name.fold=1", func(req *ListProductsRequest) { assertNameContainsFold(t, *req, "nova", true) }},
+		{"NameIlikeImplicitFold", "name.ilike=MiXeD", func(req *ListProductsRequest) { assertNameContainsFold(t, *req, "MiXeD", true) }},
+		{"NameEq", "name=Alpha", func(req *ListProductsRequest) { assertNameEqFold(t, *req, "Alpha", false) }},
+		{"CreatedAtLte", "created_at.lte=2025-10-20T12:00:00Z", func(req *ListProductsRequest) {
 			if req.Filter == nil || req.Filter.CreatedAt == nil || req.Filter.CreatedAt.Lte == nil {
 				t.Fatalf("expect CreatedAt.Lte set, got %#v", req.Filter.CreatedAt)
 			}
 		}},
 	}
 	for _, c := range cases {
-		filters := BuildFiltersFromQuery(nil, c.qs)
-		var root *Filter
-		if len(filters) == 1 {
-			root = filters[0]
-		} else if len(filters) > 1 {
-			root = &Filter{And: filters}
-		}
-		sp := &SearchParams{Filter: root}
-		var req ListProductsRequest
-		if err := sp.Unmarshal(&req.Filter); err != nil {
-			t.Fatalf("Unmarshal error: %v", err)
-		}
-		c.check(t, &req)
+		t.Run(c.name, func(t *testing.T) { runQS(t, c.qs, c.check) })
 	}
 }
 
@@ -521,6 +444,135 @@ func TestBuildFiltersFromQuery_CoerceFromStringPaths(t *testing.T) {
 	}
 	if req.Filter == nil || req.Filter.IsPublished == nil || req.Filter.IsPublished.Eq == nil || *req.Filter.IsPublished.Eq != true {
 		t.Fatalf("expect IsPublished.Eq=true, got %#v", req.Filter)
+	}
+}
+
+// ---------- helpers to reduce per-test complexity ----------
+
+func assertFilterInitialized(t *testing.T, req ListProductsRequest) {
+	if req.Filter == nil {
+		t.Fatalf("Filter should be initialized")
+	}
+}
+
+func assertNameContains(t *testing.T, req ListProductsRequest, val string) {
+	if req.Filter.Name == nil || req.Filter.Name.Contains == nil || *req.Filter.Name.Contains != val {
+		t.Fatalf("expect name.contains=%s, got %#v", val, req.Filter.Name)
+	}
+}
+
+func assertCodeIn(t *testing.T, req ListProductsRequest, want []string) {
+	if req.Filter.Code == nil || len(req.Filter.Code.In) != len(want) {
+		t.Fatalf("expect code.in len=%d, got %#v", len(want), req.Filter.Code)
+	}
+	for i := range want {
+		if req.Filter.Code.In[i] != want[i] {
+			t.Fatalf("unexpected code.in at %d: %s (want %s)", i, req.Filter.Code.In[i], want[i])
+		}
+	}
+}
+
+func assertNotIsPublishedEq(t *testing.T, req ListProductsRequest, b bool) {
+	if req.Filter.Not == nil || req.Filter.Not.IsPublished == nil || req.Filter.Not.IsPublished.Eq == nil || *req.Filter.Not.IsPublished.Eq != b {
+		t.Fatalf("expect not.is_published.eq=%v, got %#v", b, req.Filter.Not)
+	}
+}
+
+func assertCreatedAtLtDate(t *testing.T, req ListProductsRequest, year int, month time.Month, day int) {
+	if req.Filter.CreatedAt == nil || req.Filter.CreatedAt.Lt == nil {
+		t.Fatalf("expect created_at.lt set, got %#v", req.Filter.CreatedAt)
+	}
+	got := req.Filter.CreatedAt.Lt.AsTime().UTC()
+	if got.IsZero() || got.Year() != year || got.Month() != month || got.Day() != day {
+		t.Fatalf("unexpected created_at.lt time: %v", got)
+	}
+}
+
+func assertKeywordOrNameContains(t *testing.T, req ListProductsRequest, kw string) {
+	if len(req.Filter.Or) == 0 {
+		t.Fatalf("expect OR children for keyword")
+	}
+	var ok bool
+	for _, ch := range req.Filter.Or {
+		if ch.Name != nil && ch.Name.Contains != nil && *ch.Name.Contains == kw {
+			ok = true
+		}
+	}
+	if !ok {
+		t.Fatalf("expect OR child with name.contains=%s, got %#v", kw, req.Filter.Or)
+	}
+}
+
+func assertStatusIn(t *testing.T, req ListProductsRequest, want []string) {
+	if req.Filter == nil || req.Filter.Status == nil || len(req.Filter.Status.In) != len(want) {
+		t.Fatalf("expect Status.In len=%d, got %#v", len(want), req.Filter)
+	}
+	for i := range want {
+		if req.Filter.Status.In[i] != want[i] {
+			t.Fatalf("unexpected Status.In[%d]=%s (want %s)", i, req.Filter.Status.In[i], want[i])
+		}
+	}
+}
+
+func assertStatusNotIn(t *testing.T, req ListProductsRequest, want []string) {
+	if req.Filter == nil || req.Filter.Status == nil || len(req.Filter.Status.NotIn) != len(want) {
+		t.Fatalf("expect Status.NotIn len=%d, got %#v", len(want), req.Filter)
+	}
+	for i := range want {
+		if req.Filter.Status.NotIn[i] != want[i] {
+			t.Fatalf("unexpected Status.NotIn[%d]=%s (want %s)", i, req.Filter.Status.NotIn[i], want[i])
+		}
+	}
+}
+
+func assertNameContainsFold(t *testing.T, req ListProductsRequest, val string, fold bool) {
+	if req.Filter == nil || req.Filter.Name == nil || req.Filter.Name.Contains == nil || *req.Filter.Name.Contains != val || req.Filter.Name.Fold != fold {
+		t.Fatalf("expect Name.Contains=%s Fold=%v, got %#v", val, fold, req.Filter)
+	}
+}
+
+func assertNameEqFold(t *testing.T, req ListProductsRequest, val string, fold bool) {
+	if req.Filter == nil || req.Filter.Name == nil || req.Filter.Name.Eq == nil || *req.Filter.Name.Eq != val || req.Filter.Name.Fold != fold {
+		t.Fatalf("expect Name.Eq=%s Fold=%v, got %#v", val, fold, req.Filter)
+	}
+}
+
+func assertPriceComparators(t *testing.T, gtPtr, gtePtr, ltPtr, ltePtr *float64, gt, gte, lt, lte float64) {
+	if gtPtr == nil || *gtPtr != gt {
+		t.Fatalf("gt not set correctly: %v", gtPtr)
+	}
+	if gtePtr == nil || *gtePtr != gte {
+		t.Fatalf("gte not set correctly: %v", gtePtr)
+	}
+	if ltPtr == nil || *ltPtr != lt {
+		t.Fatalf("lt not set correctly: %v", ltPtr)
+	}
+	if ltePtr == nil || *ltePtr != lte {
+		t.Fatalf("lte not set correctly: %v", ltePtr)
+	}
+}
+
+func assertStatusSets(t *testing.T, in []string, notIn []string, wantIn []string, wantNotIn []string) {
+	if len(in) != len(wantIn) {
+		t.Fatalf("in not set: %#v", in)
+	}
+	if len(notIn) != len(wantNotIn) {
+		t.Fatalf("notIn not set: %#v", notIn)
+	}
+}
+
+func assertNameStringOps(t *testing.T, containsPtr, startsPtr, endsPtr *string, fold bool, wantContains, wantStarts, wantEnds string, wantFold bool) {
+	if containsPtr == nil || *containsPtr != wantContains {
+		t.Fatalf("contains not set: %v", containsPtr)
+	}
+	if startsPtr == nil || *startsPtr != wantStarts {
+		t.Fatalf("startsWith not set: %v", startsPtr)
+	}
+	if endsPtr == nil || *endsPtr != wantEnds {
+		t.Fatalf("endsWith not set: %v", endsPtr)
+	}
+	if fold != wantFold {
+		t.Fatalf("fold not set correctly: %v (want %v)", fold, wantFold)
 	}
 }
 
