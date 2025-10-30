@@ -518,14 +518,14 @@ func coerceValueForJSON(fieldKey string, opKey string, val any) any {
 		case []string:
 			out := make([]any, 0, len(x))
 			for _, s := range x {
-				out = append(out, tryParseNumberBoolOrTime(fieldKey, s))
+				out = append(out, tryParseNumberBoolOrTime(s))
 			}
 			return out
 		case []any:
 			out := make([]any, 0, len(x))
 			for _, e := range x {
 				if s, ok := e.(string); ok {
-					out = append(out, tryParseNumberBoolOrTime(fieldKey, s))
+					out = append(out, tryParseNumberBoolOrTime(s))
 				} else {
 					out = append(out, e)
 				}
@@ -542,7 +542,7 @@ func coerceValueForJSON(fieldKey string, opKey string, val any) any {
 					if p == "" {
 						continue
 					}
-					out = append(out, tryParseNumberBoolOrTime(fieldKey, p))
+					out = append(out, tryParseNumberBoolOrTime(p))
 				}
 				if len(out) == 0 {
 					return []any{}
@@ -567,35 +567,23 @@ func coerceValueForJSON(fieldKey string, opKey string, val any) any {
 
 	// other scalar: try timestamp (by heuristic), then number, then bool, else keep string/raw
 	if s, ok := val.(string); ok {
-		return tryParseNumberBoolOrTime(fieldKey, s)
+		return tryParseNumberBoolOrTime(s)
 	}
 	return val
 }
 
-func tryParseNumberBoolOrTime(fieldKey, s string) any {
+func tryParseNumberBoolOrTime(s string) any {
 	s = strings.TrimSpace(s)
 	if s == "" {
 		return s
 	}
-	// bool
-	ls := strings.ToLower(s)
-	if ls == "true" || ls == "false" {
-		return ls == "true"
+	// try to parse explicit timestamp formats only (no epoch seconds inference)
+	if tm, ok := parseTimeFlexible(s); ok {
+		secs := tm.Unix()
+		nanos := tm.Nanosecond()
+		return map[string]any{"seconds": secs, "nanos": nanos}
 	}
-	if s == "1" {
-		return true
-	}
-	if s == "0" {
-		return false
-	}
-	// timestamp heuristic: fields that likely represent time
-	if strings.HasSuffix(strings.ToLower(fieldKey), "at") || fieldKey == "createdAt" || fieldKey == "updatedAt" {
-		if tm, ok := parseTimeFlexible(s); ok {
-			secs := tm.Unix()
-			nanos := tm.Nanosecond()
-			return map[string]any{"seconds": secs, "nanos": nanos}
-		}
-	}
+	// numbers first
 	// int
 	if iv, err := strconv.ParseInt(s, 10, 64); err == nil {
 		return iv
@@ -603,6 +591,11 @@ func tryParseNumberBoolOrTime(fieldKey, s string) any {
 	// float
 	if fv, err := strconv.ParseFloat(s, 64); err == nil {
 		return fv
+	}
+	// bool (true/false only; do not coerce 1/0 here to avoid ambiguity with numeric fields)
+	ls := strings.ToLower(s)
+	if ls == "true" || ls == "false" {
+		return ls == "true"
 	}
 	// keep original string
 	return s
@@ -619,9 +612,6 @@ func parseTimeFlexible(s string) (time.Time, bool) {
 		if t, err := time.Parse(layout, s); err == nil {
 			return t.UTC(), true
 		}
-	}
-	if sec, err := strconv.ParseInt(s, 10, 64); err == nil {
-		return time.Unix(sec, 0).UTC(), true
 	}
 	return time.Time{}, false
 }

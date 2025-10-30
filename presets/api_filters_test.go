@@ -85,7 +85,8 @@ type (
 
 // Lower camel JSON-tagged request and filters for user entity
 type (
-	UserNameOps struct {
+	ProductSatus int32
+	UserNameOps  struct {
 		Eq       *string `json:"eq"`
 		Contains *string `json:"contains"`
 		Fold     bool    `json:"fold"`
@@ -93,12 +94,18 @@ type (
 	UserStatusOps struct {
 		In []string `json:"in"`
 	}
+	ProductStatusOps struct {
+		Eq    *ProductSatus
+		In    []ProductSatus
+		NotIn []ProductSatus
+	}
 	UserFilter struct {
-		Or       []*UserFilter  `json:"or"`
-		Not      *UserFilter    `json:"not"`
-		Name     *UserNameOps   `json:"name"`
-		Status   *UserStatusOps `json:"status"`
-		UserName *UserNameOps   `json:"userName"`
+		Or            []*UserFilter     `json:"or"`
+		Not           *UserFilter       `json:"not"`
+		Name          *UserNameOps      `json:"name"`
+		Status        *UserStatusOps    `json:"status"`
+		UserName      *UserNameOps      `json:"userName"`
+		ProductStatus *ProductStatusOps `json:"productStatus"`
 	}
 	ListUserRequest struct {
 		Filter *UserFilter `json:"filter"`
@@ -108,6 +115,16 @@ type (
 const (
 	LocaleStatusPublished LocaleStatus = "PUBLISHED"
 	LocaleStatusDraft     LocaleStatus = "DRAFT"
+
+	ProductStatusPublished ProductSatus = 1
+	ProductStatusDraft     ProductSatus = 2
+	ProductStatusArchived  ProductSatus = 3
+	ProductStatusDeleted   ProductSatus = 4
+	ProductStatusInactive  ProductSatus = 5
+	ProductStatusActive    ProductSatus = 6
+	ProductStatusPending   ProductSatus = 7
+	ProductStatusCompleted ProductSatus = 8
+	ProductStatusCancelled ProductSatus = 9
 )
 
 func TestUnmarshalFilters_ProductFilterBasic(t *testing.T) {
@@ -1172,5 +1189,45 @@ func TestUnmarshalFilters_JSONTagLowerCamel_NestedAndQueryExtras(t *testing.T) {
 	}
 	if !(seenAlpha && seenBeta && seenNeo) {
 		t.Fatalf("expect OR contains Alpha, Beta and keyword Neo; got alpha=%v beta=%v neo=%v (ors=%#v)", seenAlpha, seenBeta, seenNeo, req.Filter.Or)
+	}
+}
+
+// ProductStatus (int32) with QS + keyword combined for lowerCamel target
+func TestUnmarshalFilters_JSONTagLowerCamel_ProductStatusWithKeyword(t *testing.T) {
+	// QS includes product_status comparators and keyword; also include name.fold=1 so keyword applies to name
+	// Using numeric values matching constants
+	qs := "product_status.in=1,6&product_status.notin=9&keyword=Neo&name.fold=1"
+	v, _ := url.ParseQuery(qs)
+	filters := BuildFiltersFromQuery(nil, qs)
+	var root *Filter
+	if len(filters) == 1 {
+		root = filters[0]
+	} else if len(filters) > 1 {
+		root = &Filter{And: filters}
+	}
+	sp := &SearchParams{Filter: root, Keyword: v.Get("keyword"), KeywordColumns: []string{"name"}}
+
+	var req ListUserRequest
+	if err := sp.Unmarshal(&req.Filter); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+
+	if req.Filter == nil || req.Filter.ProductStatus == nil {
+		t.Fatalf("expect productStatus present, got %#v", req.Filter)
+	}
+	// Check IN values parsed as int32 and mapped correctly
+	if len(req.Filter.ProductStatus.In) != 2 || req.Filter.ProductStatus.In[0] != ProductStatusPublished || req.Filter.ProductStatus.In[1] != ProductStatusActive {
+		t.Fatalf("expect productStatus.in=[%v %v], got %#v", ProductStatusPublished, ProductStatusActive, req.Filter.ProductStatus.In)
+	}
+	if len(req.Filter.ProductStatus.NotIn) != 1 || req.Filter.ProductStatus.NotIn[0] != ProductStatusCancelled {
+		t.Fatalf("expect productStatus.notIn=[%v], got %#v", ProductStatusCancelled, req.Filter.ProductStatus.NotIn)
+	}
+
+	// Keyword OR child should be generated for name with fold=true
+	if len(req.Filter.Or) != 1 {
+		t.Fatalf("expect 1 OR child for keyword, got %#v", req.Filter.Or)
+	}
+	if !(req.Filter.Or[0].Name != nil && req.Filter.Or[0].Name.Contains != nil && *req.Filter.Or[0].Name.Contains == "Neo" && req.Filter.Or[0].Name.Fold) {
+		t.Fatalf("expect OR name.contains=Neo fold=true, got %#v", req.Filter.Or[0])
 	}
 }
