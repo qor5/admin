@@ -112,6 +112,52 @@ type (
 	}
 )
 
+// More custom numeric-like types to verify Unmarshal adaptability
+type (
+	CategoryLevel int16
+	OrderState    int64
+	Rank          uint32
+	Score         float64
+
+	CategoryLevelOps struct {
+		Eq    *CategoryLevel
+		In    []CategoryLevel
+		NotIn []CategoryLevel
+	}
+	OrderStateOps struct {
+		Eq    *OrderState
+		In    []OrderState
+		NotIn []OrderState
+	}
+	RankOps struct {
+		Eq    *Rank
+		In    []Rank
+		NotIn []Rank
+	}
+	ScoreOps struct {
+		Eq    *Score
+		In    []Score
+		NotIn []Score
+	}
+	CNameOps struct {
+		Eq       *string `json:"eq"`
+		Contains *string `json:"contains"`
+		Fold     bool    `json:"fold"`
+	}
+	CustomFilter struct {
+		Or            []*CustomFilter   `json:"or"`
+		Not           *CustomFilter     `json:"not"`
+		Name          *CNameOps         `json:"name"`
+		CategoryLevel *CategoryLevelOps `json:"categoryLevel"`
+		OrderState    *OrderStateOps    `json:"orderState"`
+		Rank          *RankOps          `json:"rank"`
+		Score         *ScoreOps         `json:"score"`
+	}
+	ListCustomRequest struct {
+		Filter *CustomFilter `json:"filter"`
+	}
+)
+
 const (
 	LocaleStatusPublished LocaleStatus = "PUBLISHED"
 	LocaleStatusDraft     LocaleStatus = "DRAFT"
@@ -125,6 +171,13 @@ const (
 	ProductStatusPending   ProductSatus = 7
 	ProductStatusCompleted ProductSatus = 8
 	ProductStatusCancelled ProductSatus = 9
+	// Custom numeric type constants
+	LevelBasic  CategoryLevel = 1
+	LevelPro    CategoryLevel = 2
+	LevelElite  CategoryLevel = 3
+	StateNew    OrderState    = 1
+	StateClosed OrderState    = 5
+	RankGold    Rank          = 7
 )
 
 func TestUnmarshalFilters_ProductFilterBasic(t *testing.T) {
@@ -1229,5 +1282,43 @@ func TestUnmarshalFilters_JSONTagLowerCamel_ProductStatusWithKeyword(t *testing.
 	}
 	if !(req.Filter.Or[0].Name != nil && req.Filter.Or[0].Name.Contains != nil && *req.Filter.Or[0].Name.Contains == "Neo" && req.Filter.Or[0].Name.Fold) {
 		t.Fatalf("expect OR name.contains=Neo fold=true, got %#v", req.Filter.Or[0])
+	}
+}
+
+// Custom numeric-like types with QS + keyword combined
+func TestUnmarshalFilters_JSONTagLowerCamel_CustomNumericTypesWithKeyword(t *testing.T) {
+	// QS mixes various custom numeric aliases and keyword; include name.fold=1 so keyword applies to name
+	qs := "category_level.in=2,3&order_state.notin=5&rank.in=7&score.in=1.5,2.75&keyword=Zed&name.fold=1"
+	v, _ := url.ParseQuery(qs)
+	filters := BuildFiltersFromQuery(nil, qs)
+	var root *Filter
+	if len(filters) == 1 {
+		root = filters[0]
+	} else if len(filters) > 1 {
+		root = &Filter{And: filters}
+	}
+	sp := &SearchParams{Filter: root, Keyword: v.Get("keyword"), KeywordColumns: []string{"name"}}
+
+	var req ListCustomRequest
+	if err := sp.Unmarshal(&req.Filter); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+	if req.Filter == nil {
+		t.Fatalf("filter nil")
+	}
+	if req.Filter.CategoryLevel == nil || len(req.Filter.CategoryLevel.In) != 2 || req.Filter.CategoryLevel.In[0] != LevelPro || req.Filter.CategoryLevel.In[1] != LevelElite {
+		t.Fatalf("expect categoryLevel.in=[%v %v], got %#v", LevelPro, LevelElite, req.Filter.CategoryLevel)
+	}
+	if req.Filter.OrderState == nil || len(req.Filter.OrderState.NotIn) != 1 || req.Filter.OrderState.NotIn[0] != StateClosed {
+		t.Fatalf("expect orderState.notIn=[%v], got %#v", StateClosed, req.Filter.OrderState)
+	}
+	if req.Filter.Rank == nil || len(req.Filter.Rank.In) != 1 || req.Filter.Rank.In[0] != RankGold {
+		t.Fatalf("expect rank.in=[%v], got %#v", RankGold, req.Filter.Rank)
+	}
+	if req.Filter.Score == nil || len(req.Filter.Score.In) != 2 || req.Filter.Score.In[0] != Score(1.5) || req.Filter.Score.In[1] != Score(2.75) {
+		t.Fatalf("expect score.in=[1.5 2.75], got %#v", req.Filter.Score)
+	}
+	if len(req.Filter.Or) != 1 || !(req.Filter.Or[0].Name != nil && req.Filter.Or[0].Name.Contains != nil && *req.Filter.Or[0].Name.Contains == "Zed" && req.Filter.Or[0].Name.Fold) {
+		t.Fatalf("expect keyword OR name.contains=Zed fold=true, got %#v", req.Filter.Or)
 	}
 }
