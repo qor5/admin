@@ -1024,7 +1024,6 @@ func TestUnmarshalFilters_LocaleStatus(t *testing.T) {
 
 // Ensure Unmarshal adapts to structs that use lowerCamel JSON tags
 func TestUnmarshalFilters_JSONTagLowerCamel(t *testing.T) {
-
 	// Direct Filter tree
 	sp := &SearchParams{Filter: &Filter{And: []*Filter{
 		{Condition: &FieldCondition{Field: "Name", Operator: FilterOperatorContains, Value: "Jack"}},
@@ -1093,7 +1092,6 @@ func TestUnmarshalFilters_JSONTagLowerCamel(t *testing.T) {
 
 // Standalone keyword test for lowerCamel JSON tag target
 func TestUnmarshalFilters_JSONTagLowerCamel_Keyword(t *testing.T) {
-
 	// Provide name.fold=1 so keyword OR should only target name
 	qsK := "keyword=Neo&name.fold=1"
 	v, _ := url.ParseQuery(qsK)
