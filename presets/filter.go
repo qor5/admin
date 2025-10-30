@@ -20,21 +20,42 @@ const (
 	fieldFold = "Fold"
 )
 
-// operatorAliases defines canonical operator field name -> acceptable alias field names on target structs.
+// centralized tokens to avoid hard-coded strings
+const (
+	groupOpKey = "__op"
+	groupOpAnd = "and"
+	groupOpOr  = "or"
+	prefixNot  = "not"
+	csvSep     = ","
+)
+
+// modifiers (case-insensitive in parsing)
+const (
+	modIlike = "ilike"
+	modGte   = "gte"
+	modLte   = "lte"
+	modGt    = "gt"
+	modLt    = "lt"
+	modIn    = "in"
+	modNotIn = "notin"
+	modFold  = "fold"
+)
+
+// operatorAliases defines canonical FilterOperator -> acceptable alias field names on target structs.
 // This centralizes all hardcoded alternatives.
-var operatorAliases = map[string][]string{
-	"Contains":   {"Contains", "Ilike"},
-	"StartsWith": {"StartsWith"},
-	"EndsWith":   {"EndsWith"},
-	"Eq":         {"Eq"},
-	"Neq":        {"Neq"},
-	"Lt":         {"Lt"},
-	"Lte":        {"Lte"},
-	"Gt":         {"Gt"},
-	"Gte":        {"Gte"},
-	"In":         {"In"},
-	"NotIn":      {"NotIn"},
-	"IsNull":     {"IsNull"},
+var operatorAliases = map[FilterOperator][]string{
+	FilterOperatorContains:   {"Contains", "Ilike"},
+	FilterOperatorStartsWith: {"StartsWith"},
+	FilterOperatorEndsWith:   {"EndsWith"},
+	FilterOperatorEq:         {"Eq"},
+	FilterOperatorNeq:        {"Neq"},
+	FilterOperatorLt:         {"Lt"},
+	FilterOperatorLte:        {"Lte"},
+	FilterOperatorGt:         {"Gt"},
+	FilterOperatorGte:        {"Gte"},
+	FilterOperatorIn:         {"In"},
+	FilterOperatorNotIn:      {"NotIn"},
+	FilterOperatorIsNull:     {"IsNull"},
 }
 
 // Types for query aggregation (extracted to reduce function complexity)
@@ -57,7 +78,7 @@ func detectGroupOps(values url.Values) map[string]string {
 	groupOp := map[string]string{}
 	for k, arr := range values {
 		segs := strings.Split(k, ".")
-		if len(segs) >= 2 && segs[1] == "__op" {
+		if len(segs) >= 2 && segs[1] == groupOpKey {
 			if len(arr) > 0 {
 				groupOp[segs[0]] = strings.ToLower(arr[len(arr)-1])
 			}
@@ -74,7 +95,7 @@ func aggregateGroups(values url.Values, groupOp map[string]string) map[string]*f
 		if g == nil {
 			g = &filterGroupAgg{foldMap: map[string]*bool{}, op: strings.ToLower(groupOp[gid])}
 			if g.op == "" {
-				g.op = "and"
+				g.op = groupOpAnd
 			}
 			groups[gid] = g
 		}
@@ -94,11 +115,11 @@ func aggregateGroups(values url.Values, groupOp map[string]string) map[string]*f
 		if idx >= len(segs) {
 			continue
 		}
-		if segs[idx] == "__op" {
+		if segs[idx] == groupOpKey {
 			continue
 		}
 		isNot := false
-		if segs[idx] == "not" {
+		if segs[idx] == prefixNot {
 			isNot = true
 			idx++
 		}
@@ -111,10 +132,14 @@ func aggregateGroups(values url.Values, groupOp map[string]string) map[string]*f
 			mod = strings.ToLower(segs[idx+1])
 		}
 		g := getGroup(gid)
-		if mod == "fold" {
+		if mod == modFold {
 			if len(arr) > 0 {
 				v := strings.TrimSpace(arr[len(arr)-1])
-				val := strings.EqualFold(v, "true") || v == "1"
+				// treat presence without value as true by default
+				val := true
+				if v != "" {
+					val = strings.EqualFold(v, "true") || v == "1"
+				}
 				g.foldMap[field] = &val
 			}
 			continue
@@ -133,7 +158,7 @@ func buildFiltersFromGroups(groups map[string]*filterGroupAgg) []*Filter {
 		if foldOn {
 			node = &Filter{And: []*Filter{
 				node,
-				{Condition: FieldCondition{Field: field, Operator: mapModToOperator("fold"), Value: true}},
+				{Condition: FieldCondition{Field: field, Operator: FilterOperatorFold, Value: true}},
 			}}
 		}
 		if isNot {
@@ -141,31 +166,34 @@ func buildFiltersFromGroups(groups map[string]*filterGroupAgg) []*Filter {
 		}
 		return node
 	}
-	for gid, g := range groups {
-		_ = gid
+	for _, g := range groups {
 		groupNode := &Filter{}
 		usedFields := map[string]bool{}
 		for _, it := range g.items {
 			var foldOn bool
 			if bv, ok := g.foldMap[it.field]; ok && bv != nil {
 				foldOn = *bv
-			} else if strings.EqualFold(it.mod, "ilike") {
+			} else if strings.EqualFold(it.mod, modIlike) {
 				foldOn = true
 			}
 			usedFields[it.field] = true
-			if (mapModToOperator(it.mod) == FilterOperatorIn || mapModToOperator(it.mod) == FilterOperatorNotIn) && len(it.values) > 0 {
-				sv := it.values[len(it.values)-1]
-				var valAny any
-				if sv != "" {
-					valAny = strings.Split(sv, ",")
-				} else {
-					valAny = []string{}
+			op := mapModToOperator(it.mod)
+			if (op == FilterOperatorIn || op == FilterOperatorNotIn) && len(it.values) > 0 {
+				vals := make([]string, 0)
+				for _, raw := range it.values {
+					for _, p := range strings.Split(raw, csvSep) {
+						p = strings.TrimSpace(p)
+						if p != "" {
+							vals = append(vals, p)
+						}
+					}
 				}
-				node := &Filter{Condition: FieldCondition{Field: it.field, Operator: mapModToOperator(it.mod), Value: valAny}}
+				var valAny any = vals
+				node := &Filter{Condition: FieldCondition{Field: it.field, Operator: op, Value: valAny}}
 				if it.isNot {
 					node = &Filter{Not: node}
 				}
-				if g.op == "or" {
+				if g.op == groupOpOr {
 					groupNode.Or = append(groupNode.Or, node)
 				} else {
 					groupNode.And = append(groupNode.And, node)
@@ -173,7 +201,7 @@ func buildFiltersFromGroups(groups map[string]*filterGroupAgg) []*Filter {
 				continue
 			}
 			if len(it.values) > 1 {
-				if g.op == "or" {
+				if g.op == groupOpOr {
 					for _, sv := range it.values {
 						groupNode.Or = append(groupNode.Or, buildChild(it.field, it.mod, sv, foldOn, it.isNot))
 					}
@@ -191,7 +219,7 @@ func buildFiltersFromGroups(groups map[string]*filterGroupAgg) []*Filter {
 				sv = it.values[0]
 			}
 			node := buildChild(it.field, it.mod, sv, foldOn, it.isNot)
-			if g.op == "or" {
+			if g.op == groupOpOr {
 				groupNode.Or = append(groupNode.Or, node)
 			} else {
 				groupNode.And = append(groupNode.And, node)
@@ -227,7 +255,7 @@ func findOperatorField(target reflect.Value, opName string) (reflect.Value, bool
 		return f, true
 	}
 	// try aliases
-	aliases, ok := operatorAliases[opName]
+	aliases, ok := operatorAliases[FilterOperator(opName)]
 	if !ok {
 		// fall back: unknown op, try name itself
 		return findExportedFieldByName(target, opName)
@@ -245,6 +273,14 @@ var (
 	_tsPtrType = reflect.TypeOf((*timestamppb.Timestamp)(nil))
 	_tsValType = reflect.TypeOf(timestamppb.Timestamp{})
 )
+
+// accepted layouts for parsing string timestamps
+var timeLayouts = []string{
+	time.RFC3339,
+	"2006-01-02 15:04:05",
+	"2006-01-02T15:04:05Z07:00",
+	"2006-01-02",
+}
 
 const (
 	FilterOperatorEq         FilterOperator = "Eq"
@@ -283,21 +319,21 @@ func BuildFiltersFromQuery(_ vuetifyx.FilterData, qs string) []*Filter {
 
 func mapModToOperator(mod string) FilterOperator {
 	switch strings.ToLower(mod) {
-	case "ilike":
+	case modIlike:
 		return FilterOperatorContains
-	case "gte":
+	case modGte:
 		return FilterOperatorGte
-	case "lte":
+	case modLte:
 		return FilterOperatorLte
-	case "gt":
+	case modGt:
 		return FilterOperatorGt
-	case "lt":
+	case modLt:
 		return FilterOperatorLt
-	case "in":
+	case modIn:
 		return FilterOperatorIn
-	case "notin":
+	case modNotIn:
 		return FilterOperatorNotIn
-	case "fold":
+	case modFold:
 		return FilterOperatorFold
 	default:
 		return FilterOperatorEq
@@ -395,7 +431,7 @@ func handleFieldCondition(src *Filter, dst reflect.Value) error {
 		return setFoldFlag(fv, src)
 	}
 	if opName == "" {
-		opName = "Eq"
+		opName = string(FilterOperatorEq)
 	}
 	if _, ok := findOperatorField(tmp, opName); ok {
 		if fv.Kind() == reflect.Ptr {
@@ -479,7 +515,7 @@ func setValueForField(f reflect.Value, val any, opName string) error {
 	}
 
 	// For IN/NotIn, ensure slice
-	if strings.EqualFold(opName, "In") || strings.EqualFold(opName, "NotIn") {
+	if strings.EqualFold(opName, string(FilterOperatorIn)) || strings.EqualFold(opName, string(FilterOperatorNotIn)) {
 		if f.Kind() != reflect.Slice {
 			return errors.Errorf("operator %s requires slice field", opName)
 		}
@@ -514,7 +550,7 @@ func coerceToSlice(elemType reflect.Type, v any) (reflect.Value, error) {
 	switch rv.Kind() {
 	case reflect.String:
 		s := rv.String()
-		parts := strings.Split(s, ",")
+		parts := strings.Split(s, csvSep)
 		for _, p := range parts {
 			p = strings.TrimSpace(p)
 			if p == "" {
@@ -588,7 +624,7 @@ func coerceTimestampValue(t reflect.Type, v any) (reflect.Value, bool) {
 			tm = *x
 		}
 	case string:
-		layouts := []string{time.RFC3339, "2006-01-02 15:04:05", "2006-01-02T15:04:05Z07:00", "2006-01-02"}
+		layouts := timeLayouts
 		xs := strings.TrimSpace(x)
 		for _, layout := range layouts {
 			if t1, e := time.Parse(layout, xs); e == nil {
@@ -602,7 +638,7 @@ func coerceTimestampValue(t reflect.Type, v any) (reflect.Value, bool) {
 			}
 		}
 		if tm.IsZero() {
-			return reflect.Value{}, true
+			return reflect.Zero(t), true
 		}
 	default:
 		s := strings.TrimSpace(fmt.Sprint(v))
@@ -611,7 +647,7 @@ func coerceTimestampValue(t reflect.Type, v any) (reflect.Value, bool) {
 		} else if t1, err2 := time.Parse(time.RFC3339, s); err2 == nil {
 			tm = t1
 		} else {
-			return reflect.Value{}, true
+			return reflect.Zero(t), true
 		}
 	}
 	pb := timestamppb.New(tm)
