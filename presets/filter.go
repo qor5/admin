@@ -54,7 +54,11 @@ type filterGroupAgg struct {
 func detectGroupOps(values url.Values) map[string]string {
 	groupOp := map[string]string{}
 	for k, arr := range values {
-		segs := strings.Split(k, ".")
+		key := k
+		if strings.HasPrefix(key, "f_") {
+			key = key[2:]
+		}
+		segs := strings.Split(key, ".")
 		if len(segs) >= 2 && segs[1] == groupOpKey {
 			if len(arr) > 0 {
 				groupOp[segs[0]] = strings.ToLower(arr[len(arr)-1])
@@ -79,7 +83,11 @@ func aggregateGroups(values url.Values, groupOp map[string]string) map[string]*f
 		return g
 	}
 	for k, arr := range values {
-		segs := strings.Split(k, ".")
+		key := k
+		if strings.HasPrefix(key, "f_") {
+			key = key[2:]
+		}
+		segs := strings.Split(key, ".")
 		if len(segs) == 0 {
 			continue
 		}
@@ -512,6 +520,13 @@ func mergeFilterJSONMap(dst, src map[string]any) {
 }
 
 func coerceValueForJSON(fieldKey string, opKey string, val any) any {
+	// String pattern operators should keep raw string values, even if numeric-looking
+	if opKey == "contains" || opKey == "startsWith" || opKey == "endsWith" {
+		if s, ok := val.(string); ok {
+			return s
+		}
+		return val
+	}
 	// For slice operators, coerce each element
 	if opKey == "in" || opKey == "notIn" {
 		switch x := val.(type) {

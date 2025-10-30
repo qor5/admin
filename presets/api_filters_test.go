@@ -358,7 +358,7 @@ func TestListingCompo_ProcessFilter_QueryToSQLConditions(t *testing.T) {
 	c := &ListingCompo{lb: lb}
 	c.FilterQuery = "name.ilike=Galaxy&price.lte=99"
 
-	_, conds := c.processFilter(nil)
+	_, conds, _ := c.processFilter(nil)
 	if len(conds) != 1 {
 		t.Fatalf("expect 1 SQLCondition, got %d", len(conds))
 	}
@@ -391,7 +391,7 @@ func TestListingCompo_ProcessFilter_QueryToSQLConditions(t *testing.T) {
 func TestBuildFiltersFromQuery_ToRequestFilter(t *testing.T) {
 	// name.ilike=Alpha&name.ilike=Beta => OR for Name.Contains
 	// status.in=A,B => In slice
-	qs := "name.ilike=Alpha&name.ilike=Beta&status.in=A,B&name.fold=true"
+	qs := "f_name.ilike=Alpha&f_name.ilike=Beta&f_status.in=A,B&f_name.fold=true"
 	filters := BuildFiltersFromQuery(nil, qs)
 	var root *Filter
 	if len(filters) == 1 {
@@ -437,7 +437,7 @@ func TestBuildFiltersFromQuery_ToRequestFilter(t *testing.T) {
 // NOT and groups: g1 (or) with two names (fold true each), and not.status.in=C
 // merged into TestBuildFiltersFromQuery_QSSubtests
 func TestBuildFiltersFromQuery_WithNotAndGroups(t *testing.T) {
-	qs := "g1.name.ilike=Alpha&g1.name.ilike=Beta&g1.__op=or&g1.name.fold=1&not.status.in=C"
+	qs := "f_g1.name.ilike=Alpha&f_g1.name.ilike=Beta&f_g1.__op=or&f_g1.name.fold=1&f_not.status.in=C"
 	filters := BuildFiltersFromQuery(nil, qs)
 	var root *Filter
 	if len(filters) == 1 {
@@ -484,7 +484,7 @@ func TestBuildFiltersFromQuery_WithNotAndGroups(t *testing.T) {
 // name=Alpha (default eq), g1.code.in=A,B, g2.not.locale_code.eq=zh
 // merged into TestBuildFiltersFromQuery_QSSubtests
 func TestBuildFiltersFromQuery_DefaultEqAndMultiGroups(t *testing.T) {
-	qs := "name=Alpha&g1.code.in=A,B&g1.__op=and&g2.not.locale_code.eq=zh&g2.__op=and"
+	qs := "f_name=Alpha&f_g1.code.in=A,B&f_g1.__op=and&f_g2.not.locale_code.eq=zh&f_g2.__op=and"
 	filters := BuildFiltersFromQuery(nil, qs)
 	var root *Filter
 	if len(filters) == 1 {
@@ -586,7 +586,7 @@ func TestBuildFiltersFromQuery_QSSubtests(t *testing.T) {
 	}
 	t.Run("KeywordQS_FoldImplicit", func(t *testing.T) {
 		// inline variant: parse keyword and set on SearchParams
-		qs := "keyword=Nova&name.eq=Exact&name.fold=1"
+		qs := "keyword=Nova&f_name.eq=Exact&f_name.fold=1"
 		v, _ := url.ParseQuery(qs)
 		filters := BuildFiltersFromQuery(nil, qs)
 		var root *Filter
@@ -613,7 +613,7 @@ func TestBuildFiltersFromQuery_QSSubtests(t *testing.T) {
 	})
 	t.Run("KeywordQS_FoldImplicit_CamelCase", func(t *testing.T) {
 		// inline variant: parse keyword and set on SearchParams
-		qs := "keyword=Nova&name.eq=Exact&name.fold=1"
+		qs := "keyword=Nova&f_name.eq=Exact&f_name.fold=1"
 		v, _ := url.ParseQuery(qs)
 		filters := BuildFiltersFromQuery(nil, qs)
 		var root *Filter
@@ -640,7 +640,7 @@ func TestBuildFiltersFromQuery_QSSubtests(t *testing.T) {
 	})
 	t.Run("KeywordQS_FoldFalse", func(t *testing.T) {
 		// inline variant: parse keyword and set on SearchParams
-		qs := "keyword=Nova&name.fold=0"
+		qs := "keyword=Nova&f_name.fold=0"
 		v, _ := url.ParseQuery(qs)
 		filters := BuildFiltersFromQuery(nil, qs)
 		var root *Filter
@@ -729,7 +729,7 @@ func TestBuildFiltersFromQuery_CoerceFromString_AllKinds(t *testing.T) {
 	}
 	type Req struct{ Filter *Dest }
 
-	qs := "nstr=hello&nbool=true&nint=123&nuint=456&nfloat=1.25"
+	qs := "f_nstr=hello&f_nbool=true&f_nint=123&f_nuint=456&f_nfloat=1.25"
 	filters := BuildFiltersFromQuery(nil, qs)
 	var root *Filter
 	if len(filters) == 1 {
@@ -992,7 +992,7 @@ func TestBuildFiltersFromQuery_NumericComparators_FullFlow(t *testing.T) {
 	type MirrorFilter struct{ Price *PriceOps }
 	type Req struct{ Filter *MirrorFilter }
 
-	qs := "price.gt=10&price.gte=11&price.lt=20&price.lte=19"
+	qs := "f_price.gt=10&f_price.gte=11&f_price.lt=20&f_price.lte=19"
 	filters := BuildFiltersFromQuery(nil, qs)
 	var root *Filter
 	if len(filters) == 1 {
@@ -1022,7 +1022,7 @@ func TestBuildFiltersFromQuery_NumericComparators_FullFlow(t *testing.T) {
 
 // NOT name eq full-flow
 func TestBuildFiltersFromQuery_NotNameEq(t *testing.T) {
-	qs := "not.name.eq=Alpha"
+	qs := "f_not.name.eq=Alpha"
 	filters := BuildFiltersFromQuery(nil, qs)
 	var root *Filter
 	if len(filters) == 1 {
@@ -1128,7 +1128,7 @@ func TestUnmarshalFilters_JSONTagLowerCamel(t *testing.T) {
 	// Via query string
 	runQS(t, "name.ilike=Mike&name.fold=1&status.in=X,Y", func(_ *ListProductsRequest) {
 		// reuse BuildFiltersFromQuery -> Unmarshal pipeline against ListUserRequest
-		filters := BuildFiltersFromQuery(nil, "name.ilike=Mike&name.fold=1&status.in=X,Y")
+		filters := BuildFiltersFromQuery(nil, "f_name.ilike=Mike&f_name.fold=1&f_status.in=X,Y")
 		var root *Filter
 		if len(filters) == 1 {
 			root = filters[0]
@@ -1207,7 +1207,7 @@ func TestUnmarshalFilters_JSONTagLowerCamel_NestedAndQueryExtras(t *testing.T) {
 	// - name.eq=Exact (root)
 	// - code.in=A,B (field not present in ListUserRequest -> should be ignored)
 	// - user_name.ilike=Omega & user_name.fold=1 (maps to UserName field)
-	qs := "g1.name.ilike=Alpha&g1.name.ilike=Beta&g1.__op=or&g1.name.fold=1&not.status.in=C&name.eq=Exact&code.in=A,B&user_name.ilike=Omega&user_name.fold=1&keyword=Neo"
+	qs := "f_g1.name.ilike=Alpha&f_g1.name.ilike=Beta&f_g1.__op=or&f_g1.name.fold=1&f_not.status.in=C&f_name.eq=Exact&f_code.in=A,B&f_user_name.ilike=Omega&f_user_name.fold=1&keyword=Neo"
 	v, _ := url.ParseQuery(qs)
 	filters := BuildFiltersFromQuery(nil, qs)
 	var root *Filter
@@ -1263,7 +1263,7 @@ func TestUnmarshalFilters_JSONTagLowerCamel_NestedAndQueryExtras(t *testing.T) {
 func TestUnmarshalFilters_JSONTagLowerCamel_ProductStatusWithKeyword(t *testing.T) {
 	// QS includes product_status comparators and keyword; also include name.fold=1 so keyword applies to name
 	// Using numeric values matching constants
-	qs := "product_status.in=1,6&product_status.notin=9&keyword=Neo&name.fold=1"
+	qs := "f_product_status.in=1,6&f_product_status.notin=9&keyword=Neo&f_name.fold=1"
 	v, _ := url.ParseQuery(qs)
 	filters := BuildFiltersFromQuery(nil, qs)
 	var root *Filter
@@ -1299,10 +1299,35 @@ func TestUnmarshalFilters_JSONTagLowerCamel_ProductStatusWithKeyword(t *testing.
 	}
 }
 
+// ProductStatus eq with QS + keyword combined for lowerCamel target
+func TestUnmarshalFilters_JSONTagLowerCamel_ProductStatusEqWithKeyword(t *testing.T) {
+	qs := "f_product_status.eq=6&keyword=Neo&f_name.fold=1"
+	v, _ := url.ParseQuery(qs)
+	filters := BuildFiltersFromQuery(nil, qs)
+	var root *Filter
+	if len(filters) == 1 {
+		root = filters[0]
+	} else if len(filters) > 1 {
+		root = &Filter{And: filters}
+	}
+	sp := &SearchParams{Filter: root, Keyword: v.Get("keyword"), KeywordColumns: []string{"name"}}
+
+	var req ListUserRequest
+	if err := sp.Unmarshal(&req.Filter); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+	if req.Filter == nil || req.Filter.ProductStatus == nil || req.Filter.ProductStatus.Eq == nil || *req.Filter.ProductStatus.Eq != ProductStatusActive {
+		t.Fatalf("expect productStatus.eq=%v, got %#v", ProductStatusActive, req.Filter.ProductStatus)
+	}
+	if len(req.Filter.Or) != 1 || !(req.Filter.Or[0].Name != nil && req.Filter.Or[0].Name.Contains != nil && *req.Filter.Or[0].Name.Contains == "Neo" && req.Filter.Or[0].Name.Fold) {
+		t.Fatalf("expect keyword OR name.contains=Neo fold=true, got %#v", req.Filter.Or)
+	}
+}
+
 // Custom numeric-like types with QS + keyword combined
 func TestUnmarshalFilters_JSONTagLowerCamel_CustomNumericTypesWithKeyword(t *testing.T) {
 	// QS mixes various custom numeric aliases and keyword; include name.fold=1 so keyword applies to name
-	qs := "category_level.in=2,3&order_state.notin=5&rank.in=7&score.in=1.5,2.75&keyword=Zed&name.fold=1"
+	qs := "f_category_level.in=2,3&f_order_state.notin=5&f_rank.in=7&f_score.in=1.5,2.75&keyword=Zed&f_name.fold=1"
 	v, _ := url.ParseQuery(qs)
 	filters := BuildFiltersFromQuery(nil, qs)
 	var root *Filter
@@ -1339,7 +1364,7 @@ func TestUnmarshalFilters_JSONTagLowerCamel_CustomNumericTypesWithKeyword(t *tes
 
 // Time comparators (created_at/updated_at) with lowerCamel target and keyword
 func TestUnmarshalFilters_JSONTagLowerCamel_TimeWithKeyword(t *testing.T) {
-	qs := "created_at.gte=2025-10-20T12:34:56Z&updated_at.lte=2025-12-01&keyword=Omega&name.fold=1"
+	qs := "f_created_at.gte=2025-10-20T12:34:56Z&f_updated_at.lte=2025-12-01&keyword=Omega&f_name.fold=1"
 	v, _ := url.ParseQuery(qs)
 	filters := BuildFiltersFromQuery(nil, qs)
 	var root *Filter
@@ -1370,5 +1395,29 @@ func TestUnmarshalFilters_JSONTagLowerCamel_TimeWithKeyword(t *testing.T) {
 	}
 	if len(req.Filter.Or) != 1 || !(req.Filter.Or[0].Name != nil && req.Filter.Or[0].Name.Contains != nil && *req.Filter.Or[0].Name.Contains == "Omega" && req.Filter.Or[0].Name.Fold) {
 		t.Fatalf("expect keyword OR name.contains=Omega fold=true, got %#v", req.Filter.Or)
+	}
+}
+
+// Numeric keyword should still map to Name.contains as string with fold=true
+func TestUnmarshalFilters_KeywordNumeric_Name(t *testing.T) {
+	qs := "keyword=123"
+	v, _ := url.ParseQuery(qs)
+	filters := BuildFiltersFromQuery(nil, qs)
+	var root *Filter
+	if len(filters) == 1 {
+		root = filters[0]
+	} else if len(filters) > 1 {
+		root = &Filter{And: filters}
+	}
+	sp := &SearchParams{Filter: root, Keyword: v.Get("keyword"), KeywordColumns: []string{"Name"}}
+	var req ListProductsRequest
+	if err := sp.Unmarshal(&req.Filter); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+	if req.Filter == nil || len(req.Filter.Or) != 1 {
+		t.Fatalf("expect 1 OR child for keyword, got %#v", req.Filter)
+	}
+	if !(req.Filter.Or[0].Name != nil && req.Filter.Or[0].Name.Contains != nil && *req.Filter.Or[0].Name.Contains == "123" && req.Filter.Or[0].Name.Fold) {
+		t.Fatalf("expect OR name.contains=\"123\" fold=true, got %#v", req.Filter.Or[0])
 	}
 }
