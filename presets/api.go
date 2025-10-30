@@ -72,7 +72,7 @@ type (
 		And       []*Filter
 		Or        []*Filter
 		Not       *Filter
-		Condition FieldCondition
+		Condition *FieldCondition
 	}
 	SearchParams struct {
 		Model   any

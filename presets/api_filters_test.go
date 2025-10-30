@@ -13,6 +13,8 @@ import (
 
 // Local mirror of ProductFilter and ListProductsRequest for testing
 type (
+	LocaleStatus string
+
 	CreatedAtFilter struct {
 		Lt  *timestamppb.Timestamp
 		Lte *timestamppb.Timestamp
@@ -51,6 +53,12 @@ type (
 		In []string
 	}
 
+	LocaleStatusFilter struct {
+		Eq    *LocaleStatus
+		In    []LocaleStatus
+		NotIn []LocaleStatus
+	}
+
 	IsPublishedFilter struct {
 		Eq *bool
 	}
@@ -60,13 +68,14 @@ type (
 		Or  []*ProductFilter
 		Not *ProductFilter
 
-		CreatedAt   *CreatedAtFilter
-		UpdatedAt   *UpdatedAtFilter
-		Status      *StatusFilter
-		Name        *NameFilter
-		Code        *CodeFilter
-		LocaleCode  *LocaleCodeFilter
-		IsPublished *IsPublishedFilter
+		CreatedAt    *CreatedAtFilter
+		UpdatedAt    *UpdatedAtFilter
+		Status       *StatusFilter
+		Name         *NameFilter
+		Code         *CodeFilter
+		LocaleCode   *LocaleCodeFilter
+		IsPublished  *IsPublishedFilter
+		LocaleStatus *LocaleStatusFilter
 	}
 
 	ListProductsRequest struct {
@@ -74,18 +83,23 @@ type (
 	}
 )
 
+const (
+	LocaleStatusPublished LocaleStatus = "PUBLISHED"
+	LocaleStatusDraft     LocaleStatus = "DRAFT"
+)
+
 func TestUnmarshalFilters_ProductFilterBasic(t *testing.T) {
 	// Build filters
 	sp := &SearchParams{}
 	sp.Filter = &Filter{And: []*Filter{
 		// Name contains "abc"
-		{Condition: FieldCondition{Field: "Name", Operator: FilterOperatorContains, Value: "abc"}},
+		{Condition: &FieldCondition{Field: "Name", Operator: FilterOperatorContains, Value: "abc"}},
 		// Code in [A, B]
-		{Condition: FieldCondition{Field: "Code", Operator: FilterOperatorIn, Value: []string{"A", "B"}}},
+		{Condition: &FieldCondition{Field: "Code", Operator: FilterOperatorIn, Value: []string{"A", "B"}}},
 		// not IsPublished eq true
-		{Not: &Filter{Condition: FieldCondition{Field: "IsPublished", Operator: FilterOperatorEq, Value: true}}},
+		{Not: &Filter{Condition: &FieldCondition{Field: "IsPublished", Operator: FilterOperatorEq, Value: true}}},
 		// CreatedAt lt time
-		{Condition: FieldCondition{Field: "CreatedAt", Operator: FilterOperatorLt, Value: "2025-10-20T12:34:56Z"}},
+		{Condition: &FieldCondition{Field: "CreatedAt", Operator: FilterOperatorLt, Value: "2025-10-20T12:34:56Z"}},
 	}}
 	sp.KeywordColumns = []string{"Name", "Code"}
 	sp.Keyword = "kw"
@@ -112,9 +126,9 @@ func TestUnmarshalFilters_SearchParamsWrapper(t *testing.T) {
 	}
 	w := &Wrapper{Search: &SearchParams{}}
 	w.Search.Filter = &Filter{And: []*Filter{
-		{Condition: FieldCondition{Field: "Status", Operator: FilterOperatorIn, Value: []string{"PUBLISHED", "DRAFT"}}},
-		{Condition: FieldCondition{Field: "Name", Operator: FilterOperatorStartsWith, Value: "Pro"}},
-		{Condition: FieldCondition{Field: "Name", Operator: FilterOperatorFold, Value: true}},
+		{Condition: &FieldCondition{Field: "Status", Operator: FilterOperatorIn, Value: []string{"PUBLISHED", "DRAFT"}}},
+		{Condition: &FieldCondition{Field: "Name", Operator: FilterOperatorStartsWith, Value: "Pro"}},
+		{Condition: &FieldCondition{Field: "Name", Operator: FilterOperatorFold, Value: true}},
 	}}
 
 	if err := w.Search.Unmarshal(&w.Filter); err != nil {
@@ -163,9 +177,9 @@ func TestFilterData_SetByQueryString_ToSQLConditions(t *testing.T) {
 	// name.ilike=Galaxy => Name.Contains="Galaxy" with Fold=true (case-insensitive)
 	// status.in=A,B => Status.In=["A","B"]
 	sp := &SearchParams{Filter: &Filter{And: []*Filter{
-		{Condition: FieldCondition{Field: "Name", Operator: FilterOperatorContains, Value: "Galaxy"}},
-		{Condition: FieldCondition{Field: "Name", Operator: FilterOperatorFold, Value: true}},
-		{Condition: FieldCondition{Field: "Status", Operator: FilterOperatorIn, Value: []string{"A", "B"}}},
+		{Condition: &FieldCondition{Field: "Name", Operator: FilterOperatorContains, Value: "Galaxy"}},
+		{Condition: &FieldCondition{Field: "Name", Operator: FilterOperatorFold, Value: true}},
+		{Condition: &FieldCondition{Field: "Status", Operator: FilterOperatorIn, Value: []string{"A", "B"}}},
 	}}}
 	var req ListProductsRequest
 	if err := sp.Unmarshal(&req.Filter); err != nil {
@@ -187,18 +201,18 @@ func TestUnmarshalFilters_AllOperators(t *testing.T) {
 	sp := &SearchParams{}
 	trueVal := true
 	sp.Filter = &Filter{And: []*Filter{
-		{Condition: FieldCondition{Field: "Price", Operator: FilterOperatorEq, Value: 9.9}},
-		{Condition: FieldCondition{Field: "Price", Operator: FilterOperatorGt, Value: 10}},
-		{Condition: FieldCondition{Field: "Price", Operator: FilterOperatorGte, Value: 11}},
-		{Condition: FieldCondition{Field: "Price", Operator: FilterOperatorLt, Value: 20}},
-		{Condition: FieldCondition{Field: "Price", Operator: FilterOperatorLte, Value: 19}},
-		{Condition: FieldCondition{Field: "Status", Operator: FilterOperatorIn, Value: []string{"A", "B"}}},
-		{Condition: FieldCondition{Field: "Status", Operator: FilterOperatorNotIn, Value: []string{"C"}}},
-		{Condition: FieldCondition{Field: "DeletedAt", Operator: FilterOperatorIsNull, Value: true}},
-		{Condition: FieldCondition{Field: "Name", Operator: FilterOperatorContains, Value: "nova"}},
-		{Condition: FieldCondition{Field: "Name", Operator: FilterOperatorStartsWith, Value: "Super"}},
-		{Condition: FieldCondition{Field: "Name", Operator: FilterOperatorEndsWith, Value: "Star"}},
-		{Condition: FieldCondition{Field: "Name", Operator: FilterOperatorFold, Value: trueVal}},
+		{Condition: &FieldCondition{Field: "Price", Operator: FilterOperatorEq, Value: 9.9}},
+		{Condition: &FieldCondition{Field: "Price", Operator: FilterOperatorGt, Value: 10}},
+		{Condition: &FieldCondition{Field: "Price", Operator: FilterOperatorGte, Value: 11}},
+		{Condition: &FieldCondition{Field: "Price", Operator: FilterOperatorLt, Value: 20}},
+		{Condition: &FieldCondition{Field: "Price", Operator: FilterOperatorLte, Value: 19}},
+		{Condition: &FieldCondition{Field: "Status", Operator: FilterOperatorIn, Value: []string{"A", "B"}}},
+		{Condition: &FieldCondition{Field: "Status", Operator: FilterOperatorNotIn, Value: []string{"C"}}},
+		{Condition: &FieldCondition{Field: "DeletedAt", Operator: FilterOperatorIsNull, Value: true}},
+		{Condition: &FieldCondition{Field: "Name", Operator: FilterOperatorContains, Value: "nova"}},
+		{Condition: &FieldCondition{Field: "Name", Operator: FilterOperatorStartsWith, Value: "Super"}},
+		{Condition: &FieldCondition{Field: "Name", Operator: FilterOperatorEndsWith, Value: "Star"}},
+		{Condition: &FieldCondition{Field: "Name", Operator: FilterOperatorFold, Value: trueVal}},
 	}}
 
 	// Local target filter with fields to receive operators
@@ -536,7 +550,7 @@ func TestUnmarshal_NotWithStructField(t *testing.T) {
 		}
 	}
 
-	sp := &SearchParams{Filter: &Filter{Not: &Filter{Condition: FieldCondition{Field: "Name", Operator: FilterOperatorEq, Value: "X"}}}}
+	sp := &SearchParams{Filter: &Filter{Not: &Filter{Condition: &FieldCondition{Field: "Name", Operator: FilterOperatorEq, Value: "X"}}}}
 	var dst Dest
 	if err := sp.Unmarshal(&dst); err != nil {
 		t.Fatalf("Unmarshal error: %v", err)
@@ -554,8 +568,8 @@ func TestUnmarshal_OrWithStructSlice(t *testing.T) {
 
 	// Build two OR name.contains
 	sp := &SearchParams{Filter: &Filter{Or: []*Filter{
-		{Condition: FieldCondition{Field: "Name", Operator: FilterOperatorContains, Value: "A"}},
-		{Condition: FieldCondition{Field: "Name", Operator: FilterOperatorContains, Value: "B"}},
+		{Condition: &FieldCondition{Field: "Name", Operator: FilterOperatorContains, Value: "A"}},
+		{Condition: &FieldCondition{Field: "Name", Operator: FilterOperatorContains, Value: "B"}},
 	}}}
 	var dst Dest
 	if err := sp.Unmarshal(&dst); err != nil {
@@ -896,7 +910,7 @@ func TestBuildFiltersFromQuery_NotNameEq(t *testing.T) {
 // IN/NotIn with CSV string values should be split and coerced via coerceToSlice string path
 func TestUnmarshal_In_CSVString(t *testing.T) {
 	sp := &SearchParams{Filter: &Filter{And: []*Filter{
-		{Condition: FieldCondition{Field: "Code", Operator: FilterOperatorIn, Value: "A, B ,C"}},
+		{Condition: &FieldCondition{Field: "Code", Operator: FilterOperatorIn, Value: "A, B ,C"}},
 	}}}
 	var req ListProductsRequest
 	if err := sp.Unmarshal(&req.Filter); err != nil {
@@ -912,7 +926,7 @@ func TestUnmarshal_In_CSVString(t *testing.T) {
 
 func TestUnmarshal_NotIn_CSVString(t *testing.T) {
 	sp := &SearchParams{Filter: &Filter{And: []*Filter{
-		{Condition: FieldCondition{Field: "Status", Operator: FilterOperatorNotIn, Value: "X,Y"}},
+		{Condition: &FieldCondition{Field: "Status", Operator: FilterOperatorNotIn, Value: "X,Y"}},
 	}}}
 	var req ListProductsRequest
 	if err := sp.Unmarshal(&req.Filter); err != nil {
@@ -921,4 +935,40 @@ func TestUnmarshal_NotIn_CSVString(t *testing.T) {
 	if req.Filter == nil || req.Filter.Status == nil || len(req.Filter.Status.NotIn) != 2 || req.Filter.Status.NotIn[0] != "X" || req.Filter.Status.NotIn[1] != "Y" {
 		t.Fatalf("expect Status.NotIn=[X Y], got %#v", req.Filter.Status)
 	}
+}
+
+// LocaleStatus filter coverage: Eq and In via both direct Filter tree and query string
+func TestUnmarshalFilters_LocaleStatus(t *testing.T) {
+	// Direct Filter tree
+	sp := &SearchParams{Filter: &Filter{And: []*Filter{
+		{Condition: &FieldCondition{Field: "LocaleStatus", Operator: FilterOperatorEq, Value: string(LocaleStatusPublished)}},
+		{Condition: &FieldCondition{Field: "LocaleStatus", Operator: FilterOperatorIn, Value: []string{string(LocaleStatusDraft), string(LocaleStatusPublished)}}},
+	}}}
+
+	var req ListProductsRequest
+	if err := sp.Unmarshal(&req.Filter); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+	if req.Filter == nil || req.Filter.LocaleStatus == nil {
+		t.Fatalf("expect LocaleStatus initialized, got %#v", req.Filter)
+	}
+	if req.Filter.LocaleStatus.Eq == nil || *req.Filter.LocaleStatus.Eq != LocaleStatusPublished {
+		t.Fatalf("expect LocaleStatus.Eq=PUBLISHED, got %#v", req.Filter.LocaleStatus)
+	}
+	if len(req.Filter.LocaleStatus.In) != 2 {
+		t.Fatalf("expect LocaleStatus.In len=2, got %#v", req.Filter.LocaleStatus)
+	}
+
+	// Via query string
+	runQS(t, "locale_status.in=PUBLISHED,DRAFT&locale_status.eq=DRAFT", func(r *ListProductsRequest) {
+		if r.Filter == nil || r.Filter.LocaleStatus == nil {
+			t.Fatalf("expect LocaleStatus initialized, got %#v", r.Filter)
+		}
+		if r.Filter.LocaleStatus.Eq == nil || *r.Filter.LocaleStatus.Eq != LocaleStatusDraft {
+			t.Fatalf("expect LocaleStatus.Eq=DRAFT, got %#v", r.Filter.LocaleStatus)
+		}
+		if len(r.Filter.LocaleStatus.In) != 2 || r.Filter.LocaleStatus.In[0] != LocaleStatusPublished || r.Filter.LocaleStatus.In[1] != LocaleStatusDraft {
+			t.Fatalf("expect LocaleStatus.In=[PUBLISHED DRAFT], got %#v", r.Filter.LocaleStatus)
+		}
+	})
 }
