@@ -99,6 +99,18 @@ type (
 		In    []ProductSatus
 		NotIn []ProductSatus
 	}
+	CreatedAtOps struct {
+		Lt  *timestamppb.Timestamp `json:"lt"`
+		Lte *timestamppb.Timestamp `json:"lte"`
+		Gt  *timestamppb.Timestamp `json:"gt"`
+		Gte *timestamppb.Timestamp `json:"gte"`
+	}
+	UpdatedAtOps struct {
+		Lt  *timestamppb.Timestamp `json:"lt"`
+		Lte *timestamppb.Timestamp `json:"lte"`
+		Gt  *timestamppb.Timestamp `json:"gt"`
+		Gte *timestamppb.Timestamp `json:"gte"`
+	}
 	UserFilter struct {
 		Or            []*UserFilter     `json:"or"`
 		Not           *UserFilter       `json:"not"`
@@ -106,6 +118,8 @@ type (
 		Status        *UserStatusOps    `json:"status"`
 		UserName      *UserNameOps      `json:"userName"`
 		ProductStatus *ProductStatusOps `json:"productStatus"`
+		CreatedAt     *CreatedAtOps     `json:"createdAt"`
+		UpdatedAt     *UpdatedAtOps     `json:"updatedAt"`
 	}
 	ListUserRequest struct {
 		Filter *UserFilter `json:"filter"`
@@ -1320,5 +1334,41 @@ func TestUnmarshalFilters_JSONTagLowerCamel_CustomNumericTypesWithKeyword(t *tes
 	}
 	if len(req.Filter.Or) != 1 || !(req.Filter.Or[0].Name != nil && req.Filter.Or[0].Name.Contains != nil && *req.Filter.Or[0].Name.Contains == "Zed" && req.Filter.Or[0].Name.Fold) {
 		t.Fatalf("expect keyword OR name.contains=Zed fold=true, got %#v", req.Filter.Or)
+	}
+}
+
+// Time comparators (created_at/updated_at) with lowerCamel target and keyword
+func TestUnmarshalFilters_JSONTagLowerCamel_TimeWithKeyword(t *testing.T) {
+	qs := "created_at.gte=2025-10-20T12:34:56Z&updated_at.lte=2025-12-01&keyword=Omega&name.fold=1"
+	v, _ := url.ParseQuery(qs)
+	filters := BuildFiltersFromQuery(nil, qs)
+	var root *Filter
+	if len(filters) == 1 {
+		root = filters[0]
+	} else if len(filters) > 1 {
+		root = &Filter{And: filters}
+	}
+	sp := &SearchParams{Filter: root, Keyword: v.Get("keyword"), KeywordColumns: []string{"name"}}
+
+	var req ListUserRequest
+	if err := sp.Unmarshal(&req.Filter); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+	if req.Filter == nil || req.Filter.CreatedAt == nil || req.Filter.CreatedAt.Gte == nil {
+		t.Fatalf("expect createdAt.gte set, got %#v", req.Filter.CreatedAt)
+	}
+	if req.Filter == nil || req.Filter.UpdatedAt == nil || req.Filter.UpdatedAt.Lte == nil {
+		t.Fatalf("expect updatedAt.lte set, got %#v", req.Filter.UpdatedAt)
+	}
+	gte := req.Filter.CreatedAt.Gte.AsTime().UTC()
+	if gte.IsZero() || gte.Year() != 2025 || gte.Month() != time.October || gte.Day() != 20 {
+		t.Fatalf("unexpected createdAt.gte time: %v", gte)
+	}
+	lte := req.Filter.UpdatedAt.Lte.AsTime().UTC()
+	if lte.IsZero() || lte.Year() != 2025 || lte.Month() != time.December || lte.Day() != 1 {
+		t.Fatalf("unexpected updatedAt.lte time: %v", lte)
+	}
+	if len(req.Filter.Or) != 1 || !(req.Filter.Or[0].Name != nil && req.Filter.Or[0].Name.Contains != nil && *req.Filter.Or[0].Name.Contains == "Omega" && req.Filter.Or[0].Name.Fold) {
+		t.Fatalf("expect keyword OR name.contains=Omega fold=true, got %#v", req.Filter.Or)
 	}
 }
