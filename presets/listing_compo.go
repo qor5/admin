@@ -449,7 +449,7 @@ func (c *ListingCompo) getOrderBy(colOrderBys []ColOrderBy, orderableFieldMap ma
 	return orderBy
 }
 
-func (c *ListingCompo) processFilter(evCtx *web.EventContext) (h.HTMLComponent, []*SQLCondition) {
+func (c *ListingCompo) processFilter(evCtx *web.EventContext) (h.HTMLComponent, []*SQLCondition, *Filter) {
 	var filterScript h.HTMLComponent
 	if c.lb.filterDataFunc != nil {
 		fd := c.lb.filterDataFunc(evCtx)
@@ -458,10 +458,30 @@ func (c *ListingCompo) processFilter(evCtx *web.EventContext) (h.HTMLComponent, 
 			if vErr.HaveErrors() && vErr.HaveGlobalErrors() {
 				filterScript = web.RunScript(fmt.Sprintf(`(el)=>{%s}`, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), "error")))
 			}
-			return filterScript, []*SQLCondition{{Query: cond, Args: args}}
+			// Build filter tree from FilterQuery
+			var root *Filter
+			if c.FilterQuery != "" {
+				filters := BuildFiltersFromQuery(c.FilterQuery)
+				if len(filters) == 1 {
+					root = filters[0]
+				} else if len(filters) > 1 {
+					root = &Filter{And: filters}
+				}
+			}
+			return filterScript, []*SQLCondition{{Query: cond, Args: args}}, root
 		}
 	}
-	return nil, nil
+	// Also return any built filter even when no fd
+	var root *Filter
+	if c.FilterQuery != "" {
+		filters := BuildFiltersFromQuery(c.FilterQuery)
+		if len(filters) == 1 {
+			root = filters[0]
+		} else if len(filters) > 1 {
+			root = &Filter{And: filters}
+		}
+	}
+	return nil, nil, root
 }
 
 func (c *ListingCompo) prepareRelayPaginateRequest(orderBy []relay.Order, perPage int) *relay.PaginateRequest[any] {
@@ -658,8 +678,11 @@ func (c *ListingCompo) dataTable(ctx context.Context) h.HTMLComponent {
 		searchParams.Page = 1
 	}
 
-	filterScript, filterConds := c.processFilter(evCtx)
+	filterScript, filterConds, builtFilter := c.processFilter(evCtx)
 	searchParams.SQLConditions = append(searchParams.SQLConditions, filterConds...)
+	if builtFilter != nil {
+		searchParams.Filter = builtFilter
+	}
 
 	var searchResult *SearchResult
 	if c.lb.relayPagination != nil {
