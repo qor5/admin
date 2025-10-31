@@ -392,7 +392,7 @@ func TestBuildFiltersFromQuery_ToRequestFilter(t *testing.T) {
 	// name.ilike=Alpha&name.ilike=Beta => OR for Name.Contains
 	// status.in=A,B => In slice
 	qs := "f_name.ilike=Alpha&f_name.ilike=Beta&f_status.in=A,B&f_name.fold=true"
-	filters := BuildFiltersFromQuery(nil, qs)
+	filters := BuildFiltersFromQuery(qs)
 	var root *Filter
 	if len(filters) == 1 {
 		root = filters[0]
@@ -438,7 +438,7 @@ func TestBuildFiltersFromQuery_ToRequestFilter(t *testing.T) {
 // merged into TestBuildFiltersFromQuery_QSSubtests
 func TestBuildFiltersFromQuery_WithNotAndGroups(t *testing.T) {
 	qs := "f_g1.name.ilike=Alpha&f_g1.name.ilike=Beta&f_g1.__op=or&f_g1.name.fold=1&f_not.status.in=C"
-	filters := BuildFiltersFromQuery(nil, qs)
+	filters := BuildFiltersFromQuery(qs)
 	var root *Filter
 	if len(filters) == 1 {
 		root = filters[0]
@@ -485,7 +485,7 @@ func TestBuildFiltersFromQuery_WithNotAndGroups(t *testing.T) {
 // merged into TestBuildFiltersFromQuery_QSSubtests
 func TestBuildFiltersFromQuery_DefaultEqAndMultiGroups(t *testing.T) {
 	qs := "f_name=Alpha&f_g1.code.in=A,B&f_g1.__op=and&f_g2.not.locale_code.eq=zh&f_g2.__op=and"
-	filters := BuildFiltersFromQuery(nil, qs)
+	filters := BuildFiltersFromQuery(qs)
 	var root *Filter
 	if len(filters) == 1 {
 		root = filters[0]
@@ -512,7 +512,7 @@ func TestBuildFiltersFromQuery_DefaultEqAndMultiGroups(t *testing.T) {
 // mapModToOperator should map all supported modifiers
 // Shared runner to execute qs -> filters -> unmarshal pipeline
 func runQS(t *testing.T, qs string, check func(*ListProductsRequest)) {
-	filters := BuildFiltersFromQuery(nil, qs)
+	filters := BuildFiltersFromQuery(qs)
 	var root *Filter
 	if len(filters) == 1 {
 		root = filters[0]
@@ -588,7 +588,7 @@ func TestBuildFiltersFromQuery_QSSubtests(t *testing.T) {
 		// inline variant: parse keyword and set on SearchParams
 		qs := "keyword=Nova&f_name.eq=Exact&f_name.fold=1"
 		v, _ := url.ParseQuery(qs)
-		filters := BuildFiltersFromQuery(nil, qs)
+		filters := BuildFiltersFromQuery(qs)
 		var root *Filter
 		if len(filters) == 1 {
 			root = filters[0]
@@ -615,7 +615,7 @@ func TestBuildFiltersFromQuery_QSSubtests(t *testing.T) {
 		// inline variant: parse keyword and set on SearchParams
 		qs := "keyword=Nova&f_name.eq=Exact&f_name.fold=1"
 		v, _ := url.ParseQuery(qs)
-		filters := BuildFiltersFromQuery(nil, qs)
+		filters := BuildFiltersFromQuery(qs)
 		var root *Filter
 		if len(filters) == 1 {
 			root = filters[0]
@@ -642,7 +642,7 @@ func TestBuildFiltersFromQuery_QSSubtests(t *testing.T) {
 		// inline variant: parse keyword and set on SearchParams
 		qs := "keyword=Nova&f_name.fold=0"
 		v, _ := url.ParseQuery(qs)
-		filters := BuildFiltersFromQuery(nil, qs)
+		filters := BuildFiltersFromQuery(qs)
 		var root *Filter
 		if len(filters) == 1 {
 			root = filters[0]
@@ -730,7 +730,7 @@ func TestBuildFiltersFromQuery_CoerceFromString_AllKinds(t *testing.T) {
 	type Req struct{ Filter *Dest }
 
 	qs := "f_nstr=hello&f_nbool=true&f_nint=123&f_nuint=456&f_nfloat=1.25"
-	filters := BuildFiltersFromQuery(nil, qs)
+	filters := BuildFiltersFromQuery(qs)
 	var root *Filter
 	if len(filters) == 1 {
 		root = filters[0]
@@ -993,7 +993,7 @@ func TestBuildFiltersFromQuery_NumericComparators_FullFlow(t *testing.T) {
 	type Req struct{ Filter *MirrorFilter }
 
 	qs := "f_price.gt=10&f_price.gte=11&f_price.lt=20&f_price.lte=19"
-	filters := BuildFiltersFromQuery(nil, qs)
+	filters := BuildFiltersFromQuery(qs)
 	var root *Filter
 	if len(filters) == 1 {
 		root = filters[0]
@@ -1023,7 +1023,7 @@ func TestBuildFiltersFromQuery_NumericComparators_FullFlow(t *testing.T) {
 // NOT name eq full-flow
 func TestBuildFiltersFromQuery_NotNameEq(t *testing.T) {
 	qs := "f_not.name.eq=Alpha"
-	filters := BuildFiltersFromQuery(nil, qs)
+	filters := BuildFiltersFromQuery(qs)
 	var root *Filter
 	if len(filters) == 1 {
 		root = filters[0]
@@ -1128,7 +1128,7 @@ func TestUnmarshalFilters_JSONTagLowerCamel(t *testing.T) {
 	// Via query string
 	runQS(t, "name.ilike=Mike&name.fold=1&status.in=X,Y", func(_ *ListProductsRequest) {
 		// reuse BuildFiltersFromQuery -> Unmarshal pipeline against ListUserRequest
-		filters := BuildFiltersFromQuery(nil, "f_name.ilike=Mike&f_name.fold=1&f_status.in=X,Y")
+		filters := BuildFiltersFromQuery("f_name.ilike=Mike&f_name.fold=1&f_status.in=X,Y")
 		var root *Filter
 		if len(filters) == 1 {
 			root = filters[0]
@@ -1153,7 +1153,7 @@ func TestUnmarshalFilters_JSONTagLowerCamel(t *testing.T) {
 	qsK := "keyword=Neo&name.fold=1"
 	runQS(t, qsK, func(_ *ListProductsRequest) {
 		v, _ := url.ParseQuery(qsK)
-		filters := BuildFiltersFromQuery(nil, qsK)
+		filters := BuildFiltersFromQuery(qsK)
 		var root *Filter
 		if len(filters) == 1 {
 			root = filters[0]
@@ -1179,7 +1179,7 @@ func TestUnmarshalFilters_JSONTagLowerCamel_Keyword(t *testing.T) {
 	// Provide name.fold=1 so keyword OR should only target name
 	qsK := "keyword=Neo&name.fold=1"
 	v, _ := url.ParseQuery(qsK)
-	filters := BuildFiltersFromQuery(nil, qsK)
+	filters := BuildFiltersFromQuery(qsK)
 	var root *Filter
 	if len(filters) == 1 {
 		root = filters[0]
@@ -1209,7 +1209,7 @@ func TestUnmarshalFilters_JSONTagLowerCamel_NestedAndQueryExtras(t *testing.T) {
 	// - user_name.ilike=Omega & user_name.fold=1 (maps to UserName field)
 	qs := "f_g1.name.ilike=Alpha&f_g1.name.ilike=Beta&f_g1.__op=or&f_g1.name.fold=1&f_not.status.in=C&f_name.eq=Exact&f_code.in=A,B&f_user_name.ilike=Omega&f_user_name.fold=1&keyword=Neo"
 	v, _ := url.ParseQuery(qs)
-	filters := BuildFiltersFromQuery(nil, qs)
+	filters := BuildFiltersFromQuery(qs)
 	var root *Filter
 	if len(filters) == 1 {
 		root = filters[0]
@@ -1265,7 +1265,7 @@ func TestUnmarshalFilters_JSONTagLowerCamel_ProductStatusWithKeyword(t *testing.
 	// Using numeric values matching constants
 	qs := "f_product_status.in=1,6&f_product_status.notin=9&keyword=Neo&f_name.fold=1"
 	v, _ := url.ParseQuery(qs)
-	filters := BuildFiltersFromQuery(nil, qs)
+	filters := BuildFiltersFromQuery(qs)
 	var root *Filter
 	if len(filters) == 1 {
 		root = filters[0]
@@ -1303,7 +1303,7 @@ func TestUnmarshalFilters_JSONTagLowerCamel_ProductStatusWithKeyword(t *testing.
 func TestUnmarshalFilters_JSONTagLowerCamel_ProductStatusEqWithKeyword(t *testing.T) {
 	qs := "f_product_status.eq=6&keyword=Neo&f_name.fold=1"
 	v, _ := url.ParseQuery(qs)
-	filters := BuildFiltersFromQuery(nil, qs)
+	filters := BuildFiltersFromQuery(qs)
 	var root *Filter
 	if len(filters) == 1 {
 		root = filters[0]
@@ -1329,7 +1329,7 @@ func TestUnmarshalFilters_JSONTagLowerCamel_CustomNumericTypesWithKeyword(t *tes
 	// QS mixes various custom numeric aliases and keyword; include name.fold=1 so keyword applies to name
 	qs := "f_category_level.in=2,3&f_order_state.notin=5&f_rank.in=7&f_score.in=1.5,2.75&keyword=Zed&f_name.fold=1"
 	v, _ := url.ParseQuery(qs)
-	filters := BuildFiltersFromQuery(nil, qs)
+	filters := BuildFiltersFromQuery(qs)
 	var root *Filter
 	if len(filters) == 1 {
 		root = filters[0]
@@ -1366,7 +1366,7 @@ func TestUnmarshalFilters_JSONTagLowerCamel_CustomNumericTypesWithKeyword(t *tes
 func TestUnmarshalFilters_JSONTagLowerCamel_TimeWithKeyword(t *testing.T) {
 	qs := "f_created_at.gte=2025-10-20T12:34:56Z&f_updated_at.lte=2025-12-01&keyword=Omega&f_name.fold=1"
 	v, _ := url.ParseQuery(qs)
-	filters := BuildFiltersFromQuery(nil, qs)
+	filters := BuildFiltersFromQuery(qs)
 	var root *Filter
 	if len(filters) == 1 {
 		root = filters[0]
@@ -1402,7 +1402,7 @@ func TestUnmarshalFilters_JSONTagLowerCamel_TimeWithKeyword(t *testing.T) {
 func TestUnmarshalFilters_KeywordNumeric_Name(t *testing.T) {
 	qs := "keyword=123"
 	v, _ := url.ParseQuery(qs)
-	filters := BuildFiltersFromQuery(nil, qs)
+	filters := BuildFiltersFromQuery(qs)
 	var root *Filter
 	if len(filters) == 1 {
 		root = filters[0]

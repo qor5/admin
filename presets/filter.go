@@ -9,7 +9,6 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
 	"github.com/qor5/x/v3/jsonx"
-	"github.com/qor5/x/v3/ui/vuetifyx"
 )
 
 // centralized tokens to avoid hard-coded strings
@@ -252,7 +251,7 @@ const (
 // - NOT: not.<field>.<mod>=value
 // - FOLD: <field>.fold=true|1
 // - IN/NOT IN: value is CSV
-func BuildFiltersFromQuery(_ vuetifyx.FilterData, qs string) []*Filter {
+func BuildFiltersFromQuery(qs string) []*Filter {
 	if qs == "" {
 		return nil
 	}

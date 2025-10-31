@@ -461,7 +461,7 @@ func (c *ListingCompo) processFilter(evCtx *web.EventContext) (h.HTMLComponent, 
 			// Build filter tree from FilterQuery
 			var root *Filter
 			if c.FilterQuery != "" {
-				filters := BuildFiltersFromQuery(nil, c.FilterQuery)
+				filters := BuildFiltersFromQuery(c.FilterQuery)
 				if len(filters) == 1 {
 					root = filters[0]
 				} else if len(filters) > 1 {
@@ -474,7 +474,7 @@ func (c *ListingCompo) processFilter(evCtx *web.EventContext) (h.HTMLComponent, 
 	// Also return any built filter even when no fd
 	var root *Filter
 	if c.FilterQuery != "" {
-		filters := BuildFiltersFromQuery(nil, c.FilterQuery)
+		filters := BuildFiltersFromQuery(c.FilterQuery)
 		if len(filters) == 1 {
 			root = filters[0]
 		} else if len(filters) > 1 {
