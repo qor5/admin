@@ -121,6 +121,12 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 
 	deletedIndexes := ContextModifiedIndexesBuilder(ctx)
 
+	// Check if user has update permission for nested operations
+	hasUpdatePermission := true
+	if b.fieldContext.ModelInfo != nil {
+		hasUpdatePermission = b.fieldContext.ModelInfo.Verifier().Do(PermUpdate).WithReq(ctx.R).IsAllowed() == nil
+	}
+
 	actualItemCount := 0
 	if b.value != nil {
 		totalItems := reflect.ValueOf(b.value).Len()
@@ -136,7 +142,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 	if b.value != nil {
 		form = b.fieldContext.NestedFieldsBuilder.ToComponentForEach(b.fieldContext, b.value, ctx, func(obj interface{}, formKey string, content h.HTMLComponent, ctx *web.EventContext) h.HTMLComponent {
 			return VCard(
-				h.If(!b.fieldContext.Disabled,
+				h.If(!b.fieldContext.Disabled && hasUpdatePermission,
 					VBtn("").Icon("mdi-delete").Class("float-right ma-2").
 						Attr("@click", web.Plaid().
 							URL(b.fieldContext.ModelInfo.ListingHref()).
@@ -196,7 +202,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 
 	return h.Div(
 		web.Scope(
-			h.If(!b.fieldContext.Disabled,
+			h.If(!b.fieldContext.Disabled && hasUpdatePermission,
 				h.Div(
 					h.Label(b.fieldContext.Label).Class("v-label theme--light text-caption"),
 					VSpacer(),
@@ -237,9 +243,9 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 				).Class("d-flex align-end"),
 			),
 			sorter,
-			h.Div(
-				form,
-				h.If(!b.fieldContext.Disabled,
+			h.If(!b.fieldContext.Disabled && hasUpdatePermission,
+				h.Div(
+					form,
 					VBtn(b.getAddRowBtnLabel(ctx)).
 						Variant(VariantText).
 						Color("primary").
@@ -254,10 +260,18 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 							Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
 							Query(ParamAddRowFormKey, b.fieldContext.FormKey).
 							Go()),
-				),
-			).Attr("v-show", h.JSONString(!isSortStart)).
-				Class("mt-1 mb-4"),
+				).Attr("v-show", h.JSONString(!isSortStart)).
+					Class("mt-1 mb-4"),
+			),
 		).Init(h.JSONString(sorterData)).VSlot("{ locals }"),
+
+		// Read-only view when user doesn't have update permission or field is disabled
+		h.If(b.fieldContext.Disabled || !hasUpdatePermission,
+			h.Div(
+				h.Label(b.fieldContext.Label).Class("v-label theme--light text-caption"),
+				form,
+			),
+		),
 	).MarshalHTML(c)
 }
 
@@ -266,6 +280,11 @@ func addListItemRow(mb *ModelBuilder) web.EventFunc {
 		me := mb.Editing()
 		id := ctx.Param(ParamID)
 		obj, _ := me.FetchAndUnmarshal(id, false, ctx)
+
+		if mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+			return r, nil
+		}
+
 		formKey := ctx.Param(ParamAddRowFormKey)
 		t := reflectutils.GetType(obj, formKey+"[0]")
 		newVal := reflect.New(t.Elem()).Interface()
@@ -284,6 +303,10 @@ func removeListItemRow(mb *ModelBuilder) web.EventFunc {
 		me := mb.Editing()
 		id := ctx.Param(ParamID)
 		obj, _ := me.FetchAndUnmarshal(id, false, ctx)
+
+		if mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+			return r, nil
+		}
 
 		formKey := ctx.R.FormValue(ParamRemoveRowFormKey)
 		lb := strings.LastIndex(formKey, "[")
@@ -307,6 +330,11 @@ func sortListItems(mb *ModelBuilder) web.EventFunc {
 		me := mb.Editing()
 		id := ctx.Param(ParamID)
 		obj, _ := me.FetchAndUnmarshal(id, false, ctx)
+
+		if mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+			return r, nil
+		}
+
 		sortSectionFormKey := ctx.R.FormValue(ParamSortSectionFormKey)
 
 		isStartSort := ctx.R.FormValue(ParamIsStartSort)
