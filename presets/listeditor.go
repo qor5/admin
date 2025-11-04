@@ -335,6 +335,7 @@ func sortListItems(mb *ModelBuilder) web.EventFunc {
 		obj, _ := me.FetchAndUnmarshal(id, false, ctx)
 
 		if mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+			ShowMessage(&r, perm.PermissionDenied.Error(), ColorError)
 			return r, nil
 		}
 
