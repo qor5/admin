@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
@@ -122,7 +123,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 	deletedIndexes := ContextModifiedIndexesBuilder(ctx)
 
 	// Check if user has update permission for nested operations
-	hasUpdatePermission := true
+	hasUpdatePermission := false
 	if b.fieldContext.ModelInfo != nil {
 		hasUpdatePermission = b.fieldContext.ModelInfo.Verifier().Do(PermUpdate).WithReq(ctx.R).IsAllowed() == nil
 	}
@@ -282,6 +283,7 @@ func addListItemRow(mb *ModelBuilder) web.EventFunc {
 		obj, _ := me.FetchAndUnmarshal(id, false, ctx)
 
 		if mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+			ShowMessage(&r, perm.PermissionDenied.Error(), ColorError)
 			return r, nil
 		}
 
@@ -305,6 +307,7 @@ func removeListItemRow(mb *ModelBuilder) web.EventFunc {
 		obj, _ := me.FetchAndUnmarshal(id, false, ctx)
 
 		if mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
+			ShowMessage(&r, perm.PermissionDenied.Error(), ColorError)
 			return r, nil
 		}
 
