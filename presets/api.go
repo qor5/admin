@@ -61,13 +61,27 @@ type SQLCondition struct {
 
 type (
 	RelayPagination func(ctx *web.EventContext) (relay.Paginator[any], error)
-	SearchParams    struct {
+
+	FilterOperator string
+	FieldCondition struct {
+		Field    string
+		Operator FilterOperator
+		Value    any
+	}
+	Filter struct {
+		And       []*Filter
+		Or        []*Filter
+		Not       *Filter
+		Condition *FieldCondition
+	}
+	SearchParams struct {
 		Model   any
 		PageURL *url.URL
 
 		KeywordColumns []string
 		Keyword        string
 		SQLConditions  []*SQLCondition
+		Filter         *Filter
 
 		Page    int64
 		PerPage int64
