@@ -23,6 +23,10 @@ type goque struct {
 }
 
 func NewGoQueQueue(db *gorm.DB) Queue {
+	return newGoQueQueue(db, true)
+}
+
+func newGoQueQueue(db *gorm.DB, autoMigrate bool) Queue {
 	if db == nil {
 		panic("db can not be nil")
 	}
@@ -33,7 +37,16 @@ func NewGoQueQueue(db *gorm.DB) Queue {
 		if err != nil {
 			panic(err)
 		}
-		q, err = pg.New(rdb)
+
+		if autoMigrate {
+			q, err = pg.New(rdb)
+		} else {
+			q, err = pg.NewWithOptions(pg.Options{
+				DB:        rdb,
+				DBMigrate: false,
+			})
+		}
+
 		if err != nil {
 			panic(err)
 		}
