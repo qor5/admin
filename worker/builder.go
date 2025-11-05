@@ -36,22 +36,43 @@ type Builder struct {
 	ab                   *activity.Builder
 }
 
+// Options contains configuration options for worker Builder
+type Options struct {
+	DB          *gorm.DB
+	AutoMigrate bool // If true, auto migrate worker tables (default: false)
+}
+
 func New(db *gorm.DB) *Builder {
-	return newWithConfigs(db, NewGoQueQueue(db))
+	return newWithConfigs(db, NewGoQueQueue(db), true)
 }
 
 func NewWithQueue(db *gorm.DB, q Queue) *Builder {
-	return newWithConfigs(db, q)
+	return newWithConfigs(db, q, true)
 }
 
-func newWithConfigs(db *gorm.DB, q Queue) *Builder {
+// NewWithOptions creates a new worker Builder with the provided options.
+func NewWithOptions(opts *Options) *Builder {
+	if opts == nil {
+		panic("options cannot be nil")
+	}
+	if opts.DB == nil {
+		panic("db cannot be nil")
+	}
+
+	q := newGoQueQueue(opts.DB, opts.AutoMigrate)
+	return newWithConfigs(opts.DB, q, opts.AutoMigrate)
+}
+
+func newWithConfigs(db *gorm.DB, q Queue, autoMigrate bool) *Builder {
 	if db == nil {
 		panic("db can not be nil")
 	}
 
-	err := db.AutoMigrate(&QorJob{}, &QorJobInstance{}, &QorJobLog{}, &GoQueError{})
-	if err != nil {
-		panic(err)
+	if autoMigrate {
+		err := db.AutoMigrate(&QorJob{}, &QorJobInstance{}, &QorJobLog{}, &GoQueError{})
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	r := &Builder{
