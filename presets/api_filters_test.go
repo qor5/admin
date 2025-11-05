@@ -158,6 +158,11 @@ type (
 		Contains *string `json:"contains"`
 		Fold     bool    `json:"fold"`
 	}
+	UserIDOps struct {
+		Eq    *string  `json:"eq"`
+		In    []string `json:"in"`
+		NotIn []string `json:"notIn"`
+	}
 	CustomFilter struct {
 		Or            []*CustomFilter   `json:"or"`
 		Not           *CustomFilter     `json:"not"`
@@ -166,6 +171,7 @@ type (
 		OrderState    *OrderStateOps    `json:"orderState"`
 		Rank          *RankOps          `json:"rank"`
 		Score         *ScoreOps         `json:"score"`
+		UserID        *UserIDOps        `json:"userID"`
 	}
 	ListCustomRequest struct {
 		Filter *CustomFilter `json:"filter"`
@@ -1359,6 +1365,36 @@ func TestUnmarshalFilters_JSONTagLowerCamel_CustomNumericTypesWithKeyword(t *tes
 	}
 	if len(req.Filter.Or) != 1 || !(req.Filter.Or[0].Name != nil && req.Filter.Or[0].Name.Contains != nil && *req.Filter.Or[0].Name.Contains == "Zed" && req.Filter.Or[0].Name.Fold) {
 		t.Fatalf("expect keyword OR name.contains=Zed fold=true, got %#v", req.Filter.Or)
+	}
+}
+
+// UserID string comparators (eq/in/notIn) mapped via lower_snake_case -> lowerCamel JSON tag
+func TestUnmarshalFilters_JSONTagLowerCamel_UserIDOps(t *testing.T) {
+	qs := "f_user_id.eq=U123&f_user_id.in=A1,B2&f_user_id.notin=X9"
+	filters := BuildFiltersFromQuery(qs)
+	var root *Filter
+	if len(filters) == 1 {
+		root = filters[0]
+	} else if len(filters) > 1 {
+		root = &Filter{And: filters}
+	}
+	sp := &SearchParams{Filter: root}
+
+	var req ListCustomRequest
+	if err := sp.Unmarshal(&req.Filter); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+	if req.Filter == nil || req.Filter.UserID == nil {
+		t.Fatalf("expect userID present, got %#v", req.Filter)
+	}
+	if req.Filter.UserID.Eq == nil || *req.Filter.UserID.Eq != "U123" {
+		t.Fatalf("expect userID.eq=U123, got %#v", req.Filter.UserID)
+	}
+	if len(req.Filter.UserID.In) != 2 || req.Filter.UserID.In[0] != "A1" || req.Filter.UserID.In[1] != "B2" {
+		t.Fatalf("expect userID.in=[A1 B2], got %#v", req.Filter.UserID.In)
+	}
+	if len(req.Filter.UserID.NotIn) != 1 || req.Filter.UserID.NotIn[0] != "X9" {
+		t.Fatalf("expect userID.notIn=[X9], got %#v", req.Filter.UserID.NotIn)
 	}
 }
 
