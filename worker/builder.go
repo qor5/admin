@@ -18,6 +18,7 @@ import (
 	. "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/qor5/x/v3/ui/vuetifyx"
 	. "github.com/theplant/htmlgo"
+	"github.com/tnclong/go-que/pg"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
 
@@ -36,21 +37,24 @@ type Builder struct {
 	ab                   *activity.Builder
 }
 
-// Options contains configuration options for worker Builder
+// Options contains configuration options for worker Builder.
 type Options struct {
 	DB          *gorm.DB
-	AutoMigrate bool // If true, auto migrate worker tables (default: false)
+	AutoMigrate bool // Auto migrate worker tables
 }
 
+// New creates a new worker Builder with auto-migration enabled (default behavior).
 func New(db *gorm.DB) *Builder {
 	return newWithConfigs(db, NewGoQueQueue(db), true)
 }
 
+// NewWithQueue creates a new worker Builder with a custom queue and auto-migration enabled.
 func NewWithQueue(db *gorm.DB, q Queue) *Builder {
 	return newWithConfigs(db, q, true)
 }
 
-// NewWithOptions creates a new worker Builder with the provided options.
+// NewWithOptions creates a new worker Builder with custom options.
+// AutoMigrate defaults to false. Other settings can be configured via builder methods.
 func NewWithOptions(opts *Options) *Builder {
 	if opts == nil {
 		panic("options cannot be nil")
@@ -59,8 +63,29 @@ func NewWithOptions(opts *Options) *Builder {
 		panic("db cannot be nil")
 	}
 
-	q := newGoQueQueue(opts.DB, opts.AutoMigrate)
+	q := newGoQueQueue(opts.DB)
 	return newWithConfigs(opts.DB, q, opts.AutoMigrate)
+}
+
+// AutoMigrate creates or updates all worker-related tables:
+// qor_jobs, qor_job_instances, qor_job_logs, go_que_errors, goque_jobs.
+// This is automatically called by New() and NewWithQueue().
+func AutoMigrate(db *gorm.DB) error {
+	// Migrate worker tables
+	if err := db.AutoMigrate(&QorJob{}, &QorJobInstance{}, &QorJobLog{}, &GoQueError{}); err != nil {
+		return err
+	}
+
+	// Migrate goque_jobs table
+	sqlDB, err := db.DB()
+	if err != nil {
+		return err
+	}
+	if _, err = pg.New(sqlDB); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func newWithConfigs(db *gorm.DB, q Queue, autoMigrate bool) *Builder {
@@ -69,8 +94,7 @@ func newWithConfigs(db *gorm.DB, q Queue, autoMigrate bool) *Builder {
 	}
 
 	if autoMigrate {
-		err := db.AutoMigrate(&QorJob{}, &QorJobInstance{}, &QorJobLog{}, &GoQueError{})
-		if err != nil {
+		if err := AutoMigrate(db); err != nil {
 			panic(err)
 		}
 	}
