@@ -221,7 +221,7 @@ func buildFiltersFromGroups(groups map[string]*filterGroupAgg) []*Filter {
 			// place under AND so it applies alongside other group criteria regardless of group op
 			groupNode.And = append(groupNode.And, node)
 		}
-		if len(groupNode.And) == 0 && len(groupNode.Or) == 0 && groupNode.Not == nil && groupNode.Condition.Field == "" {
+		if len(groupNode.And) == 0 && len(groupNode.Or) == 0 && groupNode.Not == nil && (groupNode.Condition == nil || groupNode.Condition.Field == "") {
 			continue
 		}
 		out = append(out, groupNode)
