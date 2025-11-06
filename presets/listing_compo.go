@@ -449,6 +449,19 @@ func (c *ListingCompo) getOrderBy(colOrderBys []ColOrderBy, orderableFieldMap ma
 	return orderBy
 }
 
+func buildFilterTreeFromQuery(filterQuery string) *Filter {
+	if filterQuery == "" {
+		return nil
+	}
+	filters := BuildFiltersFromQuery(filterQuery)
+	if len(filters) == 1 {
+		return filters[0]
+	} else if len(filters) > 1 {
+		return &Filter{And: filters}
+	}
+	return nil
+}
+
 func (c *ListingCompo) processFilter(evCtx *web.EventContext) (h.HTMLComponent, []*SQLCondition, *Filter) {
 	var filterScript h.HTMLComponent
 	if c.lb.filterDataFunc != nil {
@@ -458,30 +471,10 @@ func (c *ListingCompo) processFilter(evCtx *web.EventContext) (h.HTMLComponent, 
 			if vErr.HaveErrors() && vErr.HaveGlobalErrors() {
 				filterScript = web.RunScript(fmt.Sprintf(`(el)=>{%s}`, ShowSnackbarScript(strings.Join(vErr.GetGlobalErrors(), ";"), "error")))
 			}
-			// Build filter tree from FilterQuery
-			var root *Filter
-			if c.FilterQuery != "" {
-				filters := BuildFiltersFromQuery(c.FilterQuery)
-				if len(filters) == 1 {
-					root = filters[0]
-				} else if len(filters) > 1 {
-					root = &Filter{And: filters}
-				}
-			}
-			return filterScript, []*SQLCondition{{Query: cond, Args: args}}, root
+			return filterScript, []*SQLCondition{{Query: cond, Args: args}}, buildFilterTreeFromQuery(c.FilterQuery)
 		}
 	}
-	// Also return any built filter even when no fd
-	var root *Filter
-	if c.FilterQuery != "" {
-		filters := BuildFiltersFromQuery(c.FilterQuery)
-		if len(filters) == 1 {
-			root = filters[0]
-		} else if len(filters) > 1 {
-			root = &Filter{And: filters}
-		}
-	}
-	return nil, nil, root
+	return nil, nil, buildFilterTreeFromQuery(c.FilterQuery)
 }
 
 func (c *ListingCompo) prepareRelayPaginateRequest(orderBy []relay.Order, perPage int) *relay.PaginateRequest[any] {
