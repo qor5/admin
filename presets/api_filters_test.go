@@ -160,9 +160,10 @@ type (
 		Fold     bool    `json:"fold"`
 	}
 	UserIDOps struct {
-		Eq    *string  `json:"eq"`
-		In    []string `json:"in"`
-		NotIn []string `json:"notIn"`
+		Contains *string  `json:"contains"`
+		Eq       *string  `json:"eq"`
+		In       []string `json:"in"`
+		NotIn    []string `json:"notIn"`
 	}
 	CustomFilter struct {
 		Or            []*CustomFilter   `json:"or"`
@@ -172,7 +173,7 @@ type (
 		OrderState    *OrderStateOps    `json:"orderState"`
 		Rank          *RankOps          `json:"rank"`
 		Score         *ScoreOps         `json:"score"`
-		UserID        *UserIDOps        `json:"userID"`
+		UserId        *UserIDOps        `json:"userId"`
 	}
 	ListCustomRequest struct {
 		Filter *CustomFilter `json:"filter"`
@@ -1373,7 +1374,7 @@ func TestUnmarshalFilters_JSONTagLowerCamel_ProductStatusEqWithKeyword(t *testin
 // Custom numeric-like types with QS + keyword combined
 func TestUnmarshalFilters_JSONTagLowerCamel_CustomNumericTypesWithKeyword(t *testing.T) {
 	// QS mixes various custom numeric aliases and keyword; limit keyword to name via KeywordColumns
-	qs := "f_category_level.in=2,3&f_order_state.notin=5&f_rank.in=7&f_score.in=1.5,2.75&keyword=Zed"
+	qs := "f_category_level.in=2,3&f_order_state.notin=5&f_rank.in=7&f_score.in=1.5,2.75&f_user_id.in=U123,U456&f_user_id.ilike=U12&keyword=Zed"
 	v, _ := url.ParseQuery(qs)
 	root := BuildFiltersFromQuery(qs)
 	sp := &SearchParams{Filter: root, Keyword: v.Get("keyword"), KeywordColumns: []string{"name"}}
@@ -1396,6 +1397,12 @@ func TestUnmarshalFilters_JSONTagLowerCamel_CustomNumericTypesWithKeyword(t *tes
 	}
 	if req.Filter.Score == nil || len(req.Filter.Score.In) != 2 || req.Filter.Score.In[0] != Score(1.5) || req.Filter.Score.In[1] != Score(2.75) {
 		t.Fatalf("expect score.in=[1.5 2.75], got %#v", req.Filter.Score)
+	}
+	if req.Filter.UserId == nil || len(req.Filter.UserId.In) != 2 || req.Filter.UserId.In[0] != "U123" || req.Filter.UserId.In[1] != "U456" {
+		t.Fatalf("expect userId.in=[U123 U456], got %#v", req.Filter.UserId)
+	}
+	if req.Filter.UserId.Contains == nil || *req.Filter.UserId.Contains != "U12" {
+		t.Fatalf("expect userId.contains=U12, got %#v", req.Filter.UserId)
 	}
 	if len(req.Filter.Or) != 1 || !(req.Filter.Or[0].Name != nil && req.Filter.Or[0].Name.Contains != nil && *req.Filter.Or[0].Name.Contains == "Zed") {
 		t.Fatalf("expect keyword OR name.contains=Zed, got %#v", req.Filter.Or)
