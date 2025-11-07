@@ -691,13 +691,10 @@ func TestPresetsDetailListSection(t *testing.T) {
 
 func TestPresetsDetailListSection_StatusxFieldViolations(t *testing.T) {
 	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
-
-	if err := TestDB.AutoMigrate(&UserCreditCard{}, &CreditCard{}); err != nil {
+	if err := TestDB.AutoMigrate(&UserCreditCard{}); err != nil {
 		t.Fatal(err)
 	}
 
-	// Model setup: use existing UserCreditCard and CreditCard
-	// Build a detailing page with an isList section whose edit component binds VFieldError
 	cust := pb.Model(&UserCreditCard{})
 	dp := cust.Detailing("CreditCards").Drawer(true)
 
@@ -725,6 +722,7 @@ func TestPresetsDetailListSection_StatusxFieldViolations(t *testing.T) {
 				ve := in(obj, ctx)
 				_ = vErr.Merge(&ve)
 			}
+			// always set a field error for the edited list element
 			vErr.FieldError("CreditCards[0].Name", "name is required")
 			return
 		}
@@ -742,7 +740,6 @@ func TestPresetsDetailListSection_StatusxFieldViolations(t *testing.T) {
 					Query("sectionListUnsaved_CreditCards", "false").
 					Query("sectionListSaveBtn_CreditCards", "0").
 					Query("id", "1").
-					// Submit edited element fields
 					AddField("CreditCards[0].Name", "").
 					AddField("__Deleted_CreditCards[0].sectionListEditing", "true").
 					BuildEventFuncRequest()
