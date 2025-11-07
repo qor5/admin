@@ -724,6 +724,88 @@ func TestBuildFiltersFromQuery_KeywordQS_FoldImplicit(t *testing.T) {
 	}
 }
 
+// Unsupported operators should be pruned for all nodes and fields (direct SearchParams construction)
+func TestUnmarshalFilters_UnsupportedOperator_Direct(t *testing.T) {
+	sp := &SearchParams{Filter: &Filter{And: []*Filter{
+		// Code does not support Contains; this condition should be pruned
+		{Condition: &FieldCondition{Field: "Code", Operator: FilterOperatorContains, Value: "X"}},
+		// Name supports Contains; this should remain
+		{Condition: &FieldCondition{Field: "Name", Operator: FilterOperatorContains, Value: "Y", Fold: true}},
+	}}}
+
+	var req ListProductsRequest
+	if err := sp.Unmarshal(&req.Filter, WithPascalCase()); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+
+	if req.Filter == nil {
+		t.Fatalf("filter nil")
+	}
+	// Code must be removed entirely because it has no supported operators
+	if req.Filter.Code != nil {
+		t.Fatalf("expect Code pruned due to unsupported operator, got %#v", req.Filter.Code)
+	}
+	// Name.Contains should remain
+	nf := findNameFilter(req.Filter)
+	if nf == nil || nf.Contains == nil || *nf.Contains != "Y" {
+		t.Fatalf("expect Name.Contains=Y, got %#v", nf)
+	}
+}
+
+// Unsupported operators should be pruned for all nodes and fields (via query string + keyword)
+func TestBuildFiltersFromQuery_KeywordQS_UnsupportedFields(t *testing.T) {
+	qs := "keyword=Nova"
+	v, _ := url.ParseQuery(qs)
+	root := BuildFiltersFromQuery(qs)
+	sp := &SearchParams{Filter: root, Keyword: v.Get("keyword"), KeywordColumns: []string{"Name", "Code", "Status"}}
+
+	var req ListProductsRequest
+	if err := sp.Unmarshal(&req.Filter, WithPascalCase()); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+	if req.Filter == nil {
+		t.Fatalf("filter nil")
+	}
+	// Only Name supports Contains. Expect exactly one OR child with Name.Contains
+	if len(req.Filter.Or) != 1 || !(req.Filter.Or[0].Name != nil && req.Filter.Or[0].Name.Contains != nil && *req.Filter.Or[0].Name.Contains == "Nova" && req.Filter.Or[0].Name.Fold) {
+		t.Fatalf("expect single OR Name.Contains=Nova Fold=true, got %#v", req.Filter.Or)
+	}
+	// Ensure no OR child carries Code/Status
+	for _, ch := range req.Filter.Or {
+		if ch.Code != nil || ch.Status != nil {
+			t.Fatalf("unexpected Code/Status in OR child: %#v", ch)
+		}
+	}
+}
+
+// NOT/OR nodes that become empty after pruning unsupported operators should be dropped
+func TestUnmarshalFilters_NotOr_UnsupportedPruned(t *testing.T) {
+	sp := &SearchParams{Filter: &Filter{
+		Or: []*Filter{
+			// Unsupported: Code.Contains -> should be removed
+			{Condition: &FieldCondition{Field: "Code", Operator: FilterOperatorContains, Value: "A"}},
+			// Supported: Name.Contains remains
+			{Condition: &FieldCondition{Field: "Name", Operator: FilterOperatorContains, Value: "B", Fold: true}},
+		},
+		// NOT becomes empty and should be removed
+		Not: &Filter{Condition: &FieldCondition{Field: "Code", Operator: FilterOperatorContains, Value: "X"}},
+	}}
+
+	var req ListProductsRequest
+	if err := sp.Unmarshal(&req.Filter, WithPascalCase()); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+	if req.Filter == nil {
+		t.Fatalf("filter nil")
+	}
+	if len(req.Filter.Or) != 1 || !(req.Filter.Or[0].Name != nil && req.Filter.Or[0].Name.Contains != nil && *req.Filter.Or[0].Name.Contains == "B") {
+		t.Fatalf("expect single OR Name.Contains=B, got %#v", req.Filter.Or)
+	}
+	if req.Filter.Not != nil {
+		t.Fatalf("expect Not pruned, got %#v", req.Filter.Not)
+	}
+}
+
 func TestBuildFiltersFromQuery_KeywordQS_FoldImplicit_CamelCase(t *testing.T) {
 	qs := "keyword=Nova&f_name.eq=Exact"
 	v, _ := url.ParseQuery(qs)

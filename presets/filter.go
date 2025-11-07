@@ -370,106 +370,9 @@ func (p *SearchParams) buildAugmentedFilters() {
 		}
 	}
 	if p.Keyword != "" && len(p.KeywordColumns) > 0 {
-		hadContent := filterHasContent(p.Filter)
-		or := &Filter{}
-		// collect fold preferences from existing filter tree
-		prefs := map[string]*bool{}
-		if p.Filter != nil {
-			collectFoldPrefs(p.Filter, prefs)
-		}
-		// collect present fields in existing tree to optionally scope keyword columns
-		present := map[string]bool{}
-		if p.Filter != nil {
-			collectPresentFields(p.Filter, present)
-		}
-		// detect whether any of the keyword columns are already present
-		restrictToPresent := false
 		for _, col := range p.KeywordColumns {
-			if present[strcase.ToCamel(col)] {
-				restrictToPresent = true
-				break
-			}
+			p.Filter.Or = append(p.Filter.Or, &Filter{Condition: &FieldCondition{Field: col, Operator: FilterOperatorContains, Value: p.Keyword, Fold: true}})
 		}
-		for _, col := range p.KeywordColumns {
-			if restrictToPresent && !present[strcase.ToCamel(col)] {
-				continue
-			}
-			or.Or = append(or.Or, &Filter{Condition: &FieldCondition{Field: col, Operator: FilterOperatorContains, Value: p.Keyword, Fold: true}})
-		}
-		if len(or.Or) > 0 {
-			if !hadContent {
-				// If no existing content, place keyword conditions directly at root OR
-				p.Filter.Or = append(p.Filter.Or, or.Or...)
-			} else {
-				p.Filter.And = append(p.Filter.And, or)
-			}
-		}
-	}
-}
-
-func filterHasContent(f *Filter) bool {
-	if f == nil {
-		return false
-	}
-	if f.Condition != nil && f.Condition.Field != "" {
-		return true
-	}
-	if len(f.And) > 0 || len(f.Or) > 0 {
-		return true
-	}
-	if f.Not != nil {
-		return filterHasContent(f.Not)
-	}
-	return false
-}
-
-// collectFoldPrefs walks the filter tree and records Fold preferences per field.
-func collectFoldPrefs(f *Filter, prefs map[string]*bool) {
-	if f == nil {
-		return
-	}
-	if f.Condition != nil && f.Condition.Field != "" {
-		field := strcase.ToCamel(f.Condition.Field)
-		// condition carries Fold flag directly
-		if f.Condition.Fold {
-			bv := true
-			prefs[field] = &bv
-		}
-		// standalone Fold operator node: Operator == "Fold", Value is bool
-		if strings.EqualFold(string(f.Condition.Operator), "Fold") {
-			if b, ok := f.Condition.Value.(bool); ok {
-				bv := b
-				prefs[field] = &bv
-			}
-		}
-	}
-	for _, ch := range f.And {
-		collectFoldPrefs(ch, prefs)
-	}
-	for _, ch := range f.Or {
-		collectFoldPrefs(ch, prefs)
-	}
-	if f.Not != nil {
-		collectFoldPrefs(f.Not, prefs)
-	}
-}
-
-// collectPresentFields walks the filter tree and records which fields have any condition.
-func collectPresentFields(f *Filter, present map[string]bool) {
-	if f == nil {
-		return
-	}
-	if f.Condition != nil && f.Condition.Field != "" {
-		present[strcase.ToCamel(f.Condition.Field)] = true
-	}
-	for _, ch := range f.And {
-		collectPresentFields(ch, present)
-	}
-	for _, ch := range f.Or {
-		collectPresentFields(ch, present)
-	}
-	if f.Not != nil {
-		collectPresentFields(f.Not, present)
 	}
 }
 
@@ -709,12 +612,22 @@ func coerceAgainstType(norm map[string]any, t reflect.Type) error {
 				}
 				if elem.Kind() == reflect.Struct {
 					if arr, ok3 := raw.([]any); ok3 {
+						var kept []any
 						for _, child := range arr {
 							if m, ok4 := child.(map[string]any); ok4 {
 								if err := coerceAgainstType(m, elem); err != nil {
 									return err
 								}
+								if len(m) > 0 {
+									kept = append(kept, m)
+								}
 							}
+						}
+						// Replace with filtered children (drop empty ones)
+						if len(kept) > 0 {
+							norm[orKey] = kept
+						} else {
+							delete(norm, orKey)
 						}
 					}
 				}
@@ -742,6 +655,12 @@ func coerceAgainstType(norm map[string]any, t reflect.Type) error {
 				if m, ok3 := raw.(map[string]any); ok3 {
 					if err := coerceAgainstType(m, ft); err != nil {
 						return err
+					}
+					// drop empty not after coercion
+					if len(m) == 0 {
+						delete(norm, notKey)
+					} else {
+						norm[notKey] = m
 					}
 				}
 			}
@@ -785,6 +704,7 @@ func coerceAgainstType(norm map[string]any, t reflect.Type) error {
 		}
 
 		// For each operator field in the destination ops struct, support both UpperCamel and lowerCamel keys
+		matchedAny := false
 		for j := 0; j < opsT.NumField(); j++ {
 			of := opsT.Field(j)
 			opKeyUpper := of.Name
@@ -800,11 +720,67 @@ func coerceAgainstType(norm map[string]any, t reflect.Type) error {
 			}
 			if ok2 {
 				opsMap[usedOpKey] = coerceJSONValToType(v, of.Type)
+				matchedAny = true
 			}
 		}
-
+		// If no operator matched this destination ops struct, drop the field entirely
+		if !matchedAny {
+			delete(norm, usedKey)
+			continue
+		}
 		// write back in case the map was replaced (preserve original key casing)
 		norm[usedKey] = opsMap
+	}
+
+	// Cleanup pass: remove fields not present in destination, and remove unsupported operator keys
+	// Build destination field -> operator struct type map with both upper/lower camel keys
+	destOpsTypes := map[string]reflect.Type{}
+	for i := 0; i < t.NumField(); i++ {
+		sf := t.Field(i)
+		if sf.Name == "Or" || sf.Name == "And" || sf.Name == "Not" || sf.Name == "Filter" {
+			continue
+		}
+		opT := sf.Type
+		for opT.Kind() == reflect.Ptr {
+			opT = opT.Elem()
+		}
+		if opT.Kind() != reflect.Struct {
+			continue
+		}
+		destOpsTypes[sf.Name] = opT
+		destOpsTypes[strcase.ToLowerCamel(sf.Name)] = opT
+	}
+	// Collect unknown field keys to delete
+	var toDeleteFields []string
+	for k, v := range norm {
+		if k == "Or" || k == "or" || k == "Not" || k == "not" {
+			continue
+		}
+		opT, ok := destOpsTypes[k]
+		if !ok {
+			toDeleteFields = append(toDeleteFields, k)
+			continue
+		}
+		// Filter operator keys inside ops map to only those supported
+		if m, ok2 := v.(map[string]any); ok2 {
+			allowed := map[string]bool{}
+			for j := 0; j < opT.NumField(); j++ {
+				of := opT.Field(j)
+				allowed[of.Name] = true
+				allowed[strcase.ToLowerCamel(of.Name)] = true
+			}
+			for kk := range m {
+				if !allowed[kk] {
+					delete(m, kk)
+				}
+			}
+			if len(m) == 0 {
+				toDeleteFields = append(toDeleteFields, k)
+			}
+		}
+	}
+	for _, k := range toDeleteFields {
+		delete(norm, k)
 	}
 	return nil
 }
