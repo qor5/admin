@@ -5,11 +5,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/multipartestutils"
-	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/theplant/gofixtures"
-	h "github.com/theplant/htmlgo"
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
@@ -691,42 +688,7 @@ func TestPresetsDetailListSection(t *testing.T) {
 
 func TestPresetsDetailListSection_StatusxFieldViolations(t *testing.T) {
 	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
-	if err := TestDB.AutoMigrate(&UserCreditCard{}); err != nil {
-		t.Fatal(err)
-	}
-
-	cust := pb.Model(&UserCreditCard{})
-	dp := cust.Detailing("CreditCards").Drawer(true)
-
-	section := presets.NewSectionBuilder(cust, "CreditCards").IsList(&CreditCard{}).
-		Editing("Name").
-		ElementEditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			card := obj.(*CreditCard)
-			var errs []string
-			if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
-				errs = ve.GetFieldErrors(fmt.Sprintf("%s.Name", field.FormKey))
-			}
-			return vx.VXField().
-				Attr(presets.VFieldError(fmt.Sprintf("%s.Name", field.FormKey), card.Name, errs)...)
-		}).
-		ElementShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			card := obj.(*CreditCard)
-			return vx.VXTextField().Text(card.Name)
-		})
-	dp.Section(section)
-
-	// Section-level validator sets a field error for the edited list element
-	section.WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
-		return func(obj interface{}, ctx *web.EventContext) (vErr web.ValidationErrors) {
-			if in != nil {
-				ve := in(obj, ctx)
-				_ = vErr.Merge(&ve)
-			}
-			// always set a field error for the edited list element
-			vErr.FieldError("CreditCards[0].Name", "name is required")
-			return
-		}
-	})
+	PresetsDetailListSectionStatusxFieldViolations(pb, TestDB)
 
 	cases := []multipartestutils.TestCase{
 		{
@@ -746,6 +708,130 @@ func TestPresetsDetailListSection_StatusxFieldViolations(t *testing.T) {
 			},
 			// Expect the field error text from BadRequest.FieldViolations to appear in the portal update
 			ExpectPortalUpdate0ContainsInOrder: []string{"name is required"},
+		},
+		{
+			Name:  "list section add should not re-init dash inside portal",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_create_CreditCards").
+					Query("sectionListUnsaved_CreditCards", "true").
+					Query("id", "1").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"dash.errorMessages"},
+			ExpectPortalUpdate0NotContains:     []string{":dash-init"},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}
+
+func TestPresetsDetailListSection_ItemStateIsolation(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsDetailListSection_ItemStateIsolation(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		// 1) init data
+		{
+			Name:  "init data",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				userCreditCardsData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "presets_DetailingDrawer").
+					Query("id", "1").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"CreditCards", "Add Item"},
+		},
+		// 2) click add, expect empty component and no Add Item
+		{
+			Name:  "add item shows empty editor and hides add button",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_create_CreditCards").
+					Query("sectionListUnsaved_CreditCards", "true").
+					Query("id", "1").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Cancel", "Save", "CreditCards[0].Name"},
+			ExpectPortalUpdate0NotContains:     []string{"Add Item"},
+		},
+		// 3) save item with non-empty name, expect saved and Add Item reappears
+		{
+			Name:  "save created item with non-empty name",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_save_CreditCards").
+					Query("sectionListUnsaved_CreditCards", "false").
+					Query("sectionListSaveBtn_CreditCards", "0").
+					Query("id", "1").
+					AddField("CreditCards[0].Name", "terry").
+					AddField("__Deleted_CreditCards[0].sectionListEditing", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"terry", "Add Item"},
+			ExpectPortalUpdate0NotContains:     []string{"Cancel", "Save"},
+		},
+		// 4) add again, expect empty editor and no Add Item
+		{
+			Name:  "add again shows empty editor and hides add button",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_create_CreditCards").
+					Query("sectionListUnsaved_CreditCards", "true").
+					Query("id", "1").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Cancel", "Save", "CreditCards[1].Name"},
+			ExpectPortalUpdate0NotContains:     []string{"Add Item"},
+		},
+		// 5) save second item with empty name -> expect validation error and no Add Item
+		{
+			Name:  "save second item empty name shows error and no add button",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_save_CreditCards").
+					Query("sectionListUnsaved_CreditCards", "false").
+					Query("sectionListSaveBtn_CreditCards", "1").
+					Query("id", "1").
+					AddField("CreditCards[1].Name", "").
+					AddField("__Deleted_CreditCards[1].sectionListEditing", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"name is required"},
+			ExpectPortalUpdate0NotContains:     []string{"Add Item"},
+		},
+		// 6) click edit on first item; expect it enters edit mode, second stays with error, no Add Item
+		{
+			Name:  "edit first item while second has error keeps no add button",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_edit_CreditCards").
+					Query("sectionListEditBtn_CreditCards", "0").
+					Query("sectionListUnsaved_CreditCards", "false").
+					Query("id", "1").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Cancel", "Save", "name is required"},
+			ExpectPortalUpdate0NotContains:     []string{"Add Item"},
 		},
 	}
 
