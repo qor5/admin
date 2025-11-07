@@ -2,6 +2,7 @@ package presets
 
 import (
 	"net/url"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
 	"github.com/qor5/x/v3/jsonx"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // centralized tokens to avoid hard-coded strings
@@ -29,7 +31,6 @@ const (
 	modLt    = "lt"
 	modIn    = "in"
 	modNotIn = "notin"
-	modFold  = "fold"
 )
 
 // (operator alias table removed; JSON path no longer needs it)
@@ -49,13 +50,58 @@ type filterGroupAgg struct {
 	op      string
 }
 
+const (
+	PascalCase = "PascalCase"
+	LowerCase  = "LowerCase"
+)
+
+// ----- Unmarshal options and normalization helpers -----
+
+type unmarshalOptions struct {
+	casing string // "lowerCamel" (default) or "upperCamel"
+}
+
+func defaultUnmarshalOptions() unmarshalOptions {
+	return unmarshalOptions{casing: LowerCase}
+}
+
+// UnmarshalOption configures Unmarshal behavior.
+type UnmarshalOption func(*unmarshalOptions)
+
+// WithPascalCase forces both field and operator keys to UpperCamel (PascalCase).
+// Default (without this option) uses lowerCamel for both.
+func WithPascalCase() UnmarshalOption {
+	return func(o *unmarshalOptions) { o.casing = PascalCase }
+}
+
+// applyCasingKey converts a simple identifier into the desired casing.
+// PascalCase -> UpperCamel (e.g., "contains" -> "Contains");
+// LowerCase  -> lowerCamel (e.g., "contains" -> "contains").
+func applyCasingKey(s string, casing string) string {
+	if casing == PascalCase {
+		return strcase.ToCamel(s)
+	}
+	return strcase.ToLowerCamel(s)
+}
+
+// ternaryCasing returns casing when option exists; otherwise returns default LowerCase
+func ternaryCasing(o *unmarshalOptions) string {
+	if o == nil || o.casing == "" {
+		return LowerCase
+	}
+	return o.casing
+}
+
 // Helper: detect group operators from query values
 func detectGroupOps(values url.Values) map[string]string {
 	groupOp := map[string]string{}
 	for k, arr := range values {
 		key := k
-		if strings.HasPrefix(key, "f_") {
-			key = key[2:]
+		if strings.HasPrefix(k, "f_") {
+			key = strings.TrimPrefix(k, "f_")
+		}
+		if strings.EqualFold(key, "keyword") {
+			continue
 		}
 		segs := strings.Split(key, ".")
 		if len(segs) >= 2 && segs[1] == groupOpKey {
@@ -83,8 +129,11 @@ func aggregateGroups(values url.Values, groupOp map[string]string) map[string]*f
 	}
 	for k, arr := range values {
 		key := k
-		if strings.HasPrefix(key, "f_") {
-			key = key[2:]
+		if strings.HasPrefix(k, "f_") {
+			key = strings.TrimPrefix(k, "f_")
+		}
+		if strings.EqualFold(key, "keyword") {
+			continue
 		}
 		segs := strings.Split(key, ".")
 		if len(segs) == 0 {
@@ -116,13 +165,14 @@ func aggregateGroups(values url.Values, groupOp map[string]string) map[string]*f
 			mod = strings.ToLower(segs[idx+1])
 		}
 		g := getGroup(gid)
-		if mod == modFold {
+		// support fold modifier as preference flag for the field
+		if strings.EqualFold(mod, "fold") {
 			if len(arr) > 0 {
 				v := strings.TrimSpace(arr[len(arr)-1])
-				// treat presence without value as true by default
 				val := true
 				if v != "" {
-					val = strings.EqualFold(v, "true") || v == "1"
+					lv := strings.ToLower(v)
+					val = lv == "true" || v == "1"
 				}
 				g.foldMap[field] = &val
 			}
@@ -136,15 +186,10 @@ func aggregateGroups(values url.Values, groupOp map[string]string) map[string]*f
 // Helper: build filters from groups
 func buildFiltersFromGroups(groups map[string]*filterGroupAgg) []*Filter {
 	var out []*Filter
-	buildChild := func(field string, mod string, sv string, foldOn bool, isNot bool) *Filter {
+	buildChild := func(field string, mod string, sv string, isNot bool) *Filter {
 		op := mapModToOperator(mod)
-		node := &Filter{Condition: &FieldCondition{Field: field, Operator: op, Value: sv}}
-		if foldOn {
-			node = &Filter{And: []*Filter{
-				node,
-				{Condition: &FieldCondition{Field: field, Operator: FilterOperatorFold, Value: true}},
-			}}
-		}
+		fcFold := strings.EqualFold(mod, modIlike)
+		node := &Filter{Condition: &FieldCondition{Field: field, Operator: op, Value: sv, Fold: fcFold}}
 		if isNot {
 			node = &Filter{Not: node}
 		}
@@ -154,12 +199,6 @@ func buildFiltersFromGroups(groups map[string]*filterGroupAgg) []*Filter {
 		groupNode := &Filter{}
 		usedFields := map[string]bool{}
 		for _, it := range g.items {
-			var foldOn bool
-			if bv, ok := g.foldMap[it.field]; ok && bv != nil {
-				foldOn = *bv
-			} else if strings.EqualFold(it.mod, modIlike) {
-				foldOn = true
-			}
 			usedFields[it.field] = true
 			op := mapModToOperator(it.mod)
 			if (op == FilterOperatorIn || op == FilterOperatorNotIn) && len(it.values) > 0 {
@@ -187,12 +226,12 @@ func buildFiltersFromGroups(groups map[string]*filterGroupAgg) []*Filter {
 			if len(it.values) > 1 {
 				if g.op == groupOpOr {
 					for _, sv := range it.values {
-						groupNode.Or = append(groupNode.Or, buildChild(it.field, it.mod, sv, foldOn, it.isNot))
+						groupNode.Or = append(groupNode.Or, buildChild(it.field, it.mod, sv, it.isNot))
 					}
 				} else {
 					orGroup := &Filter{}
 					for _, sv := range it.values {
-						orGroup.Or = append(orGroup.Or, buildChild(it.field, it.mod, sv, foldOn, it.isNot))
+						orGroup.Or = append(orGroup.Or, buildChild(it.field, it.mod, sv, it.isNot))
 					}
 					groupNode.And = append(groupNode.And, orGroup)
 				}
@@ -202,25 +241,15 @@ func buildFiltersFromGroups(groups map[string]*filterGroupAgg) []*Filter {
 			if len(it.values) > 0 {
 				sv = it.values[0]
 			}
-			node := buildChild(it.field, it.mod, sv, foldOn, it.isNot)
+			node := buildChild(it.field, it.mod, sv, it.isNot)
 			if g.op == groupOpOr {
 				groupNode.Or = append(groupNode.Or, node)
 			} else {
 				groupNode.And = append(groupNode.And, node)
 			}
 		}
-		// Emit standalone Fold nodes when provided without any other operator for that field
-		for field, pv := range g.foldMap {
-			if pv == nil {
-				continue
-			}
-			if usedFields[field] {
-				continue
-			}
-			node := &Filter{Condition: &FieldCondition{Field: field, Operator: FilterOperatorFold, Value: *pv}}
-			// place under AND so it applies alongside other group criteria regardless of group op
-			groupNode.And = append(groupNode.And, node)
-		}
+		// Do not emit standalone fold preferences as operator nodes.
+		// Fold preferences are consumed elsewhere (e.g., keyword injection) via foldMap.
 		if len(groupNode.And) == 0 && len(groupNode.Or) == 0 && groupNode.Not == nil && (groupNode.Condition == nil || groupNode.Condition.Field == "") {
 			continue
 		}
@@ -242,7 +271,6 @@ const (
 	FilterOperatorContains   FilterOperator = "Contains"
 	FilterOperatorStartsWith FilterOperator = "StartsWith"
 	FilterOperatorEndsWith   FilterOperator = "EndsWith"
-	FilterOperatorFold       FilterOperator = "Fold"
 )
 
 // BuildFiltersFromQuery transforms a filter query string to a slice of Filters.
@@ -251,7 +279,7 @@ const (
 // - NOT: not.<field>.<mod>=value
 // - FOLD: <field>.fold=true|1
 // - IN/NOT IN: value is CSV
-func BuildFiltersFromQuery(qs string) []*Filter {
+func BuildFiltersFromQuery(qs string) *Filter {
 	if qs == "" {
 		return nil
 	}
@@ -261,7 +289,14 @@ func BuildFiltersFromQuery(qs string) []*Filter {
 	}
 	groupOp := detectGroupOps(values)
 	groups := aggregateGroups(values, groupOp)
-	return buildFiltersFromGroups(groups)
+	filters := buildFiltersFromGroups(groups)
+	if len(filters) == 0 {
+		return nil
+	}
+	if len(filters) == 1 {
+		return filters[0]
+	}
+	return &Filter{And: filters}
 }
 
 func mapModToOperator(mod string) FilterOperator {
@@ -280,8 +315,6 @@ func mapModToOperator(mod string) FilterOperator {
 		return FilterOperatorIn
 	case modNotIn:
 		return FilterOperatorNotIn
-	case modFold:
-		return FilterOperatorFold
 	default:
 		return FilterOperatorEq
 	}
@@ -290,29 +323,33 @@ func mapModToOperator(mod string) FilterOperator {
 // Unmarshal populates dst with the content of Filters (plus Keyword/KeywordColumns as OR contains conditions).
 // dst can be either a pointer to a request wrapper that has a field named "Filter",
 // or a pointer to the filter struct itself. This function is generic and not limited to any specific request type.
-func (p *SearchParams) Unmarshal(dst any) error {
+// Unmarshal performs the same as Unmarshal but allows customization via options.
+func (p *SearchParams) Unmarshal(dst any, opts ...UnmarshalOption) error {
 	if dst == nil {
 		return errors.New("dst is nil")
 	}
 
-	// Build an augmented filter list that includes keyword conditions
-	filters := p.buildAugmentedFilters()
-	if len(filters) == 0 {
-		// Nothing to set
-		return nil
-	}
-
-	// Build a JSON-map representation and unmarshal via jsonx (protojson for proto targets)
-	root := map[string]any{}
-	for _, f := range filters {
-		fm := filterToJSONMap(f)
-		if len(fm) == 0 {
-			continue
+	// Build an augmented filter tree that includes keyword conditions
+	p.buildAugmentedFilters()
+	// Options
+	uo := defaultUnmarshalOptions()
+	for _, o := range opts {
+		if o != nil {
+			o(&uo)
 		}
-		mergeFilterJSONMap(root, fm)
+	}
+	// Convert filter tree to proto-ready JSON-map using options
+	norm, err := filterToJSONMap(p.Filter, &uo)
+	if err != nil {
+		return errors.Wrap(err, "filter to json map")
 	}
 
-	b, err := jsonx.Marshal(root)
+	// Coerce values based on destination operator field types before unmarshalling
+	if err := coerceNormValuesForDst(norm, dst); err != nil {
+		return errors.Wrap(err, "coerce values for destination")
+	}
+
+	b, err := jsonx.Marshal(norm)
 	if err != nil {
 		return errors.Wrap(err, "marshal filter json map")
 	}
@@ -322,39 +359,69 @@ func (p *SearchParams) Unmarshal(dst any) error {
 	return nil
 }
 
-// buildAugmentedFilters returns Filters plus synthesized keyword OR-contains conditions.
-func (p *SearchParams) buildAugmentedFilters() []*Filter {
-	var r []*Filter
-	if p.Filter != nil {
-		r = append(r, p.Filter)
+// buildAugmentedFilters returns a single Filter tree that includes the original filter
+// and a synthesized OR group for keyword conditions if present.
+func (p *SearchParams) buildAugmentedFilters() {
+
+	if p.Filter == nil {
+		p.Filter = &Filter{
+			And: []*Filter{},
+			Or:  []*Filter{},
+			Not: &Filter{},
+		}
 	}
 	if p.Keyword != "" && len(p.KeywordColumns) > 0 {
+		hadContent := filterHasContent(p.Filter)
 		or := &Filter{}
 		// collect fold preferences from existing filter tree
 		prefs := map[string]*bool{}
 		if p.Filter != nil {
 			collectFoldPrefs(p.Filter, prefs)
 		}
-		for _, col := range p.KeywordColumns {
-			// If any field prefs exist, limit keyword columns to only those present in prefs
-			if len(prefs) > 0 {
-				if _, ok := prefs[strcase.ToCamel(col)]; !ok {
-					continue
-				}
-			}
-			// default fold is true; override if preference exists
-			fv := true
-			if pv, ok := prefs[strcase.ToCamel(col)]; ok && pv != nil {
-				fv = *pv
-			}
-			or.Or = append(or.Or, &Filter{And: []*Filter{
-				{Condition: &FieldCondition{Field: col, Operator: FilterOperatorContains, Value: p.Keyword}},
-				{Condition: &FieldCondition{Field: col, Operator: FilterOperatorFold, Value: fv}},
-			}})
+		// collect present fields in existing tree to optionally scope keyword columns
+		present := map[string]bool{}
+		if p.Filter != nil {
+			collectPresentFields(p.Filter, present)
 		}
-		r = append(r, or)
+		// detect whether any of the keyword columns are already present
+		restrictToPresent := false
+		for _, col := range p.KeywordColumns {
+			if present[strcase.ToCamel(col)] {
+				restrictToPresent = true
+				break
+			}
+		}
+		for _, col := range p.KeywordColumns {
+			if restrictToPresent && !present[strcase.ToCamel(col)] {
+				continue
+			}
+			or.Or = append(or.Or, &Filter{Condition: &FieldCondition{Field: col, Operator: FilterOperatorContains, Value: p.Keyword, Fold: true}})
+		}
+		if len(or.Or) > 0 {
+			if !hadContent {
+				// If no existing content, place keyword conditions directly at root OR
+				p.Filter.Or = append(p.Filter.Or, or.Or...)
+			} else {
+				p.Filter.And = append(p.Filter.And, or)
+			}
+		}
 	}
-	return r
+}
+
+func filterHasContent(f *Filter) bool {
+	if f == nil {
+		return false
+	}
+	if f.Condition != nil && f.Condition.Field != "" {
+		return true
+	}
+	if len(f.And) > 0 || len(f.Or) > 0 {
+		return true
+	}
+	if f.Not != nil {
+		return filterHasContent(f.Not)
+	}
+	return false
 }
 
 // collectFoldPrefs walks the filter tree and records Fold preferences per field.
@@ -362,16 +429,20 @@ func collectFoldPrefs(f *Filter, prefs map[string]*bool) {
 	if f == nil {
 		return
 	}
-	if f.Condition != nil && f.Condition.Field != "" && strings.EqualFold(string(f.Condition.Operator), string(FilterOperatorFold)) {
-		// normalize field name to Camel
+	if f.Condition != nil && f.Condition.Field != "" {
 		field := strcase.ToCamel(f.Condition.Field)
-		// value may be bool or missing; default to true
-		val := true
-		if b, ok := f.Condition.Value.(bool); ok {
-			val = b
+		// condition carries Fold flag directly
+		if f.Condition.Fold {
+			bv := true
+			prefs[field] = &bv
 		}
-		bv := val
-		prefs[field] = &bv
+		// standalone Fold operator node: Operator == "Fold", Value is bool
+		if strings.EqualFold(string(f.Condition.Operator), "Fold") {
+			if b, ok := f.Condition.Value.(bool); ok {
+				bv := b
+				prefs[field] = &bv
+			}
+		}
 	}
 	for _, ch := range f.And {
 		collectFoldPrefs(ch, prefs)
@@ -384,113 +455,164 @@ func collectFoldPrefs(f *Filter, prefs map[string]*bool) {
 	}
 }
 
+// collectPresentFields walks the filter tree and records which fields have any condition.
+func collectPresentFields(f *Filter, present map[string]bool) {
+	if f == nil {
+		return
+	}
+	if f.Condition != nil && f.Condition.Field != "" {
+		present[strcase.ToCamel(f.Condition.Field)] = true
+	}
+	for _, ch := range f.And {
+		collectPresentFields(ch, present)
+	}
+	for _, ch := range f.Or {
+		collectPresentFields(ch, present)
+	}
+	if f.Not != nil {
+		collectPresentFields(f.Not, present)
+	}
+}
+
 // ----- JSON map builder (Filter -> map[string]any) -----
 
-func filterToJSONMap(f *Filter) map[string]any {
+func filterToJSONMap(f *Filter, o *unmarshalOptions) (map[string]any, error) {
 	if f == nil {
-		return nil
+		return nil, nil
+	}
+	// Step 1: marshal Filter into a generic JSON map
+	b, err := jsonx.Marshal(f)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal filter")
+	}
+	var raw map[string]any
+	if err := jsonx.Unmarshal(b, &raw); err != nil {
+		return nil, errors.Wrap(err, "unmarshal filter into raw map")
+	}
+	// Step 2: transform the raw map (Condition/And/Or/Not) into proto-target map
+	return transformFilterRawToProtoMap(raw, o)
+}
+
+func transformFilterRawToProtoMap(raw map[string]any, o *unmarshalOptions) (map[string]any, error) {
+	if raw == nil {
+		return nil, nil
 	}
 	dst := map[string]any{}
 
-	// AND children: merge into current scope
-	for _, ch := range f.And {
-		cm := filterToJSONMap(ch)
-		if len(cm) == 0 {
-			continue
-		}
-		mergeFilterJSONMap(dst, cm)
-	}
-
-	// Condition at this node
-	if fc := f.Condition; fc != nil && fc.Field != "" {
-		fieldKey := strcase.ToLowerCamel(fc.Field)
-		sub, _ := dst[fieldKey].(map[string]any)
-		if sub == nil {
-			sub = map[string]any{}
-		}
-		opKey := operatorJSONKey(fc.Operator)
-		if opKey != "" {
-			// value coercion: numbers to numeric, booleans to bool, timestamps to proto JSON {seconds,nanos}
-			sub[opKey] = coerceValueForJSON(fieldKey, opKey, fc.Value)
-			dst[fieldKey] = sub
-		}
-	}
-
-	// OR group
-	if len(f.Or) > 0 {
-		var arr []any
-		for _, ch := range f.Or {
-			cm := filterToJSONMap(ch)
-			if len(cm) == 0 {
-				continue
-			}
-			arr = append(arr, cm)
-		}
-		if len(arr) > 0 {
-			if exist, ok := dst["or"].([]any); ok {
-				dst["or"] = append(exist, arr...)
-			} else {
-				dst["or"] = arr
+	// And: merge children maps into current scope
+	if v, ok := raw["And"]; ok {
+		if arr, ok := v.([]any); ok {
+			for _, e := range arr {
+				if m, ok := e.(map[string]any); ok {
+					cm, err := transformFilterRawToProtoMap(m, o)
+					if err != nil {
+						return nil, err
+					}
+					if len(cm) > 0 {
+						mergeFilterJSONMap(dst, cm)
+					}
+				}
 			}
 		}
 	}
 
-	// NOT group
-	if f.Not != nil {
-		nm := filterToJSONMap(f.Not)
-		if len(nm) > 0 {
-			if exist, ok := dst["not"].(map[string]any); ok {
-				mergeFilterJSONMap(exist, nm)
-				dst["not"] = exist
-			} else {
-				dst["not"] = nm
+	// Condition: emit field operator map
+	if v, ok := raw["Condition"]; ok {
+		if cm, ok := v.(map[string]any); ok {
+			field, _ := cm["Field"].(string)
+			if field != "" {
+				fieldKey := applyCasingKey(field, ternaryCasing(o))
+				sub, _ := dst[fieldKey].(map[string]any)
+				if sub == nil {
+					sub = map[string]any{}
+				}
+				opStr, _ := cm["Operator"].(string)
+				opKey := strings.TrimSpace(opStr)
+				if opKey == "" {
+					return nil, errors.New("empty operator in Condition")
+				}
+				opKey = applyCasingKey(opKey, ternaryCasing(o))
+				if opKey != "" {
+					val := cm["Value"]
+					// Defer coercion to destination-type-directed phase
+					sub[opKey] = val
+					if fb, ok := cm["Fold"].(bool); ok && fb {
+						foldKey := applyCasingKey("fold", ternaryCasing(o))
+						sub[foldKey] = true
+					}
+					dst[fieldKey] = sub
+				}
 			}
 		}
 	}
 
-	return dst
+	// Or: collect child maps into array under key (or/Or)
+	if v, ok := raw["Or"]; ok {
+		if arr, ok := v.([]any); ok {
+			var out []any
+			for _, e := range arr {
+				if m, ok := e.(map[string]any); ok {
+					cm, err := transformFilterRawToProtoMap(m, o)
+					if err != nil {
+						return nil, err
+					}
+					if len(cm) > 0 {
+						out = append(out, cm)
+					}
+				}
+			}
+			if len(out) > 0 {
+				orKey := applyCasingKey("or", ternaryCasing(o))
+				if exist, ok := dst[orKey].([]any); ok {
+					dst[orKey] = append(exist, out...)
+				} else {
+					dst[orKey] = out
+				}
+			}
+		}
+	}
+
+	// Not: nested map under key (not/Not)
+	if v, ok := raw["Not"]; ok {
+		if m, ok := v.(map[string]any); ok {
+			nm, err := transformFilterRawToProtoMap(m, o)
+			if err != nil {
+				return nil, err
+			}
+			if len(nm) > 0 {
+				notKey := applyCasingKey("not", ternaryCasing(o))
+				if exist, ok := dst[notKey].(map[string]any); ok {
+					mergeFilterJSONMap(exist, nm)
+					dst[notKey] = exist
+				} else {
+					dst[notKey] = nm
+				}
+			}
+		}
+	}
+	return dst, nil
 }
 
-func operatorJSONKey(op FilterOperator) string {
-	switch op {
-	case FilterOperatorEq, "":
-		return "eq"
-	case FilterOperatorNeq:
-		return "neq"
-	case FilterOperatorLt:
-		return "lt"
-	case FilterOperatorLte:
-		return "lte"
-	case FilterOperatorGt:
-		return "gt"
-	case FilterOperatorGte:
-		return "gte"
-	case FilterOperatorIn:
-		return "in"
-	case FilterOperatorNotIn:
-		return "notIn"
-	case FilterOperatorContains:
-		return "contains"
-	case FilterOperatorStartsWith:
-		return "startsWith"
-	case FilterOperatorEndsWith:
-		return "endsWith"
-	case FilterOperatorFold:
-		return "fold"
-	case FilterOperatorIsNull:
-		return "isNull"
-	default:
-		return "eq"
-	}
-}
+// operatorJSONKey removed: we rely on lowerCamel of the operator string (default to "eq")
 
 func mergeFilterJSONMap(dst, src map[string]any) {
 	for k, v := range src {
-		if k == "or" {
+		if k == "or" || k == "Or" {
 			// append arrays
 			var arr []any
+			// allow merging irrespective of key casing by normalizing destination key presence
 			if exist, ok := dst[k].([]any); ok {
 				arr = exist
+			} else {
+				// check alternate casing
+				alt := "or"
+				if k == "or" {
+					alt = "Or"
+				}
+				if exist2, ok2 := dst[alt].([]any); ok2 {
+					arr = exist2
+					k = alt
+				}
 			}
 			if nv, ok := v.([]any); ok {
 				arr = append(arr, nv...)
@@ -498,12 +620,25 @@ func mergeFilterJSONMap(dst, src map[string]any) {
 				continue
 			}
 		}
-		if k == "not" {
+		if k == "not" || k == "Not" {
 			if exist, ok := dst[k].(map[string]any); ok {
 				if nv, ok2 := v.(map[string]any); ok2 {
 					mergeFilterJSONMap(exist, nv)
 					dst[k] = exist
 					continue
+				}
+			} else {
+				// check alternate casing
+				alt := "not"
+				if k == "not" {
+					alt = "Not"
+				}
+				if exist2, ok2 := dst[alt].(map[string]any); ok2 {
+					if nv, ok3 := v.(map[string]any); ok3 {
+						mergeFilterJSONMap(exist2, nv)
+						dst[alt] = exist2
+						continue
+					}
 				}
 			}
 		}
@@ -518,114 +653,241 @@ func mergeFilterJSONMap(dst, src map[string]any) {
 	}
 }
 
-func coerceValueForJSON(fieldKey string, opKey string, val any) any {
-	// String pattern operators should keep raw string values, even if numeric-looking
-	if opKey == "contains" || opKey == "startsWith" || opKey == "endsWith" {
-		if s, ok := val.(string); ok {
-			return s
-		}
-		return val
+func coerceNormValuesForDst(norm map[string]any, dst any) error {
+	if norm == nil || dst == nil {
+		return nil
 	}
-	// For slice operators, coerce each element
-	if opKey == "in" || opKey == "notIn" {
-		switch x := val.(type) {
-		case []string:
-			out := make([]any, 0, len(x))
-			for _, s := range x {
-				out = append(out, tryParseNumberBoolOrTime(s))
+	rv := reflect.ValueOf(dst)
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+		return nil
+	}
+	rt := rv.Type().Elem()
+	return coerceAgainstType(norm, rt)
+}
+
+func coerceAgainstType(norm map[string]any, t reflect.Type) error {
+	if norm == nil {
+		return nil
+	}
+	// Deref pointers
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	if t.Kind() != reflect.Struct {
+		return nil
+	}
+
+	// If this is a wrapper that contains a Filter field, coerce against that field type
+	if f, ok := t.FieldByName("Filter"); ok {
+		ft := f.Type
+		for ft.Kind() == reflect.Ptr {
+			ft = ft.Elem()
+		}
+		if ft.Kind() == reflect.Struct {
+			if err := coerceAgainstType(norm, ft); err != nil {
+				return err
 			}
-			return out
+		}
+	}
+
+	// Handle Or children (use upper-camel key)
+	orKey := "Or"
+	if raw, ok := norm[orKey]; ok {
+		if f, ok2 := t.FieldByName("Or"); ok2 {
+			ft := f.Type
+			if ft.Kind() == reflect.Slice {
+				elem := ft.Elem()
+				for elem.Kind() == reflect.Ptr {
+					elem = elem.Elem()
+				}
+				if elem.Kind() == reflect.Struct {
+					if arr, ok3 := raw.([]any); ok3 {
+						for _, child := range arr {
+							if m, ok4 := child.(map[string]any); ok4 {
+								if err := coerceAgainstType(m, elem); err != nil {
+									return err
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Handle Not child (use upper-camel key)
+	notKey := "Not"
+	if raw, ok := norm[notKey]; ok {
+		if f, ok2 := t.FieldByName("Not"); ok2 {
+			ft := f.Type
+			for ft.Kind() == reflect.Ptr {
+				ft = ft.Elem()
+			}
+			if ft.Kind() == reflect.Struct {
+				if m, ok3 := raw.(map[string]any); ok3 {
+					if err := coerceAgainstType(m, ft); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+
+	// Coerce each field operator map according to destination operator types
+	for i := 0; i < t.NumField(); i++ {
+		sf := t.Field(i)
+		// Skip control fields handled above
+		if sf.Name == "Or" || sf.Name == "And" || sf.Name == "Not" || sf.Name == "Filter" {
+			continue
+		}
+
+		// Always use destination struct field name (UpperCamel)
+		fieldKey := sf.Name
+		raw, ok := norm[fieldKey]
+		if !ok {
+			continue
+		}
+		opsMap, ok := raw.(map[string]any)
+		if !ok {
+			continue
+		}
+
+		opsT := sf.Type
+		for opsT.Kind() == reflect.Ptr {
+			opsT = opsT.Elem()
+		}
+		if opsT.Kind() != reflect.Struct {
+			continue
+		}
+
+		// For each operator field in the destination ops struct, use field name directly
+		for j := 0; j < opsT.NumField(); j++ {
+			of := opsT.Field(j)
+			opKey := of.Name
+			if v, ok2 := opsMap[opKey]; ok2 {
+				opsMap[opKey] = coerceJSONValToType(v, of.Type)
+			}
+		}
+
+		// write back in case the map was replaced
+		norm[fieldKey] = opsMap
+	}
+	return nil
+}
+
+func coerceJSONValToType(val any, t reflect.Type) any {
+	// Deref pointer
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	// Special-case protobuf Timestamp: convert to {seconds, nanos}
+	if t == reflect.TypeOf(timestamppb.Timestamp{}) {
+		switch x := val.(type) {
+		case string:
+			if tm, err := time.Parse(time.RFC3339Nano, strings.TrimSpace(x)); err == nil {
+				sec := tm.Unix()
+				ns := tm.Nanosecond()
+				return map[string]any{
+					"seconds": sec,
+					"nanos":   ns,
+				}
+			}
+			return val
+		case map[string]any:
+			return x
+		default:
+			return val
+		}
+	}
+
+	switch t.Kind() {
+	case reflect.String:
+		switch x := val.(type) {
+		case string:
+			return x
+		case bool:
+			if x {
+				return "true"
+			}
+			return "false"
+		case float64:
+			return strconv.FormatFloat(x, 'f', -1, 64)
+		default:
+			return val
+		}
+	case reflect.Bool:
+		switch x := val.(type) {
+		case bool:
+			return x
+		case string:
+			ls := strings.ToLower(strings.TrimSpace(x))
+			return ls == "true" || ls == "1"
+		case float64:
+			return x != 0
+		default:
+			return val
+		}
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		switch x := val.(type) {
+		case float64:
+			// JSON numbers are fine for integer targets
+			return x
+		case string:
+			if fv, err := strconv.ParseFloat(strings.TrimSpace(x), 64); err == nil {
+				return fv
+			}
+			return val
+		default:
+			return val
+		}
+	case reflect.Float64:
+		switch x := val.(type) {
+		case float64:
+			return x
+		case string:
+			if fv, err := strconv.ParseFloat(strings.TrimSpace(x), 64); err == nil {
+				return fv
+			}
+			return val
+		default:
+			return val
+		}
+	case reflect.Slice:
+		elem := t.Elem()
+		// Normalize to []any for JSON marshalling
+		switch x := val.(type) {
 		case []any:
 			out := make([]any, 0, len(x))
 			for _, e := range x {
-				if s, ok := e.(string); ok {
-					out = append(out, tryParseNumberBoolOrTime(s))
-				} else {
-					out = append(out, e)
+				out = append(out, coerceJSONValToType(e, elem))
+			}
+			return out
+		case []string:
+			out := make([]any, 0, len(x))
+			for _, s := range x {
+				out = append(out, coerceJSONValToType(s, elem))
+			}
+			return out
+		case string:
+			// Best-effort CSV split if destination expects a slice
+			parts := strings.Split(x, ",")
+			out := make([]any, 0, len(parts))
+			for _, p := range parts {
+				p = strings.TrimSpace(p)
+				if p == "" {
+					continue
 				}
+				out = append(out, coerceJSONValToType(p, elem))
 			}
 			return out
 		default:
-			// single value as slice of one
-			if s, ok := val.(string); ok {
-				// support CSV string values
-				parts := strings.Split(s, ",")
-				out := make([]any, 0, len(parts))
-				for _, p := range parts {
-					p = strings.TrimSpace(p)
-					if p == "" {
-						continue
-					}
-					out = append(out, tryParseNumberBoolOrTime(p))
-				}
-				if len(out) == 0 {
-					return []any{}
-				}
-				return out
-			}
-			return []any{val}
+			return val
 		}
-	}
-
-	// fold and isNull are booleans
-	if opKey == "fold" || opKey == "isNull" {
-		if b, ok := val.(bool); ok {
-			return b
-		}
-		if s, ok := val.(string); ok {
-			ls := strings.TrimSpace(strings.ToLower(s))
-			return ls == "true" || ls == "1"
-		}
+	default:
 		return val
 	}
-
-	// other scalar: try timestamp (by heuristic), then number, then bool, else keep string/raw
-	if s, ok := val.(string); ok {
-		return tryParseNumberBoolOrTime(s)
-	}
-	return val
 }
 
-func tryParseNumberBoolOrTime(s string) any {
-	s = strings.TrimSpace(s)
-	if s == "" {
-		return s
-	}
-	// try to parse explicit timestamp formats only (no epoch seconds inference)
-	if tm, ok := parseTimeFlexible(s); ok {
-		secs := tm.Unix()
-		nanos := tm.Nanosecond()
-		return map[string]any{"seconds": secs, "nanos": nanos}
-	}
-	// numbers first
-	// int
-	if iv, err := strconv.ParseInt(s, 10, 64); err == nil {
-		return iv
-	}
-	// float
-	if fv, err := strconv.ParseFloat(s, 64); err == nil {
-		return fv
-	}
-	// bool (true/false only; do not coerce 1/0 here to avoid ambiguity with numeric fields)
-	ls := strings.ToLower(s)
-	if ls == "true" || ls == "false" {
-		return ls == "true"
-	}
-	// keep original string
-	return s
-}
-
-func parseTimeFlexible(s string) (time.Time, bool) {
-	layouts := []string{
-		time.RFC3339,
-		"2006-01-02 15:04:05",
-		"2006-01-02T15:04:05Z07:00",
-		"2006-01-02",
-	}
-	for _, layout := range layouts {
-		if t, err := time.Parse(layout, s); err == nil {
-			return t.UTC(), true
-		}
-	}
-	return time.Time{}, false
-}
+// parseNumberOrBool removed with coerceValueForJSON

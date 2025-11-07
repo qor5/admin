@@ -461,12 +461,7 @@ func (c *ListingCompo) processFilter(evCtx *web.EventContext) (h.HTMLComponent, 
 			// Build filter tree from FilterQuery
 			var root *Filter
 			if c.FilterQuery != "" {
-				filters := BuildFiltersFromQuery(c.FilterQuery)
-				if len(filters) == 1 {
-					root = filters[0]
-				} else if len(filters) > 1 {
-					root = &Filter{And: filters}
-				}
+				root = BuildFiltersFromQuery(c.FilterQuery)
 			}
 			return filterScript, []*SQLCondition{{Query: cond, Args: args}}, root
 		}
