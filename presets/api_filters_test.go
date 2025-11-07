@@ -1144,7 +1144,6 @@ func TestUnmarshalFilters_JSONTagLowerCamel_Direct(t *testing.T) {
 	if req.Filter.Status == nil || len(req.Filter.Status.In) != 2 || req.Filter.Status.In[0] != "A" || req.Filter.Status.In[1] != "B" {
 		t.Fatalf("expect status.in=[A B], got %#v", req.Filter.Status)
 	}
-
 }
 
 func TestUnmarshalFilters_JSONTagLowerCamel_ViaQueryString(t *testing.T) {
