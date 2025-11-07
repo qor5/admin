@@ -362,7 +362,6 @@ func (p *SearchParams) Unmarshal(dst any, opts ...UnmarshalOption) error {
 // buildAugmentedFilters returns a single Filter tree that includes the original filter
 // and a synthesized OR group for keyword conditions if present.
 func (p *SearchParams) buildAugmentedFilters() {
-
 	if p.Filter == nil {
 		p.Filter = &Filter{
 			And: []*Filter{},
