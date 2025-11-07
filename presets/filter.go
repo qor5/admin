@@ -690,9 +690,17 @@ func coerceAgainstType(norm map[string]any, t reflect.Type) error {
 		}
 	}
 
-	// Handle Or children (use upper-camel key)
+	// Handle Or children (support both "Or" and "or" keys)
 	orKey := "Or"
-	if raw, ok := norm[orKey]; ok {
+	raw, ok := norm[orKey]
+	if !ok {
+		if v, ok2 := norm["or"]; ok2 {
+			raw = v
+			ok = true
+			orKey = "or"
+		}
+	}
+	if ok {
 		if f, ok2 := t.FieldByName("Or"); ok2 {
 			ft := f.Type
 			if ft.Kind() == reflect.Slice {
@@ -715,9 +723,17 @@ func coerceAgainstType(norm map[string]any, t reflect.Type) error {
 		}
 	}
 
-	// Handle Not child (use upper-camel key)
+	// Handle Not child (support both "Not" and "not" keys)
 	notKey := "Not"
-	if raw, ok := norm[notKey]; ok {
+	raw, ok = norm[notKey]
+	if !ok {
+		if v, ok2 := norm["not"]; ok2 {
+			raw = v
+			ok = true
+			notKey = "not"
+		}
+	}
+	if ok {
 		if f, ok2 := t.FieldByName("Not"); ok2 {
 			ft := f.Type
 			for ft.Kind() == reflect.Ptr {
@@ -741,9 +757,18 @@ func coerceAgainstType(norm map[string]any, t reflect.Type) error {
 			continue
 		}
 
-		// Always use destination struct field name (UpperCamel)
+		// Support both destination struct field name (UpperCamel) and lowerCamel JSON key
 		fieldKey := sf.Name
 		raw, ok := norm[fieldKey]
+		usedKey := fieldKey
+		if !ok {
+			lc := strcase.ToLowerCamel(fieldKey)
+			if v, ok2 := norm[lc]; ok2 {
+				raw = v
+				ok = true
+				usedKey = lc
+			}
+		}
 		if !ok {
 			continue
 		}
@@ -760,17 +785,27 @@ func coerceAgainstType(norm map[string]any, t reflect.Type) error {
 			continue
 		}
 
-		// For each operator field in the destination ops struct, use field name directly
+		// For each operator field in the destination ops struct, support both UpperCamel and lowerCamel keys
 		for j := 0; j < opsT.NumField(); j++ {
 			of := opsT.Field(j)
-			opKey := of.Name
-			if v, ok2 := opsMap[opKey]; ok2 {
-				opsMap[opKey] = coerceJSONValToType(v, of.Type)
+			opKeyUpper := of.Name
+			usedOpKey := opKeyUpper
+			v, ok2 := opsMap[opKeyUpper]
+			if !ok2 {
+				opKeyLower := strcase.ToLowerCamel(opKeyUpper)
+				if vv, ok3 := opsMap[opKeyLower]; ok3 {
+					v = vv
+					ok2 = true
+					usedOpKey = opKeyLower
+				}
+			}
+			if ok2 {
+				opsMap[usedOpKey] = coerceJSONValToType(v, of.Type)
 			}
 		}
 
-		// write back in case the map was replaced
-		norm[fieldKey] = opsMap
+		// write back in case the map was replaced (preserve original key casing)
+		norm[usedKey] = opsMap
 	}
 	return nil
 }

@@ -218,7 +218,7 @@ func TestUnmarshalFilters_ProductFilterBasic(t *testing.T) {
 	sp.Keyword = "kw"
 
 	var req ListProductsRequest
-	if err := sp.Unmarshal(&req.Filter, WithPascalCase()); err != nil {
+	if err := sp.Unmarshal(&req.Filter); err != nil {
 		t.Fatalf("Unmarshal error: %v", err)
 	}
 
@@ -375,7 +375,7 @@ func TestUnmarshalFilters_DirectNestedAndDuplicateFields(t *testing.T) {
 
 	sp := &SearchParams{Filter: root}
 	var req ListProductsRequest
-	if err := sp.Unmarshal(&req.Filter, WithPascalCase()); err != nil {
+	if err := sp.Unmarshal(&req.Filter); err != nil {
 		t.Fatalf("Unmarshal error: %v", err)
 	}
 
@@ -1135,7 +1135,7 @@ func TestUnmarshalFilters_JSONTagLowerCamel_Direct(t *testing.T) {
 		{Condition: &FieldCondition{Field: "Status", Operator: FilterOperatorIn, Value: []string{"A", "B"}}},
 	}}}
 	var req ListUserRequest
-	if err := sp.Unmarshal(&req.Filter, WithPascalCase()); err != nil {
+	if err := sp.Unmarshal(&req.Filter); err != nil {
 		t.Fatalf("Unmarshal error: %v", err)
 	}
 	if req.Filter == nil || req.Filter.Name == nil || req.Filter.Name.Contains == nil || *req.Filter.Name.Contains != "Jack" || !req.Filter.Name.Fold {
@@ -1152,7 +1152,7 @@ func TestUnmarshalFilters_JSONTagLowerCamel_ViaQueryString(t *testing.T) {
 	root := BuildFiltersFromQuery("f_name.ilike=Mike&f_status.in=X,Y")
 	sp2 := &SearchParams{Filter: root}
 	var req2 ListUserRequest
-	if err := sp2.Unmarshal(&req2.Filter, WithPascalCase()); err != nil {
+	if err := sp2.Unmarshal(&req2.Filter); err != nil {
 		t.Fatalf("Unmarshal error: %v", err)
 	}
 	if req2.Filter == nil || req2.Filter.Name == nil || req2.Filter.Name.Contains == nil || *req2.Filter.Name.Contains != "Mike" || !req2.Filter.Name.Fold {
@@ -1171,7 +1171,7 @@ func TestUnmarshalFilters_JSONTagLowerCamel_Keyword(t *testing.T) {
 	root := BuildFiltersFromQuery(qsK)
 	spK := &SearchParams{Filter: root, Keyword: v.Get("keyword"), KeywordColumns: []string{"name"}}
 	var reqK ListUserRequest
-	if err := spK.Unmarshal(&reqK.Filter, WithPascalCase()); err != nil {
+	if err := spK.Unmarshal(&reqK.Filter); err != nil {
 		t.Fatalf("Unmarshal error: %v", err)
 	}
 	if reqK.Filter == nil || len(reqK.Filter.Or) != 1 {
@@ -1195,7 +1195,7 @@ func TestUnmarshalFilters_JSONTagLowerCamel_NestedAndQueryExtras(t *testing.T) {
 	root := BuildFiltersFromQuery(qs)
 	sp := &SearchParams{Filter: root, Keyword: v.Get("keyword"), KeywordColumns: []string{"name"}}
 	var req ListUserRequest
-	if err := sp.Unmarshal(&req.Filter, WithPascalCase()); err != nil {
+	if err := sp.Unmarshal(&req.Filter); err != nil {
 		t.Fatalf("Unmarshal error: %v", err)
 	}
 
@@ -1246,7 +1246,7 @@ func TestUnmarshalFilters_JSONTagLowerCamel_ProductStatusWithKeyword(t *testing.
 	sp := &SearchParams{Filter: root, Keyword: v.Get("keyword"), KeywordColumns: []string{"name"}}
 
 	var req ListUserRequest
-	if err := sp.Unmarshal(&req.Filter, WithPascalCase()); err != nil {
+	if err := sp.Unmarshal(&req.Filter); err != nil {
 		t.Fatalf("Unmarshal error: %v", err)
 	}
 
@@ -1278,7 +1278,7 @@ func TestUnmarshalFilters_JSONTagLowerCamel_ProductStatusEqWithKeyword(t *testin
 	sp := &SearchParams{Filter: root, Keyword: v.Get("keyword"), KeywordColumns: []string{"name"}}
 
 	var req ListUserRequest
-	if err := sp.Unmarshal(&req.Filter, WithPascalCase()); err != nil {
+	if err := sp.Unmarshal(&req.Filter); err != nil {
 		t.Fatalf("Unmarshal error: %v", err)
 	}
 	if req.Filter == nil || req.Filter.ProductStatus == nil || req.Filter.ProductStatus.Eq == nil || *req.Filter.ProductStatus.Eq != ProductStatusActive {
@@ -1298,7 +1298,7 @@ func TestUnmarshalFilters_JSONTagLowerCamel_CustomNumericTypesWithKeyword(t *tes
 	sp := &SearchParams{Filter: root, Keyword: v.Get("keyword"), KeywordColumns: []string{"name"}}
 
 	var req ListCustomRequest
-	if err := sp.Unmarshal(&req.Filter, WithPascalCase()); err != nil {
+	if err := sp.Unmarshal(&req.Filter); err != nil {
 		t.Fatalf("Unmarshal error: %v", err)
 	}
 	if req.Filter == nil {
@@ -1329,7 +1329,7 @@ func TestUnmarshalFilters_JSONTagLowerCamel_TimeWithKeyword(t *testing.T) {
 	sp := &SearchParams{Filter: root, Keyword: v.Get("keyword"), KeywordColumns: []string{"name"}}
 
 	var req ListUserRequest
-	if err := sp.Unmarshal(&req.Filter, WithPascalCase()); err != nil {
+	if err := sp.Unmarshal(&req.Filter); err != nil {
 		t.Fatalf("Unmarshal error: %v", err)
 	}
 	if req.Filter == nil || req.Filter.CreatedAt == nil || req.Filter.CreatedAt.Gte == nil {
