@@ -607,17 +607,15 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 				comps,
 				content,
 				hiddenComp,
-			).OnChange(onChangeEvent).UseDebounce(500),
+			).VSlot("{ form, dash }").DashInit("{errorMessages:{},disabled:{}}").OnChange(onChangeEvent).UseDebounce(500),
 		)
 	}
 	return h.Div(
 		web.Scope(
-			web.Scope(
-				comps,
-				content,
-				hiddenComp,
-			).VSlot("{ form}").OnChange(onChangeEvent).UseDebounce(500),
-		).VSlot("{ dash }").DashInit("{errorMessages:{},disabled:{}}"),
+			comps,
+			content,
+			hiddenComp,
+		).VSlot("{ form, dash }").DashInit("{errorMessages:{},disabled:{}}").OnChange(onChangeEvent).UseDebounce(500),
 	).Class("mb-10")
 }
 
@@ -742,7 +740,7 @@ func (b *SectionBuilder) listComponent(obj interface{}, ctx *web.EventContext, d
 		web.Scope(
 			// element and addBtn have mb-2, so the real effect is mb-6
 			h.Div(rows).Class("mb-4"),
-		).VSlot("{ form }"),
+		).VSlot("{ form, dash }").DashInit("{errorMessages:{},disabled:{}}"),
 		hiddenComp,
 	)
 }

@@ -5,8 +5,11 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/multipartestutils"
+	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/theplant/gofixtures"
+	h "github.com/theplant/htmlgo"
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
@@ -676,6 +679,76 @@ func TestPresetsDetailListSection(t *testing.T) {
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Cancel", "Save", "This is hidden"},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}
+
+func TestPresetsDetailListSection_StatusxFieldViolations(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+
+	if err := TestDB.AutoMigrate(&UserCreditCard{}, &CreditCard{}); err != nil {
+		t.Fatal(err)
+	}
+
+	// Model setup: use existing UserCreditCard and CreditCard
+	// Build a detailing page with an isList section whose edit component binds VFieldError
+	cust := pb.Model(&UserCreditCard{})
+	dp := cust.Detailing("CreditCards").Drawer(true)
+
+	section := presets.NewSectionBuilder(cust, "CreditCards").IsList(&CreditCard{}).
+		Editing("Name").
+		ElementEditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			card := obj.(*CreditCard)
+			var errs []string
+			if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+				errs = ve.GetFieldErrors(fmt.Sprintf("%s.Name", field.FormKey))
+			}
+			return vx.VXField().
+				Attr(presets.VFieldError(fmt.Sprintf("%s.Name", field.FormKey), card.Name, errs)...)
+		}).
+		ElementShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			card := obj.(*CreditCard)
+			return vx.VXTextField().Text(card.Name)
+		})
+	dp.Section(section)
+
+	// Section-level validator sets a field error for the edited list element
+	section.WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
+		return func(obj interface{}, ctx *web.EventContext) (vErr web.ValidationErrors) {
+			if in != nil {
+				ve := in(obj, ctx)
+				_ = vErr.Merge(&ve)
+			}
+			vErr.FieldError("CreditCards[0].Name", "name is required")
+			return
+		}
+	})
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "list section save returns validator field error and shows error",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				userCreditCardsData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_save_CreditCards").
+					Query("sectionListUnsaved_CreditCards", "false").
+					Query("sectionListSaveBtn_CreditCards", "0").
+					Query("id", "1").
+					// Submit edited element fields
+					AddField("CreditCards[0].Name", "").
+					AddField("__Deleted_CreditCards[0].sectionListEditing", "true").
+					BuildEventFuncRequest()
+			},
+			// Expect the field error text from BadRequest.FieldViolations to appear in the portal update
+			ExpectPortalUpdate0ContainsInOrder: []string{"name is required"},
 		},
 	}
 
