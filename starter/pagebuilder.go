@@ -29,7 +29,9 @@ var SetupPageBuilderForHandler = []any{
 
 // CreateSEOBuilder creates and configures the SEO builder
 func CreateSEOBuilder(a *Handler, l10nBuilder *l10n.Builder) *seo.Builder {
-	return seo.New(a.DB, seo.WithLocales(l10nBuilder.GetSupportLocaleCodes()...))
+	b := seo.New(a.DB, seo.WithLocales(l10nBuilder.GetSupportLocaleCodes()...))
+	a.Use(b)
+	return b
 }
 
 // CreatePublishStorage configures S3 storage for publishing
