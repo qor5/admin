@@ -497,6 +497,7 @@ func (b *Builder) AutoMigrate() (r *Builder) {
 	return b
 }
 
+// Deprecated: use Migrate instead.
 func AutoMigrate(b *Builder, db *gorm.DB) (err error) {
 	if err = db.AutoMigrate(&QorSEOSetting{}); err != nil {
 		panic(err)
@@ -507,4 +508,11 @@ func AutoMigrate(b *Builder, db *gorm.DB) (err error) {
 		return
 	}
 	return
+}
+
+func Migrate(db *gorm.DB) error {
+	if err := db.AutoMigrate(&QorSEOSetting{}); err != nil {
+		return err
+	}
+	return nil
 }

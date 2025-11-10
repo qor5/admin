@@ -219,7 +219,7 @@ func (a *Handler) createMediaBuilder() *media.Builder {
 			return db.Where("user_id = ?", u.ID)
 		}
 		return db
-	}).AutoMigrate()
+	})
 
 	a.Use(mediaBuilder)
 	return mediaBuilder
