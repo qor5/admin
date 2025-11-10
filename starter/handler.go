@@ -93,10 +93,6 @@ func (a *Handler) Build(ctx context.Context, ctors ...any) error {
 		return err
 	}
 
-	if err := a.autoMigrate(ctx); err != nil {
-		return err
-	}
-
 	a.configureMediaStorage()
 
 	if err := a.BuildContext(ctx); err != nil {
@@ -125,9 +121,9 @@ func (a *Handler) Use(plugins ...presets.Plugin) {
 	a.plugins = append(a.plugins, plugins...)
 }
 
-// autoMigrate performs database migrations
-func (a *Handler) autoMigrate(ctx context.Context) error {
-	db := a.DB.WithContext(ctx)
+// AutoMigrate performs database migrations
+func AutoMigrate(ctx context.Context, db *gorm.DB) error {
+	db = db.WithContext(ctx)
 	if err := db.AutoMigrate(
 		&role.Role{},
 		&User{},
