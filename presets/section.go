@@ -1275,6 +1275,10 @@ func (b *SectionBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Event
 	}
 
 	listObj := reflect.ValueOf(reflectutils.MustGet(obj, b.name))
+	var isUnsavedAdded bool
+	if listObj.IsValid() && listObj.Len() == int(index) {
+		isUnsavedAdded = true
+	}
 	// Determine if current save is for a newly created element before potential append
 	wasCreated := !listObj.IsValid() || listObj.Len() == int(index)
 	if wasCreated {
@@ -1339,7 +1343,7 @@ func (b *SectionBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Event
 	}
 
 	if _, ok := ctx.Flash.(*web.ValidationErrors); ok {
-		if wasCreated {
+		if wasCreated && !isUnsavedAdded {
 			// Keep unsaved state when the newly created element fails validation
 			unsaved = true
 		}
