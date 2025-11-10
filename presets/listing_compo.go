@@ -461,27 +461,12 @@ func (c *ListingCompo) processFilter(evCtx *web.EventContext) (h.HTMLComponent, 
 			// Build filter tree from FilterQuery
 			var root *Filter
 			if c.FilterQuery != "" {
-				filters := BuildFiltersFromQuery(c.FilterQuery)
-				if len(filters) == 1 {
-					root = filters[0]
-				} else if len(filters) > 1 {
-					root = &Filter{And: filters}
-				}
+				root = BuildFiltersFromQuery(c.FilterQuery)
 			}
 			return filterScript, []*SQLCondition{{Query: cond, Args: args}}, root
 		}
 	}
-	// Also return any built filter even when no fd
-	var root *Filter
-	if c.FilterQuery != "" {
-		filters := BuildFiltersFromQuery(c.FilterQuery)
-		if len(filters) == 1 {
-			root = filters[0]
-		} else if len(filters) > 1 {
-			root = &Filter{And: filters}
-		}
-	}
-	return nil, nil, root
+	return nil, nil, nil
 }
 
 func (c *ListingCompo) prepareRelayPaginateRequest(orderBy []relay.Order, perPage int) *relay.PaginateRequest[any] {

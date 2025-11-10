@@ -67,6 +67,7 @@ type (
 		Field    string
 		Operator FilterOperator
 		Value    any
+		Fold     bool
 	}
 	Filter struct {
 		And       []*Filter
