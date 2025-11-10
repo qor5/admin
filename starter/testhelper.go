@@ -86,6 +86,9 @@ func createDummyAuthCookies(ctx context.Context, user *User, secret string, sess
 }
 
 func (h *Handler) BuildForTest(ctx context.Context, ctors ...any) error {
+	if err := AutoMigrate(h.DB, ctx); err != nil {
+		return err
+	}
 	if err := h.Build(ctx, ctors...); err != nil {
 		return err
 	}
