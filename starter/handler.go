@@ -122,7 +122,7 @@ func (a *Handler) Use(plugins ...presets.Plugin) {
 }
 
 // AutoMigrate performs database migrations
-func AutoMigrate(db *gorm.DB, ctx context.Context) error {
+func AutoMigrate(ctx context.Context, db *gorm.DB) error {
 	db = db.WithContext(ctx)
 	if err := db.AutoMigrate(
 		&role.Role{},
