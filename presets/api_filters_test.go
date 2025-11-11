@@ -1539,8 +1539,8 @@ func TestFilterCreateAtRange_ToSQLConditions(t *testing.T) {
 		t.Fatalf("expect lt 2025-11-27, got %v", req.Filter.CreatedAt.Lt.AsTime().UTC())
 	}
 }
-func TestFilterCreateAtRangeUnicode_ToSQLConditions(t *testing.T) {
 
+func TestFilterCreateAtRangeUnicode_ToSQLConditions(t *testing.T) {
 	type CreatedAtRangeFilter struct {
 		Gte *timestamppb.Timestamp `json:"gte"`
 		Lt  *timestamppb.Timestamp `json:"lt"`
