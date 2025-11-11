@@ -1507,7 +1507,6 @@ func TestUnmarshal_ScopeTypeOperatorRename(t *testing.T) {
 }
 
 func TestFilterCreateAtRange_ToSQLConditions(t *testing.T) {
-
 	type CreatedAtRangeFilter struct {
 		Gte *timestamppb.Timestamp `json:"gte"`
 		Lt  *timestamppb.Timestamp `json:"lt"`
