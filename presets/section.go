@@ -822,7 +822,7 @@ func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, unsaved
 		EventFunc(b.EventDelete()).
 		// Query(SectionFieldName, b.name).
 		Query(ParamID, ctx.Param(ParamID)).
-		Query(b.elementUnsavedKey(), unsaved).
+		Query(b.elementUnsavedKey(), unsaved&&!isCreated).
 		Query(b.DeleteBtnKey(), index).
 		Go()
 	if isCreated {
@@ -832,7 +832,7 @@ func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, unsaved
 		URL(ctx.R.URL.Path).
 		EventFunc(b.EventSave()).
 		// Query(SectionFieldName, b.name).
-		Query(b.elementUnsavedKey(), unsaved).
+		Query(b.elementUnsavedKey(), unsaved&&!isCreated).
 		Query(SectionIsCancel, true).
 		Query(ParamID, ctx.Param(ParamID)).
 		Query(b.SaveBtnKey(), strconv.Itoa(index)).
@@ -1255,8 +1255,14 @@ func (b *SectionBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Event
 		b.mb.editing.Setter(obj, ctx)
 	}
 
+	listObj := reflect.ValueOf(reflectutils.MustGet(obj, b.name))
+	var isUnsavedAdded bool
+	if listObj.IsValid() && listObj.Len() == int(index) {
+		isUnsavedAdded = true
+	}
+
 	if isCancel {
-		if unsaved {
+		if unsaved && !isUnsavedAdded {
 			if _, err = b.appendElement(obj); err != nil {
 				panic(err)
 			}
@@ -1274,11 +1280,6 @@ func (b *SectionBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Event
 		return
 	}
 
-	listObj := reflect.ValueOf(reflectutils.MustGet(obj, b.name))
-	var isUnsavedAdded bool
-	if listObj.IsValid() && listObj.Len() == int(index) {
-		isUnsavedAdded = true
-	}
 	// Determine if current save is for a newly created element before potential append
 	wasCreated := !listObj.IsValid() || listObj.Len() == int(index)
 	if wasCreated {
@@ -1336,14 +1337,14 @@ func (b *SectionBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Event
 	// Append a new empty element only when caller requests keeping an unsaved slot,
 	// and only after a successful save of an existing element.
 	// Avoid duplicating when saving a newly created element or when validation failed.
-	if ctx.ParamAsBool(b.elementUnsavedKey()) && needSave && err == nil && !wasCreated {
+	if ctx.ParamAsBool(b.elementUnsavedKey())  && err == nil && !wasCreated {
 		if _, err := b.appendElement(obj); err != nil {
 			panic(err)
 		}
 	}
 
 	if _, ok := ctx.Flash.(*web.ValidationErrors); ok {
-		if wasCreated && !isUnsavedAdded {
+		if !isUnsavedAdded {
 			// Keep unsaved state when the newly created element fails validation
 			unsaved = true
 		}
@@ -1354,6 +1355,9 @@ func (b *SectionBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Event
 		return
 	}
 
+	if isUnsavedAdded {
+		unsaved = false
+	}
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: b.FieldPortalName(),
 		Body: b.listComponent(obj, ctx, -1, -1, index, unsaved, false),
