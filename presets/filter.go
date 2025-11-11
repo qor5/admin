@@ -61,20 +61,17 @@ type unmarshalOptions struct {
 	hooks []FilterUnmarshalHook
 }
 
-// FieldPathInput is passed to path resolvers to determine the target field key at current scope.
-type FieldPathInput struct {
-	// Scope is the current mutable scope map that resolvers can modify in place.
-	ParentFilterMap map[string]any
-	FilterMap       map[string]any
-	Type            reflect.Type
-	Field           string
-	Operator        string
+// FilterUnmarshalInput is passed to path resolvers to determine the target field key at current scope.
+type FilterUnmarshalInput struct {
+	FilterMap map[string]any
+	Field     string
+	Operator  string
 }
 
 // FilterUnmarshalFun c mutates in.Scope in place based on the input context.
 // Implementations may rename keys, move values into nested paths, or merge maps.
 // It should be idempotent and return nil when no change is needed.
-type FilterUnmarshalFunc func(in *FieldPathInput) error
+type FilterUnmarshalFunc func(in *FilterUnmarshalInput) error
 
 // FilterUnmarshalHook composes mutators relay-style: h(next)(in).
 type FilterUnmarshalHook func(next FilterUnmarshalFunc) FilterUnmarshalFunc
@@ -101,22 +98,6 @@ type UnmarshalOption func(*unmarshalOptions)
 // Default (without this option) uses lowerCamel for both.
 func WithPascalCase() UnmarshalOption {
 	return func(o *unmarshalOptions) { o.casing = PascalCase }
-}
-
-// runHooks composes and executes registered hooks in registration order.
-func runHooks(o *unmarshalOptions, in *FieldPathInput) error {
-	if o == nil || len(o.hooks) == 0 || in == nil {
-		return nil
-	}
-	terminal := func(_ *FieldPathInput) error { return nil }
-	fn := terminal
-	for _, h := range o.hooks {
-		if h == nil {
-			continue
-		}
-		fn = h(fn)
-	}
-	return fn(in)
 }
 
 // applyCasingKey converts a simple identifier into the desired casing.
@@ -390,7 +371,7 @@ func (p *SearchParams) Unmarshal(dst any, opts ...UnmarshalOption) error {
 	}
 
 	// Coerce values based on destination operator field types before unmarshalling
-	if err := coerceNormValuesForDst(norm, dst, &uo); err != nil {
+	if err := coerceNormValuesForDst(norm, dst); err != nil {
 		return errors.Wrap(err, "coerce values for destination")
 	}
 
@@ -468,26 +449,63 @@ func transformFilterRawToProtoMap(raw map[string]any, o *unmarshalOptions) (map[
 		if cm, ok := v.(map[string]any); ok {
 			field, _ := cm["Field"].(string)
 			if field != "" {
-				fieldKey := applyCasingKey(field, ternaryCasing(o))
-				sub, _ := dst[fieldKey].(map[string]any)
+				opStr, _ := cm["Operator"].(string)
+				opStr = strings.TrimSpace(opStr)
+				if opStr == "" {
+					return nil, errors.New("empty operator in Condition")
+				}
+
+				// Prepare a provisional write using the raw field name as key,
+				// so hooks can observe and mutate the scope map.
+				rawFieldKey := field
+				sub, _ := dst[rawFieldKey].(map[string]any)
 				if sub == nil {
 					sub = map[string]any{}
 				}
-				opStr, _ := cm["Operator"].(string)
-				opKey := strings.TrimSpace(opStr)
-				if opKey == "" {
-					return nil, errors.New("empty operator in Condition")
+				// Use cased operator/fold keys for internal consistency
+				opKeyCased := applyCasingKey(opStr, ternaryCasing(o))
+				val := cm["Value"]
+				sub[opKeyCased] = val
+				if fb, ok := cm["Fold"].(bool); ok && fb {
+					foldKey := applyCasingKey("fold", ternaryCasing(o))
+					sub[foldKey] = true
 				}
-				opKey = applyCasingKey(opKey, ternaryCasing(o))
-				if opKey != "" {
-					val := cm["Value"]
-					// Defer coercion to destination-type-directed phase
-					sub[opKey] = val
-					if fb, ok := cm["Fold"].(bool); ok && fb {
-						foldKey := applyCasingKey("fold", ternaryCasing(o))
-						sub[foldKey] = true
+				dst[rawFieldKey] = sub
+
+				// Invoke hooks (if any) allowing field/operator remapping via scope mutation.
+				if o != nil && len(o.hooks) > 0 {
+					// Compose in registration order
+					var fn FilterUnmarshalFunc = func(_ *FilterUnmarshalInput) error { return nil }
+					for _, h := range o.hooks {
+						if h != nil {
+							fn = h(fn)
+						}
 					}
-					dst[fieldKey] = sub
+					in := &FilterUnmarshalInput{
+						FilterMap: dst,
+						Field:     field,
+						Operator:  opStr,
+					}
+					if err := fn(in); err != nil {
+						return nil, err
+					}
+				}
+
+				// If the raw field key still exists, rename it to the final cased field key.
+				if v0, ok0 := dst[rawFieldKey]; ok0 {
+					fieldKey := applyCasingKey(field, ternaryCasing(o))
+					if fieldKey != rawFieldKey {
+						// Merge if destination already exists
+						if exist, ok1 := dst[fieldKey].(map[string]any); ok1 {
+							if m, ok2 := v0.(map[string]any); ok2 {
+								mergeFilterJSONMap(exist, m)
+								dst[fieldKey] = exist
+							}
+						} else {
+							dst[fieldKey] = v0
+						}
+						delete(dst, rawFieldKey)
+					}
 				}
 			}
 		}
@@ -600,7 +618,7 @@ func mergeFilterJSONMap(dst, src map[string]any) {
 	}
 }
 
-func coerceNormValuesForDst(norm map[string]any, dst any, o *unmarshalOptions) error {
+func coerceNormValuesForDst(norm map[string]any, dst any) error {
 	if norm == nil || dst == nil {
 		return nil
 	}
@@ -609,10 +627,10 @@ func coerceNormValuesForDst(norm map[string]any, dst any, o *unmarshalOptions) e
 		return nil
 	}
 	rt := rv.Type().Elem()
-	return coerceAgainstType(norm, rt, o)
+	return coerceAgainstType(norm, rt)
 }
 
-func coerceAgainstType(norm map[string]any, t reflect.Type, o *unmarshalOptions) error {
+func coerceAgainstType(norm map[string]any, t reflect.Type) error {
 	if norm == nil {
 		return nil
 	}
@@ -631,7 +649,7 @@ func coerceAgainstType(norm map[string]any, t reflect.Type, o *unmarshalOptions)
 			ft = ft.Elem()
 		}
 		if ft.Kind() == reflect.Struct {
-			if err := coerceAgainstType(norm, ft, o); err != nil {
+			if err := coerceAgainstType(norm, ft); err != nil {
 				return err
 			}
 		}
@@ -660,7 +678,7 @@ func coerceAgainstType(norm map[string]any, t reflect.Type, o *unmarshalOptions)
 						var kept []any
 						for _, child := range arr {
 							if m, ok4 := child.(map[string]any); ok4 {
-								if err := coerceAgainstType(m, elem, o); err != nil {
+								if err := coerceAgainstType(m, elem); err != nil {
 									return err
 								}
 								if len(m) > 0 {
@@ -698,7 +716,7 @@ func coerceAgainstType(norm map[string]any, t reflect.Type, o *unmarshalOptions)
 			}
 			if ft.Kind() == reflect.Struct {
 				if m, ok3 := raw.(map[string]any); ok3 {
-					if err := coerceAgainstType(m, ft, o); err != nil {
+					if err := coerceAgainstType(m, ft); err != nil {
 						return err
 					}
 					// drop empty not after coercion
@@ -718,38 +736,6 @@ func coerceAgainstType(norm map[string]any, t reflect.Type, o *unmarshalOptions)
 		// Skip control fields handled above
 		if sf.Name == "Or" || sf.Name == "And" || sf.Name == "Not" || sf.Name == "Filter" {
 			continue
-		}
-
-		// Pre-pass: allow hooks to remap/move existing field keys for this destination field type
-		// Use a snapshot of keys to avoid iteration instability when hooks mutate the map.
-		if o != nil && len(o.hooks) > 0 {
-			keys := make([]string, 0, len(norm))
-			for k := range norm {
-				if k == "Or" || k == "or" || k == "Not" || k == "not" {
-					continue
-				}
-				keys = append(keys, k)
-			}
-			for _, k := range keys {
-				if v, okM := norm[k].(map[string]any); okM {
-					// Snapshot operator keys
-					opKeys := make([]string, 0, len(v))
-					for opK := range v {
-						opKeys = append(opKeys, opK)
-					}
-					for _, opK := range opKeys {
-						if err := runHooks(o, &FieldPathInput{
-							ParentFilterMap: norm,
-							FilterMap:       norm,
-							Type:            sf.Type, // pointer type of destination field ops
-							Field:           k,
-							Operator:        opK,
-						}); err != nil {
-							return err
-						}
-					}
-				}
-			}
 		}
 
 		// Support both destination struct field name (UpperCamel) and lowerCamel JSON key
@@ -796,28 +782,6 @@ func coerceAgainstType(norm map[string]any, t reflect.Type, o *unmarshalOptions)
 				}
 			}
 			if ok2 {
-				// Allow hooks to adjust mapping before coercion (post-type awareness).
-				if o != nil && len(o.hooks) > 0 {
-					if err := runHooks(o, &FieldPathInput{
-						ParentFilterMap: norm,
-						FilterMap:       norm,
-						Type:            sf.Type, // pointer type
-						Field:           usedKey,
-						Operator:        usedOpKey,
-					}); err != nil {
-						return err
-					}
-					// Re-evaluate opsMap and operator after potential hook-induced mutations.
-					if newRaw, exists := norm[usedKey]; exists {
-						if nm, okNM := newRaw.(map[string]any); okNM {
-							opsMap = nm
-						}
-					}
-					// Refresh v with possibly updated operator key presence
-					if nv, okNV := opsMap[usedOpKey]; okNV {
-						v = nv
-					}
-				}
 				opsMap[usedOpKey] = coerceJSONValToType(v, of.Type)
 				matchedAny = true
 			}

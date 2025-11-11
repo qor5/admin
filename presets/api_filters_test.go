@@ -2,7 +2,6 @@ package presets
 
 import (
 	"net/url"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -1484,19 +1483,18 @@ func TestUnmarshal_ScopeTypeOperatorRename(t *testing.T) {
 	var req Req
 	err := sp.Unmarshal(&req.Filter,
 		WithFilterUnmarshalHook(func(next FilterUnmarshalFunc) FilterUnmarshalFunc {
-			return func(in *FieldPathInput) error {
-				if in.Type == reflect.TypeOf(&AliasNameFilter{}) {
+			return func(in *FilterUnmarshalInput) error {
+				if in.Field == "Name" {
 					scope := in.FilterMap
 					if v, ok := scope[in.Field]; ok {
 						in.FilterMap[in.Operator] = v
-						in.ParentFilterMap["aliasName"] = in.ParentFilterMap[in.Field]
-						delete(in.ParentFilterMap, in.Field)
+						in.FilterMap["aliasName"] = in.FilterMap[in.Field]
+						delete(in.FilterMap, in.Field)
 					}
 				}
 				return next(in)
 			}
 		}),
-		WithPascalCase(),
 	)
 	if err != nil {
 		t.Fatalf("Unmarshal error: %v", err)
