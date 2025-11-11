@@ -2,6 +2,7 @@ package presets
 
 import (
 	"net/url"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -1454,5 +1455,59 @@ func TestUnmarshalFilters_KeywordNumeric_Name(t *testing.T) {
 	}
 	if !(req.Filter.Or[0].Name != nil && req.Filter.Or[0].Name.Contains != nil && *req.Filter.Or[0].Name.Contains == "123" && req.Filter.Or[0].Name.Fold) {
 		t.Fatalf("expect OR name.contains=\"123\" fold=true, got %#v", req.Filter.Or[0])
+	}
+}
+
+func TestUnmarshal_ScopeTypeOperatorRename(t *testing.T) {
+	type AliasNameFilter struct {
+		Contains *string `json:"contains"`
+		Fold     bool    `json:"fold"`
+	}
+	type NameFilter struct {
+		Contains *string `json:"contains"`
+		Fold     bool    `json:"fold"`
+	}
+	type RootAliasFilter struct {
+		// Having Name at root ensures ScopeType(NameOps) can be matched.
+		AliasName *AliasNameFilter `json:"aliasName"`
+		Name      *NameFilter      `json:"name"`
+	}
+	type Req struct{ Filter *RootAliasFilter }
+
+	val := "Acme"
+	root := &Filter{
+		And: []*Filter{
+			{Condition: &FieldCondition{Field: "Name", Operator: FilterOperatorContains, Value: val, Fold: true}},
+		},
+	}
+	sp := &SearchParams{Filter: root}
+	var req Req
+	err := sp.Unmarshal(&req.Filter,
+		WithFilterUnmarshalHook(func(next FilterUnmarshalFunc) FilterUnmarshalFunc {
+			return func(in *FieldPathInput) error {
+				if in.Type == reflect.TypeOf(&AliasNameFilter{}) {
+					scope := in.FilterMap
+					if v, ok := scope[in.Field]; ok {
+						in.FilterMap[in.Operator] = v
+						in.ParentFilterMap["aliasName"] = in.ParentFilterMap[in.Field]
+						delete(in.ParentFilterMap, in.Field)
+					}
+				}
+				return next(in)
+			}
+		}),
+		WithPascalCase(),
+	)
+	if err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+	if req.Filter == nil {
+		t.Fatalf("filter nil")
+	}
+	if req.Filter.AliasName == nil || req.Filter.AliasName.Contains == nil || *req.Filter.AliasName.Contains != "Acme" || !req.Filter.AliasName.Fold {
+		t.Fatalf("expect AliasName.Contains=Acme and fold=true, got %#v", req.Filter.AliasName)
+	}
+	if req.Filter.Name != nil {
+		t.Fatalf("expect Name is nil  got %#v", req.Filter.Name)
 	}
 }
