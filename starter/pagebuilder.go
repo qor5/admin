@@ -29,7 +29,9 @@ var SetupPageBuilderForHandler = []any{
 
 // CreateSEOBuilder creates and configures the SEO builder
 func CreateSEOBuilder(a *Handler, l10nBuilder *l10n.Builder) *seo.Builder {
-	return seo.New(a.DB, seo.WithLocales(l10nBuilder.GetSupportLocaleCodes()...)).AutoMigrate()
+	b := seo.New(a.DB, seo.WithLocales(l10nBuilder.GetSupportLocaleCodes()...))
+	a.Use(b)
+	return b
 }
 
 // CreatePublishStorage configures S3 storage for publishing
@@ -90,7 +92,7 @@ func CreatePageBuilder(a *Handler, presetsBuilder *presets.Builder, mediaBuilder
 				})
 				return nil
 			}
-		}).AutoMigrate()
+		})
 
 	mux.Handle("/page_builder/", pageBuilder)
 

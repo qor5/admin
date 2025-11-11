@@ -14,13 +14,11 @@ import (
 	"github.com/qor5/admin/v3/media"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
-	"github.com/qor5/admin/v3/role"
 	"github.com/qor5/admin/v3/utils"
 	"github.com/qor5/confx"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/hook"
 	"github.com/qor5/x/v3/login"
-	"github.com/qor5/x/v3/perm"
 	"github.com/qor5/x/v3/s3x"
 	"github.com/theplant/inject"
 	"golang.org/x/text/language"
@@ -121,23 +119,6 @@ func (a *Handler) Use(plugins ...presets.Plugin) {
 	a.plugins = append(a.plugins, plugins...)
 }
 
-// AutoMigrate performs database migrations
-func AutoMigrate(ctx context.Context, db *gorm.DB) error {
-	db = db.WithContext(ctx)
-	if err := db.AutoMigrate(
-		&role.Role{},
-		&User{},
-		&perm.DefaultDBPolicy{},
-	); err != nil {
-		return errors.Wrap(err, "failed to auto migrate database")
-	}
-
-	if err := createDefaultRolesIfEmpty(ctx, db); err != nil {
-		return errors.Wrap(err, "failed to initialize default roles")
-	}
-	return nil
-}
-
 // configureMediaStorage configures S3 storage for media
 func (a *Handler) configureMediaStorage() {
 	media_oss.Storage = s3x.SetupClient(&a.S3, nil)
@@ -172,7 +153,7 @@ func (a *Handler) createActivityBuilder() *activity.Builder {
 			})
 			return
 		}
-	}).AutoMigrate()
+	})
 
 	a.Use(activityBuilder)
 	return activityBuilder
@@ -238,7 +219,7 @@ func (a *Handler) createMediaBuilder() *media.Builder {
 			return db.Where("user_id = ?", u.ID)
 		}
 		return db
-	}).AutoMigrate()
+	})
 
 	a.Use(mediaBuilder)
 	return mediaBuilder
