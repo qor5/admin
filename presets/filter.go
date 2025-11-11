@@ -68,7 +68,7 @@ type FilterUnmarshalInput struct {
 	Operator  string
 }
 
-// FilterUnmarshalFun c mutates in.Scope in place based on the input context.
+// FilterUnmarshalFun  mutates in.Scope in place based on the input context.
 // Implementations may rename keys, move values into nested paths, or merge maps.
 // It should be idempotent and return nil when no change is needed.
 type FilterUnmarshalFunc func(in *FilterUnmarshalInput) error
@@ -346,10 +346,6 @@ func mapModToOperator(mod string) FilterOperator {
 	}
 }
 
-// Unmarshal populates dst with the content of Filters (plus Keyword/KeywordColumns as OR contains conditions).
-// dst can be either a pointer to a request wrapper that has a field named "Filter",
-// or a pointer to the filter struct itself. This function is generic and not limited to any specific request type.
-// Unmarshal performs the same as Unmarshal but allows customization via options.
 func (p *SearchParams) Unmarshal(dst any, opts ...UnmarshalOption) error {
 	if dst == nil {
 		return errors.New("dst is nil")

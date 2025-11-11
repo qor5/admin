@@ -86,8 +86,8 @@ type (
 
 // Lower camel JSON-tagged request and filters for user entity
 type (
-	ProductSatus int32
-	UserNameOps  struct {
+	ProductStatus int32
+	UserNameOps   struct {
 		Eq       *string `json:"eq"`
 		Contains *string `json:"contains"`
 		Fold     bool    `json:"fold"`
@@ -96,9 +96,9 @@ type (
 		In []string `json:"in"`
 	}
 	ProductStatusOps struct {
-		Eq    *ProductSatus
-		In    []ProductSatus
-		NotIn []ProductSatus
+		Eq    *ProductStatus
+		In    []ProductStatus
+		NotIn []ProductStatus
 	}
 	CreatedAtOps struct {
 		Lt  *timestamppb.Timestamp `json:"lt"`
@@ -184,15 +184,15 @@ const (
 	LocaleStatusPublished LocaleStatus = "PUBLISHED"
 	LocaleStatusDraft     LocaleStatus = "DRAFT"
 
-	ProductStatusPublished ProductSatus = 1
-	ProductStatusDraft     ProductSatus = 2
-	ProductStatusArchived  ProductSatus = 3
-	ProductStatusDeleted   ProductSatus = 4
-	ProductStatusInactive  ProductSatus = 5
-	ProductStatusActive    ProductSatus = 6
-	ProductStatusPending   ProductSatus = 7
-	ProductStatusCompleted ProductSatus = 8
-	ProductStatusCancelled ProductSatus = 9
+	ProductStatusPublished ProductStatus = 1
+	ProductStatusDraft     ProductStatus = 2
+	ProductStatusArchived  ProductStatus = 3
+	ProductStatusDeleted   ProductStatus = 4
+	ProductStatusInactive  ProductStatus = 5
+	ProductStatusActive    ProductStatus = 6
+	ProductStatusPending   ProductStatus = 7
+	ProductStatusCompleted ProductStatus = 8
+	ProductStatusCancelled ProductStatus = 9
 	// Custom numeric type constants
 	LevelBasic  CategoryLevel = 1
 	LevelPro    CategoryLevel = 2
