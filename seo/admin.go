@@ -47,6 +47,11 @@ func (mtd *myTd) MarshalHTML(ctx context.Context) ([]byte, error) {
 }
 
 func (b *Builder) Install(pb *presets.Builder) error {
+	// NOTE: do not replace b.seoRoot.name with defaultGlobalSEOName.
+	// because the name of global seo may be changed by user through WithGlobalSEOName option.
+	if err := insertIfNotExists(b.db, b.seoRoot.name, b.locales); err != nil {
+		return err
+	}
 	// The registration of FieldDefaults for writing Setting here
 	// must be executed before `pb.Model(&QorSEOSetting{})...`,
 	pb.FieldDefaults(presets.WRITE).
