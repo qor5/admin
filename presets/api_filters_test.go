@@ -1505,3 +1505,38 @@ func TestUnmarshal_ScopeTypeOperatorRename(t *testing.T) {
 		t.Fatalf("expect Name is nil  got %#v", req.Filter.Name)
 	}
 }
+
+func TestFilterCreateAtRange_ToSQLConditions(t *testing.T) {
+
+	type CreatedAtRangeFilter struct {
+		Gte *timestamppb.Timestamp `json:"gte"`
+		Lt  *timestamppb.Timestamp `json:"lt"`
+	}
+	type RootCreatedAtRangeFilter struct {
+		CreatedAt *CreatedAtRangeFilter `json:"createdAt"`
+	}
+	type CreatedAtRangeRequest struct {
+		Filter *RootCreatedAtRangeFilter `json:"filter"`
+	}
+
+	qs := "f_created_at_range.gte=2025-11-11 00:00&f_created_at_range.lt=2025-11-28 00:00"
+	v, _ := url.ParseQuery(qs)
+	root := BuildFiltersFromQuery(qs)
+	sp := &SearchParams{Filter: root, Keyword: v.Get("keyword"), KeywordColumns: []string{"Name"}}
+	var req CreatedAtRangeRequest
+	if err := sp.Unmarshal(&req.Filter); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+	if req.Filter == nil {
+		t.Fatalf("filter nil")
+	}
+	if req.Filter.CreatedAt == nil || req.Filter.CreatedAt.Gte == nil || req.Filter.CreatedAt.Lt == nil {
+		t.Fatalf("expect gte and lt set, got %#v", req.Filter)
+	}
+	if req.Filter.CreatedAt.Gte.AsTime().UTC().Year() != 2025 || req.Filter.CreatedAt.Gte.AsTime().UTC().Month() != time.November || req.Filter.CreatedAt.Gte.AsTime().UTC().Day() != 11 {
+		t.Fatalf("expect gte 2025-11-11, got %v", req.Filter.CreatedAt.Gte.AsTime().UTC())
+	}
+	if req.Filter.CreatedAt.Lt.AsTime().UTC().Year() != 2025 || req.Filter.CreatedAt.Lt.AsTime().UTC().Month() != time.November || req.Filter.CreatedAt.Lt.AsTime().UTC().Day() != 28 {
+		t.Fatalf("expect lt 2025-11-28, got %v", req.Filter.CreatedAt.Lt.AsTime().UTC())
+	}
+}

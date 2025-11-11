@@ -185,7 +185,15 @@ func aggregateGroups(values url.Values, groupOp map[string]string) map[string]*f
 		if idx >= len(segs) {
 			continue
 		}
-		field := strcase.ToCamel(segs[idx])
+		// Normalize field:
+		// - Convert to CamelCase
+		// - Treat "*_range" suffix as an alias to the base field, e.g., "created_at_range" -> "CreatedAt"
+		rawField := segs[idx]
+		lowerRaw := strings.ToLower(rawField)
+		if strings.HasSuffix(lowerRaw, "_range") {
+			rawField = strings.TrimSuffix(rawField, "_range")
+		}
+		field := strcase.ToCamel(rawField)
 		mod := ""
 		if idx+1 < len(segs) {
 			mod = strings.ToLower(segs[idx+1])
@@ -854,7 +862,7 @@ func coerceJSONValToType(val any, t reflect.Type) any {
 	if t == reflect.TypeOf(timestamppb.Timestamp{}) {
 		switch x := val.(type) {
 		case string:
-			if tm, err := time.Parse(time.RFC3339Nano, strings.TrimSpace(x)); err == nil {
+			if tm, ok := parseFlexibleTime(strings.TrimSpace(x)); ok {
 				sec := tm.Unix()
 				ns := tm.Nanosecond()
 				return map[string]any{
@@ -960,3 +968,27 @@ func coerceJSONValToType(val any, t reflect.Type) any {
 }
 
 // parseNumberOrBool removed with coerceValueForJSON
+
+// parseFlexibleTime attempts multiple common layouts to parse a timestamp string.
+// It returns the parsed time and true when successful.
+func parseFlexibleTime(s string) (time.Time, bool) {
+	// Fast paths: RFC3339Nano, RFC3339
+	if tm, err := time.Parse(time.RFC3339Nano, s); err == nil {
+		return tm, true
+	}
+	if tm, err := time.Parse(time.RFC3339, s); err == nil {
+		return tm, true
+	}
+	// Additional common layouts without timezone; assume UTC
+	layouts := []string{
+		"2006-01-02 15:04:05",
+		"2006-01-02 15:04",
+		"2006-01-02",
+	}
+	for _, l := range layouts {
+		if tm, err := time.ParseInLocation(l, s, time.UTC); err == nil {
+			return tm, true
+		}
+	}
+	return time.Time{}, false
+}
