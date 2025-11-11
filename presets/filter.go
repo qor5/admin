@@ -631,10 +631,13 @@ func coerceNormValuesForDst(norm map[string]any, dst any) error {
 		return nil
 	}
 	rt := rv.Type().Elem()
-	return coerceAgainstType(norm, rt)
+	// Detect whether destination is a proto.Message; if so, we must keep RFC3339 strings
+	// for protobuf well-known types (e.g., Timestamp) to satisfy protojson requirements.
+	isProto := isProtoMessageValue(rv)
+	return coerceAgainstType(norm, rt, isProto)
 }
 
-func coerceAgainstType(norm map[string]any, t reflect.Type) error {
+func coerceAgainstType(norm map[string]any, t reflect.Type, isProto bool) error {
 	if norm == nil {
 		return nil
 	}
@@ -653,7 +656,7 @@ func coerceAgainstType(norm map[string]any, t reflect.Type) error {
 			ft = ft.Elem()
 		}
 		if ft.Kind() == reflect.Struct {
-			if err := coerceAgainstType(norm, ft); err != nil {
+			if err := coerceAgainstType(norm, ft, isProto); err != nil {
 				return err
 			}
 		}
@@ -682,7 +685,7 @@ func coerceAgainstType(norm map[string]any, t reflect.Type) error {
 						var kept []any
 						for _, child := range arr {
 							if m, ok4 := child.(map[string]any); ok4 {
-								if err := coerceAgainstType(m, elem); err != nil {
+								if err := coerceAgainstType(m, elem, isProto); err != nil {
 									return err
 								}
 								if len(m) > 0 {
@@ -720,7 +723,7 @@ func coerceAgainstType(norm map[string]any, t reflect.Type) error {
 			}
 			if ft.Kind() == reflect.Struct {
 				if m, ok3 := raw.(map[string]any); ok3 {
-					if err := coerceAgainstType(m, ft); err != nil {
+					if err := coerceAgainstType(m, ft, isProto); err != nil {
 						return err
 					}
 					// drop empty not after coercion
@@ -786,7 +789,21 @@ func coerceAgainstType(norm map[string]any, t reflect.Type) error {
 				}
 			}
 			if ok2 {
-				opsMap[usedOpKey] = coerceJSONValToType(v, of.Type)
+				converted := coerceJSONValToType(v, of.Type)
+				// If destination is NOT a proto message, encoding/json will be used.
+				// Convert RFC3339 strings for Timestamp fields into {seconds,nanos} map
+				// so that encoding/json can populate timestamppb.Timestamp.
+				if !isProto && isTimestampType(of.Type) {
+					if s, okStr := converted.(string); okStr {
+						if tm, okTm := parseFlexibleTime(strings.TrimSpace(s)); okTm {
+							converted = map[string]any{
+								"seconds": tm.Unix(),
+								"nanos":   tm.Nanosecond(),
+							}
+						}
+					}
+				}
+				opsMap[usedOpKey] = converted
 				matchedAny = true
 			}
 		}
@@ -862,16 +879,13 @@ func coerceJSONValToType(val any, t reflect.Type) any {
 	if t == reflect.TypeOf(timestamppb.Timestamp{}) {
 		switch x := val.(type) {
 		case string:
+			// Normalize to RFC3339 string for unified representation
 			if tm, ok := parseFlexibleTime(strings.TrimSpace(x)); ok {
-				sec := tm.Unix()
-				ns := tm.Nanosecond()
-				return map[string]any{
-					"seconds": sec,
-					"nanos":   ns,
-				}
+				return tm.UTC().Format(time.RFC3339Nano)
 			}
-			return val
+			return x
 		case map[string]any:
+			// Already in structured form; leave as-is
 			return x
 		default:
 			return val
@@ -968,6 +982,31 @@ func coerceJSONValToType(val any, t reflect.Type) any {
 }
 
 // parseNumberOrBool removed with coerceValueForJSON
+
+// isProtoMessageValue returns true if the value (or its element chain) looks like a protobuf message.
+// We detect this by checking for the presence of a ProtoReflect method, which is implemented by all protobuf messages.
+func isProtoMessageValue(rv reflect.Value) bool {
+	for rv.Kind() == reflect.Ptr {
+		if rv.IsNil() {
+			return false
+		}
+		if rv.CanInterface() {
+			t := rv.Type()
+			if _, ok := t.MethodByName("ProtoReflect"); ok {
+				return true
+			}
+		}
+		rv = rv.Elem()
+	}
+	return false
+}
+
+func isTimestampType(t reflect.Type) bool {
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	return t == reflect.TypeOf(timestamppb.Timestamp{})
+}
 
 // parseFlexibleTime attempts multiple common layouts to parse a timestamp string.
 // It returns the parsed time and true when successful.

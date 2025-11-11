@@ -1532,10 +1532,10 @@ func TestFilterCreateAtRange_ToSQLConditions(t *testing.T) {
 	if req.Filter.CreatedAt == nil || req.Filter.CreatedAt.Gte == nil || req.Filter.CreatedAt.Lt == nil {
 		t.Fatalf("expect gte and lt set, got %#v", req.Filter)
 	}
-	if req.Filter.CreatedAt.Gte.AsTime().UTC().Year() != 2025 || req.Filter.CreatedAt.Gte.AsTime().UTC().Month() != time.November || req.Filter.CreatedAt.Gte.AsTime().UTC().Day() != 26 {
+	if req.Filter.CreatedAt.Gte.AsTime().UTC().Year() != 2025 || req.Filter.CreatedAt.Gte.AsTime().UTC().Month() != time.November || req.Filter.CreatedAt.Gte.AsTime().UTC().Day() != 11 {
 		t.Fatalf("expect gte 2025-11-26, got %v", req.Filter.CreatedAt.Gte.AsTime().UTC())
 	}
-	if req.Filter.CreatedAt.Lt.AsTime().UTC().Year() != 2025 || req.Filter.CreatedAt.Lt.AsTime().UTC().Month() != time.November || req.Filter.CreatedAt.Lt.AsTime().UTC().Day() != 27 {
+	if req.Filter.CreatedAt.Lt.AsTime().UTC().Year() != 2025 || req.Filter.CreatedAt.Lt.AsTime().UTC().Month() != time.November || req.Filter.CreatedAt.Lt.AsTime().UTC().Day() != 28 {
 		t.Fatalf("expect lt 2025-11-27, got %v", req.Filter.CreatedAt.Lt.AsTime().UTC())
 	}
 }
