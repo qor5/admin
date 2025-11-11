@@ -22,21 +22,31 @@ type goque struct {
 	wks []*que.Worker
 }
 
+// NewGoQueQueue creates a new go-que based Queue (default queue implementation).
+// Does not run migrations - call worker.AutoMigrate() first.
 func NewGoQueQueue(db *gorm.DB) Queue {
+	return newGoQueQueue(db)
+}
+
+// newGoQueQueue creates a Queue without migrations.
+func newGoQueQueue(db *gorm.DB) Queue {
 	if db == nil {
 		panic("db can not be nil")
 	}
 
-	var q que.Queue
-	{
-		rdb, err := db.DB()
-		if err != nil {
-			panic(err)
-		}
-		q, err = pg.New(rdb)
-		if err != nil {
-			panic(err)
-		}
+	rdb, err := db.DB()
+	if err != nil {
+		panic(err)
+	}
+
+	// Always disable auto-migration in queue creation
+	// Migration is handled by AutoMigrate() function
+	q, err := pg.NewWithOptions(pg.Options{
+		DB:        rdb,
+		DBMigrate: false,
+	})
+	if err != nil {
+		panic(err)
 	}
 
 	return &goque{
