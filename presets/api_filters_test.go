@@ -1485,12 +1485,8 @@ func TestUnmarshal_ScopeTypeOperatorRename(t *testing.T) {
 		WithFilterUnmarshalHook(func(next FilterUnmarshalFunc) FilterUnmarshalFunc {
 			return func(in *FilterUnmarshalInput) error {
 				if in.Field == "Name" {
-					scope := in.FilterMap
-					if v, ok := scope[in.Field]; ok {
-						in.FilterMap[in.Operator] = v
-						in.FilterMap["aliasName"] = in.FilterMap[in.Field]
-						delete(in.FilterMap, in.Field)
-					}
+					in.FilterMap["aliasName"] = in.FilterMap[in.Field]
+					delete(in.FilterMap, in.Field)
 				}
 				return next(in)
 			}
