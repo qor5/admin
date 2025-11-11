@@ -972,6 +972,7 @@ func coerceJSONValToType(val any, t reflect.Type) any {
 // parseFlexibleTime attempts multiple common layouts to parse a timestamp string.
 // It returns the parsed time and true when successful.
 func parseFlexibleTime(s string) (time.Time, bool) {
+	s = normalizeDateTimeString(strings.TrimSpace(s))
 	// Fast paths: RFC3339Nano, RFC3339
 	if tm, err := time.Parse(time.RFC3339Nano, s); err == nil {
 		return tm, true
@@ -984,6 +985,9 @@ func parseFlexibleTime(s string) (time.Time, bool) {
 		"2006-01-02 15:04:05",
 		"2006-01-02 15:04",
 		"2006-01-02",
+		"2006/01/02 15:04:05",
+		"2006/01/02 15:04",
+		"2006/01/02",
 	}
 	for _, l := range layouts {
 		if tm, err := time.ParseInLocation(l, s, time.UTC); err == nil {
@@ -991,4 +995,51 @@ func parseFlexibleTime(s string) (time.Time, bool) {
 		}
 	}
 	return time.Time{}, false
+}
+
+// normalizeDateTimeString converts various Unicode punctuation and whitespace variants
+// into ASCII counterparts, and collapses consecutive spaces.
+func normalizeDateTimeString(s string) string {
+	if s == "" {
+		return s
+	}
+	var b strings.Builder
+	b.Grow(len(s))
+	lastWasSpace := false
+	for _, r := range s {
+		switch r {
+		// Unicode spaces -> single ASCII space
+		default:
+			if isUnicodeSpace(r) {
+				if !lastWasSpace {
+					b.WriteByte(' ')
+					lastWasSpace = true
+				}
+				continue
+			}
+			lastWasSpace = false
+			b.WriteRune(r)
+		case '：': // fullwidth colon
+			lastWasSpace = false
+			b.WriteByte(':')
+		case '－', '–', '—': // fullwidth hyphen and dashes
+			lastWasSpace = false
+			b.WriteByte('-')
+		case '／': // fullwidth slash
+			lastWasSpace = false
+			b.WriteByte('/')
+		}
+	}
+	return b.String()
+}
+
+func isUnicodeSpace(r rune) bool {
+	// Leverage Go's unicode.IsSpace via strings.TrimSpace semantics,
+	// but here we do a minimal check for common Unicode spaces to avoid importing unicode.
+	switch r {
+	case ' ', '\t', '\n', '\r', '\f', '\v', ' ', ' ', '　':
+		return true
+	default:
+		return r == '\u2003' || r == '\u2002' || r == '\u2009' || r == '\u00A0'
+	}
 }
