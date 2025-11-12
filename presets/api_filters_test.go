@@ -1511,14 +1511,19 @@ func TestFilterCreateAtRange_ToSQLConditions(t *testing.T) {
 		Gte *timestamppb.Timestamp `json:"gte"`
 		Lt  *timestamppb.Timestamp `json:"lt"`
 	}
+	type UpdatedAtRangeFilter struct {
+		Gte *timestamppb.Timestamp `json:"gte"`
+		Lt  *timestamppb.Timestamp `json:"lt"`
+	}
 	type RootCreatedAtRangeFilter struct {
-		CreatedAt *CreatedAtRangeFilter `json:"createdAt"`
+		CreatedAt      *CreatedAtRangeFilter `json:"createdAt"`
+		UpdatedAtRange *UpdatedAtRangeFilter `json:"updatedAtRange"`
 	}
 	type CreatedAtRangeRequest struct {
 		Filter *RootCreatedAtRangeFilter `json:"filter"`
 	}
 
-	qs := "f_created_at_range.gte=2025-11-11 00:00&f_created_at_range.lt=2025-11-28 00:00"
+	qs := "f_created_at_range.gte=2025-11-11 00:00&f_created_at_range.lt=2025-11-28 00:00&f_updated_at_range.lt=2025-11-28 00:00"
 	v, _ := url.ParseQuery(qs)
 	root := BuildFiltersFromQuery(qs)
 	sp := &SearchParams{Filter: root, Keyword: v.Get("keyword"), KeywordColumns: []string{"Name"}}
@@ -1538,6 +1543,12 @@ func TestFilterCreateAtRange_ToSQLConditions(t *testing.T) {
 	if req.Filter.CreatedAt.Lt.AsTime().UTC().Year() != 2025 || req.Filter.CreatedAt.Lt.AsTime().UTC().Month() != time.November || req.Filter.CreatedAt.Lt.AsTime().UTC().Day() != 28 {
 		t.Fatalf("expect lt 2025-11-27, got %v", req.Filter.CreatedAt.Lt.AsTime().UTC())
 	}
+	if req.Filter.UpdatedAtRange == nil || req.Filter.UpdatedAtRange.Lt == nil {
+		t.Fatalf("expect updatedAtRange.lt set, got %#v", req.Filter.UpdatedAtRange)
+	}
+	if req.Filter.UpdatedAtRange.Lt.AsTime().UTC().Year() != 2025 || req.Filter.UpdatedAtRange.Lt.AsTime().UTC().Month() != time.November || req.Filter.UpdatedAtRange.Lt.AsTime().UTC().Day() != 28 {
+		t.Fatalf("expect updatedAtRange.lt 2025-11-28, got %v", req.Filter.UpdatedAtRange.Lt.AsTime().UTC())
+	}
 }
 
 func TestFilterCreateAtRangeUnicode_ToSQLConditions(t *testing.T) {
@@ -1548,6 +1559,7 @@ func TestFilterCreateAtRangeUnicode_ToSQLConditions(t *testing.T) {
 	type RootCreatedAtRangeFilter struct {
 		CreatedAt *CreatedAtRangeFilter `json:"createdAt"`
 	}
+
 	type CreatedAtRangeRequest struct {
 		Filter *RootCreatedAtRangeFilter `json:"filter"`
 	}

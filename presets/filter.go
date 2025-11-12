@@ -649,6 +649,72 @@ func coerceAgainstType(norm map[string]any, t reflect.Type, isProto bool) error 
 		return nil
 	}
 
+	// Relocate base field maps to "*Range" fields when the destination expects a range-typed field.
+	// Example:
+	//   - Query key "updated_at_range" yields field "UpdatedAt" during normalization.
+	//   - Destination struct defines "UpdatedAtRange" (instead of "UpdatedAt").
+	//   This block moves the normalized "UpdatedAt" entry to "UpdatedAtRange" (respecting casing),
+	//   so subsequent coercion and cleanup can match the correct destination field.
+	{
+		// Build a quick lookup of destination field names for existence checks
+		destFieldSet := map[string]struct{}{}
+		for i := 0; i < t.NumField(); i++ {
+			sf := t.Field(i)
+			destFieldSet[sf.Name] = struct{}{}
+			destFieldSet[strcase.ToLowerCamel(sf.Name)] = struct{}{}
+		}
+		// Attempt relocation for each "*Range" destination field
+		for i := 0; i < t.NumField(); i++ {
+			sf := t.Field(i)
+			if !strings.HasSuffix(sf.Name, "Range") {
+				continue
+			}
+			baseUpper := strings.TrimSuffix(sf.Name, "Range")
+			baseLower := strcase.ToLowerCamel(baseUpper)
+			// If norm has the base field (produced from "*_range" alias normalization),
+			// move it to the "*Range" destination field key.
+			if v, ok := norm[baseUpper]; ok {
+				// Prefer using destination field name casing (UpperCamel) to align with the coercion lookup
+				if _, exist := norm[sf.Name]; exist {
+					if mDst, okDst := norm[sf.Name].(map[string]any); okDst {
+						if mSrc, okSrc := v.(map[string]any); okSrc {
+							mergeFilterJSONMap(mDst, mSrc)
+							norm[sf.Name] = mDst
+						} else {
+							norm[sf.Name] = v
+						}
+					} else {
+						norm[sf.Name] = v
+					}
+				} else {
+					norm[sf.Name] = v
+				}
+				delete(norm, baseUpper)
+				continue
+			}
+			if v, ok := norm[baseLower]; ok {
+				destLower := strcase.ToLowerCamel(sf.Name)
+				// Choose lowerCamel destination key to match JSON-tag style
+				if _, exist := norm[destLower]; exist {
+					if mDst, okDst := norm[destLower].(map[string]any); okDst {
+						if mSrc, okSrc := v.(map[string]any); okSrc {
+							mergeFilterJSONMap(mDst, mSrc)
+							norm[destLower] = mDst
+						} else {
+							norm[destLower] = v
+						}
+					} else {
+						norm[destLower] = v
+					}
+				} else {
+					norm[destLower] = v
+				}
+				delete(norm, baseLower)
+				continue
+			}
+		}
+	}
+
 	// If this is a wrapper that contains a Filter field, coerce against that field type
 	if f, ok := t.FieldByName("Filter"); ok {
 		ft := f.Type
