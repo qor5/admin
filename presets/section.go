@@ -351,9 +351,11 @@ func (b *SectionBuilder) ViewComponentFunc(v FieldComponentFunc) (r *SectionBuil
 	b.componentViewFunc = v
 	if b.componentEditFunc != nil {
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return web.Portal(
-				b.viewComponent(obj, field, ctx),
-			).Name(b.FieldPortalName())
+			return web.Scope(
+				web.Portal(
+					b.viewComponent(obj, field, ctx),
+				).Name(b.FieldPortalName()),
+			).VSlot("{ form, dash }").DashInit("{errorMessages:{},disabled:{}}")
 		})
 	}
 	return b
@@ -366,9 +368,11 @@ func (b *SectionBuilder) EditComponentFunc(v FieldComponentFunc) (r *SectionBuil
 	b.componentEditFunc = v
 	if b.componentViewFunc != nil {
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return web.Portal(
-				b.viewComponent(obj, field, ctx),
-			).Name(b.FieldPortalName())
+			return web.Scope(
+				web.Portal(
+					b.viewComponent(obj, field, ctx),
+				).Name(b.FieldPortalName()),
+			).VSlot("{ form, dash }").DashInit("{errorMessages:{},disabled:{}}")
 		})
 	}
 	return b
@@ -514,11 +518,7 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 	}
 
 	return h.Div(
-		web.Scope(
-			web.Scope(
-				content,
-			).VSlot("{ form }"),
-		).VSlot("{ dash }").DashInit("{errorMessages:{},disabled:{}}"),
+		content,
 		hiddenComp,
 	).Attr("v-on-mounted", fmt.Sprintf(`()=>{%s}`, initDataChanged)).Class("mb-10")
 }
@@ -609,7 +609,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 				comps,
 				content,
 				hiddenComp,
-			).VSlot("{ form, dash }").DashInit("{errorMessages:{},disabled:{}}").OnChange(onChangeEvent).UseDebounce(500),
+			).VSlot("{ form }").OnChange(onChangeEvent).UseDebounce(500),
 		)
 	}
 	return h.Div(
@@ -617,7 +617,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 			comps,
 			content,
 			hiddenComp,
-		).VSlot("{ form, dash }").DashInit("{errorMessages:{},disabled:{}}").OnChange(onChangeEvent).UseDebounce(500),
+		).VSlot("{ form }").OnChange(onChangeEvent).UseDebounce(500),
 	).Class("mb-10")
 }
 
@@ -822,7 +822,7 @@ func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, unsaved
 		EventFunc(b.EventDelete()).
 		// Query(SectionFieldName, b.name).
 		Query(ParamID, ctx.Param(ParamID)).
-		Query(b.elementUnsavedKey(), unsaved&&!isCreated).
+		Query(b.elementUnsavedKey(), unsaved && !isCreated).
 		Query(b.DeleteBtnKey(), index).
 		Go()
 	if isCreated {
@@ -832,7 +832,7 @@ func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, unsaved
 		URL(ctx.R.URL.Path).
 		EventFunc(b.EventSave()).
 		// Query(SectionFieldName, b.name).
-		Query(b.elementUnsavedKey(), unsaved&&!isCreated).
+		Query(b.elementUnsavedKey(), unsaved && !isCreated).
 		Query(SectionIsCancel, true).
 		Query(ParamID, ctx.Param(ParamID)).
 		Query(b.SaveBtnKey(), strconv.Itoa(index)).
@@ -1337,7 +1337,7 @@ func (b *SectionBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Event
 	// Append a new empty element only when caller requests keeping an unsaved slot,
 	// and only after a successful save of an existing element.
 	// Avoid duplicating when saving a newly created element or when validation failed.
-	if ctx.ParamAsBool(b.elementUnsavedKey())  && err == nil && !wasCreated {
+	if ctx.ParamAsBool(b.elementUnsavedKey()) && err == nil && !wasCreated {
 		if _, err := b.appendElement(obj); err != nil {
 			panic(err)
 		}

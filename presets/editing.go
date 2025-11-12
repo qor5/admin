@@ -704,9 +704,11 @@ func (b *EditingBuilder) Section(sections ...*SectionBuilder) *EditingBuilder {
 		})
 
 		sb.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return web.Portal(
-				sb.editComponent(obj, field, ctx),
-			).Name(sb.FieldPortalName())
+			return web.Scope(
+				web.Portal(
+					sb.editComponent(obj, field, ctx),
+				).Name(sb.FieldPortalName()),
+			).VSlot("{ form, dash }").DashInit("{errorMessages:{},disabled:{}}")
 		})
 
 		b.Field(sb.name).Component(sb).
