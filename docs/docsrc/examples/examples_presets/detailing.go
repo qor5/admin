@@ -3,6 +3,7 @@ package examples_presets
 import (
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/qor5/web/v3"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/utils"
 )
 
@@ -374,6 +376,107 @@ func PresetsDetailSidePanel(b *presets.Builder, db *gorm.DB) (
 		}
 	})
 
+	return
+}
+
+// Test helper: configure a detailing page with list section and constant field error for index 0
+func PresetsDetailListSectionStatusxFieldViolations(b *presets.Builder, db *gorm.DB) (
+	mb *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	// Ensure listing/search is available (prevents "function Searcher is not set")
+	b.DataOperator(gorm2op.DataOperator(db))
+	if err := db.AutoMigrate(&UserCreditCard{}); err != nil {
+		panic(err)
+	}
+	mb = b.Model(&UserCreditCard{})
+	dp = mb.Detailing("CreditCards").Drawer(true)
+
+	section := presets.NewSectionBuilder(mb, "CreditCards").IsList(&CreditCard{}).
+		Editing("Name").
+		ElementEditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			card := obj.(*CreditCard)
+			var errs []string
+			if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+				errs = ve.GetFieldErrors(fmt.Sprintf("%s.Name", field.FormKey))
+			}
+			return vx.VXField().
+				Attr(presets.VFieldError(fmt.Sprintf("%s.Name", field.FormKey), card.Name, errs)...)
+		}).
+		ElementShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			card := obj.(*CreditCard)
+			return vx.VXTextField().Text(card.Name)
+		})
+	dp.Section(section)
+
+	section.WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
+		return func(obj interface{}, ctx *web.EventContext) (vErr web.ValidationErrors) {
+			if in != nil {
+				ve := in(obj, ctx)
+				_ = vErr.Merge(&ve)
+			}
+			card := obj.(*UserCreditCard)
+			for i, c := range card.CreditCards {
+				if c.Name == "" {
+					vErr.FieldError(fmt.Sprintf("CreditCards[%d].Name", i), "name is required")
+				}
+			}
+			return
+		}
+	})
+	return
+}
+
+// Test helper: detailing page with list section; error only when name is empty
+func PresetsDetailListSection_ItemStateIsolation(b *presets.Builder, db *gorm.DB) (
+	mb *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	// Ensure listing/search is available (prevents "function Searcher is not set")
+	b.DataOperator(gorm2op.DataOperator(db))
+	if err := db.AutoMigrate(&UserCreditCard{}); err != nil {
+		panic(err)
+	}
+	mb = b.Model(&UserCreditCard{})
+	dp = mb.Detailing("CreditCards").Drawer(true)
+
+	section := presets.NewSectionBuilder(mb, "CreditCards").IsList(&CreditCard{}).
+		Editing("Name").
+		ElementEditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			card := obj.(*CreditCard)
+			var errs []string
+			if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+				errs = ve.GetFieldErrors(fmt.Sprintf("%s.Name", field.FormKey))
+			}
+			return vx.VXField().
+				Attr(presets.VFieldError(fmt.Sprintf("%s.Name", field.FormKey), card.Name, errs)...)
+		}).
+		ElementShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			card := obj.(*CreditCard)
+			return vx.VXTextField().Text(card.Name)
+		})
+	dp.Section(section)
+
+	section.WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
+		return func(obj interface{}, ctx *web.EventContext) (vErr web.ValidationErrors) {
+			if in != nil {
+				ve := in(obj, ctx)
+				_ = vErr.Merge(&ve)
+			}
+			if uc, ok := obj.(*UserCreditCard); ok {
+				for i, c := range uc.CreditCards {
+					if strings.TrimSpace(c.Name) == "" {
+						vErr.FieldError(fmt.Sprintf("CreditCards[%d].Name", i), "name is required")
+					}
+				}
+			}
+			return
+		}
+	})
 	return
 }
 

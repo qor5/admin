@@ -351,9 +351,11 @@ func (b *SectionBuilder) ViewComponentFunc(v FieldComponentFunc) (r *SectionBuil
 	b.componentViewFunc = v
 	if b.componentEditFunc != nil {
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return web.Portal(
-				b.viewComponent(obj, field, ctx),
-			).Name(b.FieldPortalName())
+			return web.Scope(
+				web.Portal(
+					b.viewComponent(obj, field, ctx),
+				).Name(b.FieldPortalName()),
+			).VSlot("{ form, dash }").DashInit("{errorMessages:{},disabled:{}}")
 		})
 	}
 	return b
@@ -366,9 +368,11 @@ func (b *SectionBuilder) EditComponentFunc(v FieldComponentFunc) (r *SectionBuil
 	b.componentEditFunc = v
 	if b.componentViewFunc != nil {
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return web.Portal(
-				b.viewComponent(obj, field, ctx),
-			).Name(b.FieldPortalName())
+			return web.Scope(
+				web.Portal(
+					b.viewComponent(obj, field, ctx),
+				).Name(b.FieldPortalName()),
+			).VSlot("{ form, dash }").DashInit("{errorMessages:{},disabled:{}}")
 		})
 	}
 	return b
@@ -395,7 +399,7 @@ func (b *SectionBuilder) ElementShowComponentFunc(v FieldComponentFunc) (r *Sect
 				web.Portal(
 					b.listComponent(obj, ctx, -1, -1, -1, false, false),
 				).Name(b.FieldPortalName()),
-			).VSlot("{ locals }").Init("{show:true}")
+			).VSlot("{ locals, dash }").DashInit("{errorMessages:{},disabled:{}}\n").Init("{show:true}")
 		})
 	}
 	return b
@@ -408,9 +412,11 @@ func (b *SectionBuilder) ElementEditComponentFunc(v FieldComponentFunc) (r *Sect
 	b.elementEditFunc = v
 	if b.elementViewFunc != nil {
 		b.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return web.Portal(
-				b.listComponent(obj, ctx, -1, -1, -1, false, false),
-			).Name(b.FieldPortalName())
+			return web.Scope(
+				web.Portal(
+					b.listComponent(obj, ctx, -1, -1, -1, false, false),
+				).Name(b.FieldPortalName()),
+			).VSlot("{ locals, dash }").DashInit("{errorMessages:{},disabled:{}}\n").Init("{show:true}")
 		})
 	}
 	return b
@@ -512,11 +518,7 @@ func (b *SectionBuilder) viewComponent(obj interface{}, field *FieldContext, ctx
 	}
 
 	return h.Div(
-		web.Scope(
-			web.Scope(
-				content,
-			).VSlot("{ form }"),
-		).VSlot("{ dash }").DashInit("{errorMessages:{},disabled:{}}"),
+		content,
 		hiddenComp,
 	).Attr("v-on-mounted", fmt.Sprintf(`()=>{%s}`, initDataChanged)).Class("mb-10")
 }
@@ -607,17 +609,15 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 				comps,
 				content,
 				hiddenComp,
-			).OnChange(onChangeEvent).UseDebounce(500),
+			).VSlot("{ form }").OnChange(onChangeEvent).UseDebounce(500),
 		)
 	}
 	return h.Div(
 		web.Scope(
-			web.Scope(
-				comps,
-				content,
-				hiddenComp,
-			).VSlot("{ form}").OnChange(onChangeEvent).UseDebounce(500),
-		).VSlot("{ dash }").DashInit("{errorMessages:{},disabled:{}}"),
+			comps,
+			content,
+			hiddenComp,
+		).VSlot("{ form }").OnChange(onChangeEvent).UseDebounce(500),
 	).Class("mb-10")
 }
 
@@ -660,22 +660,22 @@ func (b *SectionBuilder) buildElementRows(list interface{}, deletedID, editID, s
 			}
 			if editID == sortIndex {
 				// if click edit
-				rows.AppendChildren(b.editElement(elementObj, sortIndex, unsaved && i == listLen-1, ctx))
+				rows.AppendChildren(b.editElement(elementObj, sortIndex, unsaved && i == listLen-1, unsaved, ctx))
 			} else if saveID == sortIndex || isReload {
 				// if click save
-				rows.AppendChildren(b.showElement(elementObj, sortIndex, ctx))
+				rows.AppendChildren(b.showElement(elementObj, sortIndex, unsaved, ctx))
 			} else {
 				// default
 				isEditing := ctx.R.FormValue(b.ListElementIsEditing(fromIndex)) != ""
 				if !isEditing {
-					rows.AppendChildren(b.showElement(elementObj, sortIndex, ctx))
+					rows.AppendChildren(b.showElement(elementObj, sortIndex, unsaved, ctx))
 				} else {
 					formObj := reflect.New(reflect.TypeOf(b.editingFB.model).Elem()).Interface()
 					err := b.elementUnmarshaler(elementObj, formObj, b.ListFieldPrefix(fromIndex), ctx)
 					if err != nil {
 						panic(err)
 					}
-					rows.AppendChildren(b.editElement(elementObj, sortIndex, unsaved && i == listLen-1, ctx))
+					rows.AppendChildren(b.editElement(elementObj, sortIndex, unsaved && i == listLen-1, unsaved, ctx))
 				}
 			}
 		})
@@ -709,7 +709,8 @@ func (b *SectionBuilder) listComponent(obj interface{}, ctx *web.EventContext, d
 	rows := b.buildElementRows(list, deletedID, editID, saveID, listLen, unsaved, isReload, ctx)
 
 	disableCreateBtn := b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
-	disableCreateBtn = !isReload && (disableCreateBtn || (ctx.ParamAsBool(b.elementUnsavedKey())))
+	// Respect caller-provided unsaved to avoid drifting back to request param
+	disableCreateBtn = !isReload && (disableCreateBtn || unsaved)
 	if !b.disableElementCreateBtn && !disableCreateBtn {
 		addBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "AddRow")).PrependIcon("mdi-plus-circle").Color("primary").Variant(VariantText).
 			Class("mb-2 ml-4").
@@ -775,14 +776,14 @@ func (b *SectionBuilder) FieldPortalName() string {
 	return fmt.Sprintf("DetailFieldPortal_%s", b.name)
 }
 
-func (b *SectionBuilder) showElement(obj any, index int, ctx *web.EventContext) h.HTMLComponent {
+func (b *SectionBuilder) showElement(obj any, index int, unsaved bool, ctx *web.EventContext) h.HTMLComponent {
 	editBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "Edit")).Variant(VariantFlat).Size(SizeXSmall).
 		PrependIcon("mdi-pencil-outline").
 		Attr("v-show", fmt.Sprintf("%t", b.elementEditBtn)).
 		Attr("@click", web.Plaid().
 			URL(ctx.R.URL.Path).
 			EventFunc(b.EventEdit()).
-			Query(b.elementUnsavedKey(), ctx.Param(b.elementUnsavedKey())).
+			Query(b.elementUnsavedKey(), unsaved).
 			// Query(SectionFieldName, b.name).
 			Query(ParamID, ctx.Param(ParamID)).
 			Query(b.EditBtnKey(), strconv.Itoa(index)).
@@ -812,19 +813,16 @@ func (b *SectionBuilder) showElement(obj any, index int, ctx *web.EventContext) 
 }
 
 // If you have created this element but not save, isCreated = true
-func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, ctx *web.EventContext) h.HTMLComponent {
+func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, unsaved bool, ctx *web.EventContext) h.HTMLComponent {
 	showAddBtn := "locals.show=true;"
-	unsaved := ctx.ParamAsBool(b.elementUnsavedKey())
-	if isCreated {
-		unsaved = false
-	}
+	// use unsaved from caller; do not override based on ctx or isCreated
 
 	deleteEvent := web.Plaid().
 		URL(ctx.R.URL.Path).
 		EventFunc(b.EventDelete()).
 		// Query(SectionFieldName, b.name).
 		Query(ParamID, ctx.Param(ParamID)).
-		Query(b.elementUnsavedKey(), unsaved).
+		Query(b.elementUnsavedKey(), unsaved && !isCreated).
 		Query(b.DeleteBtnKey(), index).
 		Go()
 	if isCreated {
@@ -834,7 +832,7 @@ func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, ctx *we
 		URL(ctx.R.URL.Path).
 		EventFunc(b.EventSave()).
 		// Query(SectionFieldName, b.name).
-		Query(b.elementUnsavedKey(), unsaved).
+		Query(b.elementUnsavedKey(), unsaved && !isCreated).
 		Query(SectionIsCancel, true).
 		Query(ParamID, ctx.Param(ParamID)).
 		Query(b.SaveBtnKey(), strconv.Itoa(index)).
@@ -1257,8 +1255,14 @@ func (b *SectionBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Event
 		b.mb.editing.Setter(obj, ctx)
 	}
 
+	listObj := reflect.ValueOf(reflectutils.MustGet(obj, b.name))
+	var isUnsavedAdded bool
+	if listObj.IsValid() && listObj.Len() == int(index) {
+		isUnsavedAdded = true
+	}
+
 	if isCancel {
-		if unsaved {
+		if unsaved && !isUnsavedAdded {
 			if _, err = b.appendElement(obj); err != nil {
 				panic(err)
 			}
@@ -1276,8 +1280,9 @@ func (b *SectionBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Event
 		return
 	}
 
-	listObj := reflect.ValueOf(reflectutils.MustGet(obj, b.name))
-	if !listObj.IsValid() || listObj.Len() == int(index) {
+	// Determine if current save is for a newly created element before potential append
+	wasCreated := !listObj.IsValid() || listObj.Len() == int(index)
+	if wasCreated {
 		b.appendElement(obj)
 		listObj = reflect.ValueOf(reflectutils.MustGet(obj, b.name))
 	}
@@ -1329,13 +1334,20 @@ func (b *SectionBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Event
 		}
 	}
 
-	if ctx.ParamAsBool(b.elementUnsavedKey()) {
+	// Append a new empty element only when caller requests keeping an unsaved slot,
+	// and only after a successful save of an existing element.
+	// Avoid duplicating when saving a newly created element or when validation failed.
+	if ctx.ParamAsBool(b.elementUnsavedKey()) && err == nil && !wasCreated {
 		if _, err := b.appendElement(obj); err != nil {
 			panic(err)
 		}
 	}
 
 	if _, ok := ctx.Flash.(*web.ValidationErrors); ok {
+		if !isUnsavedAdded {
+			// Keep unsaved state when the newly created element fails validation
+			unsaved = true
+		}
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: b.FieldPortalName(),
 			Body: b.listComponent(obj, ctx, -1, index, -1, unsaved, false),
@@ -1343,6 +1355,9 @@ func (b *SectionBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Event
 		return
 	}
 
+	if isUnsavedAdded {
+		unsaved = false
+	}
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: b.FieldPortalName(),
 		Body: b.listComponent(obj, ctx, -1, -1, index, unsaved, false),
