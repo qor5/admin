@@ -64,16 +64,16 @@ type (
 
 	FilterOperator string
 	FieldCondition struct {
-		Field    string
-		Operator FilterOperator
-		Value    any
-		Fold     bool
+		Field    string         `json:"field"`
+		Operator FilterOperator `json:"operator"`
+		Value    any            `json:"value"`
+		Fold     bool           `json:"fold"`
 	}
 	Filter struct {
-		And       []*Filter
-		Or        []*Filter
-		Not       *Filter
-		Condition *FieldCondition
+		And       []*Filter       `json:"and"`
+		Or        []*Filter       `json:"or"`
+		Not       *Filter         `json:"not"`
+		Condition *FieldCondition `json:"condition"`
 	}
 	SearchParams struct {
 		Model   any
