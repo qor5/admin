@@ -1203,8 +1203,8 @@ func TestFilterCreateAtRangeUnicode_ToSQLConditions(t *testing.T) {
 		t.Fatalf("expect lt 2025-11-27, got %v", req.Filter.CreatedAt.Lt.AsTime().UTC())
 	}
 }
-func TestUnmarshal_RenameCompany(t *testing.T) {
 
+func TestUnmarshal_RenameCompany(t *testing.T) {
 	qs := "f_name.ilike=Acme"
 	root := BuildFiltersFromQuery(qs)
 	sp := &SearchParams{Filter: root}
@@ -1233,5 +1233,4 @@ func TestUnmarshal_RenameCompany(t *testing.T) {
 	if req.Filter.Category.Name == nil || req.Filter.Category.Name.Contains == nil || *req.Filter.Category.Name.Contains != "Acme" {
 		t.Fatalf("expect Category.Name is not nil, got %#v", req.Filter.Category.Name)
 	}
-
 }
