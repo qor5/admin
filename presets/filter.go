@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/qor5/x/v3/hook"
@@ -830,15 +831,13 @@ func isProtoTimestampType(t reflect.Type) bool {
 
 func normalizeProtoTimestampString(s string) string {
 	ts := strings.TrimSpace(s)
-	// Replace first space between date and time with 'T' if 'T' not already present
-	if strings.Contains(ts, " ") && !strings.Contains(ts, "T") {
-		ts = strings.Replace(ts, " ", "T", 1)
+
+	formats := []string{
+		"2006-01-02 15:04:05",
 	}
-	// If there is a 'T' and no timezone indicator (Z, or +/- offset), append 'Z'
-	if idx := strings.Index(ts, "T"); idx != -1 {
-		timePart := ts[idx+1:]
-		if !strings.Contains(timePart, "Z") && !strings.Contains(timePart, "+") && !strings.Contains(timePart, "-") {
-			ts = ts + "Z"
+	for _, format := range formats {
+		if t, err := time.ParseInLocation(format, ts, time.UTC); err == nil {
+			return t.Format(time.RFC3339)
 		}
 	}
 	return ts
