@@ -822,7 +822,7 @@ func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, unsaved
 		EventFunc(b.EventDelete()).
 		// Query(SectionFieldName, b.name).
 		Query(ParamID, ctx.Param(ParamID)).
-		Query(b.elementUnsavedKey(), unsaved&&!isCreated).
+		Query(b.elementUnsavedKey(), unsaved && !isCreated).
 		Query(b.DeleteBtnKey(), index).
 		Go()
 	if isCreated {
@@ -832,7 +832,7 @@ func (b *SectionBuilder) editElement(obj any, index int, isCreated bool, unsaved
 		URL(ctx.R.URL.Path).
 		EventFunc(b.EventSave()).
 		// Query(SectionFieldName, b.name).
-		Query(b.elementUnsavedKey(), unsaved&&!isCreated).
+		Query(b.elementUnsavedKey(), unsaved && !isCreated).
 		Query(SectionIsCancel, true).
 		Query(ParamID, ctx.Param(ParamID)).
 		Query(b.SaveBtnKey(), strconv.Itoa(index)).
@@ -1337,7 +1337,7 @@ func (b *SectionBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Event
 	// Append a new empty element only when caller requests keeping an unsaved slot,
 	// and only after a successful save of an existing element.
 	// Avoid duplicating when saving a newly created element or when validation failed.
-	if ctx.ParamAsBool(b.elementUnsavedKey())  && err == nil && !wasCreated {
+	if ctx.ParamAsBool(b.elementUnsavedKey()) && err == nil && !wasCreated {
 		if _, err := b.appendElement(obj); err != nil {
 			panic(err)
 		}
