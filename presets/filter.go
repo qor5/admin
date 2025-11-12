@@ -765,6 +765,7 @@ func pruneEmpty(m map[string]any) {
 		}
 	}
 }
+
 func coerceJSONValToType(val any, t reflect.Type) any {
 	// Deref pointer
 	for t.Kind() == reflect.Ptr {

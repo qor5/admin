@@ -1102,8 +1102,8 @@ func TestUnmarshal_ScopeTypeOperatorRename(t *testing.T) {
 	if req.Filter.AliasName == nil || req.Filter.AliasName.Contains == nil || *req.Filter.AliasName.Contains != "Acme" || !req.Filter.AliasName.Fold {
 		t.Fatalf("expect AliasName.Contains=Acme and fold=true, got %#v", req.Filter.AliasName)
 	}
-
 }
+
 func TestUnmarshal_ScopeTypeOperatorRenameWithOldNameField(t *testing.T) {
 	type AliasNameFilter struct {
 		Contains *string `json:"contains"`
