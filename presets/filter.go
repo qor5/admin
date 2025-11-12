@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
 	"github.com/qor5/x/v3/hook"
 	"github.com/qor5/x/v3/jsonx"
+	"github.com/samber/lo"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -83,11 +83,9 @@ type FilterUnmarshalInput struct {
 	Key       string
 	KeyType   KeyType
 }
+type FilterUnmarshalOutput struct{}
 
-// FilterUnmarshalFun  mutates in.Scope in place based on the input context.
-// Implementations may rename keys, move values into nested paths, or merge maps.
-// It should be idempotent and return nil when no change is needed.
-type FilterUnmarshalFunc func(in *FilterUnmarshalInput) error
+type FilterUnmarshalFunc func(in *FilterUnmarshalInput) (*FilterUnmarshalOutput, error)
 
 // FilterUnmarshalHook composes mutators relay-style: h(next)(in).
 type FilterUnmarshalHook = hook.Hook[FilterUnmarshalFunc]
@@ -200,7 +198,7 @@ func aggregateGroups(values url.Values, groupOp map[string]string) map[string]*f
 		if strings.HasSuffix(lowerRaw, "_range") {
 			rawField = strings.TrimSuffix(rawField, "_range")
 		}
-		field := strcase.ToCamel(rawField)
+		field := lo.CamelCase(rawField)
 		mod := ""
 		if idx+1 < len(segs) {
 			mod = strings.ToLower(segs[idx+1])
@@ -421,14 +419,9 @@ func filterToJSONMap(f *Filter) (map[string]any, error) {
 	if f == nil {
 		return nil, nil
 	}
-	// Step 1: marshal Filter into a generic JSON map
-	b, err := jsonx.Marshal(f)
+	raw, err := jsonx.ToMap(f)
 	if err != nil {
-		return nil, errors.Wrap(err, "marshal filter")
-	}
-	var raw map[string]any
-	if err := jsonx.Unmarshal(b, &raw); err != nil {
-		return nil, errors.Wrap(err, "unmarshal filter into raw map")
+		return nil, errors.Wrap(err, "to map filter")
 	}
 	// Step 2: transform the raw map (Condition/And/Or/Not) into proto-target map
 	return transformFilterRawToProtoMap(raw)
@@ -469,12 +462,12 @@ func transformFilterRawToProtoMap(raw map[string]any) (map[string]any, error) {
 				}
 
 				// lowerCamel field key and operator key
-				fieldKey := strcase.ToLowerCamel(field)
+				fieldKey := lo.CamelCase(field)
 				sub, _ := dst[fieldKey].(map[string]any)
 				if sub == nil {
 					sub = map[string]any{}
 				}
-				opKey := strcase.ToLowerCamel(opStr)
+				opKey := lo.CamelCase(opStr)
 				val := cm["value"]
 				sub[opKey] = val
 				if fb, ok := cm["fold"].(bool); ok && fb {
@@ -593,7 +586,7 @@ func coerceAgainstType(norm map[string]any, t reflect.Type, path []string, o *un
 		return nil
 	}
 	// Traverse norm keys, map to destination field type, and recurse or coerce values
-	for key, val := range norm {
+	for key := range norm {
 		// Pre-field hook to allow key rename before field lookup
 		if o != nil && o.hook != nil {
 			in := &FilterUnmarshalInput{
@@ -601,45 +594,56 @@ func coerceAgainstType(norm map[string]any, t reflect.Type, path []string, o *un
 				Key:       key,
 				KeyType:   KeyTypeField,
 			}
-			if fn := o.hook(func(_ *FilterUnmarshalInput) error { return nil }); fn != nil {
-				if err := fn(in); err != nil {
+			if fn := o.hook(func(_ *FilterUnmarshalInput) (*FilterUnmarshalOutput, error) { return nil, nil }); fn != nil {
+				if _, err := fn(in); err != nil {
 					return err
-				}
-				if in.Key != key {
-					key = in.Key
-					if v2, ok2 := norm[key]; ok2 {
-						val = v2
-					} else {
-						// key renamed and old key removed; process in subsequent iterations
-						continue
-					}
 				}
 			}
 		}
 		sf, ok := findFieldByLowerCamel(t, key)
 		if !ok {
-			// Unknown in destination type: keep as-is; no blind recursion for safety
-			switch val.(type) {
-			case map[string]any:
-				continue
-			case []any:
-				continue
-			default:
-				continue
-			}
+			continue
 		}
 		ft := derefType(sf.Type)
-		hookFunc := makeFieldCoercer(ft, path, o)
-		kt := KeyTypeField
-		if sf.Name == "Or" || sf.Name == "And" || sf.Name == "Not" {
-			kt = KeyTypeLogical
+		val, ok := norm[key]
+		if !ok {
+			continue
 		}
-		if err := hookFunc(&FilterUnmarshalInput{
-			FilterMap: norm,
-			Key:       key,
-			KeyType:   kt,
-		}); err != nil {
-			return err
+		switch ft.Kind() {
+		case reflect.Slice:
+			elem := derefType(ft.Elem())
+			if elem.Kind() == reflect.Struct {
+				if arr, ok := val.([]any); ok {
+					for idx, child := range arr {
+						if m, ok2 := child.(map[string]any); ok2 {
+							if err := coerceAgainstType(m, elem, append(path, key), o); err != nil {
+								return err
+							}
+							arr[idx] = m
+						}
+					}
+				}
+			}
+		case reflect.Struct:
+			if m, ok := val.(map[string]any); ok {
+				// apply to present operator keys (lowerCamel)
+				for j := 0; j < ft.NumField(); j++ {
+					of := ft.Field(j)
+					opKey := lo.CamelCase(of.Name)
+					if _, ok2 := m[opKey]; ok2 {
+						v := m[opKey]
+						m[opKey] = coerceJSONValToType(v, of.Type)
+					}
+				}
+				// If no known operator key exists, treat as nested struct and recurse
+				if !hasAnyFieldKey(ft, m) {
+					if err := coerceAgainstType(m, ft, append(path, key), o); err != nil {
+						return err
+					}
+				}
+			}
+		default:
+			return nil
 		}
 	}
 	return nil
@@ -656,7 +660,7 @@ func findFieldByLowerCamel(t reflect.Type, key string) (reflect.StructField, boo
 	t = derefType(t)
 	for i := 0; i < t.NumField(); i++ {
 		sf := t.Field(i)
-		if strcase.ToLowerCamel(sf.Name) == key {
+		if lo.SnakeCase(sf.Name) == lo.SnakeCase(key) {
 			return sf, true
 		}
 	}
@@ -666,62 +670,11 @@ func findFieldByLowerCamel(t reflect.Type, key string) (reflect.StructField, boo
 func hasAnyFieldKey(t reflect.Type, m map[string]any) bool {
 	t = derefType(t)
 	for j := 0; j < t.NumField(); j++ {
-		if _, ok := m[strcase.ToLowerCamel(t.Field(j).Name)]; ok {
+		if _, ok := m[lo.CamelCase(t.Field(j).Name)]; ok {
 			return true
 		}
 	}
 	return false
-}
-
-// makeFieldCoercer returns a FilterUnmarshalFunc that performs the core
-// recursion/coercion for a single field key (in.Key) within in.FilterMap.
-func makeFieldCoercer(ft reflect.Type, path []string, o *unmarshalOptions) FilterUnmarshalFunc {
-	return func(in *FilterUnmarshalInput) error {
-		val, ok := in.FilterMap[in.Key]
-		if !ok {
-			return nil
-		}
-		ft = derefType(ft)
-		switch ft.Kind() {
-		case reflect.Slice:
-			elem := derefType(ft.Elem())
-			if elem.Kind() == reflect.Struct {
-				if arr, ok := val.([]any); ok {
-					for idx, child := range arr {
-						if m, ok2 := child.(map[string]any); ok2 {
-							if err := coerceAgainstType(m, elem, append(path, in.Key), o); err != nil {
-								return err
-							}
-							arr[idx] = m
-						}
-					}
-					in.FilterMap[in.Key] = arr
-				}
-			}
-		case reflect.Struct:
-			if m, ok := val.(map[string]any); ok {
-				// apply to present operator keys (lowerCamel)
-				for j := 0; j < ft.NumField(); j++ {
-					of := ft.Field(j)
-					opKey := strcase.ToLowerCamel(of.Name)
-					if _, ok2 := m[opKey]; ok2 {
-						v := m[opKey]
-						m[opKey] = coerceJSONValToType(v, of.Type)
-					}
-				}
-				// If no known operator key exists, treat as nested struct and recurse
-				if !hasAnyFieldKey(ft, m) {
-					if err := coerceAgainstType(m, ft, append(path, in.Key), o); err != nil {
-						return err
-					}
-				}
-				in.FilterMap[in.Key] = m
-			}
-		default:
-			// primitive or others not expected at this level; do nothing
-		}
-		return nil
-	}
 }
 
 // buildCoercer removed: operator coercion is inlined in makeFieldCoercer

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/clonex"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	testdatav1 "github.com/theplant/relay/protorelay/testdata/gen/testdata/v1"
 )
@@ -1083,7 +1084,7 @@ func TestUnmarshal_ScopeTypeOperatorRename(t *testing.T) {
 	var req Req
 	err := sp.Unmarshal(&req.Filter,
 		WithFilterUnmarshalHook(func(next FilterUnmarshalFunc) FilterUnmarshalFunc {
-			return func(in *FilterUnmarshalInput) error {
+			return func(in *FilterUnmarshalInput) (*FilterUnmarshalOutput, error) {
 				// Rename top-level "name" field to "aliasName"
 				if in.KeyType == KeyTypeField && in.Key == "name" {
 					in.FilterMap["aliasName"] = in.FilterMap[in.Key]
@@ -1127,7 +1128,7 @@ func TestUnmarshal_ScopeTypeOperatorRenameWithOldNameField(t *testing.T) {
 	var req Req
 	err := sp.Unmarshal(&req.Filter,
 		WithFilterUnmarshalHook(func(next FilterUnmarshalFunc) FilterUnmarshalFunc {
-			return func(in *FilterUnmarshalInput) error {
+			return func(in *FilterUnmarshalInput) (*FilterUnmarshalOutput, error) {
 				// Rename top-level "name" field to "aliasName"
 				if in.KeyType == KeyTypeField && in.Key == "name" {
 					in.FilterMap["aliasName"] = in.FilterMap[in.Key]
@@ -1201,4 +1202,36 @@ func TestFilterCreateAtRangeUnicode_ToSQLConditions(t *testing.T) {
 	if req.Filter.CreatedAt.Lt.AsTime().UTC().Year() != 2025 || req.Filter.CreatedAt.Lt.AsTime().UTC().Month() != time.September || req.Filter.CreatedAt.Lt.AsTime().UTC().Day() != 27 {
 		t.Fatalf("expect lt 2025-11-27, got %v", req.Filter.CreatedAt.Lt.AsTime().UTC())
 	}
+}
+func TestUnmarshal_RenameCompany(t *testing.T) {
+
+	qs := "f_name.ilike=Acme"
+	root := BuildFiltersFromQuery(qs)
+	sp := &SearchParams{Filter: root}
+	var req ListProductsRequest
+	err := sp.Unmarshal(&req.Filter,
+		WithFilterUnmarshalHook(func(next FilterUnmarshalFunc) FilterUnmarshalFunc {
+			return func(in *FilterUnmarshalInput) (*FilterUnmarshalOutput, error) {
+				clone := clonex.Clone(in.FilterMap)
+				if in.KeyType == KeyTypeField && in.Key == "name" {
+					in.FilterMap["category"] = clone
+					delete(in.FilterMap, in.Key)
+				}
+				return next(in)
+			}
+		}),
+	)
+	if err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+	if req.Filter == nil {
+		t.Fatalf("filter nil")
+	}
+	if req.Filter.Category == nil {
+		t.Fatalf("expect Category is not nil, got %#v", req.Filter.Category)
+	}
+	if req.Filter.Category.Name == nil || req.Filter.Category.Name.Contains == nil || *req.Filter.Category.Name.Contains != "Acme" {
+		t.Fatalf("expect Category.Name is not nil, got %#v", req.Filter.Category.Name)
+	}
+
 }
