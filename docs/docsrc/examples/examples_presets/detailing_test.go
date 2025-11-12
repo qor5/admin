@@ -686,6 +686,241 @@ func TestPresetsDetailListSection(t *testing.T) {
 	}
 }
 
+func TestPresetsDetailListSection_StatusxFieldViolations(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsDetailListSectionStatusxFieldViolations(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		{
+			Name:  "list section save returns validator field error and shows error",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				userCreditCardsData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_save_CreditCards").
+					Query("sectionListUnsaved_CreditCards", "false").
+					Query("sectionListSaveBtn_CreditCards", "0").
+					Query("id", "1").
+					AddField("CreditCards[0].Name", "").
+					AddField("__Deleted_CreditCards[0].sectionListEditing", "true").
+					BuildEventFuncRequest()
+			},
+			// Expect the field error text from BadRequest.FieldViolations to appear in the portal update
+			ExpectPortalUpdate0ContainsInOrder: []string{"name is required"},
+		},
+		{
+			Name:  "list section add should not re-init dash inside portal",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_create_CreditCards").
+					Query("sectionListUnsaved_CreditCards", "true").
+					Query("id", "1").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"dash.errorMessages"},
+			ExpectPortalUpdate0NotContains:     []string{":dash-init"},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}
+
+func TestPresetsDetailListSection_ItemStateIsolation(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsDetailListSection_ItemStateIsolation(pb, TestDB)
+
+	cases := []multipartestutils.TestCase{
+		// 1) init data
+		{
+			Name:  "init data",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				userCreditCardsData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "presets_DetailingDrawer").
+					Query("id", "1").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"CreditCards", "Add Item"},
+		},
+		// 2) click add, expect empty component and no Add Item
+		{
+			Name:  "add item shows empty editor and hides add button",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_create_CreditCards").
+					Query("sectionListUnsaved_CreditCards", "true").
+					Query("id", "1").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"CreditCards[0].Name", "Cancel", "Save"},
+			ExpectPortalUpdate0NotContains:     []string{"Add Item"},
+		},
+		// 3) save item with non-empty name, expect saved and Add Item reappears
+		{
+			Name:  "save created item with non-empty name",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_save_CreditCards").
+					Query("sectionListUnsaved_CreditCards", "true").
+					Query("sectionListSaveBtn_CreditCards", "0").
+					Query("id", "1").
+					AddField("CreditCards[0].Name", "terry").
+					AddField("__Deleted_CreditCards[0].sectionListEditing", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"terry", "Add Item"},
+			ExpectPortalUpdate0NotContains:     []string{"Cancel", "Save"},
+		},
+		// 4) add again, expect empty editor and no Add Item
+		{
+			Name:  "add again shows empty editor and hides add button",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_create_CreditCards").
+					Query("sectionListUnsaved_CreditCards", "true").
+					Query("id", "1").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"terry", "CreditCards[1].Name", "Cancel", "Save"},
+			ExpectPortalUpdate0NotContains:     []string{"Add Item"},
+		},
+		// 5) save second item with empty name -> expect validation error and no Add Item
+		{
+			Name:  "save second item empty name shows error and no add button",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_save_CreditCards").
+					Query("sectionListUnsaved_CreditCards", "true").
+					Query("sectionListSaveBtn_CreditCards", "1").
+					Query("id", "1").
+					AddField("CreditCards[1].Name", "").
+					AddField("__Deleted_CreditCards[1].sectionListEditing", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"name is required"},
+			ExpectPortalUpdate0NotContains:     []string{"Add Item"},
+		},
+		// 6) click edit on first item; expect it enters edit mode
+		{
+			Name:  "edit first item while second has error keeps no add button",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_edit_CreditCards").
+					Query("sectionListEditBtn_CreditCards", "0").
+					Query("sectionListUnsaved_CreditCards", "true").
+					Query("id", "1").
+					AddField("CreditCards[1].Name", "").
+					AddField("__Deleted_CreditCards[1].sectionListEditing", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Cancel", "Save"},
+			ExpectPortalUpdate0NotContains:     []string{"Add Item"},
+		},
+		// 7) cancel first item; expect no Add Item and second item still exists
+		{
+			Name:  "cancel first item keeps second item and no add button",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_save_CreditCards").
+					Query("sectionListUnsaved_CreditCards", "true").
+					Query("sectionListSaveBtn_CreditCards", "0").
+					Query("isCancel", "true").
+					Query("id", "1").
+					AddField("CreditCards[0].Name", "terry").
+					AddField("__Deleted_CreditCards[0].sectionListEditing", "true").
+					AddField("CreditCards[1].Name", "").
+					AddField("__Deleted_CreditCards[1].sectionListEditing", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"terry"},
+			ExpectPortalUpdate0NotContains:     []string{"Add Item"},
+		},
+		// 8) edit first item again; expect same as step 6 (edit mode, no Add Item)
+		{
+			Name:  "edit first item again keeps no add button",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_edit_CreditCards").
+					Query("sectionListEditBtn_CreditCards", "0").
+					Query("sectionListUnsaved_CreditCards", "true").
+					Query("id", "1").
+					AddField("CreditCards[1].Name", "").
+					AddField("__Deleted_CreditCards[1].sectionListEditing", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"terry", "Cancel", "Save"},
+			ExpectPortalUpdate0NotContains:     []string{"Add Item"},
+		},
+		// 9) save first item; expect saved successfully, no Add Item, second item still exists
+		{
+			Name:  "save first item successfully keeps second item and no add button",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_save_CreditCards").
+					Query("sectionListUnsaved_CreditCards", "true").
+					Query("sectionListSaveBtn_CreditCards", "0").
+					Query("id", "1").
+					AddField("CreditCards[0].Name", "first-saved").
+					AddField("__Deleted_CreditCards[0].sectionListEditing", "true").
+					AddField("CreditCards[1].Name", "").
+					AddField("__Deleted_CreditCards[1].sectionListEditing", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"first-saved", "CreditCards[1].Name"},
+			ExpectPortalUpdate0NotContains:     []string{"Add Item"},
+		},
+		// 10) cancel second item; expect Add Item shows
+		{
+			Name:  "cancel second item shows add button",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_save_CreditCards").
+					Query("sectionListUnsaved_CreditCards", "false").
+					Query("sectionListSaveBtn_CreditCards", "1").
+					Query("isCancel", "true").
+					Query("id", "1").
+					AddField("CreditCards[1].Name", "").
+					AddField("__Deleted_CreditCards[1].sectionListEditing", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Add Item"},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			multipartestutils.RunCase(t, c, pb)
+		})
+	}
+}
+
 var customerData = gofixtures.Data(gofixtures.Sql(`
 				insert into customers (id, email,name) values (1, 'xxx@gmail.com','Terry');
 			`, []string{"customers"}))
