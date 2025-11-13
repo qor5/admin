@@ -1086,9 +1086,9 @@ func TestUnmarshal_ScopeTypeOperatorRename(t *testing.T) {
 		WithFilterUnmarshalHook(func(next FilterUnmarshalFunc) FilterUnmarshalFunc {
 			return func(in *FilterUnmarshalInput) (*FilterUnmarshalOutput, error) {
 				// Rename top-level "name" field to "aliasName"
-				if in.KeyType == KeyTypeField && in.Key == "name" {
-					in.FilterMap["aliasName"] = in.FilterMap[in.Key]
-					delete(in.FilterMap, in.Key)
+				if in.Field == "name" {
+					in.FilterMap["aliasName"] = in.FilterMap[in.Field]
+					delete(in.FilterMap, in.Field)
 				}
 				return next(in)
 			}
@@ -1130,9 +1130,9 @@ func TestUnmarshal_ScopeTypeOperatorRenameWithOldNameField(t *testing.T) {
 		WithFilterUnmarshalHook(func(next FilterUnmarshalFunc) FilterUnmarshalFunc {
 			return func(in *FilterUnmarshalInput) (*FilterUnmarshalOutput, error) {
 				// Rename top-level "name" field to "aliasName"
-				if in.KeyType == KeyTypeField && in.Key == "name" {
-					in.FilterMap["aliasName"] = in.FilterMap[in.Key]
-					delete(in.FilterMap, in.Key)
+				if in.Field == "name" {
+					in.FilterMap["aliasName"] = in.FilterMap[in.Field]
+					delete(in.FilterMap, in.Field)
 				}
 				return next(in)
 			}
@@ -1213,9 +1213,9 @@ func TestUnmarshal_RenameCompany(t *testing.T) {
 		WithFilterUnmarshalHook(func(next FilterUnmarshalFunc) FilterUnmarshalFunc {
 			return func(in *FilterUnmarshalInput) (*FilterUnmarshalOutput, error) {
 				clone := clonex.Clone(in.FilterMap)
-				if in.KeyType == KeyTypeField && in.Key == "name" {
+				if in.Field == "name" {
 					in.FilterMap["category"] = clone
-					delete(in.FilterMap, in.Key)
+					delete(in.FilterMap, in.Field)
 				}
 				return next(in)
 			}

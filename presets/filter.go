@@ -3,7 +3,6 @@ package presets
 import (
 	"net/url"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/qor5/x/v3/hook"
 	"github.com/qor5/x/v3/jsonx"
 	"github.com/samber/lo"
+	"github.com/spf13/cast"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -55,34 +55,13 @@ type unmarshalOptions struct {
 	hook FilterUnmarshalHook
 }
 
-type KeyType string
-
-const (
-	// KeyTypeField represents a model field key (Name, Code, CategoryID, etc.)
-	// These keys should be aligned with model fields
-	KeyTypeField KeyType = "FIELD"
-
-	// KeyTypeLogical represents a logical operator key (And, Or, Not)
-	// These keys are not model fields but contain nested field keys
-	KeyTypeLogical KeyType = "LOGICAL"
-
-	// KeyTypeOperator represents a filter operator key (Eq, Contains, In, Gt, etc.)
-	// These keys define how to filter a field
-	KeyTypeOperator KeyType = "OPERATOR"
-
-	// KeyTypeModifier represents a modifier key that changes operator behavior (Fold, etc.)
-	// These keys modify how operators work (e.g., case-insensitive comparison)
-	KeyTypeModifier KeyType = "MODIFIER"
-)
-
 // keep API compatibility: variadic options type (unused)
 type UnmarshalOption func(*unmarshalOptions)
 
 // FilterUnmarshalInput is passed to path resolvers to determine the target field key at current scope.
 type FilterUnmarshalInput struct {
 	FilterMap map[string]any
-	Key       string
-	KeyType   KeyType
+	Field     string
 }
 type FilterUnmarshalOutput struct{}
 
@@ -592,8 +571,7 @@ func coerceAgainstType(norm map[string]any, t reflect.Type, path []string, o *un
 		if o != nil && o.hook != nil {
 			in := &FilterUnmarshalInput{
 				FilterMap: norm,
-				Key:       key,
-				KeyType:   KeyTypeField,
+				Field:     key,
 			}
 			if fn := o.hook(func(_ *FilterUnmarshalInput) (*FilterUnmarshalOutput, error) { return nil, nil }); fn != nil {
 				if _, err := fn(in); err != nil {
@@ -601,7 +579,7 @@ func coerceAgainstType(norm map[string]any, t reflect.Type, path []string, o *un
 				}
 			}
 		}
-		sf, ok := findFieldByLowerCamel(t, key)
+		sf, ok := findFieldBySnakeCase(t, key)
 		if !ok {
 			continue
 		}
@@ -636,12 +614,6 @@ func coerceAgainstType(norm map[string]any, t reflect.Type, path []string, o *un
 						m[opKey] = coerceJSONValToType(v, of.Type)
 					}
 				}
-				// If no known operator key exists, treat as nested struct and recurse
-				if !hasAnyFieldKey(ft, m) {
-					if err := coerceAgainstType(m, ft, append(path, key), o); err != nil {
-						return err
-					}
-				}
 			}
 		default:
 			return nil
@@ -657,7 +629,7 @@ func derefType(t reflect.Type) reflect.Type {
 	return t
 }
 
-func findFieldByLowerCamel(t reflect.Type, key string) (reflect.StructField, bool) {
+func findFieldBySnakeCase(t reflect.Type, key string) (reflect.StructField, bool) {
 	t = derefType(t)
 	for i := 0; i < t.NumField(); i++ {
 		sf := t.Field(i)
@@ -666,16 +638,6 @@ func findFieldByLowerCamel(t reflect.Type, key string) (reflect.StructField, boo
 		}
 	}
 	return reflect.StructField{}, false
-}
-
-func hasAnyFieldKey(t reflect.Type, m map[string]any) bool {
-	t = derefType(t)
-	for j := 0; j < t.NumField(); j++ {
-		if _, ok := m[lo.CamelCase(t.Field(j).Name)]; ok {
-			return true
-		}
-	}
-	return false
 }
 
 // buildCoercer removed: operator coercion is inlined in makeFieldCoercer
@@ -728,64 +690,19 @@ func coerceJSONValToType(val any, t reflect.Type) any {
 
 	switch t.Kind() {
 	case reflect.String:
-		switch x := val.(type) {
-		case string:
-			return x
-		case bool:
-			if x {
-				return "true"
-			}
-			return "false"
-		case float64:
-			return strconv.FormatFloat(x, 'f', -1, 64)
-		default:
-			return val
-		}
+		return cast.ToString(val)
 	case reflect.Bool:
-		switch x := val.(type) {
-		case bool:
-			return x
-		case string:
-			ls := strings.ToLower(strings.TrimSpace(x))
-			return ls == "true" || ls == "1"
-		case float64:
-			return x != 0
-		default:
-			return val
-		}
+		return cast.ToBool(val)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		switch x := val.(type) {
-		case float64:
-			// JSON numbers are fine for integer targets
-			return x
-		case string:
-			if fv, err := strconv.ParseFloat(strings.TrimSpace(x), 64); err == nil {
-				return fv
-			}
-			return val
-		default:
-			return val
-		}
+		return cast.ToInt64(val)
 	case reflect.Float64, reflect.Float32:
-		switch x := val.(type) {
-		case float64:
-			return x
-		case string:
-			if fv, err := strconv.ParseFloat(strings.TrimSpace(x), 64); err == nil {
-				return fv
-			}
-			return val
-		default:
-			return val
-		}
+		return cast.ToFloat64(val)
 	case reflect.Struct:
 		// google.protobuf.Timestamp expects RFC3339 string in protojson
 		// Normalize common "YYYY-MM-DD HH:MM:SS" to "YYYY-MM-DDTHH:MM:SSZ" if timezone info is missing.
 		if isProtoTimestampType(t) {
-			if s, ok := val.(string); ok {
-				return normalizeProtoTimestampString(s)
-			}
+			return cast.ToTime(val).Format(time.RFC3339)
 		}
 		return val
 	case reflect.Slice:
@@ -798,21 +715,11 @@ func coerceJSONValToType(val any, t reflect.Type) any {
 				out = append(out, coerceJSONValToType(e, elem))
 			}
 			return out
-		case []string:
-			out := make([]any, 0, len(x))
-			for _, s := range x {
-				out = append(out, coerceJSONValToType(s, elem))
-			}
-			return out
-		case string:
-			// Best-effort CSV split if destination expects a slice
+		case string: // Best-effort CSV split if destination expects a slice
 			parts := strings.Split(x, ",")
 			out := make([]any, 0, len(parts))
 			for _, p := range parts {
 				p = strings.TrimSpace(p)
-				if p == "" {
-					continue
-				}
 				out = append(out, coerceJSONValToType(p, elem))
 			}
 			return out
@@ -827,19 +734,4 @@ func coerceJSONValToType(val any, t reflect.Type) any {
 func isProtoTimestampType(t reflect.Type) bool {
 	t = derefType(t)
 	return t == reflect.TypeOf(timestamppb.Timestamp{})
-}
-
-func normalizeProtoTimestampString(s string) string {
-	ts := strings.TrimSpace(s)
-
-	formats := []string{
-		"2006-01-02 15:04:05",
-		"2006-01-02",
-	}
-	for _, format := range formats {
-		if t, err := time.ParseInLocation(format, ts, time.UTC); err == nil {
-			return t.Format(time.RFC3339)
-		}
-	}
-	return ts
 }
