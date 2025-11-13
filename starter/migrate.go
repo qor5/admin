@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/qor5/admin/v3/activity"
+	"github.com/qor5/admin/v3/login"
 	"github.com/qor5/admin/v3/pagebuilder"
 	"github.com/qor5/admin/v3/role"
 	"github.com/qor5/admin/v3/seo"
@@ -37,6 +38,9 @@ func AutoMigrate(ctx context.Context, db *gorm.DB) error {
 
 	if err := createDefaultRolesIfEmpty(ctx, db); err != nil {
 		return errors.Wrap(err, "failed to initialize default roles")
+	}
+	if err := login.AutoMigrateSession(db, ""); err != nil {
+		return errors.Wrap(err, "failed to auto migrate login session")
 	}
 	return nil
 }
