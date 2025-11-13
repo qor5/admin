@@ -61,13 +61,28 @@ type SQLCondition struct {
 
 type (
 	RelayPagination func(ctx *web.EventContext) (relay.Paginator[any], error)
-	SearchParams    struct {
+
+	FilterOperator string
+	FieldCondition struct {
+		Field    string         `json:"field"`
+		Operator FilterOperator `json:"operator"`
+		Value    any            `json:"value"`
+		Fold     bool           `json:"fold"`
+	}
+	Filter struct {
+		And       []*Filter       `json:"and"`
+		Or        []*Filter       `json:"or"`
+		Not       *Filter         `json:"not"`
+		Condition *FieldCondition `json:"condition"`
+	}
+	SearchParams struct {
 		Model   any
 		PageURL *url.URL
 
 		KeywordColumns []string
 		Keyword        string
 		SQLConditions  []*SQLCondition
+		Filter         *Filter
 
 		Page    int64
 		PerPage int64
