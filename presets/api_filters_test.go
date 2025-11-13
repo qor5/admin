@@ -1234,3 +1234,26 @@ func TestUnmarshal_RenameCompany(t *testing.T) {
 		t.Fatalf("expect Category.Name is not nil, got %#v", req.Filter.Category.Name)
 	}
 }
+
+func TestFilterCreateAtDateRange_ToSQLConditions(t *testing.T) {
+	qs := "f_created_at_range.gte=2025-11-11&f_created_at_range.lt=2025-11-28"
+	v, _ := url.ParseQuery(qs)
+	root := BuildFiltersFromQuery(qs)
+	sp := &SearchParams{Filter: root, Keyword: v.Get("keyword"), KeywordColumns: []string{"Name"}}
+	var req ListProductsRequest
+	if err := sp.Unmarshal(&req.Filter); err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+	if req.Filter == nil {
+		t.Fatalf("filter nil")
+	}
+	if req.Filter.CreatedAt == nil || req.Filter.CreatedAt.Gte == nil || req.Filter.CreatedAt.Lt == nil {
+		t.Fatalf("expect gte and lt set, got %#v", req.Filter)
+	}
+	if req.Filter.CreatedAt.Gte.AsTime().UTC().Year() != 2025 || req.Filter.CreatedAt.Gte.AsTime().UTC().Month() != time.November || req.Filter.CreatedAt.Gte.AsTime().UTC().Day() != 11 {
+		t.Fatalf("expect gte 2025-11-11, got %v", req.Filter.CreatedAt.Gte.AsTime().UTC())
+	}
+	if req.Filter.CreatedAt.Lt.AsTime().UTC().Year() != 2025 || req.Filter.CreatedAt.Lt.AsTime().UTC().Month() != time.November || req.Filter.CreatedAt.Lt.AsTime().UTC().Day() != 28 {
+		t.Fatalf("expect lt 2025-11-28, got %v", req.Filter.CreatedAt.Lt.AsTime().UTC())
+	}
+}

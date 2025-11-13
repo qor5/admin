@@ -834,6 +834,7 @@ func normalizeProtoTimestampString(s string) string {
 
 	formats := []string{
 		"2006-01-02 15:04:05",
+		"2006-01-02",
 	}
 	for _, format := range formats {
 		if t, err := time.ParseInLocation(format, ts, time.UTC); err == nil {
