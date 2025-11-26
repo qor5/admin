@@ -172,6 +172,51 @@ func PresetsEditingTiptap(b *presets.Builder, db *gorm.DB) (
 	return
 }
 
+// @snippet_begin(PresetsEditingSingletonNestedSample)
+
+// SingletonNestedItem is the element type for nested slice field in singleton demo.
+type SingletonNestedItem struct {
+	Name  string
+	Value string
+}
+
+// SingletonWithNested demonstrates a singleton model that contains a nested slice field.
+// Items is ignored by GORM on purpose to avoid persistence complexity for the demo.
+type SingletonWithNested struct {
+	ID    uint
+	Title string
+	Title2 string
+	Items []*SingletonNestedItem `gorm:"type:jsonb"` // Items is ignored by GORM on purpose to avoid persistence complexity for the demo.
+}
+
+// PresetsEditingSingletonNested installs a singleton page with a nested list field
+// to reproduce the Nested interactions losing ParamID on singleton editing page.
+func PresetsEditingSingletonNested(b *presets.Builder, db *gorm.DB) (
+	mb *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	b.DataOperator(gorm2op.DataOperator(db))
+	_ = db.AutoMigrate(&SingletonWithNested{})
+
+	mb = b.Model(&SingletonWithNested{}).Singleton(true).Label("Singleton Nested Demo")
+	// Configure editing fields: a simple title and a nested list field "Items"
+	itemFB := b.NewFieldsBuilder(presets.WRITE).Model(&SingletonNestedItem{}).Only("Name", "Value")
+	ce = mb.Editing().Only("Title","Title2", "Items")
+	ce.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		singleton := obj.(*SingletonWithNested)
+		if singleton.Title == "123" {
+			err.FieldError("Title", "title must not be 123")
+		}
+		return
+	})
+	ce.Field("Items").Nested(itemFB)
+	return
+}
+
+// @snippet_end
+
 // @snippet_begin(PresetsEditingCustomizationFileTypeSample)
 
 type MyFile string

@@ -591,6 +591,12 @@ func (b *EditingBuilder) doUpdate(
 		)
 	}
 
+	// For singleton pages, refresh the page portal to reset local state and stop loading
+	if b.mb.singleton {
+		usingB.UpdateOverlayContent(ctx, r, obj, "", nil)
+		return created, nil
+	}
+
 	overlayType := ctx.R.FormValue(ParamOverlay)
 	script := CloseRightDrawerVarScript
 	if overlayType == actions.Dialog {
