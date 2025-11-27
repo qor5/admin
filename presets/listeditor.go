@@ -117,6 +117,13 @@ func (b *ListEditorBuilder) getAddRowBtnLabel(ctx *web.EventContext) string {
 func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error) {
 	ctx := web.MustGetEventContext(c)
 
+	id := ctx.Param(ParamID)
+	if v := ctx.ContextValue(ctxKeyParamID{}); v != nil {
+		if s, ok := v.(string); ok && id == "" {
+			id = s
+		}
+	}
+
 	formKey := b.fieldContext.FormKey
 	var form h.HTMLComponent
 
@@ -150,7 +157,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 							EventFunc(b.removeListItemRowEvent).
 							Queries(ctx.Queries()).
 							Query(AddRowBtnKey(b.fieldContext.FormKey), "").
-							Query(ParamID, ctx.R.FormValue(ParamID)).
+							Query(ParamID, id).
 							Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
 							Query(ParamRemoveRowFormKey, formKey).
 							Go()),
@@ -217,7 +224,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 										EventFunc(b.sortListItemsEvent).
 										Queries(ctx.Queries()).
 										Query(AddRowBtnKey(b.fieldContext.FormKey), "").
-										Query(ParamID, ctx.R.FormValue(ParamID)).
+										Query(ParamID, id).
 										Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
 										Query(ParamSortSectionFormKey, b.fieldContext.FormKey).
 										Query(ParamIsStartSort, "1").
@@ -232,7 +239,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 										EventFunc(b.sortListItemsEvent).
 										Queries(ctx.Queries()).
 										Query(AddRowBtnKey(b.fieldContext.FormKey), "").
-										Query(ParamID, ctx.R.FormValue(ParamID)).
+										Query(ParamID, id).
 										Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
 										Query(ParamSortSectionFormKey, b.fieldContext.FormKey).
 										FieldValue(ParamSortResultFormKey, web.Var("JSON.stringify(locals.items)")).
@@ -257,7 +264,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 							EventFunc(b.addListItemRowEvent).
 							Queries(ctx.Queries()).
 							Query(AddRowBtnKey(b.fieldContext.FormKey), addRowBtnId).
-							Query(ParamID, ctx.R.FormValue(ParamID)).
+							Query(ParamID, id).
 							Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
 							Query(ParamAddRowFormKey, b.fieldContext.FormKey).
 							Go()),

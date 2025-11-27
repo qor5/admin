@@ -831,6 +831,9 @@ func (b *FieldsBuilder) toComponentWithModifiedIndexes(info *ModelInfo, obj inte
 
 type ctxKeyForceForCreating struct{}
 
+// ctxKeyParamID is used to pass the current object's ParamID through the EventContext
+type ctxKeyParamID struct{}
+
 func (b *FieldsBuilder) toComponentWithFormValueKey(info *ModelInfo, obj interface{}, parentFormValueKey string, modifiedIndexes *ModifiedIndexesBuilder, ctx *web.EventContext) h.HTMLComponent {
 	var comps []h.HTMLComponent
 	if parentFormValueKey == "" {

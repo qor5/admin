@@ -293,6 +293,10 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		obj = b.mb.NewModel()
 	}
 
+	if b.mb.singleton {
+		ctx = ctx.WithContextValue(ctxKeyParamID{}, id)
+	}
+
 	var notice h.HTMLComponent
 	{
 		var text string
