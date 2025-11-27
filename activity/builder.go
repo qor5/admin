@@ -299,7 +299,7 @@ func (ab *Builder) onlyModelBuilder(v any) (*ModelBuilder, error) {
 	return ambs[0], nil
 }
 
-func (ab *Builder) Log(ctx context.Context, action string, v any, detail any) (*ActivityLog, error) {
+func (ab *Builder) Log(ctx context.Context, action string, v, detail any) (*ActivityLog, error) {
 	amb, err := ab.onlyModelBuilder(v)
 	if err != nil {
 		return nil, err
@@ -323,12 +323,12 @@ func (ab *Builder) OnView(ctx context.Context, v any) (*ActivityLog, error) {
 	return amb.OnView(ctx, v)
 }
 
-func (ab *Builder) OnEdit(ctx context.Context, old, new any) (*ActivityLog, error) {
-	amb, err := ab.onlyModelBuilder(new)
+func (ab *Builder) OnEdit(ctx context.Context, oldObj, newObj any) (*ActivityLog, error) {
+	amb, err := ab.onlyModelBuilder(newObj)
 	if err != nil {
 		return nil, err
 	}
-	return amb.OnEdit(ctx, old, new)
+	return amb.OnEdit(ctx, oldObj, newObj)
 }
 
 func (ab *Builder) OnDelete(ctx context.Context, v any) (*ActivityLog, error) {

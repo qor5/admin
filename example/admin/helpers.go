@@ -20,8 +20,8 @@ type DataTableHeader struct {
 	Sortable bool   `json:"sortable"`
 }
 
-func getStringHash(v string, len int) string {
-	return fmt.Sprintf("%x", sha256.Sum256([]byte(v)))[:len]
+func getStringHash(v string, length int) string {
+	return fmt.Sprintf("%x", sha256.Sum256([]byte(v)))[:length]
 }
 
 func ip(r *http.Request) string {

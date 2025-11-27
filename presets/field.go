@@ -249,7 +249,7 @@ func (b *FieldBuilder) lazySetterFunc() FieldSetterFunc {
 	return b.lazyWrapSetterFunc(setterFunc)
 }
 
-func (b *FieldBuilder) WithContextValue(key interface{}, val interface{}) (r *FieldBuilder) {
+func (b *FieldBuilder) WithContextValue(key, val interface{}) (r *FieldBuilder) {
 	if b.context == nil {
 		b.context = context.Background()
 	}
@@ -447,7 +447,7 @@ func (b *FieldsBuilder) Unmarshal(toObj interface{}, info *ModelInfo, removeDele
 	}, removeDeletedAndSort, modifiedIndexes, ctx)
 }
 
-func (b *FieldsBuilder) SetObjectFields(fromObj interface{}, toObj interface{}, parent *FieldContext, removeDeletedAndSort bool, modifiedIndexes *ModifiedIndexesBuilder, ctx *web.EventContext) (vErr web.ValidationErrors) {
+func (b *FieldsBuilder) SetObjectFields(fromObj, toObj interface{}, parent *FieldContext, removeDeletedAndSort bool, modifiedIndexes *ModifiedIndexesBuilder, ctx *web.EventContext) (vErr web.ValidationErrors) {
 	for _, f := range b.fields {
 		info := parent.ModelInfo
 		if info != nil {
@@ -659,7 +659,7 @@ func humanizeString(str string) string {
 }
 
 func (b *FieldsBuilder) getLabel(field NameLabel) (r string) {
-	if len(field.label) > 0 {
+	if field.label != "" {
 		return field.label
 	}
 

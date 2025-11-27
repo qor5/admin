@@ -19,13 +19,13 @@ var (
 
 	// @snippet_begin(ActivityDefaultTypeHandles)
 	DefaultTypeHandles = map[reflect.Type]TypeHandler{
-		reflect.TypeOf(time.Time{}): func(old, new any, prefixField string) []Diff {
+		reflect.TypeOf(time.Time{}): func(oldObj, newObj any, prefixField string) []Diff {
 			var oldString, newString string
-			if !old.(time.Time).IsZero() {
-				oldString = old.(time.Time).Format(timeFormat)
+			if !oldObj.(time.Time).IsZero() {
+				oldString = oldObj.(time.Time).Format(timeFormat)
 			}
-			if !new.(time.Time).IsZero() {
-				newString = new.(time.Time).Format(timeFormat)
+			if !newObj.(time.Time).IsZero() {
+				newString = newObj.(time.Time).Format(timeFormat)
 			}
 			if oldString != newString {
 				return []Diff{
@@ -34,9 +34,9 @@ var (
 			}
 			return []Diff{}
 		},
-		reflect.TypeOf(media_library.MediaBox{}): func(old, new any, prefixField string) (diffs []Diff) {
-			oldMediaBox := old.(media_library.MediaBox)
-			newMediaBox := new.(media_library.MediaBox)
+		reflect.TypeOf(media_library.MediaBox{}): func(oldObj, newObj any, prefixField string) (diffs []Diff) {
+			oldMediaBox := oldObj.(media_library.MediaBox)
+			newMediaBox := newObj.(media_library.MediaBox)
 
 			if oldMediaBox.Url != newMediaBox.Url {
 				diffs = append(diffs, Diff{Field: formatFieldByDot(prefixField, "Url"), Old: oldMediaBox.Url, New: newMediaBox.Url})
@@ -57,7 +57,7 @@ var (
 )
 
 // @snippet_begin(ActivityTypeHandle)
-type TypeHandler func(old, new any, prefixField string) []Diff
+type TypeHandler func(oldObj, newObj any, prefixField string) []Diff
 
 // @snippet_end
 
@@ -78,50 +78,50 @@ func NewDiffBuilder(mb *ModelBuilder) *DiffBuilder {
 	}
 }
 
-func (db *DiffBuilder) Diff(old, new any) ([]Diff, error) {
-	err := db.diffLoop(reflect.Indirect(reflect.ValueOf(old)), reflect.Indirect(reflect.ValueOf(new)), "")
+func (db *DiffBuilder) Diff(oldObj, newObj any) ([]Diff, error) {
+	err := db.diffLoop(reflect.Indirect(reflect.ValueOf(oldObj)), reflect.Indirect(reflect.ValueOf(newObj)), "")
 	return db.diffs, err
 }
 
-func (db *DiffBuilder) diffLoop(old, new reflect.Value, prefixField string) error {
-	if old.Type() != new.Type() {
-		return fmt.Errorf("old and new type mismatch: %v != %v", old.Type(), new.Type())
+func (db *DiffBuilder) diffLoop(oldObj, newObj reflect.Value, prefixField string) error {
+	if oldObj.Type() != newObj.Type() {
+		return fmt.Errorf("old and new type mismatch: %v != %v", oldObj.Type(), newObj.Type())
 	}
 
 	handleNil := func() bool {
-		if old.IsNil() && new.IsNil() {
+		if oldObj.IsNil() && newObj.IsNil() {
 			return true
 		}
 
-		if old.IsNil() && !new.IsNil() {
-			newVal, _ := json.Marshal(new.Interface())
+		if oldObj.IsNil() && !newObj.IsNil() {
+			newVal, _ := json.Marshal(newObj.Interface())
 
 			db.diffs = append(db.diffs, Diff{Field: prefixField, Old: "", New: string(newVal)})
 			return true
 		}
 
-		if !old.IsNil() && new.IsNil() {
-			db.diffs = append(db.diffs, Diff{Field: prefixField, Old: fmt.Sprintf("%+v", old.Interface()), New: ""})
+		if !oldObj.IsNil() && newObj.IsNil() {
+			db.diffs = append(db.diffs, Diff{Field: prefixField, Old: fmt.Sprintf("%+v", oldObj.Interface()), New: ""})
 			return true
 		}
 		return false
 	}
 
-	switch new.Kind() {
+	switch newObj.Kind() {
 	case reflect.Invalid, reflect.Chan, reflect.Func, reflect.UnsafePointer, reflect.Uintptr:
 		return nil
 	case reflect.Interface, reflect.Ptr:
 		if handleNil() {
 			return nil
 		}
-		return db.diffLoop(old.Elem(), new.Elem(), prefixField)
+		return db.diffLoop(oldObj.Elem(), newObj.Elem(), prefixField)
 	case reflect.Struct:
-		for i := 0; i < new.Type().NumField(); i++ {
-			if !old.Field(i).CanInterface() {
+		for i := 0; i < newObj.Type().NumField(); i++ {
+			if !oldObj.Field(i).CanInterface() {
 				continue
 			}
 
-			field := new.Type().Field(i)
+			field := newObj.Type().Field(i)
 
 			var needContinue bool
 			for _, ignoredField := range DefaultIgnoredFields {
@@ -144,30 +144,30 @@ func (db *DiffBuilder) diffLoop(old, new reflect.Value, prefixField string) erro
 
 			newPrefixField := formatFieldByDot(prefixField, field.Name)
 			if f := DefaultTypeHandles[field.Type]; f != nil {
-				db.diffs = append(db.diffs, f(old.Field(i).Interface(), new.Field(i).Interface(), newPrefixField)...)
+				db.diffs = append(db.diffs, f(oldObj.Field(i).Interface(), newObj.Field(i).Interface(), newPrefixField)...)
 				continue
 			}
 
 			if f := db.mb.typeHandlers[field.Type]; f != nil {
-				db.diffs = append(db.diffs, f(old.Field(i).Interface(), new.Field(i).Interface(), newPrefixField)...)
+				db.diffs = append(db.diffs, f(oldObj.Field(i).Interface(), newObj.Field(i).Interface(), newPrefixField)...)
 				continue
 			}
-			err := db.diffLoop(old.Field(i), new.Field(i), newPrefixField)
+			err := db.diffLoop(oldObj.Field(i), newObj.Field(i), newPrefixField)
 			if err != nil {
 				return err
 			}
 
 		}
 	case reflect.Array, reflect.Slice:
-		if new.Kind() == reflect.Slice {
+		if newObj.Kind() == reflect.Slice {
 			if handleNil() {
 				return nil
 			}
 		}
 
 		var (
-			oldLen  = old.Len()
-			newLen  = new.Len()
+			oldLen  = oldObj.Len()
+			newLen  = newObj.Len()
 			minLen  int
 			added   bool
 			deleted bool
@@ -189,7 +189,7 @@ func (db *DiffBuilder) diffLoop(old, new reflect.Value, prefixField string) erro
 
 		for i := 0; i < minLen; i++ {
 			newPrefixField := formatFieldByDot(prefixField, strconv.Itoa(i))
-			err := db.diffLoop(old.Index(i), new.Index(i), newPrefixField)
+			err := db.diffLoop(oldObj.Index(i), newObj.Index(i), newPrefixField)
 			if err != nil {
 				return err
 			}
@@ -198,14 +198,14 @@ func (db *DiffBuilder) diffLoop(old, new reflect.Value, prefixField string) erro
 		if added {
 			for i := minLen; i < newLen; i++ {
 				newPrefixField := formatFieldByDot(prefixField, strconv.Itoa(i))
-				db.diffs = append(db.diffs, Diff{Field: newPrefixField, Old: "", New: fmt.Sprintf("%+v", new.Index(i).Interface())})
+				db.diffs = append(db.diffs, Diff{Field: newPrefixField, Old: "", New: fmt.Sprintf("%+v", newObj.Index(i).Interface())})
 			}
 		}
 
 		if deleted {
 			for i := minLen; i < oldLen; i++ {
 				newPrefixField := formatFieldByDot(prefixField, strconv.Itoa(i))
-				db.diffs = append(db.diffs, Diff{Field: newPrefixField, Old: fmt.Sprintf("%+v", old.Index(i).Interface()), New: ""})
+				db.diffs = append(db.diffs, Diff{Field: newPrefixField, Old: fmt.Sprintf("%+v", oldObj.Index(i).Interface()), New: ""})
 			}
 		}
 	case reflect.Map:
@@ -214,15 +214,15 @@ func (db *DiffBuilder) diffLoop(old, new reflect.Value, prefixField string) erro
 		}
 
 		var (
-			oldKeys     = old.MapKeys()
-			newKeys     = new.MapKeys()
+			oldKeys     = oldObj.MapKeys()
+			newKeys     = newObj.MapKeys()
 			sameKeys    = []reflect.Value{}
 			addedKeys   = []reflect.Value{}
 			deletedKeys = []reflect.Value{}
 		)
 
 		for _, oldKey := range oldKeys {
-			if new.MapIndex(oldKey).IsValid() {
+			if newObj.MapIndex(oldKey).IsValid() {
 				sameKeys = append(sameKeys, oldKey)
 			} else {
 				deletedKeys = append(deletedKeys, oldKey)
@@ -230,14 +230,14 @@ func (db *DiffBuilder) diffLoop(old, new reflect.Value, prefixField string) erro
 		}
 
 		for _, newKey := range newKeys {
-			if !old.MapIndex(newKey).IsValid() {
+			if !oldObj.MapIndex(newKey).IsValid() {
 				addedKeys = append(addedKeys, newKey)
 			}
 		}
 
 		for _, key := range sameKeys {
 			newPrefixField := formatFieldByDot(prefixField, key.String())
-			err := db.diffLoop(old.MapIndex(key), new.MapIndex(key), newPrefixField)
+			err := db.diffLoop(oldObj.MapIndex(key), newObj.MapIndex(key), newPrefixField)
 			if err != nil {
 				return err
 			}
@@ -245,22 +245,22 @@ func (db *DiffBuilder) diffLoop(old, new reflect.Value, prefixField string) erro
 
 		for _, key := range addedKeys {
 			newPrefixField := formatFieldByDot(prefixField, key.String())
-			db.diffs = append(db.diffs, Diff{Field: newPrefixField, Old: "", New: fmt.Sprintf("%+v", new.MapIndex(key).Interface())})
+			db.diffs = append(db.diffs, Diff{Field: newPrefixField, Old: "", New: fmt.Sprintf("%+v", newObj.MapIndex(key).Interface())})
 		}
 
 		for _, key := range deletedKeys {
 			newPrefixField := formatFieldByDot(prefixField, key.String())
-			db.diffs = append(db.diffs, Diff{Field: newPrefixField, Old: fmt.Sprintf("%+v", old.MapIndex(key).Interface()), New: ""})
+			db.diffs = append(db.diffs, Diff{Field: newPrefixField, Old: fmt.Sprintf("%+v", oldObj.MapIndex(key).Interface()), New: ""})
 		}
 	default:
-		if old.Interface() != new.Interface() {
-			db.diffs = append(db.diffs, Diff{Field: prefixField, Old: fmt.Sprintf("%v", old.Interface()), New: fmt.Sprintf("%v", new.Interface())})
+		if oldObj.Interface() != newObj.Interface() {
+			db.diffs = append(db.diffs, Diff{Field: prefixField, Old: fmt.Sprintf("%v", oldObj.Interface()), New: fmt.Sprintf("%v", newObj.Interface())})
 		}
 	}
 	return nil
 }
 
-func formatFieldByDot(prefix string, suffix string) string {
+func formatFieldByDot(prefix, suffix string) string {
 	if prefix == "" {
 		return suffix
 	}

@@ -102,9 +102,9 @@ func TestDiff(t *testing.T) {
 		},
 		{
 			description: "Using model type handles",
-			modelBuilder: (&ModelBuilder{}).AddTypeHanders(Author{}, func(old, new any, prefixField string) (diffs []Diff) {
-				oldAuthor := old.(Author)
-				newAuthor := new.(Author)
+			modelBuilder: (&ModelBuilder{}).AddTypeHanders(Author{}, func(oldObj, newObj any, prefixField string) (diffs []Diff) {
+				oldAuthor := oldObj.(Author)
+				newAuthor := newObj.(Author)
 				if oldAuthor.Name != newAuthor.Name {
 					diffs = append(diffs, Diff{Field: fmt.Sprintf("%s.Name", prefixField), Old: oldAuthor.Name, New: newAuthor.Name})
 				}
@@ -308,7 +308,7 @@ func BenchmarkSimpleDiff(b *testing.B) {
 }
 
 func BenchmarkComplexDiff(b *testing.B) {
-	old := Post{
+	oldObj := Post{
 		ID:            1,
 		CreatedAt:     time.Now(),
 		PublishedDate: time.Now(),
@@ -321,11 +321,11 @@ func BenchmarkComplexDiff(b *testing.B) {
 	}
 
 	for i := 0; i < 50; i++ {
-		old.Comments = append(old.Comments, Comment{Text: fmt.Sprintf("text - %d", i)})
-		old.Tags[fmt.Sprintf("tag - %d", i)] = PostTag{Name: fmt.Sprintf("title - %d", i)}
+		oldObj.Comments = append(oldObj.Comments, Comment{Text: fmt.Sprintf("text - %d", i)})
+		oldObj.Tags[fmt.Sprintf("tag - %d", i)] = PostTag{Name: fmt.Sprintf("title - %d", i)}
 	}
 
-	new := Post{
+	newObj := Post{
 		ID:            1,
 		CreatedAt:     time.Now().Add(1 * time.Hour),
 		PublishedDate: time.Now().Add(3 * time.Hour),
@@ -341,14 +341,14 @@ func BenchmarkComplexDiff(b *testing.B) {
 	}
 
 	for i := 0; i < 80; i++ {
-		new.Comments = append(new.Comments, Comment{Text: fmt.Sprintf("text ---%d", i)})
-		old.Tags[fmt.Sprintf("tag - %d", i)] = PostTag{Name: fmt.Sprintf("title - %d", i)}
+		newObj.Comments = append(newObj.Comments, Comment{Text: fmt.Sprintf("text ---%d", i)})
+		newObj.Tags[fmt.Sprintf("tag - %d", i)] = PostTag{Name: fmt.Sprintf("title - %d", i)}
 	}
 
 	builder := NewDiffBuilder(&ModelBuilder{})
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		builder.Diff(old, new)
+		builder.Diff(oldObj, newObj)
 	}
 }
 

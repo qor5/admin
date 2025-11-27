@@ -307,7 +307,7 @@ func (mb *ModelBuilder) getComponentFuncField(field *FieldBuilder) (r *FieldCont
 }
 
 func (mb *ModelBuilder) getLabel(field NameLabel) (r string) {
-	if len(field.label) > 0 {
+	if field.label != "" {
 		return field.label
 	}
 
