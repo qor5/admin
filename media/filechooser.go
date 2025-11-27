@@ -572,7 +572,7 @@ func (mb *Builder) mediaLibraryFilter(tab, selectedType, keyword, orderByVal str
 		cfg.AllowType = media_library.ALLOW_TYPE_IMAGE
 	}
 
-	if len(cfg.AllowType) > 0 {
+	if cfg.AllowType != "" {
 		if tab == tabFiles {
 			wh = wh.Where("selected_type = ?", cfg.AllowType)
 		} else {

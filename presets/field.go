@@ -659,7 +659,7 @@ func humanizeString(str string) string {
 }
 
 func (b *FieldsBuilder) getLabel(field NameLabel) (r string) {
-	if len(field.label) > 0 {
+	if field.label != "" {
 		return field.label
 	}
 

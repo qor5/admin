@@ -183,7 +183,7 @@ func (b *QMediaBoxBuilder) MarshalHTML(c context.Context) (r []byte, err error) 
 	portalName := mainPortalName(b.fieldName)
 	return h.Components(
 		VSheet(
-			h.If(len(b.label) > 0,
+			h.If(b.label != "",
 				h.Label(b.label).Class("v-label theme--light mb-2"),
 			),
 			web.Portal(
