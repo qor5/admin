@@ -114,7 +114,7 @@ func (vc *ViewCommon) PasswordInput(
 }
 
 // need to import zxcvbn.js
-func (*ViewCommon) PasswordInputWithStrengthMeter(in *vx.VXFieldBuilder, id string, val string) HTMLComponent {
+func (*ViewCommon) PasswordInputWithStrengthMeter(in *vx.VXFieldBuilder, id, val string) HTMLComponent {
 	in.Attr("v-model", fmt.Sprintf(`form.%s`, id))
 	return Components(
 		in,
@@ -149,7 +149,7 @@ func (*ViewCommon) FormSubmitBtn(
 //   - add attr `data-callback=onSubmit`
 //
 // - add token field like `Input("token").Id("token").Type("hidden")`
-func (*ViewCommon) InjectRecaptchaAssets(ctx *web.EventContext, formID string, tokenFieldID string) {
+func (*ViewCommon) InjectRecaptchaAssets(ctx *web.EventContext, formID, tokenFieldID string) {
 	ctx.Injector.HeadHTML(`
 <style>
 .grecaptcha-badge { visibility: hidden; }

@@ -28,7 +28,7 @@ func RecoverPrimaryColumnValuesBySlug(dec SlugDecoder, slug string) (r map[strin
 	return r, nil
 }
 
-func ShowSnackbarScript(msg string, color string) string {
+func ShowSnackbarScript(msg, color string) string {
 	if msg == "" {
 		return ""
 	}
@@ -38,7 +38,7 @@ func ShowSnackbarScript(msg string, color string) string {
 	return fmt.Sprintf(`vars.presetsMessage = { show: true, message: %q, color: %q}`, msg, color)
 }
 
-func ShowMessage(r *web.EventResponse, msg string, color string) {
+func ShowMessage(r *web.EventResponse, msg, color string) {
 	script := ShowSnackbarScript(msg, color)
 	if script == "" {
 		return

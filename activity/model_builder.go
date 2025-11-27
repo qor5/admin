@@ -422,7 +422,7 @@ func (mb *ModelBuilder) ParseModelKeys(v any) string {
 	return KeysValue(v, mb.keys, ModelKeysSeparator)
 }
 
-func (mb *ModelBuilder) Log(ctx context.Context, action string, obj any, detail any) (*ActivityLog, error) {
+func (mb *ModelBuilder) Log(ctx context.Context, action string, obj, detail any) (*ActivityLog, error) {
 	return mb.create(ctx, action, ParseModelName(obj), mb.ParseModelKeys(obj), mb.modelLink(obj), detail)
 }
 
@@ -434,7 +434,7 @@ func (mb *ModelBuilder) OnView(ctx context.Context, v any) (*ActivityLog, error)
 	return mb.Log(ctx, ActionView, v, nil)
 }
 
-func (mb *ModelBuilder) OnEdit(ctx context.Context, old any, new any) (*ActivityLog, error) {
+func (mb *ModelBuilder) OnEdit(ctx context.Context, old, new any) (*ActivityLog, error) {
 	diffs, err := mb.Diff(old, new)
 	if err != nil {
 		return nil, err

@@ -299,7 +299,7 @@ func (ab *Builder) onlyModelBuilder(v any) (*ModelBuilder, error) {
 	return ambs[0], nil
 }
 
-func (ab *Builder) Log(ctx context.Context, action string, v any, detail any) (*ActivityLog, error) {
+func (ab *Builder) Log(ctx context.Context, action string, v, detail any) (*ActivityLog, error) {
 	amb, err := ab.onlyModelBuilder(v)
 	if err != nil {
 		return nil, err
