@@ -1761,7 +1761,7 @@ func (b *ContainerBuilder) logModelDiffActivity(obj interface{}, id string, ctx 
 	})
 }
 
-func (b *ContainerBuilder) logDemoContainerActivity(tx *gorm.DB, old, new interface{}, id string, diffs []activity.Diff, ab *activity.Builder, ctx *web.EventContext) error {
+func (b *ContainerBuilder) logDemoContainerActivity(tx *gorm.DB, oldObj, newObj interface{}, id string, diffs []activity.Diff, ab *activity.Builder, ctx *web.EventContext) error {
 	if b.builder.demoContainerActivityProcessor == nil {
 		return nil
 	}
@@ -1776,8 +1776,8 @@ func (b *ContainerBuilder) logDemoContainerActivity(tx *gorm.DB, old, new interf
 	}
 	detail := &DemoContainerLogInput{
 		Container:          demoContainer,
-		ContainerObject:    new,
-		OldContainerObject: old,
+		ContainerObject:    newObj,
+		OldContainerObject: oldObj,
 		Action:             activity.ActionEdit,
 		Detail:             diffs,
 	}
@@ -1790,7 +1790,7 @@ func (b *ContainerBuilder) logDemoContainerActivity(tx *gorm.DB, old, new interf
 	return nil
 }
 
-func (b *ContainerBuilder) logContainerActivity(tx *gorm.DB, old, new interface{}, id, uid string, diffs []activity.Diff, now time.Time, ctx *web.EventContext) error {
+func (b *ContainerBuilder) logContainerActivity(tx *gorm.DB, oldObj, newObj interface{}, id, uid string, diffs []activity.Diff, now time.Time, ctx *web.EventContext) error {
 	var containers []Container
 	if err := tx.Where("model_id = ? AND model_name = ?", id, b.name).Find(&containers).Error; err != nil {
 		return err
@@ -1802,7 +1802,7 @@ func (b *ContainerBuilder) logContainerActivity(tx *gorm.DB, old, new interface{
 		container.ModelUpdatedBy = uid
 
 		if b.builder.editorActivityProcessor != nil {
-			if err := b.logPageModelActivity(tx, old, new, container, diffs, ctx); err != nil {
+			if err := b.logPageModelActivity(tx, oldObj, newObj, container, diffs, ctx); err != nil {
 				continue // Log error but continue processing other containers
 			}
 		}
@@ -1810,7 +1810,7 @@ func (b *ContainerBuilder) logContainerActivity(tx *gorm.DB, old, new interface{
 	return tx.Save(&containers).Error
 }
 
-func (b *ContainerBuilder) logPageModelActivity(tx *gorm.DB, old, new interface{}, container *Container, diffs []activity.Diff, ctx *web.EventContext) error {
+func (b *ContainerBuilder) logPageModelActivity(tx *gorm.DB, oldObj, newObj interface{}, container *Container, diffs []activity.Diff, ctx *web.EventContext) error {
 	mb := b.builder.getModelBuilderByName(container.PageModelName)
 	if mb == nil {
 		return fmt.Errorf("model builder not found for %s", container.PageModelName)
@@ -1830,8 +1830,8 @@ func (b *ContainerBuilder) logPageModelActivity(tx *gorm.DB, old, new interface{
 	detail := &EditorLogInput{
 		PageObject:         pageModel,
 		Container:          *container,
-		ContainerObject:    new,
-		OldContainerObject: old,
+		ContainerObject:    newObj,
+		OldContainerObject: oldObj,
 		Action:             activity.ActionEdit,
 		Detail:             containerDiff,
 	}

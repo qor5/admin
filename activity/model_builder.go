@@ -434,8 +434,8 @@ func (mb *ModelBuilder) OnView(ctx context.Context, v any) (*ActivityLog, error)
 	return mb.Log(ctx, ActionView, v, nil)
 }
 
-func (mb *ModelBuilder) OnEdit(ctx context.Context, old, new any) (*ActivityLog, error) {
-	diffs, err := mb.Diff(old, new)
+func (mb *ModelBuilder) OnEdit(ctx context.Context, oldObj, newObj any) (*ActivityLog, error) {
+	diffs, err := mb.Diff(oldObj, newObj)
 	if err != nil {
 		return nil, err
 	}
@@ -444,7 +444,7 @@ func (mb *ModelBuilder) OnEdit(ctx context.Context, old, new any) (*ActivityLog,
 		return nil, nil
 	}
 
-	return mb.Log(ctx, ActionEdit, new, diffs)
+	return mb.Log(ctx, ActionEdit, newObj, diffs)
 }
 
 func (mb *ModelBuilder) OnDelete(ctx context.Context, v any) (*ActivityLog, error) {
@@ -455,8 +455,8 @@ func (mb *ModelBuilder) Note(ctx context.Context, v any, note *Note) (*ActivityL
 	return mb.Log(ctx, ActionNote, v, note)
 }
 
-func (mb *ModelBuilder) Diff(old, new any) ([]Diff, error) {
-	return NewDiffBuilder(mb).Diff(old, new)
+func (mb *ModelBuilder) Diff(oldObj, newObj any) ([]Diff, error) {
+	return NewDiffBuilder(mb).Diff(oldObj, newObj)
 }
 
 func (mb *ModelBuilder) modelLink(v any) string {
