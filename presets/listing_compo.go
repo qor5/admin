@@ -400,7 +400,6 @@ func (c *ListingCompo) toolbarSearch(ctx context.Context) h.HTMLComponent {
 }
 
 func (c *ListingCompo) defaultCellWrapperFunc(envCtx *web.EventContext, cell h.MutableAttrHTMLComponent, id string, _ any, _ string) h.HTMLComponent {
-
 	if c.lb.mb.Info().Verifier().Do(PermUpdate).WithReq(envCtx.R).IsAllowed() != nil {
 		return cell
 	}
