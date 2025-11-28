@@ -13,6 +13,7 @@ import (
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/media"
@@ -171,6 +172,50 @@ func PresetsEditingTiptap(b *presets.Builder, db *gorm.DB) (
 
 	return
 }
+
+// @snippet_begin(PresetsEditingSingletonNestedSample)
+
+// SingletonNestedItem is the element type for nested slice field in singleton demo.
+type SingletonNestedItem struct {
+	Name  string
+	Value string
+}
+
+// SingletonWithNested demonstrates a singleton model that contains a nested slice field.
+// Items is ignored by GORM on purpose to avoid persistence complexity for the demo.
+type SingletonWithNested struct {
+	ID    uint
+	Title string
+	Items datatypes.JSONSlice[*SingletonNestedItem] `gorm:"type:jsonb;default:'[]'"`
+}
+
+// PresetsEditingSingletonNested installs a singleton page with a nested list field
+// to reproduce the Nested interactions losing ParamID on singleton editing page.
+func PresetsEditingSingletonNested(b *presets.Builder, db *gorm.DB) (
+	mb *presets.ModelBuilder,
+	cl *presets.ListingBuilder,
+	ce *presets.EditingBuilder,
+	dp *presets.DetailingBuilder,
+) {
+	b.DataOperator(gorm2op.DataOperator(db))
+	_ = db.AutoMigrate(&SingletonWithNested{})
+
+	mb = b.Model(&SingletonWithNested{}).Singleton(true).Label("Singleton Nested Demo")
+	// Configure editing fields: a simple title and a nested list field "Items"
+	itemFB := b.NewFieldsBuilder(presets.WRITE).Model(&SingletonNestedItem{}).Only("Name", "Value")
+	ce = mb.Editing().Only("Title", "Items")
+	ce.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+		singleton := obj.(*SingletonWithNested)
+		if len(singleton.Title) > 10 {
+			err.FieldError("Title", "title must not be longer than 10 characters")
+		}
+		return
+	})
+	ce.Field("Items").Nested(itemFB)
+	return
+}
+
+// @snippet_end
 
 // @snippet_begin(PresetsEditingCustomizationFileTypeSample)
 

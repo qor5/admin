@@ -1,7 +1,9 @@
 package examples_presets
 
 import (
+	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -545,4 +547,155 @@ func TestPresetsEditingSaver(t *testing.T) {
 			multipartestutils.RunCase(t, c, pb)
 		})
 	}
+}
+
+func TestPresetsEditingSingletonNested(t *testing.T) {
+	pb := presets.New().DataOperator(gorm2op.DataOperator(TestDB))
+	PresetsEditingSingletonNested(pb, TestDB)
+
+	// Ensure clean state for singleton table
+	if err := TestDB.Exec("DELETE FROM singleton_with_nesteds").Error; err != nil {
+		t.Fatalf("failed to cleanup singleton_with_nesteds: %+v", err)
+	}
+
+	getID := func(t *testing.T) string {
+		var rec SingletonWithNested
+		if err := TestDB.First(&rec).Error; err != nil {
+			t.Fatalf("failed to fetch singleton: %+v", err)
+		}
+		return fmt.Sprintf("%d", rec.ID)
+	}
+
+	// 1) Update title successfully
+	t.Run("update title success", func(t *testing.T) {
+		c := multipartestutils.TestCase{
+			Name: "singleton update title",
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/singleton-with-nesteds?__execute_event__=presets_Update").
+					AddField("Title", "hello").
+					BuildEventFuncRequest()
+			},
+			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {
+				if w.Code != http.StatusOK {
+					t.Fatalf("expected 200, got %d", w.Code)
+				}
+				var rec SingletonWithNested
+				if err := TestDB.First(&rec).Error; err != nil {
+					t.Fatalf("failed to fetch singleton after update: %+v", err)
+				}
+				if rec.Title != "hello" {
+					t.Fatalf("expected title 'hello', got %q", rec.Title)
+				}
+				if len(rec.Items) != 0 {
+					t.Fatalf("expected no items, got %d", len(rec.Items))
+				}
+			},
+		}
+		multipartestutils.RunCase(t, c, pb)
+	})
+
+	// 2) Overlong title -> validation error
+	t.Run("title too long shows validation error", func(t *testing.T) {
+		id := getID(t)
+		c := multipartestutils.TestCase{
+			Name: "singleton title validation",
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/singleton-with-nesteds?__execute_event__=presets_Update").
+					AddField(presets.ParamID, id).
+					AddField("Title", "01234567890-exceed").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"title must not be longer than 10 characters"},
+		}
+		multipartestutils.RunCase(t, c, pb)
+	})
+
+	// 3) Add items then save
+	t.Run("add items then save", func(t *testing.T) {
+		id := getID(t)
+		c := multipartestutils.TestCase{
+			Name: "singleton add items",
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/singleton-with-nesteds?__execute_event__=presets_Update").
+					AddField(presets.ParamID, id).
+					AddField("Title", "hello").
+					AddField("Items[0].Name", "A").
+					AddField("Items[0].Value", "1").
+					BuildEventFuncRequest()
+			},
+			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var rec SingletonWithNested
+				if err := TestDB.First(&rec).Error; err != nil {
+					t.Fatalf("failed to fetch singleton after add: %+v", err)
+				}
+				if len(rec.Items) != 1 {
+					t.Fatalf("expected 1 item, got %d", len(rec.Items))
+				}
+				if rec.Items[0] == nil || rec.Items[0].Name != "A" || rec.Items[0].Value != "1" {
+					t.Fatalf("expected item {A,1}, got %+v", rec.Items[0])
+				}
+			},
+		}
+		multipartestutils.RunCase(t, c, pb)
+	})
+
+	// 4) Modify the item then save
+	t.Run("modify items then save", func(t *testing.T) {
+		id := getID(t)
+		c := multipartestutils.TestCase{
+			Name: "singleton modify items",
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/singleton-with-nesteds?__execute_event__=presets_Update").
+					AddField(presets.ParamID, id).
+					AddField("Title", "hello").
+					AddField("Items[0].Name", "AA").
+					AddField("Items[0].Value", "11").
+					BuildEventFuncRequest()
+			},
+			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var rec SingletonWithNested
+				if err := TestDB.First(&rec).Error; err != nil {
+					t.Fatalf("failed to fetch singleton after modify: %+v", err)
+				}
+				if len(rec.Items) != 1 {
+					t.Fatalf("expected 1 item, got %d", len(rec.Items))
+				}
+				if rec.Items[0] == nil || rec.Items[0].Name != "AA" || rec.Items[0].Value != "11" {
+					t.Fatalf("expected item {AA,11}, got %+v", rec.Items[0])
+				}
+			},
+		}
+		multipartestutils.RunCase(t, c, pb)
+	})
+
+	// 5) Delete the item then save
+	t.Run("delete items then save", func(t *testing.T) {
+		id := getID(t)
+		c := multipartestutils.TestCase{
+			Name: "singleton delete items",
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/singleton-with-nesteds?__execute_event__=presets_Update").
+					AddField(presets.ParamID, id).
+					AddField("Title", "hello").
+					// mark index 0 of Items as deleted
+					AddField("__Deleted.Items", "0").
+					BuildEventFuncRequest()
+			},
+			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var rec SingletonWithNested
+				if err := TestDB.First(&rec).Error; err != nil {
+					t.Fatalf("failed to fetch singleton after delete: %+v", err)
+				}
+				if len(rec.Items) != 0 {
+					t.Fatalf("expected 0 item, got %d", len(rec.Items))
+				}
+			},
+		}
+		multipartestutils.RunCase(t, c, pb)
+	})
 }

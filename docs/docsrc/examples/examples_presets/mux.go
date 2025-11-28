@@ -70,6 +70,7 @@ func SamplesHandler(mux examples.Muxer) {
 	addExample(mux, db, PresetsDetailDisableSave)
 	addExample(mux, db, PresetsDetailSaverValidation)
 	addExample(mux, db, PresetsDataOperatorWithGRPC)
+	addExample(mux, db, PresetsEditingSingletonNested)
 	return
 }
 
