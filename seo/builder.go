@@ -511,8 +511,5 @@ func AutoMigrate(b *Builder, db *gorm.DB) (err error) {
 }
 
 func Migrate(db *gorm.DB) error {
-	if err := db.AutoMigrate(&QorSEOSetting{}); err != nil {
-		return err
-	}
-	return nil
+	return db.AutoMigrate(&QorSEOSetting{})
 }

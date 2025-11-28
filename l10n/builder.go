@@ -253,7 +253,7 @@ func (b *Builder) Install(pb *presets.Builder) error {
 func (b *Builder) localeValue(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) string {
 	var value string
 	id, err := reflectutils.Get(obj, "ID")
-	if err == nil && len(fmt.Sprint(id)) > 0 && fmt.Sprint(id) != "0" {
+	if err == nil && fmt.Sprint(id) != "" && fmt.Sprint(id) != "0" {
 		value = EmbedLocale(obj).LocaleCode
 	} else {
 		value = b.GetCorrectLocaleCode(ctx.R)

@@ -164,7 +164,7 @@ func (mediaLibraryStorage *MediaLibraryStorage) URL(styles ...string) (s string)
 	ext := path.Ext(mediaLibraryStorage.Url)
 
 	defer func() {
-		if len(cropID) > 0 {
+		if cropID != "" {
 			s = fmt.Sprintf("%v_%v%v", s, cropID, ext)
 			return
 		}

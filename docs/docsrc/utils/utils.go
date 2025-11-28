@@ -27,11 +27,11 @@ var LiveExamples []*Example
 
 var envGitBranch = osenv.Get("GIT_BRANCH", "demo source code link git branch", "main")
 
-func DemoWithSnippetLocation(title string, demoPath string, location parse.Location) HTMLComponent {
+func DemoWithSnippetLocation(title, demoPath string, location parse.Location) HTMLComponent {
 	return Demo(title, demoPath, fmt.Sprintf("%s#L%d-L%d", location.File, location.StartLine, location.EndLine))
 }
 
-func Demo(title string, demoPath string, sourcePath string) HTMLComponent {
+func Demo(title, demoPath, sourcePath string) HTMLComponent {
 	if sourcePath != "" {
 		sourcePath = fmt.Sprintf("https://github.com/qor5/admin/tree/%s/docs/docsrc/%s", envGitBranch, sourcePath)
 	}

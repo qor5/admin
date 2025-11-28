@@ -394,7 +394,7 @@ func (b *ListingBuilder) openListingDialog(evCtx *web.EventContext) (r web.Event
 		ContentPadding("0")
 
 	if b.dialogWidth != "" {
-		dialog.Attr(":width", b.dialogWidth)
+		dialog.Attr("width", b.dialogWidth)
 	}
 	if b.dialogHeight != "" {
 		content.Attr("height", b.dialogHeight)

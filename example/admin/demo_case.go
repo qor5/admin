@@ -608,7 +608,7 @@ func configVxDatepicker(detailing *presets.DetailingBuilder, mb *presets.ModelBu
 				if p.DatepickerData.DateTime == 0 {
 					err.FieldError(fmt.Sprintf("%s.DateTime", "DatepickerData"), "DateTime is required")
 				}
-				if p.DatepickerData.DateRange == nil || p.DatepickerData.DateRange[1] <= p.DatepickerData.DateRange[0] {
+				if len(p.DatepickerData.DateRange) < 2 || p.DatepickerData.DateRange[1] <= p.DatepickerData.DateRange[0] {
 					err.FieldError(fmt.Sprintf("%s.DateRange", "DatepickerData"), "End later than Start")
 				}
 				return

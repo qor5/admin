@@ -3,13 +3,14 @@ package presets
 import (
 	"net/url"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
+	"github.com/qor5/x/v3/hook"
 	"github.com/qor5/x/v3/jsonx"
+	"github.com/samber/lo"
+	"github.com/spf13/cast"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -50,46 +51,34 @@ type filterGroupAgg struct {
 	op      string
 }
 
-const (
-	PascalCase = "PascalCase"
-	LowerCase  = "LowerCase"
-)
-
-// ----- Unmarshal options and normalization helpers -----
-
 type unmarshalOptions struct {
-	casing string // "lowerCamel" (default) or "upperCamel"
+	hook FilterUnmarshalHook
 }
 
-func defaultUnmarshalOptions() unmarshalOptions {
-	return unmarshalOptions{casing: LowerCase}
-}
-
-// UnmarshalOption configures Unmarshal behavior.
+// keep API compatibility: variadic options type (unused)
 type UnmarshalOption func(*unmarshalOptions)
 
-// WithPascalCase forces both field and operator keys to UpperCamel (PascalCase).
-// Default (without this option) uses lowerCamel for both.
-func WithPascalCase() UnmarshalOption {
-	return func(o *unmarshalOptions) { o.casing = PascalCase }
+// FilterUnmarshalInput is passed to path resolvers to determine the target field key at current scope.
+type FilterUnmarshalInput struct {
+	FilterMap map[string]any
+	Field     string
 }
+type FilterUnmarshalOutput struct{}
 
-// applyCasingKey converts a simple identifier into the desired casing.
-// PascalCase -> UpperCamel (e.g., "contains" -> "Contains");
-// LowerCase  -> lowerCamel (e.g., "contains" -> "contains").
-func applyCasingKey(s string, casing string) string {
-	if casing == PascalCase {
-		return strcase.ToCamel(s)
-	}
-	return strcase.ToLowerCamel(s)
-}
+type FilterUnmarshalFunc func(in *FilterUnmarshalInput) (*FilterUnmarshalOutput, error)
 
-// ternaryCasing returns casing when option exists; otherwise returns default LowerCase
-func ternaryCasing(o *unmarshalOptions) string {
-	if o == nil || o.casing == "" {
-		return LowerCase
+// FilterUnmarshalHook composes mutators relay-style: h(next)(in).
+type FilterUnmarshalHook = hook.Hook[FilterUnmarshalFunc]
+
+// WithFilterUnmarshalHook registers a relay-style middleware hook for field path resolving.
+// Hooks are composed in registration order: hN(...h2(h1(default))).
+func WithFilterUnmarshalHook(h FilterUnmarshalHook) UnmarshalOption {
+	return func(o *unmarshalOptions) {
+		if h == nil {
+			return
+		}
+		o.hook = hook.Prepend(o.hook, h)
 	}
-	return o.casing
 }
 
 // Helper: detect group operators from query values
@@ -111,6 +100,28 @@ func detectGroupOps(values url.Values) map[string]string {
 		}
 	}
 	return groupOp
+}
+
+// Helper: unescape all values within url.Values using url.QueryUnescape
+func unescapeAllValues(values url.Values) url.Values {
+	if values == nil {
+		return nil
+	}
+	out := url.Values{}
+	for k, arr := range values {
+		for _, v := range arr {
+			if v == "" {
+				out.Add(k, v)
+				continue
+			}
+			if uv, err := url.QueryUnescape(v); err == nil {
+				out.Add(k, uv)
+			} else {
+				out.Add(k, v)
+			}
+		}
+	}
+	return out
 }
 
 // Helper: aggregate query into groups
@@ -159,7 +170,15 @@ func aggregateGroups(values url.Values, groupOp map[string]string) map[string]*f
 		if idx >= len(segs) {
 			continue
 		}
-		field := strcase.ToCamel(segs[idx])
+		// Normalize field:
+		// - Convert to CamelCase
+		// - Treat "*_range" suffix as an alias to the base field, e.g., "created_at_range" -> "CreatedAt"
+		rawField := segs[idx]
+		lowerRaw := strings.ToLower(rawField)
+		if strings.HasSuffix(lowerRaw, "_range") {
+			rawField = strings.TrimSuffix(rawField, "_range")
+		}
+		field := lo.CamelCase(rawField)
 		mod := ""
 		if idx+1 < len(segs) {
 			mod = strings.ToLower(segs[idx+1])
@@ -287,6 +306,8 @@ func BuildFiltersFromQuery(qs string) *Filter {
 	if err != nil {
 		return nil
 	}
+	// Ensure all values are unescaped
+	values = unescapeAllValues(values)
 	groupOp := detectGroupOps(values)
 	groups := aggregateGroups(values, groupOp)
 	filters := buildFiltersFromGroups(groups)
@@ -320,10 +341,6 @@ func mapModToOperator(mod string) FilterOperator {
 	}
 }
 
-// Unmarshal populates dst with the content of Filters (plus Keyword/KeywordColumns as OR contains conditions).
-// dst can be either a pointer to a request wrapper that has a field named "Filter",
-// or a pointer to the filter struct itself. This function is generic and not limited to any specific request type.
-// Unmarshal performs the same as Unmarshal but allows customization via options.
 func (p *SearchParams) Unmarshal(dst any, opts ...UnmarshalOption) error {
 	if dst == nil {
 		return errors.New("dst is nil")
@@ -332,20 +349,20 @@ func (p *SearchParams) Unmarshal(dst any, opts ...UnmarshalOption) error {
 	// Build an augmented filter tree that includes keyword conditions
 	p.buildAugmentedFilters()
 	// Options
-	uo := defaultUnmarshalOptions()
+	uo := unmarshalOptions{}
 	for _, o := range opts {
 		if o != nil {
 			o(&uo)
 		}
 	}
 	// Convert filter tree to proto-ready JSON-map using options
-	norm, err := filterToJSONMap(p.Filter, &uo)
+	norm, err := filterToJSONMap(p.Filter)
 	if err != nil {
 		return errors.Wrap(err, "filter to json map")
 	}
 
 	// Coerce values based on destination operator field types before unmarshalling
-	if err := coerceNormValuesForDst(norm, dst); err != nil {
+	if err := coerceNormValuesForDst(norm, dst, &uo); err != nil {
 		return errors.Wrap(err, "coerce values for destination")
 	}
 
@@ -378,35 +395,30 @@ func (p *SearchParams) buildAugmentedFilters() {
 
 // ----- JSON map builder (Filter -> map[string]any) -----
 
-func filterToJSONMap(f *Filter, o *unmarshalOptions) (map[string]any, error) {
+func filterToJSONMap(f *Filter) (map[string]any, error) {
 	if f == nil {
 		return nil, nil
 	}
-	// Step 1: marshal Filter into a generic JSON map
-	b, err := jsonx.Marshal(f)
+	raw, err := jsonx.ToMap(f)
 	if err != nil {
-		return nil, errors.Wrap(err, "marshal filter")
-	}
-	var raw map[string]any
-	if err := jsonx.Unmarshal(b, &raw); err != nil {
-		return nil, errors.Wrap(err, "unmarshal filter into raw map")
+		return nil, errors.Wrap(err, "to map filter")
 	}
 	// Step 2: transform the raw map (Condition/And/Or/Not) into proto-target map
-	return transformFilterRawToProtoMap(raw, o)
+	return transformFilterRawToProtoMap(raw)
 }
 
-func transformFilterRawToProtoMap(raw map[string]any, o *unmarshalOptions) (map[string]any, error) {
+func transformFilterRawToProtoMap(raw map[string]any) (map[string]any, error) {
 	if raw == nil {
 		return nil, nil
 	}
 	dst := map[string]any{}
 
 	// And: merge children maps into current scope
-	if v, ok := raw["And"]; ok {
+	if v, ok := raw["and"]; ok {
 		if arr, ok := v.([]any); ok {
 			for _, e := range arr {
 				if m, ok := e.(map[string]any); ok {
-					cm, err := transformFilterRawToProtoMap(m, o)
+					cm, err := transformFilterRawToProtoMap(m)
 					if err != nil {
 						return nil, err
 					}
@@ -419,42 +431,40 @@ func transformFilterRawToProtoMap(raw map[string]any, o *unmarshalOptions) (map[
 	}
 
 	// Condition: emit field operator map
-	if v, ok := raw["Condition"]; ok {
+	if v, ok := raw["condition"]; ok {
 		if cm, ok := v.(map[string]any); ok {
-			field, _ := cm["Field"].(string)
+			field, _ := cm["field"].(string)
 			if field != "" {
-				fieldKey := applyCasingKey(field, ternaryCasing(o))
+				opStr, _ := cm["operator"].(string)
+				opStr = strings.TrimSpace(opStr)
+				if opStr == "" {
+					return nil, errors.New("empty operator in Condition")
+				}
+
+				// lowerCamel field key and operator key
+				fieldKey := lo.CamelCase(field)
 				sub, _ := dst[fieldKey].(map[string]any)
 				if sub == nil {
 					sub = map[string]any{}
 				}
-				opStr, _ := cm["Operator"].(string)
-				opKey := strings.TrimSpace(opStr)
-				if opKey == "" {
-					return nil, errors.New("empty operator in Condition")
+				opKey := lo.CamelCase(opStr)
+				val := cm["value"]
+				sub[opKey] = val
+				if fb, ok := cm["fold"].(bool); ok && fb {
+					sub["fold"] = true
 				}
-				opKey = applyCasingKey(opKey, ternaryCasing(o))
-				if opKey != "" {
-					val := cm["Value"]
-					// Defer coercion to destination-type-directed phase
-					sub[opKey] = val
-					if fb, ok := cm["Fold"].(bool); ok && fb {
-						foldKey := applyCasingKey("fold", ternaryCasing(o))
-						sub[foldKey] = true
-					}
-					dst[fieldKey] = sub
-				}
+				dst[fieldKey] = sub
 			}
 		}
 	}
 
 	// Or: collect child maps into array under key (or/Or)
-	if v, ok := raw["Or"]; ok {
+	if v, ok := raw["or"]; ok {
 		if arr, ok := v.([]any); ok {
 			var out []any
 			for _, e := range arr {
 				if m, ok := e.(map[string]any); ok {
-					cm, err := transformFilterRawToProtoMap(m, o)
+					cm, err := transformFilterRawToProtoMap(m)
 					if err != nil {
 						return nil, err
 					}
@@ -464,30 +474,28 @@ func transformFilterRawToProtoMap(raw map[string]any, o *unmarshalOptions) (map[
 				}
 			}
 			if len(out) > 0 {
-				orKey := applyCasingKey("or", ternaryCasing(o))
-				if exist, ok := dst[orKey].([]any); ok {
-					dst[orKey] = append(exist, out...)
+				if exist, ok := dst["or"].([]any); ok {
+					dst["or"] = append(exist, out...)
 				} else {
-					dst[orKey] = out
+					dst["or"] = out
 				}
 			}
 		}
 	}
 
 	// Not: nested map under key (not/Not)
-	if v, ok := raw["Not"]; ok {
+	if v, ok := raw["not"]; ok {
 		if m, ok := v.(map[string]any); ok {
-			nm, err := transformFilterRawToProtoMap(m, o)
+			nm, err := transformFilterRawToProtoMap(m)
 			if err != nil {
 				return nil, err
 			}
 			if len(nm) > 0 {
-				notKey := applyCasingKey("not", ternaryCasing(o))
-				if exist, ok := dst[notKey].(map[string]any); ok {
+				if exist, ok := dst["not"].(map[string]any); ok {
 					mergeFilterJSONMap(exist, nm)
-					dst[notKey] = exist
+					dst["not"] = exist
 				} else {
-					dst[notKey] = nm
+					dst["not"] = nm
 				}
 			}
 		}
@@ -499,22 +507,11 @@ func transformFilterRawToProtoMap(raw map[string]any, o *unmarshalOptions) (map[
 
 func mergeFilterJSONMap(dst, src map[string]any) {
 	for k, v := range src {
-		if k == "or" || k == "Or" {
+		if k == "or" {
 			// append arrays
 			var arr []any
-			// allow merging irrespective of key casing by normalizing destination key presence
 			if exist, ok := dst[k].([]any); ok {
 				arr = exist
-			} else {
-				// check alternate casing
-				alt := "or"
-				if k == "or" {
-					alt = "Or"
-				}
-				if exist2, ok2 := dst[alt].([]any); ok2 {
-					arr = exist2
-					k = alt
-				}
 			}
 			if nv, ok := v.([]any); ok {
 				arr = append(arr, nv...)
@@ -522,25 +519,12 @@ func mergeFilterJSONMap(dst, src map[string]any) {
 				continue
 			}
 		}
-		if k == "not" || k == "Not" {
+		if k == "not" {
 			if exist, ok := dst[k].(map[string]any); ok {
 				if nv, ok2 := v.(map[string]any); ok2 {
 					mergeFilterJSONMap(exist, nv)
 					dst[k] = exist
 					continue
-				}
-			} else {
-				// check alternate casing
-				alt := "not"
-				if k == "not" {
-					alt = "Not"
-				}
-				if exist2, ok2 := dst[alt].(map[string]any); ok2 {
-					if nv, ok3 := v.(map[string]any); ok3 {
-						mergeFilterJSONMap(exist2, nv)
-						dst[alt] = exist2
-						continue
-					}
 				}
 			}
 		}
@@ -555,7 +539,8 @@ func mergeFilterJSONMap(dst, src map[string]any) {
 	}
 }
 
-func coerceNormValuesForDst(norm map[string]any, dst any) error {
+// ----- Coercion (norm -> dst) with hooks -----
+func coerceNormValuesForDst(norm map[string]any, dst any, o *unmarshalOptions) error {
 	if norm == nil || dst == nil {
 		return nil
 	}
@@ -564,225 +549,137 @@ func coerceNormValuesForDst(norm map[string]any, dst any) error {
 		return nil
 	}
 	rt := rv.Type().Elem()
-	return coerceAgainstType(norm, rt)
+	if err := coerceAgainstType(norm, rt, nil, o); err != nil {
+		return err
+	}
+	// prune after coercion
+	pruneEmpty(norm)
+	return nil
 }
 
-func coerceAgainstType(norm map[string]any, t reflect.Type) error {
+func coerceAgainstType(norm map[string]any, t reflect.Type, path []string, o *unmarshalOptions) error {
 	if norm == nil {
 		return nil
 	}
-	// Deref pointers
-	for t.Kind() == reflect.Ptr {
-		t = t.Elem()
-	}
+	t = derefType(t)
 	if t.Kind() != reflect.Struct {
 		return nil
 	}
-
-	// If this is a wrapper that contains a Filter field, coerce against that field type
-	if f, ok := t.FieldByName("Filter"); ok {
-		ft := f.Type
-		for ft.Kind() == reflect.Ptr {
-			ft = ft.Elem()
-		}
-		if ft.Kind() == reflect.Struct {
-			if err := coerceAgainstType(norm, ft); err != nil {
-				return err
+	// Traverse norm keys, map to destination field type, and recurse or coerce values
+	for key := range norm {
+		// Pre-field hook to allow key rename before field lookup
+		if o != nil && o.hook != nil {
+			in := &FilterUnmarshalInput{
+				FilterMap: norm,
+				Field:     key,
+			}
+			if fn := o.hook(func(_ *FilterUnmarshalInput) (*FilterUnmarshalOutput, error) { return nil, nil }); fn != nil {
+				if _, err := fn(in); err != nil {
+					return err
+				}
 			}
 		}
-	}
-
-	// Handle Or children (support both "Or" and "or" keys)
-	orKey := "Or"
-	raw, ok := norm[orKey]
-	if !ok {
-		if v, ok2 := norm["or"]; ok2 {
-			raw = v
-			ok = true
-			orKey = "or"
+		sf, ok := findFieldBySnakeCase(t, key)
+		if !ok {
+			continue
 		}
-	}
-	if ok {
-		if f, ok2 := t.FieldByName("Or"); ok2 {
-			ft := f.Type
-			if ft.Kind() == reflect.Slice {
-				elem := ft.Elem()
-				for elem.Kind() == reflect.Ptr {
-					elem = elem.Elem()
-				}
-				if elem.Kind() == reflect.Struct {
-					if arr, ok3 := raw.([]any); ok3 {
-						var kept []any
-						for _, child := range arr {
-							if m, ok4 := child.(map[string]any); ok4 {
-								if err := coerceAgainstType(m, elem); err != nil {
-									return err
-								}
-								if len(m) > 0 {
-									kept = append(kept, m)
-								}
+		ft := derefType(sf.Type)
+		val, ok := norm[key]
+		if !ok {
+			continue
+		}
+		switch ft.Kind() {
+		case reflect.Slice:
+			elem := derefType(ft.Elem())
+			if elem.Kind() == reflect.Struct {
+				if arr, ok := val.([]any); ok {
+					for idx, child := range arr {
+						if m, ok2 := child.(map[string]any); ok2 {
+							if err := coerceAgainstType(m, elem, append(path, key), o); err != nil {
+								return err
 							}
-						}
-						// Replace with filtered children (drop empty ones)
-						if len(kept) > 0 {
-							norm[orKey] = kept
-						} else {
-							delete(norm, orKey)
+							arr[idx] = m
 						}
 					}
 				}
 			}
-		}
-	}
-
-	// Handle Not child (support both "Not" and "not" keys)
-	notKey := "Not"
-	raw, ok = norm[notKey]
-	if !ok {
-		if v, ok2 := norm["not"]; ok2 {
-			raw = v
-			ok = true
-			notKey = "not"
-		}
-	}
-	if ok {
-		if f, ok2 := t.FieldByName("Not"); ok2 {
-			ft := f.Type
-			for ft.Kind() == reflect.Ptr {
-				ft = ft.Elem()
-			}
-			if ft.Kind() == reflect.Struct {
-				if m, ok3 := raw.(map[string]any); ok3 {
-					if err := coerceAgainstType(m, ft); err != nil {
-						return err
-					}
-					// drop empty not after coercion
-					if len(m) == 0 {
-						delete(norm, notKey)
-					} else {
-						norm[notKey] = m
+		case reflect.Struct:
+			if m, ok := val.(map[string]any); ok {
+				// apply to present operator keys (lowerCamel)
+				for j := 0; j < ft.NumField(); j++ {
+					of := ft.Field(j)
+					opKey := lo.CamelCase(of.Name)
+					if _, ok2 := m[opKey]; ok2 {
+						v := m[opKey]
+						m[opKey] = coerceJSONValToType(v, of.Type)
 					}
 				}
 			}
+		default:
+			return nil
 		}
-	}
-
-	// Coerce each field operator map according to destination operator types
-	for i := 0; i < t.NumField(); i++ {
-		sf := t.Field(i)
-		// Skip control fields handled above
-		if sf.Name == "Or" || sf.Name == "And" || sf.Name == "Not" || sf.Name == "Filter" {
-			continue
-		}
-
-		// Support both destination struct field name (UpperCamel) and lowerCamel JSON key
-		fieldKey := sf.Name
-		raw, ok := norm[fieldKey]
-		usedKey := fieldKey
-		if !ok {
-			lc := strcase.ToLowerCamel(fieldKey)
-			if v, ok2 := norm[lc]; ok2 {
-				raw = v
-				ok = true
-				usedKey = lc
-			}
-		}
-		if !ok {
-			continue
-		}
-		opsMap, ok := raw.(map[string]any)
-		if !ok {
-			continue
-		}
-
-		opsT := sf.Type
-		for opsT.Kind() == reflect.Ptr {
-			opsT = opsT.Elem()
-		}
-		if opsT.Kind() != reflect.Struct {
-			continue
-		}
-
-		// For each operator field in the destination ops struct, support both UpperCamel and lowerCamel keys
-		matchedAny := false
-		for j := 0; j < opsT.NumField(); j++ {
-			of := opsT.Field(j)
-			opKeyUpper := of.Name
-			usedOpKey := opKeyUpper
-			v, ok2 := opsMap[opKeyUpper]
-			if !ok2 {
-				opKeyLower := strcase.ToLowerCamel(opKeyUpper)
-				if vv, ok3 := opsMap[opKeyLower]; ok3 {
-					v = vv
-					ok2 = true
-					usedOpKey = opKeyLower
-				}
-			}
-			if ok2 {
-				opsMap[usedOpKey] = coerceJSONValToType(v, of.Type)
-				matchedAny = true
-			}
-		}
-		// If no operator matched this destination ops struct, drop the field entirely
-		if !matchedAny {
-			delete(norm, usedKey)
-			continue
-		}
-		// write back in case the map was replaced (preserve original key casing)
-		norm[usedKey] = opsMap
-	}
-
-	// Cleanup pass: remove fields not present in destination, and remove unsupported operator keys
-	// Build destination field -> operator struct type map with both upper/lower camel keys
-	destOpsTypes := map[string]reflect.Type{}
-	for i := 0; i < t.NumField(); i++ {
-		sf := t.Field(i)
-		if sf.Name == "Or" || sf.Name == "And" || sf.Name == "Not" || sf.Name == "Filter" {
-			continue
-		}
-		opT := sf.Type
-		for opT.Kind() == reflect.Ptr {
-			opT = opT.Elem()
-		}
-		if opT.Kind() != reflect.Struct {
-			continue
-		}
-		destOpsTypes[sf.Name] = opT
-		destOpsTypes[strcase.ToLowerCamel(sf.Name)] = opT
-	}
-	// Collect unknown field keys to delete
-	var toDeleteFields []string
-	for k, v := range norm {
-		if k == "Or" || k == "or" || k == "Not" || k == "not" {
-			continue
-		}
-		opT, ok := destOpsTypes[k]
-		if !ok {
-			toDeleteFields = append(toDeleteFields, k)
-			continue
-		}
-		// Filter operator keys inside ops map to only those supported
-		if m, ok2 := v.(map[string]any); ok2 {
-			allowed := map[string]bool{}
-			for j := 0; j < opT.NumField(); j++ {
-				of := opT.Field(j)
-				allowed[of.Name] = true
-				allowed[strcase.ToLowerCamel(of.Name)] = true
-			}
-			for kk := range m {
-				if !allowed[kk] {
-					delete(m, kk)
-				}
-			}
-			if len(m) == 0 {
-				toDeleteFields = append(toDeleteFields, k)
-			}
-		}
-	}
-	for _, k := range toDeleteFields {
-		delete(norm, k)
 	}
 	return nil
+}
+
+func derefType(t reflect.Type) reflect.Type {
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	return t
+}
+
+func findFieldBySnakeCase(t reflect.Type, key string) (reflect.StructField, bool) {
+	t = derefType(t)
+	for i := 0; i < t.NumField(); i++ {
+		sf := t.Field(i)
+		if lo.SnakeCase(sf.Name) == lo.SnakeCase(key) {
+			return sf, true
+		}
+	}
+	return reflect.StructField{}, false
+}
+
+// buildCoercer removed: operator coercion is inlined in makeFieldCoercer
+
+// pruneUnsupported removed: value conversion only; structural pruning is handled by pruneEmpty()
+
+func pruneEmpty(m map[string]any) {
+	if m == nil {
+		return
+	}
+	for k, v := range m {
+		switch x := v.(type) {
+		case nil:
+			delete(m, k)
+		case []any:
+			// prune children
+			var kept []any
+			for _, it := range x {
+				switch child := it.(type) {
+				case map[string]any:
+					pruneEmpty(child)
+					if len(child) > 0 {
+						kept = append(kept, child)
+					}
+				default:
+					if it != nil {
+						kept = append(kept, it)
+					}
+				}
+			}
+			if len(kept) == 0 {
+				delete(m, k)
+			} else {
+				m[k] = kept
+			}
+		case map[string]any:
+			pruneEmpty(x)
+			if len(x) == 0 {
+				delete(m, k)
+			}
+		}
+	}
 }
 
 func coerceJSONValToType(val any, t reflect.Type) any {
@@ -791,79 +688,23 @@ func coerceJSONValToType(val any, t reflect.Type) any {
 		t = t.Elem()
 	}
 
-	// Special-case protobuf Timestamp: convert to {seconds, nanos}
-	if t == reflect.TypeOf(timestamppb.Timestamp{}) {
-		switch x := val.(type) {
-		case string:
-			if tm, err := time.Parse(time.RFC3339Nano, strings.TrimSpace(x)); err == nil {
-				sec := tm.Unix()
-				ns := tm.Nanosecond()
-				return map[string]any{
-					"seconds": sec,
-					"nanos":   ns,
-				}
-			}
-			return val
-		case map[string]any:
-			return x
-		default:
-			return val
-		}
-	}
-
 	switch t.Kind() {
 	case reflect.String:
-		switch x := val.(type) {
-		case string:
-			return x
-		case bool:
-			if x {
-				return "true"
-			}
-			return "false"
-		case float64:
-			return strconv.FormatFloat(x, 'f', -1, 64)
-		default:
-			return val
-		}
+		return cast.ToString(val)
 	case reflect.Bool:
-		switch x := val.(type) {
-		case bool:
-			return x
-		case string:
-			ls := strings.ToLower(strings.TrimSpace(x))
-			return ls == "true" || ls == "1"
-		case float64:
-			return x != 0
-		default:
-			return val
-		}
+		return cast.ToBool(val)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		switch x := val.(type) {
-		case float64:
-			// JSON numbers are fine for integer targets
-			return x
-		case string:
-			if fv, err := strconv.ParseFloat(strings.TrimSpace(x), 64); err == nil {
-				return fv
-			}
-			return val
-		default:
-			return val
+		return cast.ToInt64(val)
+	case reflect.Float64, reflect.Float32:
+		return cast.ToFloat64(val)
+	case reflect.Struct:
+		// google.protobuf.Timestamp expects RFC3339 string in protojson
+		// Normalize common "YYYY-MM-DD HH:MM:SS" to "YYYY-MM-DDTHH:MM:SSZ" if timezone info is missing.
+		if isProtoTimestampType(t) {
+			return cast.ToTime(val).Format(time.RFC3339)
 		}
-	case reflect.Float64:
-		switch x := val.(type) {
-		case float64:
-			return x
-		case string:
-			if fv, err := strconv.ParseFloat(strings.TrimSpace(x), 64); err == nil {
-				return fv
-			}
-			return val
-		default:
-			return val
-		}
+		return val
 	case reflect.Slice:
 		elem := t.Elem()
 		// Normalize to []any for JSON marshalling
@@ -874,21 +715,11 @@ func coerceJSONValToType(val any, t reflect.Type) any {
 				out = append(out, coerceJSONValToType(e, elem))
 			}
 			return out
-		case []string:
-			out := make([]any, 0, len(x))
-			for _, s := range x {
-				out = append(out, coerceJSONValToType(s, elem))
-			}
-			return out
-		case string:
-			// Best-effort CSV split if destination expects a slice
+		case string: // Best-effort CSV split if destination expects a slice
 			parts := strings.Split(x, ",")
 			out := make([]any, 0, len(parts))
 			for _, p := range parts {
 				p = strings.TrimSpace(p)
-				if p == "" {
-					continue
-				}
 				out = append(out, coerceJSONValToType(p, elem))
 			}
 			return out
@@ -900,4 +731,7 @@ func coerceJSONValToType(val any, t reflect.Type) any {
 	}
 }
 
-// parseNumberOrBool removed with coerceValueForJSON
+func isProtoTimestampType(t reflect.Type) bool {
+	t = derefType(t)
+	return t == reflect.TypeOf(timestamppb.Timestamp{})
+}
