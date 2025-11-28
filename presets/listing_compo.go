@@ -401,9 +401,6 @@ func (c *ListingCompo) toolbarSearch(ctx context.Context) h.HTMLComponent {
 
 func (c *ListingCompo) defaultCellWrapperFunc(envCtx *web.EventContext, cell h.MutableAttrHTMLComponent, id string, _ any, _ string) h.HTMLComponent {
 
-	if c.lb.mb.Info().Verifier().Do(PermUpdate).WithReq(envCtx.R).IsAllowed() != nil {
-		return cell
-	}
 	if c.lb.mb.hasDetailing && !c.lb.mb.detailing.drawer {
 		cell.SetAttr("@click", web.Plaid().PushStateURL(c.lb.mb.Info().DetailingHref(id)).Go())
 		return cell
@@ -412,6 +409,9 @@ func (c *ListingCompo) defaultCellWrapperFunc(envCtx *web.EventContext, cell h.M
 	event := actions.Edit
 	if c.lb.mb.hasDetailing {
 		event = actions.DetailingDrawer
+	}
+	if c.lb.mb.Info().Verifier().Do(PermUpdate).WithReq(envCtx.R).IsAllowed() != nil && !c.lb.mb.hasDetailing {
+		return cell
 	}
 	onClick := web.Plaid().EventFunc(event).Query(ParamID, id)
 	if c.Popup {
