@@ -130,7 +130,7 @@ func cropImage(b *Builder) web.EventFunc {
 		if err != nil {
 			panic(err)
 		}
-		if len(cropOption) > 0 {
+		if cropOption != "" {
 			cropValue := cropper.Value{}
 			err = json.Unmarshal([]byte(cropOption), &cropValue)
 			if err != nil {

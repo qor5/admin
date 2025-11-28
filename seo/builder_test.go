@@ -527,7 +527,7 @@ func TestBuilder_SortSEOs(t *testing.T) {
 			c.builder.SortSEOs(c.data)
 			r := testingutils.PrettyJsonDiff(c.expected, c.data)
 			if r != "" {
-				t.Errorf(r)
+				t.Error(r)
 			}
 		})
 	}

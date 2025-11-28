@@ -164,9 +164,9 @@ func TestModelTypeHanders(t *testing.T) {
 
 	builder := New(db, testCurrentUser)
 	builder.Install(pb)
-	builder.RegisterModel(pageModel).AddTypeHanders(Widgets{}, func(old, new any, prefixField string) (diffs []Diff) {
-		oldWidgets := old.(Widgets)
-		newWidgets := new.(Widgets)
+	builder.RegisterModel(pageModel).AddTypeHanders(Widgets{}, func(oldObj, newObj any, prefixField string) (diffs []Diff) {
+		oldWidgets := oldObj.(Widgets)
+		newWidgets := newObj.(Widgets)
 
 		var (
 			oldLen  = len(oldWidgets)

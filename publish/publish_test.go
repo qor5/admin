@@ -738,7 +738,7 @@ func TestPublishContentWithoutVersionToS3(t *testing.T) {
 	}
 }
 
-func assertUpdateStatus(t *testing.T, db *gorm.DB, p *Product, assertStatus string, asserOnlineUrl string) {
+func assertUpdateStatus(t *testing.T, db *gorm.DB, p *Product, assertStatus, asserOnlineUrl string) {
 	t.Helper()
 
 	var pindb Product
@@ -766,7 +766,7 @@ func assertContentDeleted(t *testing.T, url string, storage oss.StorageInterface
 	}
 }
 
-func assertNoVersionUpdateStatus(t *testing.T, db *gorm.DB, p *ProductWithoutVersion, assertStatus string, asserOnlineUrl string) {
+func assertNoVersionUpdateStatus(t *testing.T, db *gorm.DB, p *ProductWithoutVersion, assertStatus, asserOnlineUrl string) {
 	var pindb ProductWithoutVersion
 	err := db.Model(&ProductWithoutVersion{}).Where("id = ?", p.ID).First(&pindb).Error
 	if err != nil {
@@ -781,7 +781,7 @@ func assertNoVersionUpdateStatus(t *testing.T, db *gorm.DB, p *ProductWithoutVer
 	}
 }
 
-func assertUploadFile(t *testing.T, content string, url string, storage oss.StorageInterface) {
+func assertUploadFile(t *testing.T, content, url string, storage oss.StorageInterface) {
 	t.Helper()
 	f, err := storage.Get(context.Background(), url)
 	if err != nil {

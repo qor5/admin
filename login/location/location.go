@@ -65,7 +65,7 @@ func LocaleFromLanguage(t language.Tag) string {
 	}
 }
 
-func GeneralLocalizedCountryCity(record *geoip2.City, lang language.Tag, fallback language.Tag) string {
+func GeneralLocalizedCountryCity(record *geoip2.City, lang, fallback language.Tag) string {
 	locale := LocaleFromLanguage(lang)
 	fallbackLocale := LocaleFromLanguage(fallback)
 

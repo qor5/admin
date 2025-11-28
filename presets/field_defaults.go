@@ -238,7 +238,7 @@ func cfTextField(obj interface{}, field *FieldContext, ctx *web.EventContext) h.
 	return TextField(obj, field, ctx)
 }
 
-func VFieldError(name string, value interface{}, errorMessages interface{}) []interface{} {
+func VFieldError(name string, value, errorMessages interface{}) []interface{} {
 	var (
 		objValue = map[string]interface{}{
 			name: value,

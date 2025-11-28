@@ -86,7 +86,7 @@ func (msgr *Messages) EditedNFields(n int) string {
 		Replace(msgr.EditedNFieldsTemplate)
 }
 
-func (msgr *Messages) PerformAction(action string, detail string) string {
+func (msgr *Messages) PerformAction(action, detail string) string {
 	if detail == "" || detail == "null" || detail == "{}" {
 		return strings.NewReplacer(
 			"{action}", action,

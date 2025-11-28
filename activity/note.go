@@ -156,7 +156,7 @@ func markAllNotesAsRead(db *gorm.DB, uid string) error {
 	})
 }
 
-func sqlConditionHasUnreadNotes(db *gorm.DB, tablePrefix string, uid string, modelName string, columns []string, sep string, columnPrefix string) (string, error) {
+func sqlConditionHasUnreadNotes(db *gorm.DB, tablePrefix, uid, modelName string, columns []string, sep, columnPrefix string) (string, error) {
 	a := strings.Join(lo.Map(columns, func(v string, _ int) string {
 		return fmt.Sprintf("%s%s::text", columnPrefix, v)
 	}), ",")
