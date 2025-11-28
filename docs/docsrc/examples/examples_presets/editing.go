@@ -13,6 +13,7 @@ import (
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/media"
@@ -183,10 +184,11 @@ type SingletonNestedItem struct {
 // SingletonWithNested demonstrates a singleton model that contains a nested slice field.
 // Items is ignored by GORM on purpose to avoid persistence complexity for the demo.
 type SingletonWithNested struct {
-	ID    uint
-	Title string
+	ID     uint
+	Title  string
 	Title2 string
-	Items []*SingletonNestedItem `gorm:"type:jsonb"` // Items is ignored by GORM on purpose to avoid persistence complexity for the demo.
+	// Persist Items as JSONB while keeping a typed slice for Nested editor and form binding.
+	Items datatypes.JSONSlice[*SingletonNestedItem] `gorm:"type:jsonb;default:'[]'"`
 }
 
 // PresetsEditingSingletonNested installs a singleton page with a nested list field
@@ -203,7 +205,7 @@ func PresetsEditingSingletonNested(b *presets.Builder, db *gorm.DB) (
 	mb = b.Model(&SingletonWithNested{}).Singleton(true).Label("Singleton Nested Demo")
 	// Configure editing fields: a simple title and a nested list field "Items"
 	itemFB := b.NewFieldsBuilder(presets.WRITE).Model(&SingletonNestedItem{}).Only("Name", "Value")
-	ce = mb.Editing().Only("Title","Title2", "Items")
+	ce = mb.Editing().Only("Title", "Title2", "Items")
 	ce.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		singleton := obj.(*SingletonWithNested)
 		if singleton.Title == "123" {
