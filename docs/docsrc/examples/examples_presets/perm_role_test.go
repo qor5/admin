@@ -52,6 +52,7 @@ func testPermHandler(db *gorm.DB, userRole string) http.Handler {
 		&role.Role{},
 		&models.Order{},
 		&customer{},
+		&Group{},
 	); err != nil {
 		panic(err)
 	}
@@ -61,7 +62,8 @@ func testPermHandler(db *gorm.DB, userRole string) http.Handler {
 
 	configPermOrder(b)
 	configPermCustomer(b)
-
+	mb := b.Model(&Group{})
+	mb.Listing("ID", "Name")
 	perm.Verbose = true
 	b.Permission(
 		perm.New().Policies(
@@ -72,6 +74,8 @@ func testPermHandler(db *gorm.DB, userRole string) http.Handler {
 			perm.PolicyFor(models.RoleViewer).WhoAre(perm.Denied).ToDo(presets.PermCreate).On("*:presets:customers:*"),
 			perm.PolicyFor(models.RoleViewer).WhoAre(perm.Allowed).ToDo(perm.Anything).On("*:presets:customers:*"),
 			perm.PolicyFor(models.RoleEditor).WhoAre(perm.Allowed).ToDo(perm.Anything).On("*:presets:customers:*"),
+			perm.PolicyFor(models.RoleViewer).WhoAre(perm.Denied).ToDo(presets.PermUpdate).On("*:presets:groups:*"),
+			perm.PolicyFor(models.RoleViewer).WhoAre(perm.Allowed).ToDo(presets.PermRead...).On("*:presets:groups:*"),
 		).SubjectsFunc(func(r *http.Request) []string {
 			u, ok := login.GetCurrentUser(r).(*models.User)
 			if !ok {
@@ -295,4 +299,29 @@ func TestSectionEditPerm(t *testing.T) {
 			multipartestutils.RunCase(t, c.TestCase, h)
 		})
 	}
+}
+
+var permGroupData = gofixtures.Data(gofixtures.Sql(`
+insert into public.groups (id, name)
+values  (1, 'Group1');
+`, []string{"groups"}))
+
+func TestGroupPerm(t *testing.T) {
+	dbr, _ := TestDB.DB()
+	t.Run("Show group list", func(t *testing.T) {
+		h := testPermHandler(TestDB, models.RoleViewer)
+		multipartestutils.RunCase(t, multipartestutils.TestCase{
+			Name:  "Show group list",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				permGroupData.TruncatePut(dbr)
+				req := multipartestutils.NewMultipartBuilder().
+					PageURL("/groups").
+					BuildEventFuncRequest()
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{`Group1`},
+			ExpectPageBodyNotContains:     []string{`eventFunc("presets_Edit").query("id", "1")`},
+		}, h)
+	})
 }

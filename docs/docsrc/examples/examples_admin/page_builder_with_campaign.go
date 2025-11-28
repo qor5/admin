@@ -25,12 +25,14 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/admin/v3/publish"
+	"github.com/qor5/admin/v3/seo"
 )
 
 // models
 type (
 	Campaign struct {
 		gorm.Model
+		SEO   seo.Setting
 		Title string
 		publish.Status
 		publish.Schedule
@@ -267,9 +269,11 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 		)
 	}
 	b.Use(puBuilder)
+	seoBuilder := seo.New(db).AutoMigrate()
 
 	pb := pagebuilder.New("/page_builder", db, b).
 		Activity(ab).
+		SEO(seoBuilder).
 		Only("Title", "Slug").
 		DisabledNormalContainersGroup(true).
 		PreviewOpenNewTab(true).
@@ -387,6 +391,7 @@ func PageBuilderExample(b *presets.Builder, db *gorm.DB) http.Handler {
 	detail := campaignModelBuilder.Detailing(
 		pagebuilder.PageBuilderPreviewCard,
 		"CampaignDetail",
+		seo.SeoDetailFieldName,
 	)
 	campaignDetailSection := presets.NewSectionBuilder(campaignModelBuilder, "CampaignDetail").Editing("Title")
 	detail.Section(campaignDetailSection)

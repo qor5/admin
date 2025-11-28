@@ -371,6 +371,7 @@ func (b *Builder) ModelInstall(pb *presets.Builder, mb *presets.ModelBuilder) (e
 	b.configEditor(r)
 	b.configPublish(r)
 	b.configDetail(r)
+	b.seoDisableEditOnline(mb)
 	return nil
 }
 
@@ -533,31 +534,35 @@ func (b *Builder) useAllPlugin(pm *presets.ModelBuilder, pageModelName string) {
 }
 
 func (b *Builder) seoDisableEditOnline(pm *presets.ModelBuilder) {
-	if !pm.HasDetailing() || pm.Detailing().GetField(seo.SeoDetailFieldName) == nil {
+	fb := pm.Detailing().GetField(seo.SeoDetailFieldName)
+	if !pm.HasDetailing() || fb == nil {
 		return
 	}
-	pm.Detailing().Field(seo.SeoDetailFieldName).GetComponent().(*presets.SectionBuilder).WrapComponentEditBtnFunc(func(in presets.ObjectBoolFunc) presets.ObjectBoolFunc {
-		return func(obj interface{}, ctx *web.EventContext) bool {
-			var (
-				p      = obj.(publish.StatusInterface)
-				status = p.EmbedStatus().Status
-			)
-			return !(status == publish.StatusOnline || status == publish.StatusOffline)
-		}
-	}).WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
-		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-			var (
-				p      = obj.(publish.StatusInterface)
-				status = p.EmbedStatus().Status
-				msgr   = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-			)
-			if status == publish.StatusOnline || status == publish.StatusOffline {
-				err.GlobalError(msgr.TheResourceCanNotBeModified)
-				return
+	if sb, ok := fb.GetComponent().(*presets.SectionBuilder); ok {
+		sb.WrapComponentEditBtnFunc(func(in presets.ObjectBoolFunc) presets.ObjectBoolFunc {
+			return func(obj interface{}, ctx *web.EventContext) bool {
+				var (
+					p      = obj.(publish.StatusInterface)
+					status = p.EmbedStatus().Status
+				)
+				return !(status == publish.StatusOnline || status == publish.StatusOffline)
 			}
-			return in(obj, ctx)
-		}
-	})
+		})
+		sb.WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
+			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+				var (
+					p      = obj.(publish.StatusInterface)
+					status = p.EmbedStatus().Status
+					msgr   = i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+				)
+				if status == publish.StatusOnline || status == publish.StatusOffline {
+					err.GlobalError(msgr.TheResourceCanNotBeModified)
+					return
+				}
+				return in(obj, ctx)
+			}
+		})
+	}
 }
 
 func (b *Builder) preparePlugins() {
