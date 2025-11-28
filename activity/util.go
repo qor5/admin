@@ -116,7 +116,7 @@ func collectStructFields(t reflect.Type, bindNames []string, preprocess func(f *
 			continue
 		}
 
-		newBindNames := append(bindNames, field.Name)
+		newBindNames := slices.Concat(bindNames, []string{field.Name})
 		switch field.Type.Kind() {
 		case reflect.Struct:
 			fields = append(fields, collectStructFields(field.Type, newBindNames, preprocess)...)
