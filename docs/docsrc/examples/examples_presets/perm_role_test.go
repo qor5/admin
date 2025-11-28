@@ -324,5 +324,4 @@ func TestGroupPerm(t *testing.T) {
 			ExpectPageBodyNotContains:     []string{`eventFunc("presets_Edit").query("id", "1")`},
 		}, h)
 	})
-
 }
