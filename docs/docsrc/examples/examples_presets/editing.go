@@ -184,10 +184,8 @@ type SingletonNestedItem struct {
 // SingletonWithNested demonstrates a singleton model that contains a nested slice field.
 // Items is ignored by GORM on purpose to avoid persistence complexity for the demo.
 type SingletonWithNested struct {
-	ID     uint
-	Title  string
-	Title2 string
-	// Persist Items as JSONB while keeping a typed slice for Nested editor and form binding.
+	ID    uint
+	Title string
 	Items datatypes.JSONSlice[*SingletonNestedItem] `gorm:"type:jsonb;default:'[]'"`
 }
 
@@ -205,11 +203,11 @@ func PresetsEditingSingletonNested(b *presets.Builder, db *gorm.DB) (
 	mb = b.Model(&SingletonWithNested{}).Singleton(true).Label("Singleton Nested Demo")
 	// Configure editing fields: a simple title and a nested list field "Items"
 	itemFB := b.NewFieldsBuilder(presets.WRITE).Model(&SingletonNestedItem{}).Only("Name", "Value")
-	ce = mb.Editing().Only("Title", "Title2", "Items")
+	ce = mb.Editing().Only("Title", "Items")
 	ce.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		singleton := obj.(*SingletonWithNested)
-		if singleton.Title == "123" {
-			err.FieldError("Title", "title must not be 123")
+		if len(singleton.Title) > 10 {
+			err.FieldError("Title", "title must not be longer than 10 characters")
 		}
 		return
 	})

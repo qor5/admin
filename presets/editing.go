@@ -340,11 +340,16 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 					Variant(VariantFlat).
 					Attr(":disabled", "xLocals.isFetching").
 					Attr(":loading", "xLocals.isFetching").
+					Attr("v-on-mounted", `({watch,window}) => {
+						xLocals.functionName=()=>{
+							xLocals.isFetching=false;
+						}
+					}`).
 					Attr("@click", web.Plaid().
 						BeforeScript("xLocals.isFetching=true").
 						EventFunc(actions.Update).
 						Queries(queries).
-						ThenScript("setTimeout(()=>{xLocals.isFetching=false},150)").
+						ThenScript("xLocals.functionName();").
 						URL(b.mb.Info().ListingHref()).
 						Go()),
 			).VSlot("{locals:xLocals}").Init("{isFetching:false}")
@@ -593,12 +598,6 @@ func (b *EditingBuilder) doUpdate(
 			b.mb.NotifModelsUpdated(),
 			PayloadModelsUpdated{Ids: []string{id}, Models: map[string]any{id: obj}},
 		)
-	}
-
-	// For singleton pages, refresh the page portal to reset local state and stop loading
-	if b.mb.singleton {
-		usingB.UpdateOverlayContent(ctx, r, obj, "", nil)
-		return created, nil
 	}
 
 	overlayType := ctx.R.FormValue(ParamOverlay)
