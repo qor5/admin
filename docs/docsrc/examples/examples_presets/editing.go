@@ -182,11 +182,11 @@ type SingletonNestedItem struct {
 }
 
 // SingletonWithNested demonstrates a singleton model that contains a nested slice field.
-// Items is ignored by GORM on purpose to avoid persistence complexity for the demo.
+// Items is persisted by GORM as a JSONB column in the database.
 type SingletonWithNested struct {
 	ID    uint
 	Title string
-	Items datatypes.JSONSlice[*SingletonNestedItem] `gorm:"type:jsonb;default:'[]'"`
+	Items datatypes.JSONSlice[*SingletonNestedItem] `gorm:"default:'[]'"`
 }
 
 // PresetsEditingSingletonNested installs a singleton page with a nested list field

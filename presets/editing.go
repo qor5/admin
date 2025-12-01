@@ -341,7 +341,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 					Attr(":disabled", "xLocals.isFetching").
 					Attr(":loading", "xLocals.isFetching").
 					Attr("v-on-mounted", `({watch,window}) => {
-						xLocals.functionName=()=>{
+						xLocals.resetIsFetching=()=>{
 							xLocals.isFetching=false;
 						}
 					}`).
@@ -349,7 +349,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 						BeforeScript("xLocals.isFetching=true").
 						EventFunc(actions.Update).
 						Queries(queries).
-						ThenScript("xLocals.functionName();").
+						ThenScript("xLocals.resetIsFetching();").
 						URL(b.mb.Info().ListingHref()).
 						Go()),
 			).VSlot("{locals:xLocals}").Init("{isFetching:false}")
