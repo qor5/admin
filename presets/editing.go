@@ -340,7 +340,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 					Variant(VariantFlat).
 					Attr(":disabled", "xLocals.isFetching").
 					Attr(":loading", "xLocals.isFetching").
-					Attr("v-on-mounted", `({watch,window}) => {
+					Attr("v-on-mounted", `() => {
 						xLocals.resetIsFetching=()=>{
 							xLocals.isFetching=false;
 						}
