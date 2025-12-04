@@ -217,8 +217,6 @@ func PresetsEditingSingletonNested(b *presets.Builder, db *gorm.DB) (
 
 // @snippet_end
 
-// @snippet_begin(PresetsEditingCustomizationFileTypeSample)
-
 type MyFile string
 
 type Product struct {
@@ -290,8 +288,6 @@ func PresetsEditingCustomizationFileType(b *presets.Builder, db *gorm.DB) (
 	pmb.Editing("Title", "MainImage")
 	return
 }
-
-// @snippet_end
 
 // @snippet_begin(PresetsEditingCustomizationValidationSample)
 
