@@ -293,8 +293,11 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		obj = b.mb.NewModel()
 	}
 
-	if b.mb.singleton {
-		ctx = ctx.WithContextValue(ctxKeyParamID{}, id)
+	if b.mb.singleton && id != "" {
+		if ctx.R.Form == nil {
+			_ = ctx.R.ParseForm()
+		}
+		ctx.R.Form.Set(ParamID, id)
 	}
 
 	var notice h.HTMLComponent
@@ -340,16 +343,11 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 					Variant(VariantFlat).
 					Attr(":disabled", "xLocals.isFetching").
 					Attr(":loading", "xLocals.isFetching").
-					Attr("v-on-mounted", `() => {
-						xLocals.resetIsFetching=()=>{
-							xLocals.isFetching=false;
-						}
-					}`).
 					Attr("@click", web.Plaid().
 						BeforeScript("xLocals.isFetching=true").
 						EventFunc(actions.Update).
 						Queries(queries).
-						ThenScript("xLocals.resetIsFetching();").
+						ThenScript("xLocals.isFetching=false;").
 						URL(b.mb.Info().ListingHref()).
 						Go()),
 			).VSlot("{locals:xLocals}").Init("{isFetching:false}")

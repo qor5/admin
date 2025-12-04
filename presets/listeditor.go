@@ -118,11 +118,6 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 	ctx := web.MustGetEventContext(c)
 
 	id := ctx.Param(ParamID)
-	if v := ctx.ContextValue(ctxKeyParamID{}); v != nil {
-		if s, ok := v.(string); ok && id == "" {
-			id = s
-		}
-	}
 
 	formKey := b.fieldContext.FormKey
 	var form h.HTMLComponent
