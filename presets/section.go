@@ -609,7 +609,7 @@ func (b *SectionBuilder) editComponent(obj interface{}, field *FieldContext, ctx
 				comps,
 				content,
 				hiddenComp,
-			).VSlot("{ form }").OnChange(onChangeEvent).UseDebounce(500),
+			).OnChange(onChangeEvent).UseDebounce(500),
 		)
 	}
 	return h.Div(
