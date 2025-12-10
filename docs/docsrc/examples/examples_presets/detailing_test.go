@@ -308,6 +308,38 @@ func TestPresetsDetailSectionValidate(t *testing.T) {
 
 	cases := []multipartestutils.TestCase{
 		{
+			Name:  "section validate name_section field error with VFieldError",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=section_save_name_section&id=12").
+					AddField("Name", "long name exceeds 6 chars").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{
+				"v-text-field",
+				`dash.errorMessages["Name"]`,
+				"customer name must no longer than 6",
+			},
+		},
+		{
+			Name:  "section validate email_section field error with VFieldError",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=section_save_email_section&id=12").
+					AddField("Email", "short").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{
+				"v-text-field",
+				`dash.errorMessages["Email"]`,
+				"customer email must longer than 6",
+			},
+		},
+		{
 			Name:  "section validate globe err",
 			Debug: true,
 			ReqFunc: func() *http.Request {
