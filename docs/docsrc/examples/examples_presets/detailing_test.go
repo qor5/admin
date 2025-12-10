@@ -402,24 +402,6 @@ func TestPresetsDetailSectionValidate(t *testing.T) {
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"customer email must longer than 6"},
 		},
-		{
-			Name:  "list section validate field err with globe err",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				detailData.TruncatePut(SqlDB)
-				return multipartestutils.NewMultipartBuilder().
-					PageURL("/customers?__execute_event__=section_save_CreditCards&id=12").
-					Query("sectionListSaveBtn_CreditCards", "0").
-					Query("sectionListUnsaved_CreditCards", "false").
-					AddField("CreditCards[0].Name", "").
-					AddField("Name", "name").
-					AddField("Email", "email11").
-					AddField("__Deleted_CreditCards[0].sectionListEditing", "true").
-					BuildEventFuncRequest()
-			},
-			ExpectRunScriptContainsInOrder:     []string{"credit card name must not be empty"},
-			ExpectPortalUpdate0ContainsInOrder: []string{"credit card 0 name must not be empty"},
-		},
 	}
 
 	for _, c := range cases {
@@ -708,6 +690,79 @@ func TestPresetsDetailListSection(t *testing.T) {
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Cancel", "Save", "This is hidden"},
+		},
+		{
+			Name:  "save with empty name - validation error",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				userCreditCardsData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_save_CreditCards").
+					Query("sectionListUnsaved_CreditCards", "false").
+					Query("sectionListSaveBtn_CreditCards", "0").
+					Query("id", "1").
+					AddField("CreditCards[0].Name", "").
+					AddField("CreditCards[0].Phone", "188").
+					AddField("__Deleted_CreditCards[0].sectionListEditing", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"card name must not be empty", "Cancel", "Save"},
+		},
+		{
+			Name:  "save with name exceeds 10 chars - validation error",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				userCreditCardsData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_save_CreditCards").
+					Query("sectionListUnsaved_CreditCards", "false").
+					Query("sectionListSaveBtn_CreditCards", "0").
+					Query("id", "1").
+					AddField("CreditCards[0].Name", "verylongname").
+					AddField("CreditCards[0].Phone", "188").
+					AddField("__Deleted_CreditCards[0].sectionListEditing", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"card name must not exceed 10 characters", "Cancel", "Save"},
+		},
+		{
+			Name:  "save CreditCards2 with empty phone - validation error",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				userCreditCardsData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_save_CreditCards2").
+					Query("sectionListUnsaved_CreditCards2", "false").
+					Query("sectionListSaveBtn_CreditCards2", "0").
+					Query("id", "1").
+					AddField("CreditCards2[0].Name", "terry").
+					AddField("CreditCards2[0].Phone", "").
+					AddField("__Deleted_CreditCards2[0].sectionListEditing", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"card phone must not be empty", "Cancel", "Save"},
+		},
+		{
+			Name:  "save with valid data - success",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				userCreditCardsData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_save_CreditCards").
+					Query("sectionListUnsaved_CreditCards", "false").
+					Query("sectionListSaveBtn_CreditCards", "0").
+					Query("id", "1").
+					AddField("CreditCards[0].Name", "validname").
+					AddField("CreditCards[0].Phone", "188").
+					AddField("__Deleted_CreditCards[0].sectionListEditing", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"validname", "188", "Add Item"},
+			ExpectPortalUpdate0NotContains:     []string{"Cancel", "Save", "must not be empty", "must not exceed"},
 		},
 	}
 

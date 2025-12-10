@@ -1,14 +1,14 @@
 package examples_presets
 
 import (
-"net/http"
-"strings"
-"testing"
+	"net/http"
+	"strings"
+	"testing"
 
-"github.com/qor5/admin/v3/presets"
-"github.com/qor5/admin/v3/presets/actions"
-"github.com/qor5/web/v3/multipartestutils"
-"github.com/theplant/gofixtures"
+	"github.com/qor5/admin/v3/presets"
+	"github.com/qor5/admin/v3/presets/actions"
+	"github.com/qor5/web/v3/multipartestutils"
+	"github.com/theplant/gofixtures"
 )
 
 var sectionDemoData = gofixtures.Data(gofixtures.Sql(`
@@ -44,7 +44,7 @@ func TestPresetsSectionSingleton(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				sectionDemoData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/section-demos?__execute_event__=" + actions.Update + "&id=1").
+					PageURL("/section-demos?__execute_event__="+actions.Update+"&id=1").
 					AddField("BasicInfo.Name", "Updated Name").
 					AddField("BasicInfo.Email", "updated@example.com").
 					AddField("AdditionalInfo.Age", "30").
@@ -68,7 +68,7 @@ func TestPresetsSectionSingleton(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				sectionDemoData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/section-demos?__execute_event__=" + actions.Update + "&id=1").
+					PageURL("/section-demos?__execute_event__="+actions.Update+"&id=1").
 					AddField("BasicInfo.Name", "").
 					AddField("BasicInfo.Email", "test@example.com").
 					AddField("AdditionalInfo.Age", "30").
@@ -83,7 +83,7 @@ func TestPresetsSectionSingleton(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				sectionDemoData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/section-demos?__execute_event__=" + actions.Update + "&id=1").
+					PageURL("/section-demos?__execute_event__="+actions.Update+"&id=1").
 					AddField("BasicInfo.Name", "Test").
 					AddField("BasicInfo.Email", "test@example.com").
 					AddField("AdditionalInfo.Age", "105").
@@ -96,8 +96,8 @@ func TestPresetsSectionSingleton(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-multipartestutils.RunCase(t, c, pb)
-})
+			multipartestutils.RunCase(t, c, pb)
+		})
 	}
 }
 
@@ -114,7 +114,7 @@ func TestPresetsSectionDetailingNormal(t *testing.T) {
 				sectionDemoData.TruncatePut(SqlDB)
 				TestDB.Exec("DELETE FROM section_demos")
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/section-demos?__execute_event__=" + actions.Update).
+					PageURL("/section-demos?__execute_event__="+actions.Update).
 					AddField("Name", "John").
 					AddField("Email", "john@example.com").
 					AddField("Age", "25").
@@ -135,7 +135,7 @@ func TestPresetsSectionDetailingNormal(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				sectionDemoData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/section-demos?__execute_event__=" + actions.Update).
+					PageURL("/section-demos?__execute_event__="+actions.Update).
 					AddField("Name", "").
 					AddField("Email", "").
 					AddField("Age", "25").
@@ -159,8 +159,8 @@ func TestPresetsSectionDetailingNormal(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-multipartestutils.RunCase(t, c, pb)
-})
+			multipartestutils.RunCase(t, c, pb)
+		})
 	}
 }
 
@@ -177,7 +177,7 @@ func TestPresetsSectionEditingClone(t *testing.T) {
 				sectionDemoData.TruncatePut(SqlDB)
 				TestDB.Exec("DELETE FROM section_demos")
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/section-demos?__execute_event__=" + actions.Update).
+					PageURL("/section-demos?__execute_event__="+actions.Update).
 					AddField("SharedInfo.Name", "Alice").
 					AddField("SharedInfo.Email", "alice@example.com").
 					AddField("AdditionalInfo.Age", "28").
@@ -201,7 +201,7 @@ func TestPresetsSectionEditingClone(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				sectionDemoData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/section-demos?__execute_event__=" + actions.Update + "&id=1").
+					PageURL("/section-demos?__execute_event__="+actions.Update+"&id=1").
 					AddField("SharedInfo.Name", "Alice Updated").
 					AddField("SharedInfo.Email", "alice.updated@example.com").
 					AddField("AdditionalInfo.Age", "29").
@@ -222,7 +222,7 @@ func TestPresetsSectionEditingClone(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				sectionDemoData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/section-demos?__execute_event__=" + actions.Update).
+					PageURL("/section-demos?__execute_event__="+actions.Update).
 					AddField("SharedInfo.Name", strings.Repeat("a", 60)).
 					AddField("SharedInfo.Email", "test@example.com").
 					AddField("AdditionalInfo.Age", "25").
@@ -237,7 +237,7 @@ func TestPresetsSectionEditingClone(t *testing.T) {
 			ReqFunc: func() *http.Request {
 				sectionDemoData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
-					PageURL("/section-demos?__execute_event__=" + actions.Update).
+					PageURL("/section-demos?__execute_event__="+actions.Update).
 					AddField("SharedInfo.Name", "Test").
 					AddField("SharedInfo.Email", "test@example.com").
 					AddField("AdditionalInfo.Age", "25").
@@ -250,66 +250,7 @@ func TestPresetsSectionEditingClone(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-multipartestutils.RunCase(t, c, pb)
-})
-	}
-}
-
-// TestPresetsSectionIsList tests detailing with IsList section
-func TestPresetsSectionIsList(t *testing.T) {
-	pb := presets.New()
-	PresetsSectionIsList(pb, TestDB)
-
-	cases := []multipartestutils.TestCase{
-		{
-			Name:  "create record via editing (without list section)",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				sectionDemoDataWithItems.TruncatePut(SqlDB)
-				TestDB.Exec("DELETE FROM section_demos")
-				return multipartestutils.NewMultipartBuilder().
-					PageURL("/section-demos?__execute_event__=" + actions.Update).
-					AddField("Name", "Bob").
-					AddField("Email", "bob@example.com").
-					BuildEventFuncRequest()
-			},
-			EventResponseMatch: func(t *testing.T, er *multipartestutils.TestEventResponse) {
-				var demo SectionDemo
-				TestDB.First(&demo)
-				if demo.Name != "Bob" {
-					t.Errorf("expected Name to be 'Bob', got '%s'", demo.Name)
-				}
-			},
-		},
-		{
-			Name:  "detailing page with list section renders",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				sectionDemoDataWithItems.TruncatePut(SqlDB)
-				return multipartestutils.NewMultipartBuilder().
-					PageURL("/section-demos?__execute_event__=presets_DetailingDrawer&id=1").
-					BuildEventFuncRequest()
-			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"BasicInfo", "Items"},
-		},
-		{
-			Name:  "editing validation - empty fields",
-			Debug: true,
-			ReqFunc: func() *http.Request {
-				sectionDemoDataWithItems.TruncatePut(SqlDB)
-				return multipartestutils.NewMultipartBuilder().
-					PageURL("/section-demos?__execute_event__=" + actions.Update).
-					AddField("Name", "").
-					AddField("Email", "").
-					BuildEventFuncRequest()
-			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"Name is required"},
-		},
-	}
-
-	for _, c := range cases {
-		t.Run(c.Name, func(t *testing.T) {
-multipartestutils.RunCase(t, c, pb)
-})
+			multipartestutils.RunCase(t, c, pb)
+		})
 	}
 }
