@@ -159,6 +159,69 @@ func TestPresetsDetailing(t *testing.T) {
 			ExpectPortalUpdate0ContainsInOrder: []string{"SectionEN"},
 			ExpectPortalUpdate0NotContains:     []string{"Wrong"},
 		},
+		// PresetsDetailInlineEditDetails - Creating scenarios
+		{
+			Name:  "new form with section",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=presets_New").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Details", "Name", "Email", "Description", "Avatar"},
+		},
+		{
+			Name:  "create with section - save successfully",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=presets_Update").
+					AddField("Name", "New Customer").
+					AddField("Email", "new@example.com").
+					AddField("Description", "New description").
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{`"Name":"New Customer"`, `"Email":"new@example.com"`, `"Description":"New description"`, "Successfully Created"},
+		},
+		{
+			Name:  "edit existing with section - open edit drawer",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=presets_Edit&id=12").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"Details", "Felix 1", "abc@example.com"},
+		},
+		{
+			Name:  "edit existing with section - update successfully",
+			Debug: true,
+			HandlerMaker: func() http.Handler {
+				return pb
+			},
+			ReqFunc: func() *http.Request {
+				detailData.TruncatePut(SqlDB)
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/customers?__execute_event__=presets_Update&id=12").
+					AddField("Name", "Updated Name").
+					AddField("Email", "updated@example.com").
+					AddField("Description", "Updated description").
+					BuildEventFuncRequest()
+			},
+			ExpectRunScriptContainsInOrder: []string{`"Name":"Updated Name"`, `"Email":"updated@example.com"`, `"Description":"Updated description"`, "Successfully Updated"},
+		},
 	}
 
 	for _, c := range cases {
