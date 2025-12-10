@@ -1177,14 +1177,6 @@ func (b *SectionBuilder) ValidateDetailField(ctx *web.EventContext) (r web.Event
 		vErr.GlobalError(perm.PermissionDenied.Error())
 		return
 	}
-	if b.mb.editing.Validator != nil {
-		vErr = b.mb.editing.Validator(obj, ctx)
-		_ = vErrSetter.Merge(&vErr)
-		if vErrSetter.HaveErrors() {
-			vErr = vErrSetter
-			return
-		}
-	}
 	if b.validator != nil {
 		vErr = b.validator(obj, ctx)
 		_ = vErrSetter.Merge(&vErr)

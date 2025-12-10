@@ -396,6 +396,14 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 			Density(v.DensityCompact).
 			Attr(web.VField("Name", customer.Name)...).
 			ErrorMessages(vErr.GetFieldErrors("name_section.Name")...)
+	}).WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
+		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			customer := obj.(*Customer)
+			if len(customer.Name) > 6 {
+				err.FieldError("name_section.Name", "customer name must no longer than 6")
+			}
+			return err
+		}
 	})
 
 	emailSection := presets.NewSectionBuilder(cust, "email_section").
