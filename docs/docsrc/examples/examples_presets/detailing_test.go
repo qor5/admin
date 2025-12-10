@@ -999,6 +999,71 @@ func TestPresetsDetailListSection_ItemStateIsolation(t *testing.T) {
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Add Item"},
 		},
+		// 11) add second item
+		{
+			Name:  "add second item",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_create_CreditCards").
+					Query("sectionListUnsaved_CreditCards", "true").
+					Query("id", "1").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"first-saved", "CreditCards[1].Name", "Cancel", "Save"},
+			ExpectPortalUpdate0NotContains:     []string{"Add Item"},
+		},
+		// 12) save second item with name "second"
+		{
+			Name:  "save second item with name second",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_save_CreditCards").
+					Query("sectionListUnsaved_CreditCards", "true").
+					Query("sectionListSaveBtn_CreditCards", "1").
+					Query("id", "1").
+					AddField("CreditCards[1].Name", "second").
+					AddField("__Deleted_CreditCards[1].sectionListEditing", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"first-saved", "second", "Add Item"},
+			ExpectPortalUpdate0NotContains:     []string{"Cancel", "Save"},
+		},
+		// 13) click edit on first item - editing existing item should NOT hide Add Item button
+		{
+			Name:  "edit first item",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_edit_CreditCards").
+					Query("sectionListEditBtn_CreditCards", "0").
+					Query("sectionListUnsaved_CreditCards", "false").
+					Query("id", "1").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"CreditCards[0].Name", "Cancel", "Save", "second", "Add Item"},
+		},
+		// 14) save first item with empty name -> expect validation error and Add Item button still shows
+		{
+			Name:  "save first item empty name shows error and add button still shows",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				return multipartestutils.NewMultipartBuilder().
+					PageURL("/user-credit-cards").
+					Query("__execute_event__", "section_save_CreditCards").
+					Query("sectionListUnsaved_CreditCards", "false").
+					Query("sectionListSaveBtn_CreditCards", "0").
+					Query("id", "1").
+					AddField("CreditCards[0].Name", "").
+					AddField("__Deleted_CreditCards[0].sectionListEditing", "true").
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"name is required", "Add Item"},
+		},
 	}
 
 	for _, c := range cases {

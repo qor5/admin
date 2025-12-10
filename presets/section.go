@@ -710,6 +710,7 @@ func (b *SectionBuilder) listComponent(obj interface{}, ctx *web.EventContext, d
 
 	disableCreateBtn := b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil
 	// Respect caller-provided unsaved to avoid drifting back to request param
+	// Only hide "Add Item" button when there's an unsaved new item (unsaved=true)
 	disableCreateBtn = !isReload && (disableCreateBtn || unsaved)
 	if !b.disableElementCreateBtn && !disableCreateBtn {
 		addBtn := VBtn(i18n.T(ctx.R, CoreI18nModuleKey, "AddRow")).PrependIcon("mdi-plus-circle").Color("primary").Variant(VariantText).
@@ -1336,13 +1337,18 @@ func (b *SectionBuilder) SaveDetailListField(ctx *web.EventContext) (r web.Event
 	}
 
 	if _, ok := ctx.Flash.(*web.ValidationErrors); ok {
-		if !isUnsavedAdded {
-			// Keep unsaved state when the newly created element fails validation
+		editIDForRender := -1
+		if wasCreated {
+			// Keep unsaved state only when the newly created element fails validation
 			unsaved = true
+			// For newly created items, pass editID to show in edit mode
+			editIDForRender = index
 		}
+		// For existing items (wasCreated=false), pass editID=-1 so the item is shown
+		// in edit mode via form value, but "Add Item" button remains visible
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: b.FieldPortalName(),
-			Body: b.listComponent(obj, ctx, -1, index, -1, unsaved, false),
+			Body: b.listComponent(obj, ctx, -1, editIDForRender, -1, unsaved, false),
 		})
 		return
 	}
