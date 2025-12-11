@@ -44,42 +44,28 @@ func PresetsSectionSingleton(b *presets.Builder, db *gorm.DB) (
 
 	// Create section for basic info
 	basicSection := presets.NewSectionBuilder(mb, "BasicInfo").
-		Editing("Name", "Email").
-		WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
-			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-				m := obj.(*SectionDemo)
-				if m.Name == "" {
-					err.FieldError("Name", "Name is required")
-				}
-				if m.Email == "" {
-					err.FieldError("Email", "Email is required")
-				}
-				return
-			}
-		})
-
+		Editing("Name", "Email")
 	// Create section for additional info
 	additionalSection := presets.NewSectionBuilder(mb, "AdditionalInfo").
-		Editing("Age", "Description").
-		WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
-			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
-				m := obj.(*SectionDemo)
-				if m.Age < 0 {
-					err.FieldError("Age", "Age must be non-negative")
-				}
-				if m.Description == "" {
-					err.FieldError("Description", "Description is required")
-				}
-				return
-			}
-		})
-
+		Editing("Age", "Description")
 	ce = mb.Editing("BasicInfo", "AdditionalInfo").
 		Section(basicSection, additionalSection)
 
 	// Editing level validator for cross-field validation
 	ce.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		m := obj.(*SectionDemo)
+		if m.Name == "" {
+			err.FieldError("Name", "Name is required")
+		}
+		if m.Email == "" {
+			err.FieldError("Email", "Email is required")
+		}
+		if m.Age < 0 {
+			err.FieldError("Age", "Age must be non-negative")
+		}
+		if m.Description == "" {
+			err.FieldError("Description", "Description is required")
+		}
 		// Cross-field validation: if age > 100, description must mention "senior"
 		if m.Age > 100 && m.Description != "" {
 			if !strings.Contains(strings.ToLower(m.Description), "senior") {

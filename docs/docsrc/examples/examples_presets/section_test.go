@@ -45,10 +45,10 @@ func TestPresetsSectionSingleton(t *testing.T) {
 				sectionDemoData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/section-demos?__execute_event__="+actions.Update+"&id=1").
-					AddField("BasicInfo.Name", "Updated Name").
-					AddField("BasicInfo.Email", "updated@example.com").
-					AddField("AdditionalInfo.Age", "30").
-					AddField("AdditionalInfo.Description", "Updated description").
+					AddField("Name", "Updated Name").
+					AddField("Email", "updated@example.com").
+					AddField("Age", "30").
+					AddField("Description", "Updated description").
 					BuildEventFuncRequest()
 			},
 			EventResponseMatch: func(t *testing.T, er *multipartestutils.TestEventResponse) {
@@ -69,10 +69,10 @@ func TestPresetsSectionSingleton(t *testing.T) {
 				sectionDemoData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/section-demos?__execute_event__="+actions.Update+"&id=1").
-					AddField("BasicInfo.Name", "").
-					AddField("BasicInfo.Email", "test@example.com").
-					AddField("AdditionalInfo.Age", "30").
-					AddField("AdditionalInfo.Description", "Description").
+					AddField("Name", "").
+					AddField("Email", "test@example.com").
+					AddField("Age", "30").
+					AddField("Description", "Description").
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Name is required"},
@@ -84,10 +84,10 @@ func TestPresetsSectionSingleton(t *testing.T) {
 				sectionDemoData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/section-demos?__execute_event__="+actions.Update+"&id=1").
-					AddField("BasicInfo.Name", "Test").
-					AddField("BasicInfo.Email", "test@example.com").
-					AddField("AdditionalInfo.Age", "105").
-					AddField("AdditionalInfo.Description", "Young person").
+					AddField("Name", "Test").
+					AddField("Email", "test@example.com").
+					AddField("Age", "105").
+					AddField("Description", "Young person").
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"senior"},
@@ -178,10 +178,10 @@ func TestPresetsSectionEditingClone(t *testing.T) {
 				TestDB.Exec("DELETE FROM section_demos")
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/section-demos?__execute_event__="+actions.Update).
-					AddField("SharedInfo.Name", "Alice").
-					AddField("SharedInfo.Email", "alice@example.com").
-					AddField("AdditionalInfo.Age", "28").
-					AddField("AdditionalInfo.Description", "Engineer").
+					AddField("Name", "Alice").
+					AddField("Email", "alice@example.com").
+					AddField("Age", "28").
+					AddField("Description", "Engineer").
 					BuildEventFuncRequest()
 			},
 			EventResponseMatch: func(t *testing.T, er *multipartestutils.TestEventResponse) {
@@ -202,10 +202,10 @@ func TestPresetsSectionEditingClone(t *testing.T) {
 				sectionDemoData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/section-demos?__execute_event__="+actions.Update+"&id=1").
-					AddField("SharedInfo.Name", "Alice Updated").
-					AddField("SharedInfo.Email", "alice.updated@example.com").
-					AddField("AdditionalInfo.Age", "29").
-					AddField("AdditionalInfo.Description", "Senior Engineer").
+					AddField("Name", "Alice Updated").
+					AddField("Email", "alice.updated@example.com").
+					AddField("Age", "29").
+					AddField("Description", "Senior Engineer").
 					BuildEventFuncRequest()
 			},
 			EventResponseMatch: func(t *testing.T, er *multipartestutils.TestEventResponse) {
@@ -223,10 +223,10 @@ func TestPresetsSectionEditingClone(t *testing.T) {
 				sectionDemoData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/section-demos?__execute_event__="+actions.Update).
-					AddField("SharedInfo.Name", strings.Repeat("a", 60)).
-					AddField("SharedInfo.Email", "test@example.com").
-					AddField("AdditionalInfo.Age", "25").
-					AddField("AdditionalInfo.Description", "Test").
+					AddField("Name", strings.Repeat("a", 60)).
+					AddField("Email", "test@example.com").
+					AddField("Age", "25").
+					AddField("Description", "Test").
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"less than 50"},
@@ -238,10 +238,10 @@ func TestPresetsSectionEditingClone(t *testing.T) {
 				sectionDemoData.TruncatePut(SqlDB)
 				return multipartestutils.NewMultipartBuilder().
 					PageURL("/section-demos?__execute_event__="+actions.Update).
-					AddField("SharedInfo.Name", "Test").
-					AddField("SharedInfo.Email", "test@example.com").
-					AddField("AdditionalInfo.Age", "25").
-					AddField("AdditionalInfo.Description", "").
+					AddField("Name", "Test").
+					AddField("Email", "test@example.com").
+					AddField("Age", "25").
+					AddField("Description", "").
 					BuildEventFuncRequest()
 			},
 			ExpectPortalUpdate0ContainsInOrder: []string{"Description is required when age is specified"},
