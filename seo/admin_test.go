@@ -185,7 +185,7 @@ func TestUpdate(t *testing.T) {
 			actualSetting.Variables = seoSetting.Variables
 			r := testingutils.PrettyJsonDiff(c.expected, actualSetting)
 			if r != "" {
-				t.Errorf(r)
+				t.Error(r)
 			}
 		})
 	}
