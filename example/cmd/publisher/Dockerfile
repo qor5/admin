@@ -7,8 +7,9 @@ COPY . .
 RUN GOOS=linux GOARCH=amd64 go build -o /app/entry ./example/cmd/publisher/
 
 FROM alpine:3.21
-RUN apk --update upgrade && \
-    apk add --no-cache ca-certificates tzdata
+RUN apk --no-cache --update upgrade && \
+    apk add --no-cache ca-certificates && \
+    apk add --no-cache tzdata
 COPY --from=builder /app/entry /bin/publisher
 
 RUN apk add --no-cache shadow && \
