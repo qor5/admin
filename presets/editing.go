@@ -293,6 +293,13 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		obj = b.mb.NewModel()
 	}
 
+	if b.mb.singleton && id != "" {
+		if ctx.R.Form == nil {
+			_ = ctx.R.ParseForm()
+		}
+		ctx.R.Form.Set(ParamID, id)
+	}
+
 	var notice h.HTMLComponent
 	{
 		var text string
@@ -340,7 +347,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 						BeforeScript("xLocals.isFetching=true").
 						EventFunc(actions.Update).
 						Queries(queries).
-						ThenScript("setTimeout(()=>{xLocals.isFetching=false},150)").
+						ThenScript("xLocals.isFetching=false;").
 						URL(b.mb.Info().ListingHref()).
 						Go()),
 			).VSlot("{locals:xLocals}").Init("{isFetching:false}")

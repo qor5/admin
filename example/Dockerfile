@@ -6,7 +6,7 @@ RUN go mod download
 COPY . .
 RUN GOOS=linux GOARCH=amd64 go build -o /app/entry ./example/
 
-FROM alpine:3.21.3
+FROM alpine:3.21
 RUN apk --update upgrade && \
     apk add --no-cache ca-certificates tzdata
 COPY --from=builder /app/entry /bin/example
