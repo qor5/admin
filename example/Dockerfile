@@ -1,4 +1,4 @@
-FROM golang:1.23-alpine AS builder
+FROM golang:1.24-alpine AS builder
 RUN apk update && apk add gcc git libc-dev && rm -rf /var/cache/apk/*
 WORKDIR /qor5
 COPY go.mod go.sum ./
