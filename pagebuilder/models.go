@@ -95,6 +95,8 @@ type Category struct {
 	IndentLevel int `gorm:"-"`
 
 	l10n.Locale
+
+	IsParking bool
 }
 
 func (c *Category) PrimarySlug() string {

@@ -104,9 +104,15 @@ func (collection *Collection) EditingComponentFunc(obj interface{}, field *prese
 
 	value := reflect.Indirect(reflect.ValueOf(obj))
 	for i := 0; i < value.NumField(); i++ {
-		if s, ok := value.Field(i).Interface().(Setting); ok {
+		s, ok := value.Field(i).Interface().(Setting)
+		if field == nil && ok {
 			setting = s
 			fieldPrefix = value.Type().Field(i).Name
+			break
+		} else if ok && field.Name == value.Type().Field(i).Name {
+			setting = s
+			fieldPrefix = field.Name
+			break
 		}
 	}
 	if !setting.EnabledCustomize && setting.IsEmpty() {
@@ -133,7 +139,7 @@ func (collection *Collection) EditingComponentFunc(obj interface{}, field *prese
 	if o != "" {
 		hideActions = true
 	}
-
+	customize := "customize" + fieldPrefix
 	return web.Scope(
 		h.Div(
 			h.Label(msgr.Seo).Class("v-label theme--light"),
@@ -141,8 +147,8 @@ func (collection *Collection) EditingComponentFunc(obj interface{}, field *prese
 				VExpansionPanel(
 					VExpansionPanelHeader(
 						h.HTMLComponents{
-							VSwitch().Label(msgr.UseDefaults).Attr("v-model", "locals.userDefaults").On("change", "locals.enabledCustomize = !locals.userDefaults;$refs.customize.$emit('change', locals.enabledCustomize);if((locals.openCustomizePanel=='0'&&locals.enabledCustomize)||(locals.openCustomizePanel!='0'&&!locals.enabledCustomize)){event.stopPropagation();}"),
-							VSwitch().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "EnabledCustomize")).Value(setting.EnabledCustomize).Attr(":input-value", "locals.enabledCustomize").Attr("ref", "customize").Attr("style", "display:none;"),
+							VSwitch().Label(msgr.UseDefaults).Attr("v-model", "locals.userDefaults").On("change", fmt.Sprintf("locals.enabledCustomize = !locals.userDefaults;$refs.%s.$emit('change', locals.enabledCustomize);if((locals.openCustomizePanel=='0'&&locals.enabledCustomize)||(locals.openCustomizePanel!='0'&&!locals.enabledCustomize)){event.stopPropagation();}", customize)),
+							VSwitch().FieldName(fmt.Sprintf("%s.%s", fieldPrefix, "EnabledCustomize")).Value(setting.EnabledCustomize).Attr(":input-value", "locals.enabledCustomize").Attr("ref", customize).Attr("style", "display:none;"),
 						},
 					).Attr("style", "padding: 0px 24px;").HideActions(hideActions),
 
