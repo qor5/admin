@@ -2,8 +2,6 @@ module github.com/qor5/admin/v3
 
 go 1.24.0
 
-toolchain go1.24.5
-
 require (
 	github.com/ahmetb/go-linq/v3 v3.2.0
 	github.com/aws/aws-sdk-go-v2 v1.38.1
