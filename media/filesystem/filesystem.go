@@ -1,11 +1,13 @@
 package filesystem
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 
 	"github.com/qor5/admin/v3/media/base"
+	"github.com/qor5/x/v3/filepathx"
 )
 
 var _ base.Media = &FileSystem{}
@@ -16,35 +18,56 @@ type FileSystem struct {
 }
 
 // GetFullPath return full file path from a relative file path
-func (f FileSystem) GetFullPath(url string, option *base.Option) (path string, err error) {
+func (FileSystem) GetFullPath(url string, option *base.Option) (string, error) {
+	basePath := "./public"
 	if option != nil && option.Get("path") != "" {
-		path = filepath.Join(option.Get("path"), url)
-	} else {
-		path = filepath.Join("./public", url)
+		basePath = option.Get("path")
 	}
 
-	dir := filepath.Dir(path)
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		err = os.MkdirAll(dir, os.ModePerm)
+	path, err := filepathx.Join(basePath, url)
+	if err != nil {
+		return "", err
 	}
 
-	return
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+
+	// Create directory if it doesn't exist
+	if dir := filepath.Dir(absPath); dir != "" {
+		if _, err = os.Stat(dir); os.IsNotExist(err) {
+			if err = os.MkdirAll(dir, os.ModePerm); err != nil {
+				return "", fmt.Errorf("failed to create directory: %w", err)
+			}
+		}
+	}
+
+	return absPath, nil
 }
 
 // Store save reader's context with name
-func (f FileSystem) Store(name string, option *base.Option, reader io.Reader) (err error) {
-	if fullpath, err := f.GetFullPath(name, option); err == nil {
-		if dst, err := os.Create(fullpath); err == nil {
-			_, err = io.Copy(dst, reader)
-		}
+func (f FileSystem) Store(name string, option *base.Option, reader io.Reader) error {
+	fullpath, err := f.GetFullPath(name, option)
+	if err != nil {
+		return err
 	}
+
+	dst, err := os.Create(fullpath)
+	if err != nil {
+		return err
+	}
+	defer dst.Close()
+
+	_, err = io.Copy(dst, reader)
 	return err
 }
 
 // Retrieve retrieve file content with url
 func (f FileSystem) Retrieve(url string) (base.FileInterface, error) {
-	if fullpath, err := f.GetFullPath(url, nil); err == nil {
-		return os.Open(fullpath)
+	fullpath, err := f.GetFullPath(url, nil)
+	if err != nil {
+		return nil, os.ErrNotExist
 	}
-	return nil, os.ErrNotExist
+	return os.Open(fullpath)
 }

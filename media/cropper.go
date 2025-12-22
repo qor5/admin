@@ -65,7 +65,7 @@ func loadImageCropper(mb *Builder) web.EventFunc {
 		}
 		c := cropper.Cropper().
 			Src(m.File.URL("original")).
-			ViewMode(cropper.VIEW_MODE_FILL_FIT_CONTAINER).
+			ViewMode(cropper.VIEW_MODE_FIT_WITHIN_CONTAINER).
 			AutoCropArea(1).
 			Attr("@update:model-value", "cropLocals.CropOption=JSON.stringify($event)")
 		if size != nil {
@@ -130,7 +130,7 @@ func cropImage(b *Builder) web.EventFunc {
 		if err != nil {
 			panic(err)
 		}
-		if len(cropOption) > 0 {
+		if cropOption != "" {
 			cropValue := cropper.Value{}
 			err = json.Unmarshal([]byte(cropOption), &cropValue)
 			if err != nil {

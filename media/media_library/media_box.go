@@ -34,9 +34,10 @@ type MediaBox struct {
 
 // MediaBoxConfig configure MediaBox metas
 type MediaBoxConfig struct {
-	Sizes     map[string]*base.Size
-	Max       uint
-	AllowType string
+	Sizes      map[string]*base.Size
+	Max        uint
+	AllowType  string
+	FileAccept string
 	// the background color of MediaBox
 	BackgroundColor string
 	// disable crop
@@ -79,17 +80,17 @@ func (mediaBox *MediaBox) IsSVG() bool {
 }
 
 func (mediaBox *MediaBox) URL(styles ...string) (s string) {
-	var CropID string
+	var cropID string
 	if len(styles) == 0 {
-		CropID = mediaBox.CropID[base.DefaultSizeKey]
+		cropID = mediaBox.CropID[base.DefaultSizeKey]
 	} else {
-		CropID = mediaBox.CropID[styles[0]]
+		cropID = mediaBox.CropID[styles[0]]
 	}
 	ext := path.Ext(mediaBox.Url)
 
 	defer func() {
-		if len(CropID) > 0 {
-			s = fmt.Sprintf("%v_%v%v", s, CropID, ext)
+		if cropID != "" {
+			s = fmt.Sprintf("%v_%v%v", s, cropID, ext)
 			return
 		}
 		s = fmt.Sprintf("%v%v", s, ext)

@@ -572,7 +572,7 @@ func (mb *Builder) mediaLibraryFilter(tab, selectedType, keyword, orderByVal str
 		cfg.AllowType = media_library.ALLOW_TYPE_IMAGE
 	}
 
-	if len(cfg.AllowType) > 0 {
+	if cfg.AllowType != "" {
 		if tab == tabFiles {
 			wh = wh.Where("selected_type = ?", cfg.AllowType)
 		} else {
@@ -580,7 +580,7 @@ func (mb *Builder) mediaLibraryFilter(tab, selectedType, keyword, orderByVal str
 		}
 	}
 
-	if len(keyword) > 0 {
+	if keyword != "" {
 		wh = wh.Where("file::json->>'FileName' ILIKE ?", fmt.Sprintf("%%%s%%", keyword))
 	}
 
@@ -599,10 +599,14 @@ func (mb *Builder) mediaLibraryTopOperations(clickTabEvent, field, tab, typeVal,
 
 	if mb.fileAccept != "" {
 		fileAccept = mb.fileAccept
+	} else if cfg.FileAccept != "" {
+		fileAccept = cfg.FileAccept
 	} else {
 		fileAccept = "*/*"
 		if cfg.AllowType == media_library.ALLOW_TYPE_IMAGE {
 			fileAccept = "image/*"
+		} else if cfg.AllowType == media_library.ALLOW_TYPE_VIDEO {
+			fileAccept = "video/*"
 		}
 	}
 	changeAllowTypeEvent := web.Plaid().EventFunc(ImageJumpPageEvent).
