@@ -212,6 +212,15 @@ func PresetsEditingSingletonNested(b *presets.Builder, db *gorm.DB) (
 		return
 	})
 	ce.Field("Items").Nested(itemFB)
+
+	ce.EditingTitleFunc(func(obj interface{}, defaultTitle string, ctx *web.EventContext) h.HTMLComponent {
+		singleton := obj.(*SingletonWithNested)
+		if singleton.Title != "" {
+			return h.Text(fmt.Sprintf("Custom Title: %s", singleton.Title))
+		}
+		return h.Text(defaultTitle)
+	})
+
 	return
 }
 

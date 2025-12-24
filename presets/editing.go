@@ -388,15 +388,13 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 	scope := web.Scope(
 		notice,
 		VLayout(
-			h.If(!b.mb.singleton,
-				VAppBar(
-					VToolbarTitle("").Class("pl-2").
-						Children(title).ClassIf("pr-5", autosave),
-					h.If(!autosave, VBtn("").Icon(true).Children(
-						VIcon("mdi-close"),
-					).Attr("@click.stop", closeBtnVarScript)),
-				).Color("white").Elevation(0),
-			),
+			VAppBar(
+				VToolbarTitle("").Class("pl-2").
+					Children(title).ClassIf("pr-5", autosave),
+				h.If(!autosave && !b.mb.singleton, VBtn("").Icon(true).Children(
+					VIcon("mdi-close"),
+				).Attr("@click.stop", closeBtnVarScript)),
+			).Color("white").Elevation(0),
 			VMain(
 				VSheet(
 					VCard(asideContent).Variant(VariantFlat),

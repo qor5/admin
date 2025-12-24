@@ -698,4 +698,38 @@ func TestPresetsEditingSingletonNested(t *testing.T) {
 		}
 		multipartestutils.RunCase(t, c, pb)
 	})
+
+	// 6) Verify custom title is displayed
+	t.Run("custom title is displayed", func(t *testing.T) {
+		// Clean up and create fresh record
+		if err := TestDB.Exec("DELETE FROM singleton_with_nesteds").Error; err != nil {
+			t.Fatalf("failed to cleanup: %+v", err)
+		}
+		
+		// First update the title to a known value
+		updateReq := multipartestutils.NewMultipartBuilder().
+			PageURL("/singleton-with-nesteds?__execute_event__=presets_Update").
+			AddField("Title", "MyTitle").
+			BuildEventFuncRequest()
+		w := httptest.NewRecorder()
+		pb.ServeHTTP(w, updateReq)
+
+		// Then fetch the page and verify the custom title is rendered
+		c := multipartestutils.TestCase{
+			Name: "singleton custom title",
+			ReqFunc: func() *http.Request {
+				req := httptest.NewRequest("GET", "/singleton-with-nesteds", nil)
+				return req
+			},
+			ResponseMatch: func(t *testing.T, w *httptest.ResponseRecorder) {
+				body := w.Body.String()
+				// Check that the custom title format is present
+				// The title should appear in the VToolbarTitle component
+				if !strings.Contains(body, "Custom Title: MyTitle") {
+					t.Errorf("Expected custom title 'Custom Title: MyTitle' in response, but not found. Body length: %d", len(body))
+				}
+			},
+		}
+		multipartestutils.RunCase(t, c, pb)
+	})
 }
