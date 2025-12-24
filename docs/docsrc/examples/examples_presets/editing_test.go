@@ -705,7 +705,7 @@ func TestPresetsEditingSingletonNested(t *testing.T) {
 		if err := TestDB.Exec("DELETE FROM singleton_with_nesteds").Error; err != nil {
 			t.Fatalf("failed to cleanup: %+v", err)
 		}
-		
+
 		// First update the title to a known value
 		updateReq := multipartestutils.NewMultipartBuilder().
 			PageURL("/singleton-with-nesteds?__execute_event__=presets_Update").
