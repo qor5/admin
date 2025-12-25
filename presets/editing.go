@@ -244,6 +244,12 @@ func (b *EditingBuilder) singletonPageFunc(ctx *web.EventContext) (r web.PageRes
 	if err != nil {
 		return
 	}
+
+	if b.editingTitleFunc != nil {
+		titleText := msgr.EditingObjectTitle(b.mb.Info().LabelName(ctx, true), getPageTitle(obj, ""))
+		ctx.WithContextValue(CtxPageTitleComponent, b.editingTitleFunc(obj, titleText, ctx))
+	}
+
 	r.Body = web.Portal(b.editFormFor(obj, ctx)).Name(singletonEditingPortalName)
 	return
 }
