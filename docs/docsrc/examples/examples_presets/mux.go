@@ -71,6 +71,9 @@ func SamplesHandler(mux examples.Muxer) {
 	addExample(mux, db, PresetsDetailSaverValidation)
 	addExample(mux, db, PresetsDataOperatorWithGRPC)
 	addExample(mux, db, PresetsEditingSingletonNested)
+	addExample(mux, db, PresetsSectionSingleton)
+	addExample(mux, db, PresetsSectionDetailingNormal)
+	addExample(mux, db, PresetsSectionEditingClone)
 	return
 }
 
