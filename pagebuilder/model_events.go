@@ -466,7 +466,7 @@ func (b *ModelBuilder) toggleContainerVisibility(ctx *web.EventContext) (r web.E
 		{Field: fmt.Sprintf("[%s %v].Hidden", container.DisplayName, container.ModelID), Old: fmt.Sprint(container.Hidden), New: fmt.Sprint(!container.Hidden)},
 	}
 	container.Hidden = !container.Hidden
-	if err = b.db.Updates(&container).Error; err != nil {
+	if err = b.db.Model(&Container{}).Where("id = ? AND locale_code = ?", containerID, locale).Updates(map[string]interface{}{"hidden": container.Hidden}).Error; err != nil {
 		return
 	}
 	defer func() {
