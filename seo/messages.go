@@ -57,3 +57,22 @@ var Messages_zh_CN = &Messages{
 	Customize:                     "自定义",
 	BlankOpenGraphInformationTips: `"OG 信息"w为空。页面将使用默认值。`,
 }
+
+var Messages_ja_JP = &Messages{
+	Variable:                      "変数設定",
+	Basic:                         "基本情報",
+	Title:                         "タイトル",
+	Description:                   "説明",
+	Keywords:                      "キーワード",
+	OpenGraphInformation:          "Open Graph 情報",
+	OpenGraphTitle:                "Open Graph タイトル",
+	OpenGraphDescription:          "Open Graph 説明",
+	OpenGraphURL:                  "Open Graph URL",
+	OpenGraphType:                 "Open Graph タイプ",
+	OpenGraphImageURL:             "Open Graph 画像URL",
+	OpenGraphImage:                "Open Graph 画像",
+	OpenGraphMetadata:             "Open Graph メタデータ",
+	Seo:                           "SEO",
+	Customize:                     "カスタマイズ",
+	BlankOpenGraphInformationTips: `「Open Graph 情報」が空です。ページではデフォルトの値が使用されます。`,
+}

@@ -517,7 +517,7 @@ func TestPageBuilder(t *testing.T) {
 			},
 		},
 		{
-			Name:  "Page Builder toggle visibility ",
+			Name:  "Page Builder toggle hidden ",
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				pageBuilderContainerTestData.TruncatePut(dbr)
@@ -538,6 +538,32 @@ func TestPageBuilder(t *testing.T) {
 				}
 				if !container.Hidden {
 					t.Fatalf("containers not hidden %#+v", container)
+					return
+				}
+			},
+		},
+		{
+			Name:  "Page Builder toggle visibility ",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderHiddenContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/page_builder/pages/10_2024-05-21-v01_Japan").
+					EventFunc(pagebuilder.ToggleContainerVisibilityEvent).
+					Query("containerID", "11_Japan").
+					Query("status", "draft").
+					BuildEventFuncRequest()
+
+				return req
+			},
+			EventResponseMatch: func(t *testing.T, er *TestEventResponse) {
+				var container pagebuilder.Container
+				if err := TestDB.First(&container, 11).Error; err != nil {
+					t.Error(err)
+					return
+				}
+				if container.Hidden {
+					t.Fatalf("containers is hidden %#+v", container)
 					return
 				}
 			},

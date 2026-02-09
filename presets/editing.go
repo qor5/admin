@@ -244,6 +244,12 @@ func (b *EditingBuilder) singletonPageFunc(ctx *web.EventContext) (r web.PageRes
 	if err != nil {
 		return
 	}
+
+	if b.editingTitleFunc != nil {
+		titleText := msgr.EditingObjectTitle(b.mb.Info().LabelName(ctx, true), getPageTitle(obj, ""))
+		ctx.WithContextValue(CtxPageTitleComponent, b.editingTitleFunc(obj, titleText, ctx))
+	}
+
 	r.Body = web.Portal(b.editFormFor(obj, ctx)).Name(singletonEditingPortalName)
 	return
 }
@@ -711,11 +717,9 @@ func (b *EditingBuilder) Section(sections ...*SectionBuilder) *EditingBuilder {
 		})
 
 		sb.ComponentFunc(func(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			return web.Scope(
-				web.Portal(
-					sb.editComponent(obj, field, ctx),
-				).Name(sb.FieldPortalName()),
-			).VSlot("{ form, dash }").DashInit("{errorMessages:{},disabled:{}}")
+			return web.Portal(
+				sb.editComponent(obj, field, ctx),
+			).Name(sb.FieldPortalName())
 		})
 
 		b.Field(sb.name).Component(sb).

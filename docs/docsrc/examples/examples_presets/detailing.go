@@ -448,12 +448,13 @@ func PresetsDetailListSection_ItemStateIsolation(b *presets.Builder, db *gorm.DB
 		Editing("Name").
 		ElementEditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			card := obj.(*CreditCard)
-			var errs []string
+			var vErr web.ValidationErrors
 			if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
-				errs = ve.GetFieldErrors(fmt.Sprintf("%s.Name", field.FormKey))
+				vErr = *ve
 			}
+			formkey := fmt.Sprintf("%s.Name", field.FormKey)
 			return vx.VXField().
-				Attr(presets.VFieldError(fmt.Sprintf("%s.Name", field.FormKey), card.Name, errs)...)
+				Attr(presets.VFieldError(formkey, card.Name, vErr.GetFieldErrors(formkey))...)
 		}).
 		ElementShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
 			card := obj.(*CreditCard)

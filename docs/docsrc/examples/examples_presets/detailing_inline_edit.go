@@ -358,7 +358,7 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 	cust.Editing("name_section", "email_section").ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		customer := obj.(*Customer)
 		if len(customer.Name) > 6 {
-			err.FieldError("name_section.Name", "customer name must no longer than 6")
+			err.FieldError("Name", "customer name must no longer than 6")
 		}
 		if len(customer.Name) > 20 {
 			err.GlobalError("customer name must no longer than 20")
@@ -370,33 +370,34 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 			err.GlobalError("customer email must not be empty")
 		}
 		if len(customer.Email) < 6 {
-			err.FieldError("email_section.Email", "customer email must longer than 6")
-		}
-		for index, card := range customer.CreditCards {
-			if card.Name == "" {
-				err.GlobalError("credit card name must not be empty")
-			}
-			if card.Name == "" {
-				err.FieldError("card", fmt.Sprintf("credit card %d name must not be empty", index))
-			}
+			err.FieldError("Email", "customer email must longer than 6")
 		}
 		return
 	})
 	// This should inspect Notes attributes, When it is a list, It should show a standard table in detail page
-	dp = cust.Detailing("name_section", "email_section", "CreditCards").Drawer(true)
+	dp = cust.Detailing("name_section", "email_section").Drawer(true)
 	nameSection := presets.NewSectionBuilder(cust, "name_section").Label("name must not be empty, no longer than 6").
-		Editing("Name").EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-		customer := obj.(*Customer)
-		var vErr web.ValidationErrors
-		if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
-			vErr = *ve
-		}
-		return v.VTextField().
-			Variant(v.VariantOutlined).
-			Density(v.DensityCompact).
-			Attr(web.VField("Name", customer.Name)...).
-			ErrorMessages(vErr.GetFieldErrors("name_section.Name")...)
-	})
+		Editing("Name").
+		EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			customer := obj.(*Customer)
+			var vErr web.ValidationErrors
+			if ve, ok := ctx.Flash.(*web.ValidationErrors); ok {
+				vErr = *ve
+			}
+			return v.VTextField().
+				Variant(v.VariantOutlined).
+				Density(v.DensityCompact).
+				Attr(presets.VFieldError("Name", customer.Name, vErr.GetFieldErrors("Name"))...)
+		}).
+		WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
+			return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+				customer := obj.(*Customer)
+				if len(customer.Name) > 6 {
+					err.FieldError("Name", "customer name must no longer than 6")
+				}
+				return err
+			}
+		})
 
 	emailSection := presets.NewSectionBuilder(cust, "email_section").
 		Label("email must not be empty, must longer than 6").
@@ -410,26 +411,10 @@ func PresetsDetailInlineEditValidate(b *presets.Builder, db *gorm.DB) (
 			return v.VTextField().
 				Variant(v.VariantOutlined).
 				Density(v.DensityCompact).
-				Attr(web.VField("Email", customer.Name)...).
-				ErrorMessages(vErr.GetFieldErrors("email_section.Email")...)
+				Attr(presets.VFieldError("Email", customer.Email, vErr.GetFieldErrors("Email"))...)
 		})
 
-	cardsSection := presets.NewSectionBuilder(cust, "CreditCards").IsList(&CreditCard{}).Editing("CreditCards").
-		ElementEditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			card := obj.(*CreditCard)
-			var errText []string
-			if vErr, ok := ctx.Flash.(*web.ValidationErrors); ok {
-				errText = vErr.GetFieldErrors("card")
-			}
-			return vx.VXField().ErrorMessages(errText...).
-				Attr(web.VField(fmt.Sprintf("%s.Name", field.FormKey), card.Name)...)
-		}).
-		ElementShowComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
-			card := obj.(*CreditCard)
-			return vx.VXTextField().Text(card.Name)
-		})
-
-	dp.Section(nameSection, emailSection, cardsSection)
+	dp.Section(nameSection, emailSection)
 	cust.Editing("name_section", "email_section")
 	cust.Editing().Section(nameSection.Clone(), emailSection.Clone())
 	return
@@ -545,9 +530,40 @@ func PresetsDetailListSection(b *presets.Builder, db *gorm.DB) (cust *presets.Mo
 				Attr(web.VField("TestHiddenFunc", "This is hidden input")...),
 		)
 	})
+	cardsSection1.WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
+		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			if in != nil {
+				err = in(obj, ctx)
+			}
+			user := obj.(*UserCreditCard)
+			for i, card := range user.CreditCards {
+				if card.Name == "" {
+					err.FieldError(fmt.Sprintf("CreditCards[%d].Name", i), "card name must not be empty")
+				}
+				if len(card.Name) > 10 {
+					err.FieldError(fmt.Sprintf("CreditCards[%d].Name", i), "card name must not exceed 10 characters")
+				}
+			}
+			return
+		}
+	})
 
 	cardsSection2 := presets.NewSectionBuilder(cust, "CreditCards2").Label("cards2").IsList(&CreditCard{}).AlwaysShowListLabel().
 		Editing("Name", "Phone").Viewing("Name", "Phone")
+	cardsSection2.WrapValidator(func(in presets.ValidateFunc) presets.ValidateFunc {
+		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			if in != nil {
+				err = in(obj, ctx)
+			}
+			user := obj.(*UserCreditCard)
+			for i, card := range user.CreditCards2 {
+				if card.Phone == "" {
+					err.FieldError(fmt.Sprintf("CreditCards2[%d].Phone", i), "card phone must not be empty")
+				}
+			}
+			return
+		}
+	})
 	dp.Section(cardsSection1, cardsSection2)
 	return
 }
