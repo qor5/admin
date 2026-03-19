@@ -1,6 +1,6 @@
 module github.com/qor5/admin/v3
 
-go 1.24.0
+go 1.25.8
 
 require (
 	github.com/ahmetb/go-linq/v3 v3.2.0
@@ -72,7 +72,7 @@ require (
 	connectrpc.com/connect v1.18.1 // indirect
 	connectrpc.com/cors v0.1.0 // indirect
 	dario.cat/mergo v1.0.2 // indirect
-	filippo.io/edwards25519 v1.1.0 // indirect
+	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
