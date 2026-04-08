@@ -387,8 +387,9 @@ func (b *Builder) BatchRender(objs interface{}, req *http.Request) []h.HTMLCompo
 	return comps
 }
 
-func (b *Builder) render(obj interface{}, defaultSEOSetting *QorSEOSetting, seo *SEO, req *http.Request) h.HTMLComponent {
-	// get setting
+// resolveSetting computes the final Setting for a given object after merging
+// parent settings and replacing all variable placeholders.
+func (b *Builder) resolveSetting(obj interface{}, defaultSEOSetting *QorSEOSetting, seo *SEO, req *http.Request) Setting {
 	var setting Setting
 	{
 		setting = defaultSEOSetting.Setting
@@ -397,7 +398,6 @@ func (b *Builder) render(obj interface{}, defaultSEOSetting *QorSEOSetting, seo 
 				for i := 0; i < value.NumField(); i++ {
 					if value.Field(i).Type() == reflect.TypeOf(Setting{}) {
 						if tSetting := value.Field(i).Interface().(Setting); tSetting.EnabledCustomize {
-							// if the obj embeds Setting, then overrides `finalSeoSetting.Setting` with `tSetting`
 							if b.inherited {
 								mergeSetting(&defaultSEOSetting.Setting, &tSetting)
 							}
@@ -410,16 +410,20 @@ func (b *Builder) render(obj interface{}, defaultSEOSetting *QorSEOSetting, seo 
 		}
 	}
 
-	// replace placeholders
 	{
 		variables := defaultSEOSetting.Variables
 		finalContextVars := seo.getFinalContextVars()
-		// execute function for context var
 		for varName, varFunc := range finalContextVars {
 			variables[varName] = varFunc(obj, &setting, req)
 		}
 		setting = replaceVariables(setting, variables)
 	}
+
+	return setting
+}
+
+func (b *Builder) render(obj interface{}, defaultSEOSetting *QorSEOSetting, seo *SEO, req *http.Request) h.HTMLComponent {
+	setting := b.resolveSetting(obj, defaultSEOSetting, seo, req)
 
 	metaProperties := map[string]string{}
 	finalMetaProperties := seo.getFinalMetaProps()
@@ -428,6 +432,39 @@ func (b *Builder) render(obj interface{}, defaultSEOSetting *QorSEOSetting, seo 
 	}
 
 	return setting.HTMLComponent(metaProperties)
+}
+
+// RenderCanonical returns the canonical link component for the given object
+// after merging parent settings and replacing variable placeholders.
+// Returns nil if no CanonicalPath is configured.
+func (b *Builder) RenderCanonical(obj interface{}, req *http.Request) h.HTMLComponent {
+	var seo *SEO
+	var locale string
+	objV := reflect.ValueOf(obj)
+	if objV.Kind() != reflect.Ptr {
+		return nil
+	}
+	if nModelSEO, ok := obj.(NonModelSEO); ok {
+		seo = b.registeredSEO[nModelSEO.GetName()]
+	} else {
+		objV = reflect.Indirect(objV)
+		seo = b.registeredSEO[objV.Type()]
+	}
+	if seo == nil {
+		return nil
+	}
+	if v, ok := obj.(l10n.LocaleInterface); ok {
+		locale = v.EmbedLocale().LocaleCode
+	}
+	if locale == "" && len(b.locales) == 1 {
+		locale = b.locales[0]
+	}
+	localeFinalSeoSetting := seo.getLocaleFinalQorSEOSetting(locale, b.db)
+	setting := b.resolveSetting(obj, localeFinalSeoSetting, seo, req)
+	if setting.CanonicalPath == "" {
+		return nil
+	}
+	return h.Link(setting.CanonicalPath).Rel("canonical")
 }
 
 var regex = regexp.MustCompile("{{([a-zA-Z0-9]*)}}")

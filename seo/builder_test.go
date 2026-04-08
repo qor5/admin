@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
 
 	_ "github.com/lib/pq"
@@ -1108,6 +1109,180 @@ func TestBuilder_BatchRender(t *testing.T) {
 				got, _ := comp.MarshalHTML(context.TODO())
 				if !metaEqual(string(got), c.wants[i]) {
 					t.Errorf("Render = %v\nExpected = %v", string(got), c.wants[i])
+				}
+			}
+		})
+	}
+}
+
+func TestBuilder_RenderCanonical(t *testing.T) {
+	u, _ := url.Parse("http://dev.qor5.com/product/1")
+	defaultRequest := &http.Request{
+		Method: "GET",
+		URL:    u,
+	}
+
+	tests := []struct {
+		name      string
+		prepareDB func()
+		builder   *Builder
+		obj       interface{}
+		want      string
+	}{
+		{
+			name: "RenderCanonical_returns_nil_when_no_canonical_path",
+			prepareDB: func() {
+				settings := []*QorSEOSetting{
+					{
+						Name: defaultGlobalSEOName,
+						Setting: Setting{
+							Title: "global",
+						},
+						Locale: l10n.Locale{LocaleCode: "en"},
+					},
+					{
+						Name:   "Product",
+						Locale: l10n.Locale{LocaleCode: "en"},
+					},
+				}
+				dbForTest.Save(&settings)
+			},
+			builder: func() *Builder {
+				builder := New(dbForTest, WithLocales("en")).AutoMigrate()
+				builder.RegisterSEO("Product", &Product{}).SetParent(builder.GetGlobalSEO())
+				return builder
+			}(),
+			obj: &Product{
+				Name:   "product 1",
+				Locale: l10n.Locale{LocaleCode: "en"},
+			},
+			want: "",
+		},
+		{
+			name: "RenderCanonical_returns_canonical_from_db_setting",
+			prepareDB: func() {
+				settings := []*QorSEOSetting{
+					{
+						Name: defaultGlobalSEOName,
+						Setting: Setting{
+							Title: "global",
+						},
+						Locale: l10n.Locale{LocaleCode: "en"},
+					},
+					{
+						Name: "Product",
+						Setting: Setting{
+							CanonicalPath: "/products/default",
+						},
+						Locale: l10n.Locale{LocaleCode: "en"},
+					},
+				}
+				dbForTest.Save(&settings)
+			},
+			builder: func() *Builder {
+				builder := New(dbForTest, WithLocales("en")).AutoMigrate()
+				builder.RegisterSEO("Product", &Product{}).SetParent(builder.GetGlobalSEO())
+				return builder
+			}(),
+			obj: &Product{
+				Name:   "product 1",
+				Locale: l10n.Locale{LocaleCode: "en"},
+			},
+			want: "<link href='/products/default' rel='canonical'>",
+		},
+		{
+			name: "RenderCanonical_returns_canonical_from_obj_customized_setting",
+			prepareDB: func() {
+				settings := []*QorSEOSetting{
+					{
+						Name: defaultGlobalSEOName,
+						Setting: Setting{
+							Title: "global",
+						},
+						Variables: map[string]string{"SiteName": "Qor5"},
+						Locale:    l10n.Locale{LocaleCode: "en"},
+					},
+					{
+						Name:   "Product",
+						Locale: l10n.Locale{LocaleCode: "en"},
+					},
+				}
+				dbForTest.Save(&settings)
+			},
+			builder: func() *Builder {
+				builder := New(dbForTest, WithLocales("en")).AutoMigrate()
+				builder.RegisterSEO("Product", &Product{}).SetParent(builder.GetGlobalSEO())
+				return builder
+			}(),
+			obj: &Product{
+				Name: "product 1",
+				SEO: Setting{
+					CanonicalPath:    "/products/{{SiteName}}/my-product",
+					EnabledCustomize: true,
+				},
+				Locale: l10n.Locale{LocaleCode: "en"},
+			},
+			want: "<link href='/products/Qor5/my-product' rel='canonical'>",
+		},
+		{
+			name: "RenderCanonical_inherits_from_parent",
+			prepareDB: func() {
+				settings := []*QorSEOSetting{
+					{
+						Name: defaultGlobalSEOName,
+						Setting: Setting{
+							CanonicalPath: "/global-canonical",
+						},
+						Locale: l10n.Locale{LocaleCode: "en"},
+					},
+					{
+						Name:   "Product",
+						Locale: l10n.Locale{LocaleCode: "en"},
+					},
+				}
+				dbForTest.Save(&settings)
+			},
+			builder: func() *Builder {
+				builder := New(dbForTest, WithLocales("en")).AutoMigrate()
+				builder.RegisterSEO("Product", &Product{}).SetParent(builder.GetGlobalSEO())
+				return builder
+			}(),
+			obj: &Product{
+				Name:   "product 1",
+				Locale: l10n.Locale{LocaleCode: "en"},
+			},
+			want: "<link href='/global-canonical' rel='canonical'>",
+		},
+		{
+			name: "RenderCanonical_returns_nil_for_unregistered_seo",
+			prepareDB: func() {},
+			builder: func() *Builder {
+				builder := New(dbForTest, WithLocales("en")).AutoMigrate()
+				return builder
+			}(),
+			obj:  &Product{Name: "product 1", Locale: l10n.Locale{LocaleCode: "en"}},
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resetDB()
+			tt.prepareDB()
+			got := tt.builder.RenderCanonical(tt.obj, defaultRequest)
+			if tt.want == "" {
+				if got != nil {
+					gotHTML, _ := got.MarshalHTML(context.TODO())
+					t.Errorf("RenderCanonical() = %v, want nil", string(gotHTML))
+				}
+			} else {
+				if got == nil {
+					t.Errorf("RenderCanonical() = nil, want %v", tt.want)
+				} else {
+					gotHTML, _ := got.MarshalHTML(context.TODO())
+					if !strings.Contains(string(gotHTML), tt.want) {
+						t.Errorf("RenderCanonical() = %v, want contains %v", string(gotHTML), tt.want)
+					}
 				}
 			}
 		})
