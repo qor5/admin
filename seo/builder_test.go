@@ -280,6 +280,104 @@ func TestBuilder_Render(t *testing.T) {
 		},
 
 		{
+			name: "Render_model_seo_with_canonical_path_and_robots",
+			prepareDB: func() {
+				dbForTest.Save(&globalSeoSetting)
+				product := QorSEOSetting{
+					Name: "Product",
+					Setting: Setting{
+						Title:         "product | {{SiteName}}",
+						CanonicalPath: "/products/{{ProductSlug}}",
+						NoIndex:       true,
+						NoFollow:      true,
+					},
+					Locale: l10n.Locale{LocaleCode: "en"},
+				}
+				dbForTest.Save(&product)
+			},
+			builder: func() *Builder {
+				builder := New(dbForTest, WithLocales("en")).AutoMigrate()
+				builder.RegisterSEO("Product", &Product{}).
+					RegisterContextVariable("ProductSlug",
+						func(obj interface{}, _ *Setting, _ *http.Request) string {
+							return "my-product"
+						},
+					).SetParent(builder.GetGlobalSEO())
+				return builder
+			}(),
+			obj: &Product{
+				Name:   "product 1",
+				Locale: l10n.Locale{LocaleCode: "en"},
+			},
+			want: `
+			<title>product | Qor5 dev</title>
+			<link href='/products/my-product' rel='canonical'>
+			<meta name='robots' content='noindex, nofollow'>`,
+		},
+		{
+			name: "Render_model_seo_with_inherited_noindex_from_parent",
+			prepareDB: func() {
+				settings := []*QorSEOSetting{
+					{
+						Name: defaultGlobalSEOName,
+						Setting: Setting{
+							Title:   "global",
+							NoIndex: true,
+						},
+						Locale: l10n.Locale{LocaleCode: "en"},
+					},
+					{
+						Name: "Product",
+						Setting: Setting{
+							Title: "product",
+						},
+						Locale: l10n.Locale{LocaleCode: "en"},
+					},
+				}
+				dbForTest.Save(&settings)
+			},
+			builder: func() *Builder {
+				builder := New(dbForTest, WithLocales("en")).AutoMigrate()
+				builder.RegisterSEO("Product", &Product{}).SetParent(builder.GetGlobalSEO())
+				return builder
+			}(),
+			obj: &Product{
+				Name:   "product 1",
+				Locale: l10n.Locale{LocaleCode: "en"},
+			},
+			want: `
+			<title>product</title>
+			<meta name='robots' content='noindex'>`,
+		},
+		{
+			name: "Render_model_seo_with_customized_canonical_path_variable",
+			prepareDB: func() {
+				dbForTest.Save(&globalSeoSetting)
+				product := QorSEOSetting{
+					Name:   "Product",
+					Locale: l10n.Locale{LocaleCode: "en"},
+				}
+				dbForTest.Save(&product)
+			},
+			builder: func() *Builder {
+				builder := New(dbForTest, WithLocales("en")).AutoMigrate()
+				builder.RegisterSEO("Product", &Product{}).SetParent(builder.GetGlobalSEO())
+				return builder
+			}(),
+			obj: &Product{
+				Name: "product 1",
+				SEO: Setting{
+					Title:            "product1",
+					CanonicalPath:    "/products/{{SiteName}}",
+					EnabledCustomize: true,
+				},
+				Locale: l10n.Locale{LocaleCode: "en"},
+			},
+			want: `
+			<title>product1</title>
+			<link href='/products/Qor5 dev' rel='canonical'>`,
+		},
+		{
 			name: "Render_model_setting_with_default_SEO_setting",
 			prepareDB: func() {
 				dbForTest.Save(&globalSeoSetting)

@@ -444,6 +444,7 @@ func replaceVariables(setting Setting, values map[string]string) Setting {
 	setting.Title = replace(setting.Title)
 	setting.Description = replace(setting.Description)
 	setting.Keywords = replace(setting.Keywords)
+	setting.CanonicalPath = replace(setting.CanonicalPath)
 	setting.OpenGraphTitle = replace(setting.OpenGraphTitle)
 	setting.OpenGraphDescription = replace(setting.OpenGraphDescription)
 	setting.OpenGraphURL = replace(setting.OpenGraphURL)

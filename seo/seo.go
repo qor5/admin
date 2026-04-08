@@ -374,6 +374,15 @@ func mergeSetting(lowPSetting, highPSetting *Setting) {
 	if highPSetting.Keywords == "" {
 		highPSetting.Keywords = lowPSetting.Keywords
 	}
+	if highPSetting.CanonicalPath == "" {
+		highPSetting.CanonicalPath = lowPSetting.CanonicalPath
+	}
+	if !highPSetting.NoIndex {
+		highPSetting.NoIndex = lowPSetting.NoIndex
+	}
+	if !highPSetting.NoFollow {
+		highPSetting.NoFollow = lowPSetting.NoFollow
+	}
 	if highPSetting.OpenGraphTitle == "" {
 		highPSetting.OpenGraphTitle = lowPSetting.OpenGraphTitle
 	}
