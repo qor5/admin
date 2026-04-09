@@ -170,10 +170,6 @@ func (setting *Setting) HTMLComponent(metaProperties map[string]string) h.HTMLCo
 		h.Meta().Attr("name", "keywords").Attr("content", setting.Keywords),
 	)
 
-	if setting.CanonicalPath != "" {
-		components = append(components, h.Link(setting.CanonicalPath).Rel("canonical"))
-	}
-
 	var robotsDirectives []string
 	if setting.NoIndex {
 		robotsDirectives = append(robotsDirectives, "noindex")

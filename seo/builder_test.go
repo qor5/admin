@@ -312,7 +312,6 @@ func TestBuilder_Render(t *testing.T) {
 			},
 			want: `
 			<title>product | Qor5 dev</title>
-			<link href='/products/my-product' rel='canonical'>
 			<meta name='robots' content='noindex, nofollow'>`,
 		},
 		{
@@ -374,9 +373,7 @@ func TestBuilder_Render(t *testing.T) {
 				},
 				Locale: l10n.Locale{LocaleCode: "en"},
 			},
-			want: `
-			<title>product1</title>
-			<link href='/products/Qor5 dev' rel='canonical'>`,
+			want: `<title>product1</title>`,
 		},
 		{
 			name: "Render_model_setting_with_default_SEO_setting",

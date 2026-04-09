@@ -37,7 +37,7 @@ func TestSettingHTMLComponent(t *testing.T) {
 		},
 
 		{
-			name: "Render with CanonicalPath",
+			name: "Render with CanonicalPath does not include canonical in HTMLComponent",
 			setting: Setting{
 				Title:         "title",
 				Description:   "description",
@@ -48,8 +48,7 @@ func TestSettingHTMLComponent(t *testing.T) {
 			want: `
 			<title>title</title>
 			<meta name='description' content='description'>
-			<meta name='keywords' content='keyword'>
-			<link href='/products/1' rel='canonical'>`,
+			<meta name='keywords' content='keyword'>`,
 		},
 		{
 			name: "Render with NoIndex only",
@@ -98,7 +97,6 @@ func TestSettingHTMLComponent(t *testing.T) {
 			want: `
 			<title>title</title>
 			<meta name='description' content='description'>
-			<link href='/products/1' rel='canonical'>
 			<meta name='robots' content='noindex, nofollow'>`,
 		},
 		{
