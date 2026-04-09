@@ -1251,7 +1251,7 @@ func TestBuilder_RenderCanonical(t *testing.T) {
 			want: "<link href='/global-canonical' rel='canonical'>",
 		},
 		{
-			name: "RenderCanonical_returns_nil_for_unregistered_seo",
+			name:      "RenderCanonical_returns_nil_for_unregistered_seo",
 			prepareDB: func() {},
 			builder: func() *Builder {
 				builder := New(dbForTest, WithLocales("en")).AutoMigrate()
