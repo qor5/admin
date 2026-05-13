@@ -37,6 +37,69 @@ func TestSettingHTMLComponent(t *testing.T) {
 		},
 
 		{
+			name: "Render with CanonicalPath does not include canonical in HTMLComponent",
+			setting: Setting{
+				Title:         "title",
+				Description:   "description",
+				Keywords:      "keyword",
+				CanonicalPath: "/products/1",
+			},
+			tags: map[string]string{},
+			want: `
+			<title>title</title>
+			<meta name='description' content='description'>
+			<meta name='keywords' content='keyword'>`,
+		},
+		{
+			name: "Render with NoIndex only",
+			setting: Setting{
+				Title:   "title",
+				NoIndex: true,
+			},
+			tags: map[string]string{},
+			want: `
+			<title>title</title>
+			<meta name='robots' content='noindex'>`,
+		},
+		{
+			name: "Render with NoFollow only",
+			setting: Setting{
+				Title:    "title",
+				NoFollow: true,
+			},
+			tags: map[string]string{},
+			want: `
+			<title>title</title>
+			<meta name='robots' content='nofollow'>`,
+		},
+		{
+			name: "Render with both NoIndex and NoFollow",
+			setting: Setting{
+				Title:    "title",
+				NoIndex:  true,
+				NoFollow: true,
+			},
+			tags: map[string]string{},
+			want: `
+			<title>title</title>
+			<meta name='robots' content='noindex, nofollow'>`,
+		},
+		{
+			name: "Render with CanonicalPath and NoIndex and NoFollow combined",
+			setting: Setting{
+				Title:         "title",
+				Description:   "description",
+				CanonicalPath: "/products/1",
+				NoIndex:       true,
+				NoFollow:      true,
+			},
+			tags: map[string]string{},
+			want: `
+			<title>title</title>
+			<meta name='description' content='description'>
+			<meta name='robots' content='noindex, nofollow'>`,
+		},
+		{
 			name: "Render the SEO html using the tag data",
 			setting: Setting{
 				Title:                "title",

@@ -337,15 +337,18 @@ func (b *ModelBuilder) renderScrollIframe(comps []h.HTMLComponent, ctx *web.Even
 	}
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
 	var seoTags h.HTMLComponent
+	var canonicalLink h.HTMLComponent
 	if b.builder.seoBuilder != nil {
 		seoTags = b.builder.seoBuilder.Render(obj, ctx.R)
+		canonicalLink = b.builder.seoBuilder.RenderCanonical(obj, ctx.R)
 	}
 	input := &PageLayoutInput{
-		LocaleCode: locale,
-		IsEditor:   isEditor,
-		IsPreview:  !isEditor,
-		SeoTags:    seoTags,
-		Obj:        obj,
+		LocaleCode:    locale,
+		IsEditor:      isEditor,
+		IsPreview:     !isEditor,
+		SeoTags:       seoTags,
+		CanonicalLink: canonicalLink,
+		Obj:           obj,
 	}
 	input.EditorCss = append(input.EditorCss,
 		h.Style(`

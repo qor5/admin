@@ -317,6 +317,9 @@ func (b *Builder) vseo(fieldPrefix string, field *presets.FieldContext, seo *SEO
 		VXField().Disabled(field.Disabled).Attr("counter", true).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "Title"), setting.Title)...).Label(msgr.Title).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_title", refPrefix))).Attr("ref", fmt.Sprintf("%s_title", refPrefix)),
 		VXField().Disabled(field.Disabled).Attr("counter", true).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "Description"), setting.Description)...).Label(msgr.Description).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_description", refPrefix))).Attr("ref", fmt.Sprintf("%s_description", refPrefix)),
 		VXField().Disabled(field.Disabled).Type("textarea").Attr("counter", true).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "Keywords"), setting.Keywords)...).Label(msgr.Keywords).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_keywords", refPrefix))).Attr("ref", fmt.Sprintf("%s_keywords", refPrefix)),
+		VXField().Disabled(field.Disabled).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "CanonicalPath"), setting.CanonicalPath)...).Label(msgr.CanonicalPath).Attr("@focus", fmt.Sprintf("$refs.seo.tagInputsFocus($refs.%s)", fmt.Sprintf("%s_canonical_path", refPrefix))).Attr("ref", fmt.Sprintf("%s_canonical_path", refPrefix)),
+		VCheckbox().Disabled(field.Disabled).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "NoIndex"), setting.NoIndex)...).Label(msgr.NoIndex).Color(ColorPrimary),
+		VCheckbox().Disabled(field.Disabled).Attr(web.VField(fmt.Sprintf("%s.%s", fieldPrefix, "NoFollow"), setting.NoFollow)...).Label(msgr.NoFollow).Color(ColorPrimary),
 
 		h.Div(
 			h.Span(msgr.OpenGraphInformation).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
@@ -375,6 +378,9 @@ func (b *Builder) vSeoReadonly(obj interface{}, fieldPrefix, locale string, seo 
 		seoFieldPortal(msgr.Title, setting.Title),
 		seoFieldPortal(msgr.Description, setting.Description),
 		seoFieldPortal(msgr.Keywords, setting.Keywords),
+		seoFieldPortal(msgr.CanonicalPath, setting.CanonicalPath),
+		seoFieldPortal(msgr.NoIndex, fmt.Sprintf("%t", setting.NoIndex)),
+		seoFieldPortal(msgr.NoFollow, fmt.Sprintf("%t", setting.NoFollow)),
 		h.Div(
 			h.Span(msgr.OpenGraphInformation).Class("text-subtitle-1 px-2 py-1 rounded", "bg-"+ColorGreyLighten3),
 		).Class("mt-10"),

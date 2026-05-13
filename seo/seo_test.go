@@ -367,6 +367,94 @@ func TestSEO_RegisterMetaProperty(t *testing.T) {
 	}
 }
 
+func TestMergeSetting(t *testing.T) {
+	cases := []struct {
+		name     string
+		low      Setting
+		high     Setting
+		expected Setting
+	}{
+		{
+			name: "inherit_canonical_path_from_parent",
+			low:  Setting{CanonicalPath: "/parent-path"},
+			high: Setting{},
+			expected: Setting{
+				CanonicalPath: "/parent-path",
+			},
+		},
+		{
+			name: "child_overrides_canonical_path",
+			low:  Setting{CanonicalPath: "/parent-path"},
+			high: Setting{CanonicalPath: "/child-path"},
+			expected: Setting{
+				CanonicalPath: "/child-path",
+			},
+		},
+		{
+			name: "inherit_noindex_from_parent",
+			low:  Setting{NoIndex: true},
+			high: Setting{},
+			expected: Setting{
+				NoIndex: true,
+			},
+		},
+		{
+			name: "inherit_nofollow_from_parent",
+			low:  Setting{NoFollow: true},
+			high: Setting{},
+			expected: Setting{
+				NoFollow: true,
+			},
+		},
+		{
+			name: "inherit_noindex_and_nofollow_from_parent",
+			low:  Setting{NoIndex: true, NoFollow: true},
+			high: Setting{},
+			expected: Setting{
+				NoIndex:  true,
+				NoFollow: true,
+			},
+		},
+		{
+			name: "child_noindex_true_overrides_parent_false",
+			low:  Setting{NoIndex: false},
+			high: Setting{NoIndex: true},
+			expected: Setting{
+				NoIndex: true,
+			},
+		},
+		{
+			name: "combined_canonical_noindex_nofollow_inheritance",
+			low: Setting{
+				Title:         "parent title",
+				CanonicalPath: "/parent",
+				NoIndex:       true,
+				NoFollow:      true,
+			},
+			high: Setting{
+				Title:         "child title",
+				CanonicalPath: "/child",
+			},
+			expected: Setting{
+				Title:         "child title",
+				CanonicalPath: "/child",
+				NoIndex:       true,
+				NoFollow:      true,
+			},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			mergeSetting(&c.low, &c.high)
+			r := testingutils.PrettyJsonDiff(&c.expected, &c.high)
+			if r != "" {
+				t.Error(r)
+			}
+		})
+	}
+}
+
 func TestSEO_getLocaleFinalQorSEOSetting(t *testing.T) {
 	cases := []struct {
 		name      string

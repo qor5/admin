@@ -47,6 +47,9 @@ type Setting struct {
 	Title                          string                 `gorm:"size:4294967295" json:",omitempty"`
 	Description                    string                 `json:",omitempty"`
 	Keywords                       string                 `json:",omitempty"`
+	CanonicalPath                  string                 `json:",omitempty"`
+	NoIndex                        bool                   `json:",omitempty"`
+	NoFollow                       bool                   `json:",omitempty"`
 	OpenGraphTitle                 string                 `json:",omitempty"`
 	OpenGraphDescription           string                 `json:",omitempty"`
 	OpenGraphURL                   string                 `json:",omitempty"`
@@ -89,6 +92,7 @@ func (setting Setting) Value() (driver.Value, error) {
 
 func (setting *Setting) IsEmpty() bool {
 	return setting.Title == "" && setting.Description == "" && setting.Keywords == "" &&
+		setting.CanonicalPath == "" && !setting.NoIndex && !setting.NoFollow &&
 		setting.OpenGraphTitle == "" && setting.OpenGraphDescription == "" &&
 		setting.OpenGraphURL == "" && setting.OpenGraphType == "" && setting.OpenGraphImageURL == "" &&
 		setting.OpenGraphImageFromMediaLibrary.Url == "" && len(setting.OpenGraphMetadata) == 0
@@ -159,12 +163,29 @@ func (setting *Setting) HTMLComponent(metaProperties map[string]string) h.HTMLCo
 		)
 	}
 
-	return h.HTMLComponents{
+	var components h.HTMLComponents
+	components = append(components,
 		h.Title(setting.Title),
 		h.Meta().Attr("name", "description").Attr("content", setting.Description),
 		h.Meta().Attr("name", "keywords").Attr("content", setting.Keywords),
-		metaPropertyComponents,
+	)
+
+	var robotsDirectives []string
+	if setting.NoIndex {
+		robotsDirectives = append(robotsDirectives, "noindex")
 	}
+	if setting.NoFollow {
+		robotsDirectives = append(robotsDirectives, "nofollow")
+	}
+	if len(robotsDirectives) > 0 {
+		components = append(components,
+			h.Meta().Attr("name", "robots").Attr("content", strings.Join(robotsDirectives, ", ")),
+		)
+	}
+
+	components = append(components, metaPropertyComponents)
+
+	return components
 }
 
 func GetOpenGraphMetadata(in string) (metadata []OpenGraphMetadata) {

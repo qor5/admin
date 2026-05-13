@@ -7,6 +7,9 @@ type Messages struct {
 	Title                         string
 	Description                   string
 	Keywords                      string
+	CanonicalPath                 string
+	NoIndex                       string
+	NoFollow                      string
 	OpenGraphInformation          string
 	OpenGraphTitle                string
 	OpenGraphDescription          string
@@ -26,6 +29,9 @@ var Messages_en_US = &Messages{
 	Title:                         "Title",
 	Description:                   "Description",
 	Keywords:                      "Keywords",
+	CanonicalPath:                 "Canonical Path",
+	NoIndex:                       "No Index",
+	NoFollow:                      "No Follow",
 	OpenGraphInformation:          "Open Graph Information",
 	OpenGraphTitle:                "Open Graph Title",
 	OpenGraphDescription:          "Open Graph Description",
@@ -45,6 +51,9 @@ var Messages_zh_CN = &Messages{
 	Title:                         "标题",
 	Description:                   "描述",
 	Keywords:                      "关键词",
+	CanonicalPath:                 "规范路径",
+	NoIndex:                       "不索引",
+	NoFollow:                      "不跟踪",
 	OpenGraphInformation:          "OG 信息",
 	OpenGraphTitle:                "OG 标题",
 	OpenGraphDescription:          "OG 描述",
@@ -64,6 +73,9 @@ var Messages_ja_JP = &Messages{
 	Title:                         "タイトル",
 	Description:                   "説明",
 	Keywords:                      "キーワード",
+	CanonicalPath:                 "正規パス",
+	NoIndex:                       "インデックスしない",
+	NoFollow:                      "フォローしない",
 	OpenGraphInformation:          "Open Graph 情報",
 	OpenGraphTitle:                "Open Graph タイトル",
 	OpenGraphDescription:          "Open Graph 説明",
