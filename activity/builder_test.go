@@ -11,9 +11,10 @@ import (
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3"
 	"github.com/stretchr/testify/require"
-	"github.com/theplant/testenv"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"github.com/qor5/x/v3/gormx"
+	"gorm.io/driver/postgres"
 )
 
 var db *gorm.DB
@@ -41,13 +42,16 @@ type (
 )
 
 func TestMain(m *testing.M) {
-	env, err := testenv.New().DBEnable(true).SetUp()
+	ctx := context.Background()
+	pgContainer, err := gormx.OpenContainer(ctx, nil)
 	if err != nil {
 		panic(err)
 	}
-	defer env.TearDown()
-
-	db = env.DB
+	defer func() { _ = pgContainer.Terminate(ctx) }()
+	db, err = gorm.Open(postgres.Open(pgContainer.DSN), &gorm.Config{})
+	if err != nil {
+		panic(err)
+	}
 	db.Logger = db.Logger.LogMode(logger.Info)
 
 	if err = AutoMigrate(db, ""); err != nil {

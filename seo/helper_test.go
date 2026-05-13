@@ -7,19 +7,25 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/qor5/admin/v3/l10n"
-	"github.com/theplant/testenv"
 	"gorm.io/gorm"
+	"github.com/qor5/x/v3/gormx"
+	"gorm.io/driver/postgres"
+	"context"
 )
 
 var dbForTest *gorm.DB
 
 func TestMain(m *testing.M) {
-	env, err := testenv.New().DBEnable(true).SetUp()
+	ctx := context.Background()
+	pgContainer, err := gormx.OpenContainer(ctx, nil)
 	if err != nil {
 		panic(err)
 	}
-	defer env.TearDown()
-	dbForTest = env.DB
+	defer func() { _ = pgContainer.Terminate(ctx) }()
+	dbForTest, err = gorm.Open(postgres.Open(pgContainer.DSN), &gorm.Config{})
+	if err != nil {
+		panic(err)
+	}
 	err = dbForTest.AutoMigrate(&QorSEOSetting{})
 	if err != nil {
 		panic("failed to migrate db")

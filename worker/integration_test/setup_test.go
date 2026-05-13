@@ -20,8 +20,9 @@ import (
 	"github.com/qor5/web/v3"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
-	"github.com/theplant/testenv"
 	"gorm.io/gorm"
+	"github.com/qor5/x/v3/gormx"
+	"gorm.io/driver/postgres"
 )
 
 var (
@@ -30,12 +31,16 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	env, err := testenv.New().DBEnable(true).SetUp()
+	ctx := context.Background()
+	pgContainer, err := gormx.OpenContainer(ctx, nil)
 	if err != nil {
 		panic(err)
 	}
-	defer env.TearDown()
-	db = env.DB
+	defer func() { _ = pgContainer.Terminate(ctx) }()
+	db, err = gorm.Open(postgres.Open(pgContainer.DSN), &gorm.Config{})
+	if err != nil {
+		panic(err)
+	}
 
 	pb = presets.New().
 		DataOperator(gorm2op.DataOperator(db))

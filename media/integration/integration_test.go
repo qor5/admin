@@ -10,12 +10,14 @@ import (
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/qor5/x/v3/oss/filesystem"
 	"github.com/stretchr/testify/require"
-	"github.com/theplant/testenv"
 	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/media/base"
 	"github.com/qor5/admin/v3/media/media_library"
 	"github.com/qor5/admin/v3/media/oss"
+	"github.com/qor5/x/v3/gormx"
+	"gorm.io/driver/postgres"
+	"context"
 )
 
 //go:embed *.png
@@ -24,12 +26,16 @@ var box embed.FS
 var TestDB *gorm.DB
 
 func TestMain(m *testing.M) {
-	env, err := testenv.New().DBEnable(true).SetUp()
+	ctx := context.Background()
+	pgContainer, err := gormx.OpenContainer(ctx, nil)
 	if err != nil {
 		panic(err)
 	}
-	defer env.TearDown()
-	TestDB = env.DB
+	defer func() { _ = pgContainer.Terminate(ctx) }()
+	TestDB, err = gorm.Open(postgres.Open(pgContainer.DSN), &gorm.Config{})
+	if err != nil {
+		panic(err)
+	}
 	m.Run()
 }
 

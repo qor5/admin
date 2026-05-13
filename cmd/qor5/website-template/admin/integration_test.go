@@ -10,12 +10,14 @@ import (
 
 	"github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
-	"github.com/theplant/testenv"
 	"github.com/theplant/testingutils"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
 	"github.com/qor5/admin/v3/cmd/qor5/website-template/admin"
+	"github.com/qor5/x/v3/gormx"
+	"gorm.io/driver/postgres"
+	"context"
 )
 
 var (
@@ -24,12 +26,16 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	env, err := testenv.New().DBEnable(true).SetUp()
+	ctx := context.Background()
+	pgContainer, err := gormx.OpenContainer(ctx, nil)
 	if err != nil {
 		panic(err)
 	}
-	defer env.TearDown()
-	TestDB = env.DB
+	defer func() { _ = pgContainer.Terminate(ctx) }()
+	TestDB, err = gorm.Open(postgres.Open(pgContainer.DSN), &gorm.Config{})
+	if err != nil {
+		panic(err)
+	}
 	TestDB.Logger = TestDB.Logger.LogMode(logger.Info)
 	SqlDB, _ = TestDB.DB()
 	m.Run()
