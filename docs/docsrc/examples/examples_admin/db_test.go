@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/qor5/x/v3/gormx"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -18,15 +17,9 @@ var (
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
-	pgContainer, err := gormx.OpenContainer(ctx, nil)
-	if err != nil {
-		panic(err)
-	}
-	defer func() { _ = pgContainer.Terminate(ctx) }()
-	TestDB, err = gorm.Open(postgres.Open(pgContainer.DSN), &gorm.Config{})
-	if err != nil {
-		panic(err)
-	}
+	suite := gormx.MustStartRawTestSuite(ctx)
+	defer func() { _ = suite.Stop(ctx) }()
+	TestDB = suite.DB()
 	TestDB.Logger = TestDB.Logger.LogMode(logger.Info)
 	SqlDB, _ = TestDB.DB()
 	m.Run()

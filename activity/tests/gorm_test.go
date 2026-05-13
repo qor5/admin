@@ -7,7 +7,6 @@ import (
 
 	"github.com/qor5/x/v3/gormx"
 	"github.com/stretchr/testify/require"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
@@ -27,15 +26,9 @@ var db *gorm.DB
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
-	pgContainer, err := gormx.OpenContainer(ctx, nil)
-	if err != nil {
-		panic(err)
-	}
-	defer func() { _ = pgContainer.Terminate(ctx) }()
-	db, err = gorm.Open(postgres.Open(pgContainer.DSN), &gorm.Config{})
-	if err != nil {
-		panic(err)
-	}
+	suite := gormx.MustStartRawTestSuite(ctx)
+	defer func() { _ = suite.Stop(ctx) }()
+	db = suite.DB()
 	db.Logger = db.Logger.LogMode(logger.Info)
 
 	m.Run()

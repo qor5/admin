@@ -9,7 +9,6 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/qor5/admin/v3/l10n"
 	"github.com/qor5/x/v3/gormx"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -17,17 +16,10 @@ var dbForTest *gorm.DB
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
-	pgContainer, err := gormx.OpenContainer(ctx, nil)
-	if err != nil {
-		panic(err)
-	}
-	defer func() { _ = pgContainer.Terminate(ctx) }()
-	dbForTest, err = gorm.Open(postgres.Open(pgContainer.DSN), &gorm.Config{})
-	if err != nil {
-		panic(err)
-	}
-	err = dbForTest.AutoMigrate(&QorSEOSetting{})
-	if err != nil {
+	suite := gormx.MustStartRawTestSuite(ctx)
+	defer func() { _ = suite.Stop(ctx) }()
+	dbForTest = suite.DB()
+	if err := dbForTest.AutoMigrate(&QorSEOSetting{}); err != nil {
 		panic("failed to migrate db")
 	}
 

@@ -12,7 +12,6 @@ import (
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/gormx"
 	"github.com/stretchr/testify/require"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -43,21 +42,15 @@ type (
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
-	pgContainer, err := gormx.OpenContainer(ctx, nil)
-	if err != nil {
-		panic(err)
-	}
-	defer func() { _ = pgContainer.Terminate(ctx) }()
-	db, err = gorm.Open(postgres.Open(pgContainer.DSN), &gorm.Config{})
-	if err != nil {
-		panic(err)
-	}
+	suite := gormx.MustStartRawTestSuite(ctx)
+	defer func() { _ = suite.Stop(ctx) }()
+	db = suite.DB()
 	db.Logger = db.Logger.LogMode(logger.Info)
 
-	if err = AutoMigrate(db, ""); err != nil {
+	if err := AutoMigrate(db, ""); err != nil {
 		panic(err)
 	}
-	if err = db.AutoMigrate(&TestActivityModel{}); err != nil {
+	if err := db.AutoMigrate(&TestActivityModel{}); err != nil {
 		panic(err)
 	}
 
