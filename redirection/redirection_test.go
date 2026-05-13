@@ -1,13 +1,14 @@
 package redirection
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/gormx"
 	"github.com/theplant/gofixtures"
-	"github.com/theplant/testenv"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -31,12 +32,10 @@ func TestMain(m *testing.M) {
 	successUrl = mockServer.URL + "/success"
 	failedUrl = mockServer.URL + "/failure"
 	defer mockServer.Close()
-	env, err := testenv.New().DBEnable(true).SetUp()
-	if err != nil {
-		panic(err)
-	}
-	defer env.TearDown()
-	TestDB = env.DB
+	ctx := context.Background()
+	testSuite := gormx.MustStartTestSuite(ctx)
+	defer testSuite.Stop(ctx)
+	TestDB = testSuite.DB()
 	TestDB.Logger = TestDB.Logger.LogMode(logger.Info)
 	b = &Builder{db: TestDB}
 	b.AutoMigrate()

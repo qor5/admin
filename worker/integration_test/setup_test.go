@@ -18,9 +18,9 @@ import (
 	"github.com/qor5/admin/v3/worker"
 	integration "github.com/qor5/admin/v3/worker/integration_test"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/gormx"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
-	"github.com/theplant/testenv"
 	"gorm.io/gorm"
 )
 
@@ -30,12 +30,10 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	env, err := testenv.New().DBEnable(true).SetUp()
-	if err != nil {
-		panic(err)
-	}
-	defer env.TearDown()
-	db = env.DB
+	ctx := context.Background()
+	testSuite := gormx.MustStartTestSuite(ctx)
+	defer testSuite.Stop(ctx)
+	db = testSuite.DB()
 
 	pb = presets.New().
 		DataOperator(gorm2op.DataOperator(db))

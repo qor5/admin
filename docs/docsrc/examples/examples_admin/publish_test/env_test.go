@@ -1,6 +1,7 @@
 package publish_test
 
 import (
+	"context"
 	"database/sql"
 	"net/http"
 	"testing"
@@ -8,7 +9,7 @@ import (
 	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_admin"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
-	"github.com/theplant/testenv"
+	"github.com/qor5/x/v3/gormx"
 	"gorm.io/gorm"
 )
 
@@ -19,13 +20,12 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	env, err := testenv.New().DBEnable(true).SetUp()
-	if err != nil {
-		panic(err)
-	}
-	defer env.TearDown()
+	ctx := context.Background()
+	testSuite := gormx.MustStartTestSuite(ctx)
+	defer testSuite.Stop(ctx)
 
-	DB = env.DB
+	DB = testSuite.DB()
+	var err error
 	SQLDB, err = DB.DB()
 	if err != nil {
 		panic(err)
