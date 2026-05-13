@@ -1,6 +1,7 @@
 package examples_presets
 
 import (
+	"context"
 	"database/sql"
 	"net/http"
 	"net/http/httptest"
@@ -9,11 +10,10 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3/multipartestutils"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 	"github.com/qor5/x/v3/gormx"
 	"gorm.io/driver/postgres"
-	"context"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var (

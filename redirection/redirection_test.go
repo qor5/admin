@@ -1,17 +1,17 @@
 package redirection
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/gormx"
 	"github.com/theplant/gofixtures"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"github.com/qor5/x/v3/gormx"
-	"gorm.io/driver/postgres"
-	"context"
 )
 
 var (

@@ -1,16 +1,16 @@
 package seo
 
 import (
+	"context"
 	"os"
 	"strings"
 	"testing"
 
 	_ "github.com/lib/pq"
 	"github.com/qor5/admin/v3/l10n"
-	"gorm.io/gorm"
 	"github.com/qor5/x/v3/gormx"
 	"gorm.io/driver/postgres"
-	"context"
+	"gorm.io/gorm"
 )
 
 var dbForTest *gorm.DB

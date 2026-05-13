@@ -1,6 +1,7 @@
 package publish_test
 
 import (
+	"context"
 	"database/sql"
 	"net/http"
 	"testing"
@@ -8,10 +9,9 @@ import (
 	"github.com/qor5/admin/v3/docs/docsrc/examples/examples_admin"
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
-	"gorm.io/gorm"
 	"github.com/qor5/x/v3/gormx"
 	"gorm.io/driver/postgres"
-	"context"
+	"gorm.io/gorm"
 )
 
 var (

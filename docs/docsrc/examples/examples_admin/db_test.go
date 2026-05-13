@@ -1,14 +1,14 @@
 package examples_admin
 
 import (
+	"context"
 	"database/sql"
 	"testing"
 
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 	"github.com/qor5/x/v3/gormx"
 	"gorm.io/driver/postgres"
-	"context"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var (

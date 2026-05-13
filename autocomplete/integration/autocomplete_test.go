@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -10,12 +11,11 @@ import (
 
 	"github.com/qor5/admin/v3/autocomplete"
 
+	"github.com/qor5/x/v3/gormx"
 	"github.com/theplant/gofixtures"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"github.com/qor5/x/v3/gormx"
-	"gorm.io/driver/postgres"
-	"context"
 )
 
 var TestDB *gorm.DB

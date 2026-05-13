@@ -10,11 +10,11 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/gormx"
 	"github.com/stretchr/testify/require"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"github.com/qor5/x/v3/gormx"
-	"gorm.io/driver/postgres"
 )
 
 var db *gorm.DB

@@ -18,11 +18,11 @@ import (
 	"github.com/qor5/admin/v3/worker"
 	integration "github.com/qor5/admin/v3/worker/integration_test"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/gormx"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
-	"gorm.io/gorm"
-	"github.com/qor5/x/v3/gormx"
 	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 var (

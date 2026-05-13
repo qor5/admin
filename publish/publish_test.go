@@ -10,15 +10,15 @@ import (
 	"time"
 
 	"github.com/qor5/admin/v3/publish"
+	"github.com/qor5/x/v3/gormx"
 	"github.com/qor5/x/v3/oss"
 	"github.com/stretchr/testify/require"
 	"github.com/theplant/sliceutils"
 	"github.com/theplant/testingutils"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
-	"github.com/qor5/x/v3/gormx"
-	"gorm.io/driver/postgres"
 )
 
 type Product struct {
