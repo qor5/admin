@@ -292,11 +292,29 @@ func configUser(b *presets.Builder, ab *activity.Builder, db *gorm.DB, publisher
 				ctx.WithContextValue(gorm2op.CtxKeyDB{}, tx)
 				defer ctx.WithContextValue(gorm2op.CtxKeyDB{}, nil)
 				if id != "" {
-					if dbErr = tx.Model(u).Association("Roles").Replace(u.Roles); dbErr != nil {
+					if dbErr = tx.Exec("DELETE FROM user_role_join WHERE user_id = ?", u.ID).Error; dbErr != nil {
 						return
 					}
+					for _, r := range u.Roles {
+						if dbErr = tx.Exec("INSERT INTO user_role_join (user_id, role_id) VALUES (?, ?)", u.ID, r.ID).Error; dbErr != nil {
+							return
+						}
+					}
 				}
-				return in(obj, id, ctx)
+				if dbErr = in(obj, id, ctx); dbErr != nil {
+					return
+				}
+				if id == "" {
+					if dbErr = tx.Exec("DELETE FROM user_role_join WHERE user_id = ?", u.ID).Error; dbErr != nil {
+						return
+					}
+					for _, r := range u.Roles {
+						if dbErr = tx.Exec("INSERT INTO user_role_join (user_id, role_id) VALUES (?, ?)", u.ID, r.ID).Error; dbErr != nil {
+							return
+						}
+					}
+				}
+				return
 			})
 		}
 	})
