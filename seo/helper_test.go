@@ -18,11 +18,6 @@ var dbForTest *gorm.DB
 func TestMain(m *testing.M) {
 	ctx := context.Background()
 	testSuite := gormx.MustStartTestSuite(ctx)
-	defer func() {
-		if err := testSuite.Stop(context.Background()); err != nil {
-			fmt.Printf("Error during teardown: %v\n", err)
-		}
-	}()
 	dbForTest = testSuite.DB()
 	if err := dbForTest.AutoMigrate(&QorSEOSetting{}); err != nil {
 		panic("failed to migrate db")
@@ -30,6 +25,9 @@ func TestMain(m *testing.M) {
 
 	code := m.Run()
 	resetDB()
+	if err := testSuite.Stop(context.Background()); err != nil {
+		fmt.Printf("Error during teardown: %v\n", err)
+	}
 	os.Exit(code)
 }
 
