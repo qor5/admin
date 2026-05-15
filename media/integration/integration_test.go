@@ -1,13 +1,12 @@
 package integration_test
 
 import (
+	"context"
 	"embed"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
-
-	"context"
-	"fmt"
 
 	"github.com/qor5/web/v3"
 	"github.com/qor5/web/v3/multipartestutils"

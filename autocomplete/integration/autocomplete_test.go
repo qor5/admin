@@ -2,14 +2,13 @@ package integration_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
 	"testing"
-
-	"context"
-	"fmt"
 
 	"github.com/qor5/admin/v3/autocomplete"
 	"github.com/qor5/x/v3/gormx"

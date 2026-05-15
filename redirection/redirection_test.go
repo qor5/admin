@@ -1,12 +1,11 @@
 package redirection
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"context"
-	"fmt"
 
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/gormx"
