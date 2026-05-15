@@ -1,7 +1,9 @@
 package examples_presets
 
 import (
+	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -9,7 +11,7 @@ import (
 	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/admin/v3/presets/gorm2op"
 	"github.com/qor5/web/v3/multipartestutils"
-	"github.com/theplant/testenv"
+	"github.com/qor5/x/v3/gormx"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -20,12 +22,14 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	env, err := testenv.New().DBEnable(true).SetUp()
-	if err != nil {
-		panic(err)
-	}
-	defer env.TearDown()
-	TestDB = env.DB
+	ctx := context.Background()
+	testSuite := gormx.MustStartTestSuite(ctx)
+	defer func() {
+		if err := testSuite.Stop(context.Background()); err != nil {
+			fmt.Printf("Error during teardown: %v\n", err)
+		}
+	}()
+	TestDB = testSuite.DB()
 	TestDB.Logger = TestDB.Logger.LogMode(logger.Info)
 	SqlDB, _ = TestDB.DB()
 	m.Run()
