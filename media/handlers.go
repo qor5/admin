@@ -12,6 +12,7 @@ import (
 	"math"
 
 	"github.com/disintegration/imaging"
+	_ "golang.org/x/image/webp"
 )
 
 var mediaHandlers = make(map[string]MediaHandler)
@@ -111,6 +112,25 @@ func (imageHandler) Handle(media Media, file FileInterface, option *Option) (err
 		return
 	}
 	file.Seek(0, 0)
+
+	// WebP: imaging library doesn't support WebP encoding, so store the original for all size variants
+	if IsWebpFormat(media.URL()) {
+		img, _, decodeErr := image.Decode(bytes.NewReader(fileBytes))
+		if decodeErr == nil {
+			SetWeightHeight(media, img.Bounds().Dx(), img.Bounds().Dy())
+		}
+		fileSizes[DefaultSizeKey] = originalFileSize
+		media.Store(media.URL(), option, bytes.NewReader(fileBytes))
+		for key := range media.GetSizes() {
+			if key == DefaultSizeKey {
+				continue
+			}
+			fileSizes[key] = originalFileSize
+			media.Store(media.URL(key), option, bytes.NewReader(fileBytes))
+		}
+		SetFileSizes(media, fileSizes)
+		return
+	}
 
 	format, err := GetImageFormat(media.URL())
 	if err != nil {
