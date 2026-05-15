@@ -1,27 +1,30 @@
 package seo
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
 
 	_ "github.com/lib/pq"
 	"github.com/qor5/admin/v3/l10n"
-	"github.com/theplant/testenv"
+	"github.com/qor5/x/v3/gormx"
 	"gorm.io/gorm"
 )
 
 var dbForTest *gorm.DB
 
 func TestMain(m *testing.M) {
-	env, err := testenv.New().DBEnable(true).SetUp()
-	if err != nil {
-		panic(err)
-	}
-	defer env.TearDown()
-	dbForTest = env.DB
-	err = dbForTest.AutoMigrate(&QorSEOSetting{})
-	if err != nil {
+	ctx := context.Background()
+	testSuite := gormx.MustStartTestSuite(ctx)
+	defer func() {
+		if err := testSuite.Stop(context.Background()); err != nil {
+			fmt.Printf("Error during teardown: %v\n", err)
+		}
+	}()
+	dbForTest = testSuite.DB()
+	if err := dbForTest.AutoMigrate(&QorSEOSetting{}); err != nil {
 		panic("failed to migrate db")
 	}
 

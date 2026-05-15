@@ -2,10 +2,12 @@ package activity
 
 import (
 	"cmp"
+	"context"
+	"fmt"
 	"testing"
 
+	"github.com/qor5/x/v3/gormx"
 	"github.com/stretchr/testify/require"
-	"github.com/theplant/testenv"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
@@ -24,13 +26,15 @@ type Bar struct {
 var db *gorm.DB
 
 func TestMain(m *testing.M) {
-	env, err := testenv.New().DBEnable(true).SetUp()
-	if err != nil {
-		panic(err)
-	}
-	defer env.TearDown()
+	ctx := context.Background()
+	testSuite := gormx.MustStartTestSuite(ctx)
+	defer func() {
+		if err := testSuite.Stop(context.Background()); err != nil {
+			fmt.Printf("Error during teardown: %v\n", err)
+		}
+	}()
 
-	db = env.DB
+	db = testSuite.DB()
 	db.Logger = db.Logger.LogMode(logger.Info)
 
 	m.Run()

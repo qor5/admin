@@ -1,14 +1,15 @@
 package integration_test
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
 	"testing"
 
 	. "github.com/qor5/web/v3/multipartestutils"
+	"github.com/qor5/x/v3/gormx"
 	"github.com/theplant/gofixtures"
-	"github.com/theplant/testenv"
 	"gorm.io/gorm"
 
 	"github.com/qor5/admin/v3/presets"
@@ -19,12 +20,14 @@ import (
 var TestDB *gorm.DB
 
 func TestMain(m *testing.M) {
-	env, err := testenv.New().DBEnable(true).SetUp()
-	if err != nil {
-		panic(err)
-	}
-	defer env.TearDown()
-	TestDB = env.DB
+	ctx := context.Background()
+	testSuite := gormx.MustStartTestSuite(ctx)
+	defer func() {
+		if err := testSuite.Stop(context.Background()); err != nil {
+			fmt.Printf("Error during teardown: %v\n", err)
+		}
+	}()
+	TestDB = testSuite.DB()
 	m.Run()
 }
 
