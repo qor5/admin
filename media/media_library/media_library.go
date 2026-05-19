@@ -20,6 +20,10 @@ type MediaLibrary struct {
 	gorm.Model
 	SelectedType string
 	File         MediaLibraryStorage `sql:"size:4294967295;" mediaLibrary:"url:/system/{{class}}/{{primary_key}}/{{column}}.{{extension}}"`
+	// ShortPath stores the S3 object path for the short URL redirect file, e.g. "aB3k9Z/index.html".
+	// The full short URL is built at runtime by prepending the configured host.
+	// *string so that records without a short URL store NULL (not ""), keeping the unique index valid.
+	ShortPath *string `gorm:"uniqueIndex"`
 }
 
 type MediaOption struct {
