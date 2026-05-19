@@ -198,9 +198,12 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 }
 
 func fileThumb(filename string) h.HTMLComponent {
-
+	ext := path.Ext(filename)
+	if len(ext) > 0 {
+		ext = ext[1:]
+	}
 	return h.Div(
-		fileicons.Icon(path.Ext(filename)[1:]).Attr("height", "150").Class("pt-4"),
+		fileicons.Icon(ext).Attr("height", "150").Class("pt-4"),
 	).Class("d-flex align-center justify-center")
 }
 
