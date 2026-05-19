@@ -3,7 +3,6 @@ package views
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"mime/multipart"
 	"strconv"
 	"strings"
@@ -238,19 +237,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 						).Else(
 							fileThumb(f.File.FileName),
 						),
-						h.If(fileShortURL != "",
-							VBtn(msgr.CopyShortURL).
-								Text(true).
-								Small(true).
-								Color("primary").
-								Attr("style", "position: absolute; top: 4px; right: 4px; z-index: 1; font-weight: bold; background: rgba(255,255,255,0.85);").
-								Attr("@click.stop", fmt.Sprintf(
-									`navigator.clipboard.writeText(%q); vars.shortURLCopied = true`,
-									fileShortURL,
-								)),
-						),
-					).Attr("style", "position: relative").
-						AttrIf("role", "button", field != mediaLibraryListField).
+					).AttrIf("role", "button", field != mediaLibraryListField).
 						AttrIf("@click", web.Plaid().
 							BeforeScript(fmt.Sprintf("locals.%s = true", croppingVar)).
 							EventFunc(chooseFileEvent).
@@ -278,19 +265,31 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 							fileChips(f),
 						),
 					),
-					h.If(deleteIsAllowed(ctx.R, files[i]) == nil,
+					h.If(deleteIsAllowed(ctx.R, files[i]) == nil || fileShortURL != "",
 						VCardActions(
+							h.If(fileShortURL != "",
+								VBtn(msgr.CopyShortURL).
+									Text(true).
+									Color("primary").
+									Attr("style", "font-weight: bold;").
+									Attr("@click", fmt.Sprintf(
+										`navigator.clipboard.writeText(%q); vars.shortURLCopied = true`,
+										fileShortURL,
+									)),
+							),
 							VSpacer(),
-							VBtn(msgr.Delete).
-								Text(true).
-								Attr("@click",
-									web.Plaid().
-										EventFunc(deleteConfirmationEvent).
-										Query("field", field).
-										Query("id", fmt.Sprint(f.ID)).
-										FieldValue("cfg", h.JSONString(cfg)).
-										Go(),
-								),
+							h.If(deleteIsAllowed(ctx.R, files[i]) == nil,
+								VBtn(msgr.Delete).
+									Text(true).
+									Attr("@click",
+										web.Plaid().
+											EventFunc(deleteConfirmationEvent).
+											Query("field", field).
+											Query("id", fmt.Sprint(f.ID)).
+											FieldValue("cfg", h.JSONString(cfg)).
+											Go(),
+									),
+							),
 						),
 					),
 				),
@@ -436,7 +435,12 @@ func uploadFile(db *gorm.DB, shortURLCfg *shorturl.Config) web.EventFunc {
 				return r, nil
 			}
 
-			generateAndSaveShortURL(db, shortURLCfg, &m)
+			if err = generateAndSaveShortURL(db, shortURLCfg, &m); err != nil {
+				// Roll back: delete the media record so the upload appears fully failed.
+				_ = db.Delete(&m).Error
+				presets.ShowMessage(&r, err.Error(), "error")
+				return r, nil
+			}
 		}
 
 		renderFileChooserDialogContent(ctx, &r, field, db, cfg, shortURLCfg)
@@ -445,10 +449,10 @@ func uploadFile(db *gorm.DB, shortURLCfg *shorturl.Config) web.EventFunc {
 }
 
 // generateAndSaveShortURL generates a unique short code, uploads the redirect file,
-// and saves ShortPath to the DB. Failures are non-fatal and only logged.
-func generateAndSaveShortURL(db *gorm.DB, cfg *shorturl.Config, m *media_library.MediaLibrary) {
+// and saves ShortPath to the DB. Returns an error if any step fails.
+func generateAndSaveShortURL(db *gorm.DB, cfg *shorturl.Config, m *media_library.MediaLibrary) error {
 	if cfg == nil {
-		return
+		return nil
 	}
 	const maxRetries = 10
 	var shortPath string
@@ -462,16 +466,14 @@ func generateAndSaveShortURL(db *gorm.DB, cfg *shorturl.Config, m *media_library
 	for i := 0; i < maxRetries; i++ {
 		code, err := generateCode(m)
 		if err != nil {
-			log.Printf("shorturl: generate code: %v", err)
-			return
+			return fmt.Errorf("shorturl: generate code: %w", err)
 		}
 		candidate := shorturl.ShortPath(cfg.PathPrefix, code)
 		var count int64
 		if err := db.Model(&media_library.MediaLibrary{}).
 			Where("short_path = ?", candidate).
 			Count(&count).Error; err != nil {
-			log.Printf("shorturl: query short path: %v", err)
-			return
+			return fmt.Errorf("shorturl: query short path: %w", err)
 		}
 		if count == 0 {
 			shortPath = candidate
@@ -479,21 +481,20 @@ func generateAndSaveShortURL(db *gorm.DB, cfg *shorturl.Config, m *media_library
 		}
 	}
 	if shortPath == "" {
-		log.Printf("shorturl: could not generate unique short path after %d retries for media %d", maxRetries, m.ID)
-		return
+		return fmt.Errorf("shorturl: could not generate unique short path after %d retries for media %d", maxRetries, m.ID)
 	}
 
 	if err := shorturl.Upload(cfg, shortPath, m.File.URL()); err != nil {
-		log.Printf("shorturl: upload redirect file for media %d: %v", m.ID, err)
-		return
+		return fmt.Errorf("shorturl: upload redirect file for media %d: %w", m.ID, err)
 	}
 
 	// Use a direct update so a concurrent unique-constraint violation surfaces cleanly.
 	if err := db.Model(m).Update("short_path", &shortPath).Error; err != nil {
-		log.Printf("shorturl: save short path for media %d: %v", m.ID, err)
 		// Best-effort cleanup of the uploaded redirect file.
 		_ = shorturl.Delete(cfg, shortPath)
+		return fmt.Errorf("shorturl: save short path for media %d: %w", m.ID, err)
 	}
+	return nil
 }
 
 func mergeNewSizes(m *media_library.MediaLibrary, cfg *media_library.MediaBoxConfig) (sizes map[string]*media.Size, r bool) {
