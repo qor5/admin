@@ -96,14 +96,5 @@ func RandomCode(length int) (string, error) {
 
 // defaultHTML returns a minimal redirect page that works across all browsers.
 func defaultHTML(actualURL string) string {
-	return fmt.Sprintf(`<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<meta http-equiv="refresh" content="0; url=%s">
-</head>
-<body>
-<script>window.location.replace(%q);</script>
-</body>
-</html>`, actualURL, actualURL)
+	return fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="preload" href="data:text/javascript," as="script"><meta http-equiv="refresh" content="0; url=%s"><title></title></head><body><script>window.location.replace("%s");</script></body></html>`, actualURL, actualURL)
 }
