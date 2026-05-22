@@ -959,8 +959,11 @@ func (b *ModelBuilder) PreviewHTML(_ context.Context, obj interface{}) (r string
 	return
 }
 
+// modelBuilderCtxKey is a typed context key used to stash a *ModelBuilder under its model name; a custom type avoids string-key collisions across packages.
+type modelBuilderCtxKey string
+
 func (b *ModelBuilder) ContextValueProvider(in context.Context) context.Context {
-	return context.WithValue(in, b.name, b)
+	return context.WithValue(in, modelBuilderCtxKey(b.name), b)
 }
 
 func (b *ModelBuilder) ExistedL10n() bool {

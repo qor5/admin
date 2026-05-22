@@ -16,7 +16,7 @@ func (p *Page) PublishUrl(db *gorm.DB, ctx context.Context, storage oss.StorageI
 		err        error
 		localePath string
 	)
-	builder := ctx.Value(utils.GetObjectName(p))
+	builder := ctx.Value(modelBuilderCtxKey(utils.GetObjectName(p)))
 
 	b, ok := builder.(*ModelBuilder)
 	if !ok {
