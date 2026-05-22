@@ -372,10 +372,12 @@ func (b *ListingBuilder) openListingDialog(evCtx *web.EventContext) (r web.Event
 	}
 
 	compo.OnMounted = fmt.Sprintf(`({el}) => {
-		var listingDialogElem = el.ownerDocument.getElementById(%q); 
-		if (listingDialogElem && listingDialogElem.offsetHeight > parseInt(listingDialogElem.style.minHeight || '0', 10)) {
+		var listingDialogElem = el.ownerDocument.getElementById(%q);
+		if (listingDialogElem) {
+			// Reset so the dialog can shrink when content gets shorter, then re-lock to prevent flicker on next reload.
+			listingDialogElem.style.minHeight = '0px';
 			listingDialogElem.style.minHeight = listingDialogElem.offsetHeight+'px';
-		};
+		}
 	}`, compo.CompoID())
 
 	content := v.VCard().Attr("id", compo.CompoID()).Children(
