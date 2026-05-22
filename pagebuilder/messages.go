@@ -103,6 +103,7 @@ type Messages struct {
 	SharedContainerHasBeenUpdated      string
 	TemplateFixedAreaMessage           string
 	SharedContainerModificationWarning string
+	Success                            string
 }
 
 var Messages_en_US = &Messages{
@@ -201,6 +202,7 @@ var Messages_en_US = &Messages{
 	SharedContainerHasBeenUpdated:      "The shared container on this page has been updated. You may notice differences between the preview and the live page.",
 	TemplateFixedAreaMessage:           "This container is fixed and cannot be updated",
 	SharedContainerModificationWarning: "This is a shared container. Any modifications you make will apply to all pages that use it",
+	Success:                            "Success",
 }
 
 var Messages_zh_CN = &Messages{
@@ -300,6 +302,7 @@ var Messages_zh_CN = &Messages{
 	SharedContainerHasBeenUpdated:      "此页面上的共享容器已更新。您可能会注意到预览和实时页面之间的差异。",
 	TemplateFixedAreaMessage:           "此区域由模板固定，无法编辑。",
 	SharedContainerModificationWarning: "这是一个共享容器。您所做的任何修改都将应用于使用它的所有页面",
+	Success:                            "成功",
 }
 
 var Messages_ja_JP = &Messages{
@@ -397,6 +400,7 @@ var Messages_ja_JP = &Messages{
 	SharedContainerHasBeenUpdated:      "このページの共有コンテナが更新されました。プレビューとライブページの間に違いがあるかもしれません。",
 	TemplateFixedAreaMessage:           "この領域はテンプレートによって固定されており、編集できません。",
 	SharedContainerModificationWarning: "これは共有コンテナです。行った変更は、それを使用するすべてのページに適用されます",
+	Success:                            "成功",
 }
 
 type ModelsI18nModulePage struct {

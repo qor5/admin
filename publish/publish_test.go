@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/qor5/admin/v3/publish"
+	"github.com/qor5/x/v3/gormx"
 	"github.com/qor5/x/v3/oss"
 	"github.com/stretchr/testify/require"
 	"github.com/theplant/sliceutils"
-	"github.com/theplant/testenv"
 	"github.com/theplant/testingutils"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -211,12 +211,14 @@ func (m *MockStorage) Delete(ctx context.Context, path string) error {
 var TestDB *gorm.DB
 
 func TestMain(m *testing.M) {
-	env, err := testenv.New().DBEnable(true).SetUp()
-	if err != nil {
-		panic(err)
-	}
-	defer env.TearDown()
-	TestDB = env.DB
+	ctx := context.Background()
+	testSuite := gormx.MustStartTestSuite(ctx)
+	defer func() {
+		if err := testSuite.Stop(context.Background()); err != nil {
+			fmt.Printf("Error during teardown: %v\n", err)
+		}
+	}()
+	TestDB = testSuite.DB()
 	TestDB.Logger = TestDB.Logger.LogMode(logger.Info)
 
 	m.Run()

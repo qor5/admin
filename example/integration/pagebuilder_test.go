@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -9,9 +10,10 @@ import (
 
 	"github.com/qor5/web/v3"
 	. "github.com/qor5/web/v3/multipartestutils"
+	"github.com/qor5/x/v3/gormx"
 	"github.com/qor5/x/v3/perm"
 	"github.com/theplant/gofixtures"
-	"github.com/theplant/testenv"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
@@ -28,12 +30,22 @@ import (
 var TestDB *gorm.DB
 
 func TestMain(m *testing.M) {
-	env, err := testenv.New().DBEnable(true).SetUp()
+	ctx := context.Background()
+	testSuite := gormx.MustStartTestSuite(ctx)
+	defer func() {
+		if err := testSuite.Stop(context.Background()); err != nil {
+			fmt.Printf("Error during teardown: %v\n", err)
+		}
+	}()
+
+	// Open a plain connection without OmitAssociationsPlugin, which MustStartTestSuite installs
+	// via SetupDatabase. The user config relies on GORM creating associations for user roles,
+	// so the plugin must not be active on this connection.
+	var err error
+	TestDB, err = gorm.Open(postgres.Open(testSuite.DSN()), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
-	defer env.TearDown()
-	TestDB = env.DB
 	TestDB.Logger = TestDB.Logger.LogMode(logger.Info)
 	m.Run()
 }
