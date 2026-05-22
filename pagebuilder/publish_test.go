@@ -44,7 +44,8 @@ func TestPage_PublishUrl(t *testing.T) {
 	TestDB.First(page, 1)
 	b := New("/", TestDB, presets.New())
 	r := b.Model(b.pb.Model(page))
-	s := page.PublishUrl(TestDB, context.WithValue(context.Background(), modelBuilderCtxKey(r.name), r), nil)
+	// skipcq: GO-W5003 — matches the cross-package plain-string ctx-key contract shared by pagebuilder/microsite/l10n ContextValueProvider and publish readers; switching to a typed key is out of scope here.
+	s := page.PublishUrl(TestDB, context.WithValue(context.Background(), r.name, r), nil)
 	if s != "/12/123/index.html" {
 		t.Log("Error Publish Url")
 	}
