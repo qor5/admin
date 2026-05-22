@@ -235,12 +235,16 @@ func buildScheduleButton(obj interface{}, ctx *web.EventContext, mb *presets.Mod
 			Query(presets.ParamID, slug).
 			URL(mb.Info().ListingHref()).Go()
 		if config.Top {
-			scheduleBtn = v.VAutocomplete().PrependInnerIcon("mdi-alarm").Density(v.DensityCompact).
-				Variant(v.FieldVariantSoloFilled).ModelValue(msgr.SchedulePublishTime).
-				BgColor(v.ColorPrimaryLighten2).Readonly(true).
-				Width(500).HideDetails(true).
+			scheduleBtn = v.VBtn(msgr.SchedulePublishTime).
+				PrependIcon("mdi-alarm").
+				AppendIcon("mdi-menu-down").
+				Variant(v.VariantFlat).
+				Color(v.ColorPrimaryLighten2).
+				Density(v.DensityCompact).
+				Height(36).
 				Attr(":disabled", phraseHasPresetsDataChanged).
-				Attr("@click", clickEvent).Class("ml-2 text-caption page-builder-autoCmp")
+				Attr("@click", clickEvent).
+				Class("ml-2 text-caption text-none")
 		} else {
 			scheduleBtn = v.VBtn("").Size(v.SizeSmall).Children(v.VIcon("mdi-alarm").Size(v.SizeXLarge)).Rounded("0").Class("rounded-e ml-abs-1").
 				Variant(v.VariantElevated).Color(v.ColorPrimary).Width(36).Height(36).
@@ -344,7 +348,7 @@ func configureVersionListDialog(db *gorm.DB, pb *Builder, b *presets.Builder, pm
 	}
 
 	lb := mb.Listing(listingFields...).
-		DialogWidth("900px").
+		DialogWidth("900").
 		Title(func(evCtx *web.EventContext, _ presets.ListingStyle, _ string) (string, h.HTMLComponent, error) {
 			msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPublishKey, Messages_en_US).(*Messages)
 			return msgr.VersionsList, nil, nil
