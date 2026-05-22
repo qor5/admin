@@ -108,7 +108,6 @@ SELECT setval('container_headers_id_seq', 10, true);
 
 `, []string{"page_builder_pages", "page_builder_containers", "container_headers"}))
 
-// skipcq: GO-R1005 — table-driven test with ~70 cases; cyclomatic complexity is driven by inline ReqFunc closures, not by control flow that benefits from extraction.
 func TestPageBuilder(t *testing.T) {
 	h := admin.TestHandler(TestDB, nil)
 	dbr, _ := TestDB.DB()
