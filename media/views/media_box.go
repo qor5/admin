@@ -10,6 +10,7 @@ import (
 
 	"github.com/qor5/admin/media"
 	"github.com/qor5/admin/media/media_library"
+	"github.com/qor5/admin/media/shorturl"
 	"github.com/qor5/admin/presets"
 	"github.com/qor5/ui/cropper"
 	"github.com/qor5/ui/fileicons"
@@ -32,7 +33,9 @@ const I18nMediaLibraryKey i18n.ModuleKey = "I18nMediaLibraryKey"
 
 var permVerifier *perm.Verifier
 
-func Configure(b *presets.Builder, db *gorm.DB) {
+// Configure registers the media library with the presets builder.
+// Pass an optional *shorturl.Config to enable the Short URL feature.
+func Configure(b *presets.Builder, db *gorm.DB, shortURLCfgs ...*shorturl.Config) {
 	err := db.AutoMigrate(&media_library.MediaLibrary{})
 	if err != nil {
 		panic(err)
@@ -52,14 +55,19 @@ func Configure(b *presets.Builder, db *gorm.DB) {
 		FieldType(media_library.MediaBox{}).
 		ComponentFunc(MediaBoxListFunc())
 
-	registerEventFuncs(b.GetWebBuilder(), db)
+	var shortURLCfg *shorturl.Config
+	if len(shortURLCfgs) > 0 {
+		shortURLCfg = shortURLCfgs[0]
+	}
+
+	registerEventFuncs(b.GetWebBuilder(), db, shortURLCfg)
 
 	b.I18n().
 		RegisterForModule(language.English, I18nMediaLibraryKey, Messages_en_US).
 		RegisterForModule(language.SimplifiedChinese, I18nMediaLibraryKey, Messages_zh_CN).
 		RegisterForModule(language.Japanese, I18nMediaLibraryKey, Messages_ja_JP)
 
-	configList(b, db)
+	configList(b, db, shortURLCfg)
 }
 
 func MediaBoxComponentFunc(db *gorm.DB) presets.FieldComponentFunc {
@@ -198,9 +206,12 @@ func mediaBoxThumb(msgr *Messages, cfg *media_library.MediaBoxConfig,
 }
 
 func fileThumb(filename string) h.HTMLComponent {
-
+	ext := path.Ext(filename)
+	if len(ext) > 0 {
+		ext = ext[1:]
+	}
 	return h.Div(
-		fileicons.Icon(path.Ext(filename)[1:]).Attr("height", "150").Class("pt-4"),
+		fileicons.Icon(ext).Attr("height", "150").Class("pt-4"),
 	).Class("d-flex align-center justify-center")
 }
 
@@ -244,7 +255,7 @@ func deleteConfirmation(db *gorm.DB) web.EventFunc {
 		return
 	}
 }
-func doDelete(db *gorm.DB) web.EventFunc {
+func doDelete(db *gorm.DB, shortURLCfg *shorturl.Config) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		field := ctx.R.FormValue("field")
 		id := ctx.R.FormValue("id")
@@ -260,6 +271,7 @@ func doDelete(db *gorm.DB) web.EventFunc {
 					field,
 					db,
 					stringToCfg(cfg),
+					shortURLCfg,
 				)
 				r.VarsScript = "vars.mediaLibrary_deleteConfirmation = false"
 				return r, nil
@@ -268,6 +280,16 @@ func doDelete(db *gorm.DB) web.EventFunc {
 		}
 		if err = deleteIsAllowed(ctx.R, &obj); err != nil {
 			return
+		}
+
+		// Remove the short URL redirect file from storage before deleting the record.
+		var shortPath string
+		if obj.ShortPath != nil {
+			shortPath = *obj.ShortPath
+		}
+		if delErr := shorturl.Delete(shortURLCfg, shortPath); delErr != nil {
+			// Non-fatal: log and continue so the DB record is still cleaned up.
+			_ = delErr
 		}
 
 		err = db.Delete(&media_library.MediaLibrary{}, "id = ?", id).Error
@@ -281,6 +303,7 @@ func doDelete(db *gorm.DB) web.EventFunc {
 			field,
 			db,
 			stringToCfg(cfg),
+			shortURLCfg,
 		)
 		r.VarsScript = "vars.mediaLibrary_deleteConfirmation = false"
 		return
@@ -420,7 +443,7 @@ func thumbName(name string, size *media.Size, fileSize int, f *media_library.Med
 	return h.Text(text)
 }
 
-func updateDescription(db *gorm.DB) web.EventFunc {
+func updateDescription(db *gorm.DB, shortURLCfg *shorturl.Config) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		field := ctx.R.FormValue("field")
 		id := ctx.R.FormValue("id")
@@ -436,6 +459,7 @@ func updateDescription(db *gorm.DB) web.EventFunc {
 					field,
 					db,
 					stringToCfg(cfg),
+					shortURLCfg,
 				)
 				// TODO: prompt that the record has been deleted?
 				return r, nil
