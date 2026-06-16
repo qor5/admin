@@ -100,7 +100,8 @@ type Messages struct {
 
 	LeaveBeforeUnsubmit string
 
-	RecordNotFound string
+	RecordNotFound   string
+	PermissionDenied string
 }
 
 func (msgr *Messages) CreatingObjectTitle(modelName string) string {
@@ -252,7 +253,8 @@ var Messages_en_US = &Messages{
 
 	LeaveBeforeUnsubmit: "If you leave before submitting the form, you will lose all the unsaved input.",
 
-	RecordNotFound: "record not found",
+	RecordNotFound:   "record not found",
+	PermissionDenied: "permission denied",
 }
 
 var Messages_zh_CN = &Messages{
@@ -350,7 +352,8 @@ var Messages_zh_CN = &Messages{
 
 	LeaveBeforeUnsubmit: "如果您在提交表单之前离开，您将丢失所有未保存的输入。",
 
-	RecordNotFound: "记录未找到",
+	RecordNotFound:   "记录未找到",
+	PermissionDenied: "没有权限",
 }
 
 var Messages_ja_JP = &Messages{
@@ -448,5 +451,6 @@ var Messages_ja_JP = &Messages{
 
 	LeaveBeforeUnsubmit: "フォームを送信する前に離れると、すべての未保存の入力が失われます。",
 
-	RecordNotFound: "レコードが見つかりません",
+	RecordNotFound:   "レコードが見つかりません",
+	PermissionDenied: "権限がありません",
 }

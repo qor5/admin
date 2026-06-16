@@ -197,7 +197,7 @@ func (b *EditingBuilder) WrapIdCurrentActive(w func(in IdCurrentActiveProcessor)
 
 func (b *EditingBuilder) formNew(ctx *web.EventContext) (r web.EventResponse, err error) {
 	if b.mb.Info().Verifier().Do(PermCreate).WithReq(ctx.R).IsAllowed() != nil {
-		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
+		ShowMessage(&r, MustGetMessages(ctx.R).PermissionDenied, "warning")
 		return
 	}
 
@@ -215,7 +215,7 @@ func (b *EditingBuilder) formNew(ctx *web.EventContext) (r web.EventResponse, er
 
 func (b *EditingBuilder) formEdit(ctx *web.EventContext) (r web.EventResponse, err error) {
 	if b.mb.Info().Verifier().Do(PermGet).WithReq(ctx.R).IsAllowed() != nil {
-		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
+		ShowMessage(&r, MustGetMessages(ctx.R).PermissionDenied, "warning")
 		return
 	}
 	if b.idCurrentActiveProcessor != nil {
@@ -468,7 +468,7 @@ func (b *EditingBuilder) doValidate(ctx *web.EventContext) (r web.EventResponse,
 	}
 	vErrSetter := vErr
 	if b.mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
-		vErr.GlobalError(perm.PermissionDenied.Error())
+		vErr.GlobalError(MustGetMessages(ctx.R).PermissionDenied)
 		return
 	}
 	if usingB.Validator != nil {
@@ -481,7 +481,7 @@ func (b *EditingBuilder) doValidate(ctx *web.EventContext) (r web.EventResponse,
 
 func (b *EditingBuilder) doDelete(ctx *web.EventContext) (r web.EventResponse, err1 error) {
 	if b.mb.Info().Verifier().Do(PermDelete).WithReq(ctx.R).IsAllowed() != nil {
-		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
+		ShowMessage(&r, MustGetMessages(ctx.R).PermissionDenied, "warning")
 		return
 	}
 
@@ -671,7 +671,11 @@ func (b *EditingBuilder) UpdateOverlayContent(
 	if err != nil {
 		if _, ok := err.(*web.ValidationErrors); !ok {
 			vErr := &web.ValidationErrors{}
-			vErr.GlobalError(err.Error())
+			msg := err.Error()
+			if errors.Is(err, perm.PermissionDenied) {
+				msg = MustGetMessages(ctx.R).PermissionDenied
+			}
+			vErr.GlobalError(msg)
 			ctx.Flash = vErr
 		}
 	}
