@@ -42,7 +42,7 @@ func TestMain(m *testing.M) {
 	// via SetupDatabase. The user config relies on GORM creating associations for user roles,
 	// so the plugin must not be active on this connection.
 	var err error
-	TestDB, err = gorm.Open(postgres.Open(testSuite.DSN()), &gorm.Config{})
+	TestDB, err = gorm.Open(postgres.Open(testSuite.DSN()), &gorm.Config{SkipDefaultTransaction: true})
 	if err != nil {
 		panic(err)
 	}
