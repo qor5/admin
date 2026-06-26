@@ -302,7 +302,6 @@ func NewConfig(db *gorm.DB, enableWork bool, opts ...ConfigOption) Config {
 
 	pageBuilder := example.ConfigPageBuilder(db, "/page_builder", ``, b)
 	pageBuilder.
-		EditorUpdateDifferent(true).
 		Media(mediab).
 		L10n(l10nBuilder).
 		PreviewOpenNewTab(true).
