@@ -939,7 +939,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 		var innerPr web.PageResponse
 		innerPr, err = in(ctx)
 		if errors.Is(err, perm.PermissionDenied) {
-			pr.Body = h.Text(perm.PermissionDenied.Error())
+			pr.Body = h.Text(MustGetMessages(ctx.R).PermissionDenied)
 			return pr, nil
 		}
 		if err != nil {
@@ -1005,7 +1005,7 @@ func (b *Builder) PlainLayout(in web.PageFunc) (out web.PageFunc) {
 		var innerPr web.PageResponse
 		innerPr, err = in(ctx)
 		if err == perm.PermissionDenied {
-			pr.Body = h.Text(perm.PermissionDenied.Error())
+			pr.Body = h.Text(MustGetMessages(ctx.R).PermissionDenied)
 			return pr, nil
 		}
 		if err != nil {

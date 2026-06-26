@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/perm"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	"github.com/sunfmin/reflectutils"
 	h "github.com/theplant/htmlgo"
@@ -285,7 +284,7 @@ func addListItemRow(mb *ModelBuilder) web.EventFunc {
 		obj, _ := me.FetchAndUnmarshal(id, false, ctx)
 
 		if mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
-			ShowMessage(&r, perm.PermissionDenied.Error(), ColorError)
+			ShowMessage(&r, MustGetMessages(ctx.R).PermissionDenied, ColorError)
 			return r, nil
 		}
 
@@ -309,7 +308,7 @@ func removeListItemRow(mb *ModelBuilder) web.EventFunc {
 		obj, _ := me.FetchAndUnmarshal(id, false, ctx)
 
 		if mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
-			ShowMessage(&r, perm.PermissionDenied.Error(), ColorError)
+			ShowMessage(&r, MustGetMessages(ctx.R).PermissionDenied, ColorError)
 			return r, nil
 		}
 
@@ -337,7 +336,7 @@ func sortListItems(mb *ModelBuilder) web.EventFunc {
 		obj, _ := me.FetchAndUnmarshal(id, false, ctx)
 
 		if mb.Info().Verifier().Do(PermUpdate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
-			ShowMessage(&r, perm.PermissionDenied.Error(), ColorError)
+			ShowMessage(&r, MustGetMessages(ctx.R).PermissionDenied, ColorError)
 			return r, nil
 		}
 

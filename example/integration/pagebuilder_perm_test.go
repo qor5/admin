@@ -68,6 +68,25 @@ func TestPageBuilderPerm(t *testing.T) {
 			},
 			ExpectPageBodyContainsInOrder: []string{"permission denied"},
 		},
+		{
+			// KGM-4190: the permission-denied message must be localized, not the
+			// raw English perm.PermissionDenied.Error() string.
+			Name:  "Container Header Update permission denied in Japanese",
+			Debug: true,
+			ReqFunc: func() *http.Request {
+				pageBuilderContainerTestData.TruncatePut(dbr)
+				req := NewMultipartBuilder().
+					PageURL("/headers").
+					EventFunc(actions.Update).
+					Query(presets.ParamID, "10").
+					AddField("Color", "white").
+					BuildEventFuncRequest()
+				req.Header.Set("Accept-Language", "ja")
+				return req
+			},
+			ExpectPageBodyContainsInOrder: []string{"権限がありません"},
+			ExpectPageBodyNotContains:     []string{"permission denied"},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
