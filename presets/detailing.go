@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/qor5/web/v3"
-	"github.com/qor5/x/v3/perm"
 	v "github.com/qor5/x/v3/ui/vuetify"
 	h "github.com/theplant/htmlgo"
 
@@ -195,7 +194,7 @@ func (b *DetailingBuilder) defaultPageFunc(ctx *web.EventContext) (r web.PageRes
 	}
 
 	if b.mb.Info().Verifier().Do(PermGet).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil {
-		r.Body = h.Div(h.Text(perm.PermissionDenied.Error()))
+		r.Body = h.Div(h.Text(MustGetMessages(ctx.R).PermissionDenied))
 		return
 	}
 
@@ -300,7 +299,7 @@ func (b *DetailingBuilder) WrapIdCurrentActive(w func(IdCurrentActiveProcessor) 
 
 func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventResponse, err error) {
 	if b.mb.Info().Verifier().Do(PermGet).WithReq(ctx.R).IsAllowed() != nil {
-		ShowMessage(&r, perm.PermissionDenied.Error(), "warning")
+		ShowMessage(&r, MustGetMessages(ctx.R).PermissionDenied, "warning")
 		return
 	}
 	onChangeEvent := fmt.Sprintf("if (vars.%s) { vars.%s.detailing=true };", VarsPresetsDataChanged, VarsPresetsDataChanged)

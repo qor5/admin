@@ -683,8 +683,25 @@ func (b *Builder) defaultCategoryInstall(pb *presets.Builder, pm *presets.ModelB
 	})
 
 	eb := pm.Editing("Name", "Path", "Description")
+	// Translate the editing form field labels from the page builder's own i18n
+	// messages, mirroring the listing column labels above. Without this the labels
+	// fall back to the English humanized field names in non-English locales, because
+	// the default i18n.PT lookup goes through presets.ModelsI18nModuleKey, which only
+	// the host app can register (KGM-3903).
+	categoryFieldLabel := presets.WrapperFieldLabel(func(evCtx *web.EventContext, obj interface{}, field *presets.FieldContext) (map[string]string, error) {
+		msgr := i18n.MustGetModuleMessages(evCtx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+		return map[string]string{
+			"Name":        msgr.ListHeaderName,
+			"Path":        msgr.ListHeaderPath,
+			"Description": msgr.ListHeaderDescription,
+		}, nil
+	})
+	eb.Field("Name").LazyWrapComponentFunc(categoryFieldLabel)
+	eb.Field("Description").LazyWrapComponentFunc(categoryFieldLabel)
 	eb.Field("Path").LazyWrapComponentFunc(func(in presets.FieldComponentFunc) presets.FieldComponentFunc {
 		return func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
+			field.Label = msgr.ListHeaderPath
 			comp := in(obj, field, ctx)
 			if p, ok := comp.(*vx.VXFieldBuilder); ok {
 				p.Attr(presets.VFieldError(field.Name, strings.TrimPrefix(field.Value(obj).(string), "/"), field.Errors)...).
