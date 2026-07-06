@@ -77,6 +77,36 @@ func TestExample(t *testing.T) {
 			},
 		},
 		{
+			Name: "Update with validation error scrolls to first error field",
+			ReqFunc: func() *http.Request {
+				customerData.TruncatePut(dbr)
+				return NewMultipartBuilder().
+					PageURL("/admin/my_customers").
+					EventFunc(actions.Update).
+					Query(presets.ParamID, "11").
+					AddField("ID", "11").
+					AddField("Name", "abc"). // < 5 chars, fails the ValidateFunc
+					BuildEventFuncRequest()
+			},
+			ExpectPortalUpdate0ContainsInOrder: []string{"input more than 5 chars"},
+			ExpectRunScriptContainsInOrder:     []string{"scrollIntoView"},
+		},
+		{
+			Name: "Update with validation error shows a persistent error notice",
+			ReqFunc: func() *http.Request {
+				customerData.TruncatePut(dbr)
+				return NewMultipartBuilder().
+					PageURL("/admin/my_customers").
+					EventFunc(actions.Update).
+					Query(presets.ParamID, "11").
+					AddField("ID", "11").
+					AddField("Name", "abc").
+					BuildEventFuncRequest()
+			},
+			// error notice must not auto-dismiss (persistent) and stays closable.
+			ExpectPortalUpdate0ContainsInOrder: []string{":timeout='-1'", "there are some errors"},
+		},
+		{
 			Name: "Create",
 			ReqFunc: func() *http.Request {
 				emptyCustomerData.TruncatePut(dbr)

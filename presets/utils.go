@@ -38,6 +38,23 @@ func ShowSnackbarScript(msg, color string) string {
 	return fmt.Sprintf(`vars.presetsMessage = { show: true, message: %q, color: %q}`, msg, color)
 }
 
+// ScrollToFirstErrorScript returns a script that, after the editing form portal
+// re-renders with validation errors, scrolls the first errored field into view and
+// focuses it. Without this a user who scrolled down (e.g. to the Save button) sees no
+// visible change on save failure, because the error lives at the top / next to a field
+// that is now off-screen. It targets the given portal so it never picks up an unrelated
+// form; a short timeout lets Vuetify apply the `.v-input--error` class after the patch.
+func ScrollToFirstErrorScript(portalName string) string {
+	return fmt.Sprintf(`setTimeout(function(){
+  var root = document.querySelector('go-plaid-portal[portal-name=%q]') || document;
+  var el = root.querySelector('.v-input--error');
+  if (!el) { return }
+  el.scrollIntoView({behavior:'smooth', block:'center'});
+  var focusable = el.querySelector('input, textarea, select, [contenteditable], [tabindex]');
+  if (focusable) { focusable.focus({preventScroll:true}); }
+}, 100)`, portalName)
+}
+
 func ShowMessage(r *web.EventResponse, msg, color string) {
 	script := ShowSnackbarScript(msg, color)
 	if script == "" {
