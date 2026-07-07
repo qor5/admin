@@ -159,7 +159,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 								Go()),
 					),
 				).Class("d-flex"),
-			).Class("mx-0 mb-2 px-4 pb-0 pt-4").Variant(VariantOutlined)
+			).Class("mx-0 mb-2 pa-4").Variant(VariantOutlined)
 		})
 	}
 
