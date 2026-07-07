@@ -144,19 +144,21 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 	if b.value != nil {
 		form = b.fieldContext.NestedFieldsBuilder.ToComponentForEach(b.fieldContext, b.value, ctx, func(obj interface{}, formKey string, content h.HTMLComponent, ctx *web.EventContext) h.HTMLComponent {
 			return VCard(
-				h.If(!b.fieldContext.Disabled && hasUpdatePermission,
-					VBtn("").Icon("mdi-delete").Class("float-right ma-2").
-						Attr("@click", web.Plaid().
-							URL(b.fieldContext.ModelInfo.ListingHref()).
-							EventFunc(b.removeListItemRowEvent).
-							Queries(ctx.Queries()).
-							Query(AddRowBtnKey(b.fieldContext.FormKey), "").
-							Query(ParamID, id).
-							Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
-							Query(ParamRemoveRowFormKey, formKey).
-							Go()),
-				),
-				content,
+				h.Div(
+					h.Div(content).Class("flex-grow-1"),
+					h.If(!b.fieldContext.Disabled && hasUpdatePermission,
+						VBtn("").Icon("mdi-delete").Class("ml-2 align-self-center").
+							Attr("@click", web.Plaid().
+								URL(b.fieldContext.ModelInfo.ListingHref()).
+								EventFunc(b.removeListItemRowEvent).
+								Queries(ctx.Queries()).
+								Query(AddRowBtnKey(b.fieldContext.FormKey), "").
+								Query(ParamID, id).
+								Query(ParamOverlay, ctx.R.FormValue(ParamOverlay)).
+								Query(ParamRemoveRowFormKey, formKey).
+								Go()),
+					),
+				).Class("d-flex"),
 			).Class("mx-0 mb-2 px-4 pb-0 pt-4").Variant(VariantOutlined)
 		})
 	}
