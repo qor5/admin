@@ -145,7 +145,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 		form = b.fieldContext.NestedFieldsBuilder.ToComponentForEach(b.fieldContext, b.value, ctx, func(obj interface{}, formKey string, content h.HTMLComponent, ctx *web.EventContext) h.HTMLComponent {
 			return VCard(
 				h.Div(
-					h.Div(content).Class("flex-grow-1"),
+					h.Div(content).Class("flex-grow-1 align-self-center"),
 					h.If(!b.fieldContext.Disabled && hasUpdatePermission,
 						VBtn("").Icon("mdi-delete").Class("ml-2 align-self-center").
 							Attr("@click", web.Plaid().
