@@ -17,6 +17,7 @@ const (
 func configList(b *presets.Builder, mb *Builder) {
 	mm := b.Model(&media_library.MediaLibrary{}).Label("Media Library").MenuIcon("mdi-image")
 	mb.mb = mm
+	configScopedCRUD(mb, mm)
 	oldPageFunc := mm.Listing().GetPageFunc()
 	mm.Listing().PageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		var (
@@ -42,5 +43,51 @@ func configList(b *presets.Builder, mb *Builder) {
 			),
 		)
 		return
+	})
+}
+
+// configScopedCRUD makes the model's generic CRUD event funcs respect the
+// searcher. They address rows by primary key through the DataOperator, so
+// without these guards a request could edit, delete or read back any row by id
+// regardless of what the searcher allows.
+func configScopedCRUD(mb *Builder, mm *presets.ModelBuilder) {
+	guard := func(id string, ctx *web.EventContext) error {
+		if mb.recordIsVisible(ctx, id) {
+			return nil
+		}
+		return presets.ErrRecordNotFound
+	}
+	mm.Editing().
+		WrapFetchFunc(func(in presets.FetchFunc) presets.FetchFunc {
+			return func(obj interface{}, id string, ctx *web.EventContext) (interface{}, error) {
+				if err := guard(id, ctx); err != nil {
+					return nil, err
+				}
+				return in(obj, id, ctx)
+			}
+		}).
+		WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+			return func(obj interface{}, id string, ctx *web.EventContext) error {
+				if err := guard(id, ctx); err != nil {
+					return err
+				}
+				return in(obj, id, ctx)
+			}
+		}).
+		WrapDeleteFunc(func(in presets.DeleteFunc) presets.DeleteFunc {
+			return func(obj interface{}, id string, ctx *web.EventContext) error {
+				if err := guard(id, ctx); err != nil {
+					return err
+				}
+				return in(obj, id, ctx)
+			}
+		})
+	mm.Detailing().WrapFetchFunc(func(in presets.FetchFunc) presets.FetchFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (interface{}, error) {
+			if err := guard(id, ctx); err != nil {
+				return nil, err
+			}
+			return in(obj, id, ctx)
+		}
 	})
 }

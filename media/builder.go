@@ -2,6 +2,7 @@ package media
 
 import (
 	"slices"
+	"strconv"
 
 	"github.com/qor5/web/v3"
 	"gorm.io/gorm"
@@ -59,6 +60,52 @@ func (b *Builder) AllowTypes(v ...string) *Builder {
 func (b *Builder) Searcher(v SearchFunc) *Builder {
 	b.searcher = v
 	return b
+}
+
+// scopedDB returns a media_libraries query with the configured searcher
+// applied, so by-ID lookups and folder-tree queries see exactly the same
+// subset of rows as the listing. Without a searcher the query is unscoped,
+// preserving the historical behavior.
+func (b *Builder) scopedDB(db *gorm.DB, ctx *web.EventContext) *gorm.DB {
+	q := db.Model(&media_library.MediaLibrary{})
+	if b.searcher != nil {
+		q = b.searcher(q, ctx)
+	}
+	return q
+}
+
+// folderIsVisible reports whether folderID may be used as an upload / move
+// target for this request: the root folder always may, and any other folder
+// only when the searcher lets the request see it. Without a searcher every id
+// is accepted, keeping the historical behavior.
+func (b *Builder) folderIsVisible(ctx *web.EventContext, folderID uint) bool {
+	if b.searcher == nil || folderID == 0 {
+		return true
+	}
+	var count int64
+	if err := b.scopedDB(b.db, ctx).Where("id = ? and folder = true", folderID).Count(&count).Error; err != nil {
+		return false
+	}
+	return count > 0
+}
+
+// recordIsVisible reports whether the row addressed by the primary-key slug id
+// is visible to this request. It backs the presets CRUD event funcs, which
+// address rows by id through the generic DataOperator and would otherwise
+// bypass the searcher entirely.
+func (b *Builder) recordIsVisible(ctx *web.EventContext, id string) bool {
+	if b.searcher == nil || id == "" {
+		return true
+	}
+	recordID, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		return false
+	}
+	var count int64
+	if err := b.scopedDB(b.db, ctx).Where("id = ?", recordID).Count(&count).Error; err != nil {
+		return false
+	}
+	return count > 0
 }
 
 func (b *Builder) Activity(v *activity.Builder) *Builder {

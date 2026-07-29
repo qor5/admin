@@ -118,6 +118,11 @@ func uploadFile(mb *Builder) web.EventFunc {
 		if err = mb.uploadIsAllowed(ctx.R); err != nil {
 			return
 		}
+		if !mb.folderIsVisible(ctx, uint(parentID)) {
+			pMsgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+			presets.ShowMessage(&r, pMsgr.RecordNotFound, ColorError)
+			return r, nil
+		}
 
 		var uf uploadFiles
 		ctx.MustUnmarshalForm(&uf)
@@ -181,9 +186,14 @@ func chooseFile(mb *Builder) web.EventFunc {
 		cfg := stringToCfg(ctx.Param(ParamCfg))
 
 		var m media_library.MediaLibrary
-		err = db.Find(&m, id).Error
+		err = mb.scopedDB(db, ctx).Find(&m, id).Error
 		if err != nil {
 			return
+		}
+		if m.ID == 0 {
+			pMsgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+			presets.ShowMessage(&r, pMsgr.RecordNotFound, ColorError)
+			return r, nil
 		}
 		sizes, needCrop := mergeNewSizes(&m, cfg)
 
@@ -388,7 +398,7 @@ func fileOrFolderComponent(
 	}
 
 	if f.Folder {
-		title, content = folderComponent(mb, f)
+		title, content = folderComponent(mb, ctx, f)
 		clickCardWithoutMoveEvent = web.Plaid().
 			EventFunc(ImageJumpPageEvent).
 			Query(ParamField, field).
@@ -451,11 +461,11 @@ func fileOrFolderComponent(
 	)
 }
 
-func folderComponent(mb *Builder, f *media_library.MediaLibrary) (title, content h.HTMLComponent) {
+func folderComponent(mb *Builder, ctx *web.EventContext, f *media_library.MediaLibrary) (title, content h.HTMLComponent) {
 	var count int64
 	fileNameComp := h.Span(f.File.FileName).Class("text-body-2").Attr("v-tooltip:bottom", h.JSONString(f.File.FileName))
 
-	mb.db.Model(media_library.MediaLibrary{}).Where("parent_id = ?", f.ID).Count(&count)
+	mb.scopedDB(mb.db, ctx).Where("parent_id = ?", f.ID).Count(&count)
 	title = VCardText(h.RawHTML(folderSvg)).Class("d-flex justify-center align-center")
 	content = h.Components(
 		web.Slot(
@@ -468,7 +478,7 @@ func folderComponent(mb *Builder, f *media_library.MediaLibrary) (title, content
 }
 
 func parentFolders(field string, ctx *web.EventContext,
-	cfg *media_library.MediaBoxConfig, db *gorm.DB, currentID, parentID uint, existed map[uint]bool, inMediaLibrary bool,
+	cfg *media_library.MediaBoxConfig, mb *Builder, currentID, parentID uint, existed map[uint]bool, inMediaLibrary bool,
 ) (comps h.HTMLComponents) {
 	if existed == nil {
 		existed = make(map[uint]bool)
@@ -480,7 +490,7 @@ func parentFolders(field string, ctx *web.EventContext,
 	if currentID == 0 {
 		return
 	}
-	if err := db.First(&current, currentID).Error; err != nil {
+	if err := mb.scopedDB(mb.db, ctx).First(&current, currentID).Error; err != nil {
 		return
 	}
 	item = VBreadcrumbsItem().Title(current.File.FileName)
@@ -497,7 +507,7 @@ func parentFolders(field string, ctx *web.EventContext,
 	}
 	comps = append(h.Components(h.Text("/")), comps...)
 	existed[currentID] = true
-	return append(parentFolders(field, ctx, cfg, db, current.ParentId, parentID, existed, inMediaLibrary), comps...)
+	return append(parentFolders(field, ctx, cfg, mb, current.ParentId, parentID, existed, inMediaLibrary), comps...)
 }
 
 func breadcrumbsItemClickEvent(field string, ctx *web.EventContext,
@@ -814,7 +824,7 @@ func mediaLibraryContent(mb *Builder, field string, ctx *web.EventContext,
 	}
 
 	if tab == tabFolders {
-		items := parentFolders(field, ctx, cfg, mb.db, uint(parentID), uint(parentID), nil, inMediaLibrary)
+		items := parentFolders(field, ctx, cfg, mb, uint(parentID), uint(parentID), nil, inMediaLibrary)
 		bc = h.If(len(items) > 0, VBreadcrumbs(
 			items...,
 		))
