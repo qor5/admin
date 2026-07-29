@@ -52,7 +52,7 @@ func scopeTestBuilder(t *testing.T) (*Builder, *presets.Builder) {
 	b := New(testDB).Searcher(func(db *gorm.DB, ctx *web.EventContext) *gorm.DB {
 		userID, err := strconv.ParseUint(ctx.R.Header.Get(scopeTestUserHeader), 10, 64)
 		require.NoError(t, err, "every scoped request must carry a test user id")
-		return db.Where(qualified("user_id")+" = ?", userID)
+		return db.Where("media_libraries.user_id = ?", userID)
 	})
 	require.NoError(t, b.Install(pb))
 	return b, pb
@@ -77,7 +77,7 @@ INSERT INTO scope_test_owners (user_id) VALUES (1) ON CONFLICT DO NOTHING`).Erro
 		userID, err := strconv.ParseUint(ctx.R.Header.Get(scopeTestUserHeader), 10, 64)
 		require.NoError(t, err, "every scoped request must carry a test user id")
 		return db.
-			Joins("join scope_test_owners on scope_test_owners.user_id = "+qualified("user_id")).
+			Joins("join scope_test_owners on scope_test_owners.user_id = media_libraries.user_id").
 			Where("scope_test_owners.user_id = ?", userID)
 	})
 	require.NoError(t, b.Install(pb))

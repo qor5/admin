@@ -105,8 +105,8 @@ func configScopedCRUD(mb *Builder, mm *presets.ModelBuilder) {
 		return func(ctx *web.EventContext, params *presets.SearchParams) (*presets.SearchResult, error) {
 			if mb.searcher != nil {
 				params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
-					Query: qualified("id") + " in (?)",
-					Args:  []interface{}{mb.scopedDB(mb.db, ctx).Select(qualified("id"))},
+					Query: "media_libraries.id in (?)",
+					Args:  []interface{}{mb.scopedDB(mb.db, ctx).Select("media_libraries.id")},
 				})
 			}
 			return in(ctx, params)

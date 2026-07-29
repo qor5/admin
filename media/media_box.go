@@ -327,7 +327,7 @@ func doDelete(mb *Builder) web.EventFunc {
 			"vars.mediaLibrary_deleteConfirmation = false",
 			web.Plaid().EventFunc(ImageJumpPageEvent).MergeQuery(true).Queries(ctx.Queries()).Go(),
 		)
-		err = mb.scopedDB(db, ctx).Where(qualified("id")+" in ?", requestIDs).Find(&objs).Error
+		err = mb.scopedDB(db, ctx).Where("media_libraries.id in ?", requestIDs).Find(&objs).Error
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return r, nil
@@ -354,20 +354,20 @@ func doDelete(mb *Builder) web.EventFunc {
 				// scoping an UPDATE directly would silently drop the condition.
 				var childIDs []uint64
 				if dbErr = mb.scopedDB(tx, ctx).
-					Where(qualified("parent_id")+" in ?", deleteFolderIDS).
-					Pluck(qualified("id"), &childIDs).Error; dbErr != nil {
+					Where("media_libraries.parent_id in ?", deleteFolderIDS).
+					Pluck("media_libraries.id", &childIDs).Error; dbErr != nil {
 					return
 				}
 				if len(childIDs) > 0 {
 					if dbErr = tx.Model(&media_library.MediaLibrary{}).
-						Where(qualified("id")+" in ?", childIDs).
+						Where("media_libraries.id in ?", childIDs).
 						Update("parent_id", 0).Error; dbErr != nil {
 						return
 					}
 				}
 			}
 
-			if dbErr = tx.Delete(&media_library.MediaLibrary{}, qualified("id")+" in ?", visibleIDs).Error; dbErr != nil {
+			if dbErr = tx.Delete(&media_library.MediaLibrary{}, "media_libraries.id in ?", visibleIDs).Error; dbErr != nil {
 				return
 			}
 			return
@@ -711,7 +711,7 @@ func wrapFirst(mb *Builder, ctx *web.EventContext, r *web.EventResponse) (obj me
 		pMsgr = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 	)
 
-	err = mb.scopedDB(db, ctx).Where(qualified("id")+" = ?", id).First(&obj).Error
+	err = mb.scopedDB(db, ctx).Where("media_libraries.id = ?", id).First(&obj).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			presets.ShowMessage(r, pMsgr.RecordNotFound, ColorError)
@@ -949,7 +949,7 @@ func folderGroupsComponents(mb *Builder, ctx *web.EventContext, parentID int) (i
 		records = append(records, item)
 	} else {
 		mb.scopedDB(mb.db, ctx).
-			Where(qualified("parent_id")+" = ? and "+qualified("folder")+" = true", parentID).
+			Where("media_libraries.parent_id = ? and media_libraries.folder = true", parentID).
 			Find(&records)
 	}
 	for _, record := range records {
@@ -957,7 +957,7 @@ func folderGroupsComponents(mb *Builder, ctx *web.EventContext, parentID int) (i
 			continue
 		}
 		mb.scopedDB(mb.db, ctx).
-			Where(qualified("id")+" not in ? and "+qualified("parent_id")+" = ? and "+qualified("folder")+" = true", idS, record.ID).
+			Where("media_libraries.id not in ? and media_libraries.parent_id = ? and media_libraries.folder = true", idS, record.ID).
 			Count(&count)
 		if count > 0 {
 			items = append(items,

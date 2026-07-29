@@ -89,7 +89,7 @@ func (b *Builder) folderIsVisible(ctx *web.EventContext, folderID uint) (bool, e
 	}
 	var count int64
 	if err := b.scopedDB(b.db, ctx).
-		Where(qualified("id")+" = ? and "+qualified("folder")+" = true", folderID).
+		Where("media_libraries.id = ? and media_libraries.folder = true", folderID).
 		Count(&count).Error; err != nil {
 		return false, err
 	}
@@ -111,20 +111,11 @@ func (b *Builder) recordIsVisible(ctx *web.EventContext, id string) (bool, error
 	}
 	var count int64
 	if err := b.scopedDB(b.db, ctx).
-		Where(qualified("id")+" = ?", recordID).
+		Where("media_libraries.id = ?", recordID).
 		Count(&count).Error; err != nil {
 		return false, err
 	}
 	return count > 0, nil
-}
-
-// mediaLibrariesTable is the table GORM derives from media_library.MediaLibrary.
-const mediaLibrariesTable = "media_libraries"
-
-// qualified prefixes a media_libraries column with its table so raw conditions
-// stay unambiguous when a searcher joins another table in.
-func qualified(column string) string {
-	return mediaLibrariesTable + "." + column
 }
 
 func (b *Builder) Activity(v *activity.Builder) *Builder {

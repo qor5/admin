@@ -469,7 +469,7 @@ func folderComponent(mb *Builder, ctx *web.EventContext, f *media_library.MediaL
 	var count int64
 	fileNameComp := h.Span(f.File.FileName).Class("text-body-2").Attr("v-tooltip:bottom", h.JSONString(f.File.FileName))
 
-	mb.scopedDB(mb.db, ctx).Where(qualified("parent_id")+" = ?", f.ID).Count(&count)
+	mb.scopedDB(mb.db, ctx).Where("media_libraries.parent_id = ?", f.ID).Count(&count)
 	title = VCardText(h.RawHTML(folderSvg)).Class("d-flex justify-center align-center")
 	content = h.Components(
 		web.Slot(
