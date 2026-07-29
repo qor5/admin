@@ -118,7 +118,11 @@ func uploadFile(mb *Builder) web.EventFunc {
 		if err = mb.uploadIsAllowed(ctx.R); err != nil {
 			return
 		}
-		if !mb.folderIsVisible(ctx, uint(parentID)) {
+		visible, err := mb.folderIsVisible(ctx, uint(parentID))
+		if err != nil {
+			return r, err
+		}
+		if !visible {
 			pMsgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 			presets.ShowMessage(&r, pMsgr.RecordNotFound, ColorError)
 			return r, nil
@@ -465,7 +469,7 @@ func folderComponent(mb *Builder, ctx *web.EventContext, f *media_library.MediaL
 	var count int64
 	fileNameComp := h.Span(f.File.FileName).Class("text-body-2").Attr("v-tooltip:bottom", h.JSONString(f.File.FileName))
 
-	mb.scopedDB(mb.db, ctx).Where("parent_id = ?", f.ID).Count(&count)
+	mb.scopedDB(mb.db, ctx).Where(qualified("parent_id")+" = ?", f.ID).Count(&count)
 	title = VCardText(h.RawHTML(folderSvg)).Class("d-flex justify-center align-center")
 	content = h.Components(
 		web.Slot(

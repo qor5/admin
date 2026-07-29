@@ -52,7 +52,11 @@ func configList(b *presets.Builder, mb *Builder) {
 // regardless of what the searcher allows.
 func configScopedCRUD(mb *Builder, mm *presets.ModelBuilder) {
 	guard := func(id string, ctx *web.EventContext) error {
-		if mb.recordIsVisible(ctx, id) {
+		visible, err := mb.recordIsVisible(ctx, id)
+		if err != nil {
+			return err
+		}
+		if visible {
 			return nil
 		}
 		return presets.ErrRecordNotFound
@@ -82,12 +86,30 @@ func configScopedCRUD(mb *Builder, mm *presets.ModelBuilder) {
 				return in(obj, id, ctx)
 			}
 		})
-	mm.Detailing().WrapFetchFunc(func(in presets.FetchFunc) presets.FetchFunc {
+	// GetDetailing, not Detailing: the latter would enable detailing for the
+	// model, mounting a detail route and changing listing row behavior. The
+	// detailing event funcs are registered either way, so they need the guard.
+	mm.GetDetailing().WrapFetchFunc(func(in presets.FetchFunc) presets.FetchFunc {
 		return func(obj interface{}, id string, ctx *web.EventContext) (interface{}, error) {
 			if err := guard(id, ctx); err != nil {
 				return nil, err
 			}
 			return in(obj, id, ctx)
+		}
+	})
+	// The listing's generic search backs ListingCompo, whose reload / paging /
+	// search actions stay dispatchable even though the media library replaces the
+	// listing page. Restrict it to the ids the searcher exposes; passing the
+	// scoped query as a subquery keeps a Joins-based searcher intact.
+	mm.Listing().WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
+		return func(ctx *web.EventContext, params *presets.SearchParams) (*presets.SearchResult, error) {
+			if mb.searcher != nil {
+				params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
+					Query: qualified("id") + " in (?)",
+					Args:  []interface{}{mb.scopedDB(mb.db, ctx).Select(qualified("id"))},
+				})
+			}
+			return in(ctx, params)
 		}
 	})
 }

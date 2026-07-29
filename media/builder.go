@@ -80,15 +80,20 @@ func (b *Builder) scopedDB(db *gorm.DB, ctx *web.EventContext) *gorm.DB {
 // target for this request: the root folder always may, and any other folder
 // only when the searcher lets the request see it. Without a searcher every id
 // is accepted, keeping the historical behavior.
-func (b *Builder) folderIsVisible(ctx *web.EventContext, folderID uint) bool {
+//
+// Column names are table-qualified so that a searcher adding a Joins clause
+// cannot make them ambiguous.
+func (b *Builder) folderIsVisible(ctx *web.EventContext, folderID uint) (bool, error) {
 	if b.searcher == nil || folderID == 0 {
-		return true
+		return true, nil
 	}
 	var count int64
-	if err := b.scopedDB(b.db, ctx).Where("id = ? and folder = true", folderID).Count(&count).Error; err != nil {
-		return false
+	if err := b.scopedDB(b.db, ctx).
+		Where(qualified("id")+" = ? and "+qualified("folder")+" = true", folderID).
+		Count(&count).Error; err != nil {
+		return false, err
 	}
-	return count > 0
+	return count > 0, nil
 }
 
 // recordIsVisible reports whether the searcher lets this request see the row
@@ -96,19 +101,30 @@ func (b *Builder) folderIsVisible(ctx *web.EventContext, folderID uint) bool {
 // which address rows by id through the generic DataOperator and would otherwise
 // bypass the searcher entirely. Without a searcher every id is accepted,
 // keeping the historical behavior.
-func (b *Builder) recordIsVisible(ctx *web.EventContext, id string) bool {
+func (b *Builder) recordIsVisible(ctx *web.EventContext, id string) (bool, error) {
 	if b.searcher == nil || id == "" {
-		return true
+		return true, nil
 	}
 	recordID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		return false
+		return false, nil
 	}
 	var count int64
-	if err := b.scopedDB(b.db, ctx).Where("id = ?", recordID).Count(&count).Error; err != nil {
-		return false
+	if err := b.scopedDB(b.db, ctx).
+		Where(qualified("id")+" = ?", recordID).
+		Count(&count).Error; err != nil {
+		return false, err
 	}
-	return count > 0
+	return count > 0, nil
+}
+
+// mediaLibrariesTable is the table GORM derives from media_library.MediaLibrary.
+const mediaLibrariesTable = "media_libraries"
+
+// qualified prefixes a media_libraries column with its table so raw conditions
+// stay unambiguous when a searcher joins another table in.
+func qualified(column string) string {
+	return mediaLibrariesTable + "." + column
 }
 
 func (b *Builder) Activity(v *activity.Builder) *Builder {
