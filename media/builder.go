@@ -63,9 +63,11 @@ func (b *Builder) Searcher(v SearchFunc) *Builder {
 }
 
 // scopedDB returns a media_libraries query with the configured searcher
-// applied, so by-ID lookups and folder-tree queries see exactly the same
-// subset of rows as the listing. Without a searcher the query is unscoped,
-// preserving the historical behavior.
+// applied, so by-ID lookups and folder-tree queries see the same subset of rows
+// the searcher gives the listing. Without a searcher the query is unscoped,
+// preserving the historical behavior — including for a builder that only sets
+// CurrentUserID, whose listing-only user_id filter is deliberately not extended
+// to these queries.
 func (b *Builder) scopedDB(db *gorm.DB, ctx *web.EventContext) *gorm.DB {
 	q := db.Model(&media_library.MediaLibrary{})
 	if b.searcher != nil {
@@ -89,10 +91,11 @@ func (b *Builder) folderIsVisible(ctx *web.EventContext, folderID uint) bool {
 	return count > 0
 }
 
-// recordIsVisible reports whether the row addressed by the primary-key slug id
-// is visible to this request. It backs the presets CRUD event funcs, which
-// address rows by id through the generic DataOperator and would otherwise
-// bypass the searcher entirely.
+// recordIsVisible reports whether the searcher lets this request see the row
+// addressed by the primary-key slug id. It backs the presets CRUD event funcs,
+// which address rows by id through the generic DataOperator and would otherwise
+// bypass the searcher entirely. Without a searcher every id is accepted,
+// keeping the historical behavior.
 func (b *Builder) recordIsVisible(ctx *web.EventContext, id string) bool {
 	if b.searcher == nil || id == "" {
 		return true
