@@ -479,7 +479,7 @@ func TestListingCompoReloadScoped(t *testing.T) {
 	pb.Build()
 	_, ownFile, _, foreignFile := seedScopeRows(t)
 
-	action := fmt.Sprintf(`{"compo_type":"*presets.ListingCompo","compo":{"id":"media_libraries_page","per_page":100},"injector":"media_libraries","method":"OnReload","request":"{}"}`)
+	const action = `{"compo_type":"*presets.ListingCompo","compo":{"id":"media_libraries_page","per_page":100},"injector":"media_libraries","method":"OnReload","request":"{}"}`
 	req := httptest.NewRequest(http.MethodPost, "/media-libraries?__execute_event__=__dispatch_stateful_action__",
 		strings.NewReader(url.Values{"__action__": []string{action}}.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
