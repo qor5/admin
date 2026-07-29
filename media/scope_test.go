@@ -56,7 +56,7 @@ func scopeTestBuilder(t *testing.T) (*Builder, *presets.Builder) {
 
 func scopeEventContext(t *testing.T, pb *presets.Builder, userID uint, params url.Values) *web.EventContext {
 	t.Helper()
-	req := httptest.NewRequest(http.MethodPost, "/media-libraries?"+params.Encode(), nil)
+	req := httptest.NewRequest(http.MethodPost, "/media-libraries?"+params.Encode(), http.NoBody)
 	req.Header.Set(scopeTestUserHeader, fmt.Sprint(userID))
 	var out *http.Request
 	pb.GetI18n().EnsureLanguage(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
