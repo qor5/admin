@@ -692,3 +692,15 @@ func (b *Builder) defaultDisableByStatus(_ *web.EventContext, obj any) *Disablem
 		DisabledDelete: disabled,
 	}
 }
+
+func (b *Builder) GetVersionPublishModels() map[string]any {
+	return b.versionPublishModels
+}
+
+func (b *Builder) GetNonVersionPublishModels() map[string]any {
+	return b.nonVersionPublishModels
+}
+
+func (b *Builder) GetListPublishModels() map[string]any {
+	return b.listPublishModels
+}
