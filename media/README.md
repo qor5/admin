@@ -1,4 +1,29 @@
 
+## Scoping the media library
+
+`Searcher` is the isolation boundary. It is applied to every `media_libraries`
+query in this package — the listing and chooser grid, folder trees, breadcrumbs,
+folder item counts, by-id reads, and the model's generic presets CRUD/search
+event funcs. Upload, new-folder and move targets are validated against it too.
+
+```go
+media.New(db).Searcher(func(db *gorm.DB, ctx *web.EventContext) *gorm.DB {
+    return db.Where("tenant_id = ?", currentTenantID(ctx.R))
+})
+```
+
+`CurrentUserID` is **not** an isolation boundary. It only supplies a
+`user_id = ?` filter to the listing grid when no `Searcher` is configured, so
+rows stay reachable by id. That is deliberate: some roles are meant to see every
+user's uploads while the grid still defaults to their own. Configure a `Searcher`
+whenever rows must actually be isolated.
+
+Two things a `Searcher` does not cover:
+
+- `MediaBoxSetterFunc` writes whatever `MediaBox` JSON the form submits, so a
+  known URL can still be attached to a field without reading the row.
+- Anything an application queries from `media_libraries` on its own.
+
 ## Cropping logic explanation
 
 The principles of cropping are as follows

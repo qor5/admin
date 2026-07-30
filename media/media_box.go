@@ -312,7 +312,8 @@ func doDelete(mb *Builder) web.EventFunc {
 			db              = mb.db
 			ids             = strings.Split(ctx.Param(ParamMediaIDS), ",")
 			objs            []media_library.MediaLibrary
-			deleteIDs       []uint64
+			requestIDs      []uint64
+			visibleIDs      []uint64
 			deleteFolderIDS []uint
 		)
 		for _, idStr := range ids {
@@ -320,20 +321,22 @@ func doDelete(mb *Builder) web.EventFunc {
 			if innerErr != nil {
 				continue
 			}
-			deleteIDs = append(deleteIDs, id)
+			requestIDs = append(requestIDs, id)
 		}
 		defer web.AppendRunScripts(&r,
 			"vars.mediaLibrary_deleteConfirmation = false",
 			web.Plaid().EventFunc(ImageJumpPageEvent).MergeQuery(true).Queries(ctx.Queries()).Go(),
 		)
-		err = db.Where("id in ?", deleteIDs).Find(&objs).Error
+		err = mb.scopedDB(db, ctx).Where("media_libraries.id in ?", requestIDs).Find(&objs).Error
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return r, nil
 			}
 			panic(err)
 		}
+		// Act only on the rows the scoped query returned, not the raw request ids.
 		for _, obj := range objs {
+			visibleIDs = append(visibleIDs, uint64(obj.ID))
 			if obj.Folder {
 				deleteFolderIDS = append(deleteFolderIDS, obj.ID)
 			}
@@ -341,16 +344,30 @@ func doDelete(mb *Builder) web.EventFunc {
 				return
 			}
 		}
+		if len(visibleIDs) == 0 {
+			return r, nil
+		}
 		err = db.Transaction(func(tx *gorm.DB) (dbErr error) {
 			if len(deleteFolderIDS) > 0 {
-				if dbErr = tx.
-					Model(&media_library.MediaLibrary{}).
-					Where("parent_id in ? ", deleteFolderIDS).Update("parent_id", 0).Error; dbErr != nil {
+				// Resolve the children through the scoped query and reparent them
+				// by id: GORM only applies a searcher's Joins to SELECTs, so
+				// scoping an UPDATE directly would silently drop the condition.
+				var childIDs []uint64
+				if dbErr = mb.scopedDB(tx, ctx).
+					Where("media_libraries.parent_id in ?", deleteFolderIDS).
+					Pluck("media_libraries.id", &childIDs).Error; dbErr != nil {
 					return
+				}
+				if len(childIDs) > 0 {
+					if dbErr = tx.Model(&media_library.MediaLibrary{}).
+						Where("media_libraries.id in ?", childIDs).
+						Update("parent_id", 0).Error; dbErr != nil {
+						return
+					}
 				}
 			}
 
-			if dbErr = tx.Delete(&media_library.MediaLibrary{}, "id  in ?", deleteIDs).Error; dbErr != nil {
+			if dbErr = tx.Delete(&media_library.MediaLibrary{}, "media_libraries.id in ?", visibleIDs).Error; dbErr != nil {
 				return
 			}
 			return
@@ -582,11 +599,14 @@ func updateDescription(mb *Builder) web.EventFunc {
 			msgr = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 		)
 
-		obj := wrapFirst(mb, ctx, &r)
+		obj, ok := wrapFirst(mb, ctx, &r)
+		if !ok {
+			return
+		}
 		if err = mb.updateDescIsAllowed(ctx.R, &obj); err != nil {
 			return
 		}
-		old := wrapFirst(mb, ctx, &r)
+		old := obj
 
 		obj.File.Description = ctx.Param(ParamCurrentDescription)
 		if err = db.Save(&obj).Error; err != nil {
@@ -609,11 +629,14 @@ func rename(mb *Builder) web.EventFunc {
 			db   = mb.db
 			msgr = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 		)
-		obj := wrapFirst(mb, ctx, &r)
+		obj, ok := wrapFirst(mb, ctx, &r)
+		if !ok {
+			return
+		}
 		if err = mb.updateNameIsAllowed(ctx.R, &obj); err != nil {
 			return
 		}
-		old := wrapFirst(mb, ctx, &r)
+		old := obj
 
 		if obj.Folder {
 			obj.File.FileName = ctx.Param(ParamName)
@@ -649,6 +672,15 @@ func createFolder(mb *Builder) web.EventFunc {
 			presets.ShowMessage(&r, "folder name can`t be empty", ColorWarning)
 			return
 		}
+		visible, err := mb.folderIsVisible(ctx, uint(parentID))
+		if err != nil {
+			return r, err
+		}
+		if !visible {
+			pMsgr := i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
+			presets.ShowMessage(&r, pMsgr.RecordNotFound, ColorError)
+			return
+		}
 		m.File.FileName = dirName
 		var uid uint
 		if mb.currentUserID != nil {
@@ -669,7 +701,7 @@ func createFolder(mb *Builder) web.EventFunc {
 	}
 }
 
-func wrapFirst(mb *Builder, ctx *web.EventContext, r *web.EventResponse) (obj media_library.MediaLibrary) {
+func wrapFirst(mb *Builder, ctx *web.EventContext, r *web.EventResponse) (obj media_library.MediaLibrary, ok bool) {
 	var (
 		err   error
 		db    = mb.db
@@ -679,7 +711,7 @@ func wrapFirst(mb *Builder, ctx *web.EventContext, r *web.EventResponse) (obj me
 		pMsgr = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 	)
 
-	err = db.Where("id = ?", id).First(&obj).Error
+	err = mb.scopedDB(db, ctx).Where("media_libraries.id = ?", id).First(&obj).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			presets.ShowMessage(r, pMsgr.RecordNotFound, ColorError)
@@ -690,17 +722,20 @@ func wrapFirst(mb *Builder, ctx *web.EventContext, r *web.EventResponse) (obj me
 				mb,
 				stringToCfg(cfg),
 			)
-			return
+			return obj, false
 		}
 		panic(err)
 	}
-	return
+	return obj, true
 }
 
 func renameDialog(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		obj, ok := wrapFirst(mb, ctx, &r)
+		if !ok {
+			return
+		}
 		var (
-			obj   = wrapFirst(mb, ctx, &r)
 			pMsgr = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 			msgr  = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 		)
@@ -754,7 +789,10 @@ func newFolderDialog(ctx *web.EventContext) (r web.EventResponse, err error) {
 
 func updateDescriptionDialog(mb *Builder) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
-		obj := wrapFirst(mb, ctx, &r)
+		obj, ok := wrapFirst(mb, ctx, &r)
+		if !ok {
+			return
+		}
 		var (
 			pMsgr = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
 			msgr  = i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
@@ -778,7 +816,6 @@ func updateDescriptionDialog(mb *Builder) web.EventFunc {
 }
 
 func moveToFolderDialog(mb *Builder) web.EventFunc {
-	db := mb.db
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		var (
 			pMsgr = i18n.MustGetModuleMessages(ctx.R, presets.CoreI18nModuleKey, Messages_en_US).(*presets.Messages)
@@ -791,7 +828,7 @@ func moveToFolderDialog(mb *Builder) web.EventFunc {
 					VCardItem(
 						VCard(
 							VList(
-								h.Components(folderGroupsComponents(db, ctx, -1)...),
+								h.Components(folderGroupsComponents(mb, ctx, -1)...),
 							).ActiveColor(ColorPrimary).BgColor(ColorGreyLighten5),
 						).Color(ColorGreyLighten5).Height(340).Class("overflow-auto"),
 					),
@@ -840,14 +877,18 @@ func moveToFolder(mb *Builder) web.EventFunc {
 			ids = append(ids, selectID)
 		}
 		presets.ShowMessage(&r, msgr.MovedFailed, ColorError)
-		if len(ids) > 0 {
+		targetVisible, err := mb.folderIsVisible(ctx, uint(selectFolderID))
+		if err != nil {
+			return r, err
+		}
+		if targetVisible && len(ids) > 0 {
 			for _, findID := range ids {
 				var old, obj media_library.MediaLibrary
-				db.First(&obj, findID)
+				mb.scopedDB(db, ctx).Find(&obj, findID)
 				if obj.ID == 0 {
 					continue
 				}
-				db.First(&old, findID)
+				mb.scopedDB(db, ctx).Find(&old, findID)
 				obj.ParentId = uint(selectFolderID)
 				if err = db.Save(&obj).Error; err != nil {
 					return
@@ -873,18 +914,17 @@ func moveToFolder(mb *Builder) web.EventFunc {
 }
 
 func nextFolder(mb *Builder) web.EventFunc {
-	db := mb.db
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		id := ctx.ParamAsInt(ParamSelectFolderID)
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: folderGroupPortalName(uint(id)),
-			Body: h.Components(folderGroupsComponents(db, ctx, id)...),
+			Body: h.Components(folderGroupsComponents(mb, ctx, id)...),
 		})
 		return
 	}
 }
 
-func folderGroupsComponents(db *gorm.DB, ctx *web.EventContext, parentID int) (items []h.HTMLComponent) {
+func folderGroupsComponents(mb *Builder, ctx *web.EventContext, parentID int) (items []h.HTMLComponent) {
 	var (
 		records   []*media_library.MediaLibrary
 		count     int64
@@ -908,13 +948,17 @@ func folderGroupsComponents(db *gorm.DB, ctx *web.EventContext, parentID int) (i
 		item.File.FileName = "Root Directory"
 		records = append(records, item)
 	} else {
-		db.Where("parent_id = ?  and folder = true", parentID).Find(&records)
+		mb.scopedDB(mb.db, ctx).
+			Where("media_libraries.parent_id = ? and media_libraries.folder = true", parentID).
+			Find(&records)
 	}
 	for _, record := range records {
 		if slices.Contains(selectIDs, fmt.Sprint(record.ID)) {
 			continue
 		}
-		db.Model(media_library.MediaLibrary{}).Where("id not in ? and parent_id = ?  and folder = true", idS, record.ID).Count(&count)
+		mb.scopedDB(mb.db, ctx).
+			Where("media_libraries.id not in ? and media_libraries.parent_id = ? and media_libraries.folder = true", idS, record.ID).
+			Count(&count)
 		if count > 0 {
 			items = append(items,
 				VListGroup(

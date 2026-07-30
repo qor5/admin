@@ -47,10 +47,11 @@ func loadImageCropper(mb *Builder) web.EventFunc {
 			panic(err)
 		}
 
-		err = db.First(&m, id).Error
+		err = mb.scopedDB(db, ctx).First(&m, id).Error
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			err = nil
 			presets.ShowMessage(&r, pMsgr.RecordNotFound, ColorError)
+			return r, nil
 		} else if err != nil {
 			return
 		}
@@ -141,14 +142,14 @@ func cropImage(b *Builder) web.EventFunc {
 				old media_library.MediaLibrary
 				m   media_library.MediaLibrary
 			)
-			err = db.First(&m, id).Error
+			err = b.scopedDB(db, ctx).First(&m, id).Error
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				presets.ShowMessage(&r, pMsgr.RecordNotFound, ColorError)
 				return r, nil
 			} else if err != nil {
 				return
 			}
-			db.Find(&old, id)
+			b.scopedDB(db, ctx).Find(&old, id)
 
 			moption := m.GetMediaOption()
 			if moption.CropOptions == nil {
