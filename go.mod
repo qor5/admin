@@ -1,6 +1,6 @@
 module github.com/qor5/admin/v3
 
-go 1.25.8
+go 1.26.0
 
 require (
 	github.com/ahmetb/go-linq/v3 v3.2.0
@@ -228,7 +228,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go4.org v0.0.0-20230225012048-214862532bf5 // indirect
-	golang.org/x/crypto v0.55.0 // indirect
+	golang.org/x/crypto v0.56.0 // indirect
 	golang.org/x/image v0.45.0 // indirect
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
