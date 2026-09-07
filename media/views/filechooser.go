@@ -3,13 +3,14 @@ package views
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/qor5/admin/presets"
 	"mime/multipart"
 	"strconv"
 	"strings"
 
 	"github.com/qor5/admin/media"
 	"github.com/qor5/admin/media/media_library"
+	"github.com/qor5/admin/media/shorturl"
+	"github.com/qor5/admin/presets"
 	. "github.com/qor5/ui/vuetify"
 	"github.com/qor5/web"
 	"github.com/qor5/x/i18n"
@@ -17,7 +18,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func fileChooser(db *gorm.DB) web.EventFunc {
+func fileChooser(db *gorm.DB, shortURLCfg *shorturl.Config) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 		field := ctx.R.FormValue("field")
@@ -60,7 +61,7 @@ func fileChooser(db *gorm.DB) web.EventFunc {
 						Dark(true),
 					web.Portal().Name(deleteConfirmPortalName(field)),
 					web.Portal(
-						fileChooserDialogContent(db, field, ctx, cfg),
+						fileChooserDialogContent(db, field, ctx, cfg, shortURLCfg),
 					).Name(dialogContentPortalName(field)),
 				).Tile(true),
 			).
@@ -75,7 +76,7 @@ func fileChooser(db *gorm.DB) web.EventFunc {
 	}
 }
 
-func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, cfg *media_library.MediaBoxConfig) h.HTMLComponent {
+func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, cfg *media_library.MediaBoxConfig, shortURLCfg *shorturl.Config) h.HTMLComponent {
 	msgr := i18n.MustGetModuleMessages(ctx.R, I18nMediaLibraryKey, Messages_en_US).(*Messages)
 
 	keyword := ctx.R.FormValue(searchKeywordName(field))
@@ -210,6 +211,13 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 		initCroppingVars = append(initCroppingVars, fmt.Sprintf("%s: false", croppingVar))
 		imgClickVars := fmt.Sprintf("vars.mediaShow = '%s'; vars.mediaName = '%s'; vars.isImage = %s", f.File.URL(), f.File.FileName, strconv.FormatBool(media.IsImageFormat(f.File.FileName)))
 
+		// Precompute to avoid nil dereference inside h.If arguments,
+		// which are always evaluated regardless of the condition.
+		fileShortURL := ""
+		if shortURLCfg != nil && f.ShortPath != nil && *f.ShortPath != "" {
+			fileShortURL = shortURLCfg.FullURL(*f.ShortPath)
+		}
+
 		row.AppendChildren(
 			VCol(
 				VCard(
@@ -257,19 +265,31 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 							fileChips(f),
 						),
 					),
-					h.If(deleteIsAllowed(ctx.R, files[i]) == nil,
+					h.If(deleteIsAllowed(ctx.R, files[i]) == nil || fileShortURL != "",
 						VCardActions(
+							h.If(fileShortURL != "",
+								VBtn(msgr.CopyShortURL).
+									Text(true).
+									Color("primary").
+									Attr("style", "font-weight: bold;").
+									Attr("@click", fmt.Sprintf(
+										`navigator.clipboard.writeText(%q); vars.shortURLCopied = true`,
+										fileShortURL,
+									)),
+							),
 							VSpacer(),
-							VBtn(msgr.Delete).
-								Text(true).
-								Attr("@click",
-									web.Plaid().
-										EventFunc(deleteConfirmationEvent).
-										Query("field", field).
-										Query("id", fmt.Sprint(f.ID)).
-										FieldValue("cfg", h.JSONString(cfg)).
-										Go(),
-								),
+							h.If(deleteIsAllowed(ctx.R, files[i]) == nil,
+								VBtn(msgr.Delete).
+									Text(true).
+									Attr("@click",
+										web.Plaid().
+											EventFunc(deleteConfirmationEvent).
+											Query("field", field).
+											Query("id", fmt.Sprint(f.ID)).
+											FieldValue("cfg", h.JSONString(cfg)).
+											Go(),
+									),
+							),
 						),
 					),
 				),
@@ -283,6 +303,11 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 			Top(true).
 			Color("primary").
 			Timeout(5000),
+		VSnackbar(h.Text(msgr.ShortURLCopied)).
+			Attr("v-model", "vars.shortURLCopied").
+			Top(true).
+			Color("success").
+			Timeout(2000),
 		web.Scope(
 			VContainer(
 				h.If(field == mediaLibraryListField,
@@ -346,7 +371,7 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 					Class("white--text").Style("text-decoration: none;"),
 			).Class("d-flex align-center justify-center pt-2"),
 		).Attr("v-if", "vars.mediaName").Attr("@click", "vars.mediaName = null").ZIndex(10),
-	).Attr(web.InitContextVars, `{snackbarShow: false, mediaShow: null, mediaName: null, isImage: false}`)
+	).Attr(web.InitContextVars, `{snackbarShow: false, shortURLCopied: false, mediaShow: null, mediaName: null, isImage: false}`)
 }
 
 func fileChips(f *media_library.MediaLibrary) h.HTMLComponent {
@@ -378,7 +403,7 @@ type uploadFiles struct {
 	NewFiles []*multipart.FileHeader
 }
 
-func uploadFile(db *gorm.DB) web.EventFunc {
+func uploadFile(db *gorm.DB, shortURLCfg *shorturl.Config) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		field := ctx.R.FormValue("field")
 		cfg := stringToCfg(ctx.R.FormValue("cfg"))
@@ -409,11 +434,67 @@ func uploadFile(db *gorm.DB) web.EventFunc {
 				presets.ShowMessage(&r, err.Error(), "error")
 				return r, nil
 			}
+
+			if err = generateAndSaveShortURL(db, shortURLCfg, &m); err != nil {
+				// Roll back: delete the media record so the upload appears fully failed.
+				_ = db.Delete(&m).Error
+				presets.ShowMessage(&r, err.Error(), "error")
+				return r, nil
+			}
 		}
 
-		renderFileChooserDialogContent(ctx, &r, field, db, cfg)
+		renderFileChooserDialogContent(ctx, &r, field, db, cfg, shortURLCfg)
 		return
 	}
+}
+
+// generateAndSaveShortURL generates a unique short code, uploads the redirect file,
+// and saves ShortPath to the DB. Returns an error if any step fails.
+func generateAndSaveShortURL(db *gorm.DB, cfg *shorturl.Config, m *media_library.MediaLibrary) error {
+	if cfg == nil {
+		return nil
+	}
+	const maxRetries = 10
+	var shortPath string
+	generateCode := cfg.CodeGenerator
+	if generateCode == nil {
+		generateCode = func(_ *media_library.MediaLibrary) (string, error) {
+			return shorturl.RandomCode(shorturl.ShortCodeLen)
+		}
+	}
+
+	for i := 0; i < maxRetries; i++ {
+		code, err := generateCode(m)
+		if err != nil {
+			return fmt.Errorf("shorturl: generate code: %w", err)
+		}
+		candidate := shorturl.ShortPath(cfg.PathPrefix, code)
+		var count int64
+		if err := db.Model(&media_library.MediaLibrary{}).
+			Where("short_path = ?", candidate).
+			Count(&count).Error; err != nil {
+			return fmt.Errorf("shorturl: query short path: %w", err)
+		}
+		if count == 0 {
+			shortPath = candidate
+			break
+		}
+	}
+	if shortPath == "" {
+		return fmt.Errorf("shorturl: could not generate unique short path after %d retries for media %d", maxRetries, m.ID)
+	}
+
+	if err := shorturl.Upload(cfg, shortPath, m.File.URL()); err != nil {
+		return fmt.Errorf("shorturl: upload redirect file for media %d: %w", m.ID, err)
+	}
+
+	// Use a direct update so a concurrent unique-constraint violation surfaces cleanly.
+	if err := db.Model(m).Update("short_path", &shortPath).Error; err != nil {
+		// Best-effort cleanup of the uploaded redirect file.
+		_ = shorturl.Delete(cfg, shortPath)
+		return fmt.Errorf("shorturl: save short path for media %d: %w", m.ID, err)
+	}
+	return nil
 }
 
 func mergeNewSizes(m *media_library.MediaLibrary, cfg *media_library.MediaBoxConfig) (sizes map[string]*media.Size, r bool) {
@@ -429,7 +510,7 @@ func mergeNewSizes(m *media_library.MediaLibrary, cfg *media_library.MediaBoxCon
 	return
 }
 
-func chooseFile(db *gorm.DB) web.EventFunc {
+func chooseFile(db *gorm.DB, _ *shorturl.Config) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		field := ctx.R.FormValue("field")
 		id := ctx.QueryAsInt("id")
@@ -482,30 +563,30 @@ func chooseFile(db *gorm.DB) web.EventFunc {
 	}
 }
 
-func searchFile(db *gorm.DB) web.EventFunc {
+func searchFile(db *gorm.DB, shortURLCfg *shorturl.Config) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		field := ctx.R.FormValue("field")
 		cfg := stringToCfg(ctx.R.FormValue("cfg"))
 
 		ctx.R.Form[currentPageName(field)] = []string{"1"}
 
-		renderFileChooserDialogContent(ctx, &r, field, db, cfg)
+		renderFileChooserDialogContent(ctx, &r, field, db, cfg, shortURLCfg)
 		return
 	}
 }
 
-func jumpPage(db *gorm.DB) web.EventFunc {
+func jumpPage(db *gorm.DB, shortURLCfg *shorturl.Config) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		field := ctx.R.FormValue("field")
 		cfg := stringToCfg(ctx.R.FormValue("cfg"))
-		renderFileChooserDialogContent(ctx, &r, field, db, cfg)
+		renderFileChooserDialogContent(ctx, &r, field, db, cfg, shortURLCfg)
 		return
 	}
 }
 
-func renderFileChooserDialogContent(ctx *web.EventContext, r *web.EventResponse, field string, db *gorm.DB, cfg *media_library.MediaBoxConfig) {
+func renderFileChooserDialogContent(ctx *web.EventContext, r *web.EventResponse, field string, db *gorm.DB, cfg *media_library.MediaBoxConfig, shortURLCfg *shorturl.Config) {
 	r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 		Name: dialogContentPortalName(field),
-		Body: fileChooserDialogContent(db, field, ctx, cfg),
+		Body: fileChooserDialogContent(db, field, ctx, cfg, shortURLCfg),
 	})
 }

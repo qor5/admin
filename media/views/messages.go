@@ -18,6 +18,8 @@ type Messages struct {
 	Images                      string
 	Videos                      string
 	Files                       string
+	CopyShortURL                string
+	ShortURLCopied              string
 	SampleArgsText              func(id string) string
 }
 
@@ -39,6 +41,8 @@ var Messages_en_US = &Messages{
 	Images:                      "Images",
 	Videos:                      "Videos",
 	Files:                       "Files",
+	CopyShortURL:                "Copy Short URL",
+	ShortURLCopied:              "Short URL Copied",
 }
 
 var Messages_zh_CN = &Messages{
@@ -59,6 +63,8 @@ var Messages_zh_CN = &Messages{
 	Images:                      "图片",
 	Videos:                      "视频",
 	Files:                       "文件",
+	CopyShortURL:                "复制短链",
+	ShortURLCopied:              "短链已复制",
 }
 
 var Messages_ja_JP = &Messages{
@@ -79,4 +85,6 @@ var Messages_ja_JP = &Messages{
 	Images:                      "画像",
 	Videos:                      "動画",
 	Files:                       "ファイル",
+	CopyShortURL:                "短縮URLをコピー",
+	ShortURLCopied:              "短縮URLをコピーしました",
 }

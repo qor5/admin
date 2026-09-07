@@ -28,10 +28,16 @@ func GetImageFormat(url string) (*imaging.Format, error) {
 	return nil, imaging.ErrUnsupportedFormat
 }
 
+// IsWebpFormat check filename is webp or not
+func IsWebpFormat(name string) bool {
+	ext := strings.ToLower(regexp.MustCompile(`(\?.*?$)`).ReplaceAllString(filepath.Ext(name), ""))
+	return ext == ".webp"
+}
+
 // IsImageFormat check filename is image or not
 func IsImageFormat(name string) bool {
 	_, err := GetImageFormat(name)
-	return err == nil
+	return err == nil || IsWebpFormat(name)
 }
 
 // IsVideoFormat check filename is video or not
