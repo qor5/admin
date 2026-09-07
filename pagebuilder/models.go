@@ -19,6 +19,12 @@ type Page struct {
 	CategoryID uint
 
 	SEO seo.Setting
+
+	// ExcludeFromSitemap keeps this page out of the generated sitemap while
+	// leaving it publicly accessible. Versioned and per-locale like every other
+	// Page column, so it only takes effect once the version carrying it is online.
+	ExcludeFromSitemap bool
+
 	publish.Status
 	publish.Schedule
 	publish.Version

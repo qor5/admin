@@ -95,6 +95,8 @@ const (
 	editSEODialogEvent = "editSEODialogEvent"
 	updateSEOEvent     = "updateSEOEvent"
 
+	updateExcludeFromSitemapEvent = "updateExcludeFromSitemapEvent"
+
 	selectVersionEvent       = "selectVersionEvent"
 	renameVersionDialogEvent = "renameVersionDialogEvent"
 	renameVersionEvent       = "renameVersionEvent"
@@ -490,6 +492,7 @@ function(e){
 	pm.RegisterEventFunc(createNoteEvent, createNote(db, pm))
 	pm.RegisterEventFunc(editSEODialogEvent, editSEODialog(db, pm, seoCollection))
 	pm.RegisterEventFunc(updateSEOEvent, updateSEO(db, pm))
+	pm.RegisterEventFunc(updateExcludeFromSitemapEvent, updateExcludeFromSitemap(db, pm))
 	eb := pm.Editing("TemplateSelection", "Title", "CategoryID", "Slug")
 	eb.ValidateFunc(func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
 		c := obj.(*Page)
@@ -569,7 +572,11 @@ function(e){
 			id := ctx.R.FormValue(presets.ParamID)
 			var fromPage Page
 			eb.Fetcher(&fromPage, id, ctx)
+			// Duplicate builds the new version from the editing form fields only
+			// (Title/CategoryID/Slug), so columns that live outside that form have
+			// to be carried over by hand or they silently reset to their zero value.
 			p.SEO = fromPage.SEO
+			p.ExcludeFromSitemap = fromPage.ExcludeFromSitemap
 		}
 
 		err = db.Transaction(func(tx *gorm.DB) (inerr error) {
@@ -1358,6 +1365,32 @@ func updateSEO(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
 		err = mb.Editing().Saver(obj, paramID, ctx)
 		if err != nil {
 			mb.Editing().UpdateOverlayContent(ctx, &r, obj, "", err)
+			return
+		}
+		r.PushState = web.Location(nil)
+		return
+	}
+}
+
+func updateExcludeFromSitemap(db *gorm.DB, mb *presets.ModelBuilder) web.EventFunc {
+	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
+		paramID := ctx.R.FormValue(presets.ParamID)
+		obj := mb.NewModel()
+		obj, err = mb.Editing().Fetcher(obj, paramID, ctx)
+		if err != nil {
+			return
+		}
+		p, ok := obj.(*Page)
+		if !ok {
+			return
+		}
+		// The switch is only rendered for drafts; guard the event too so a stale
+		// page or a hand-crafted request cannot edit an online version.
+		if p.GetStatus() != publish.StatusDraft {
+			return
+		}
+		p.ExcludeFromSitemap = ctx.R.FormValue("ExcludeFromSitemap") == "true"
+		if err = mb.Editing().Saver(obj, paramID, ctx); err != nil {
 			return
 		}
 		r.PushState = web.Location(nil)
