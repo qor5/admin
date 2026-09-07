@@ -325,11 +325,23 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 			}
 		}
 		if text != "" {
+			// Success messages auto-dismiss; error notices stay until the user closes
+			// them, so a save failure is never missed by someone scrolled away from it.
+			timeout := 2000
+			var closeBtn h.HTMLComponent
+			if color == "error" {
+				timeout = -1
+				closeBtn = web.Slot(
+					VBtn("").Icon("mdi-close").Variant(VariantText).Size(SizeSmall).
+						Attr("@click", "locals.show = false"),
+				).Name("actions")
+			}
 			notice = web.Scope(
 				VSnackbar(
 					h.Div().Style("white-space: pre-wrap").Text(fmt.Sprintf(`{{ %q }}`, text)),
+					closeBtn,
 				).Location("top").
-					Timeout(2000).
+					Timeout(timeout).
 					Color(color).
 					Attr("v-model", "locals.show"),
 			).VSlot("{ locals }").Init(`{ show: true }`)
@@ -700,6 +712,10 @@ func (b *EditingBuilder) UpdateOverlayContent(
 		Name: p,
 		Body: b.editFormFor(obj, ctx),
 	})
+
+	if vErr, ok := ctx.Flash.(*web.ValidationErrors); ok && vErr.HaveErrors() {
+		web.AppendRunScripts(r, ScrollToFirstErrorScript(p))
+	}
 }
 
 func (b *EditingBuilder) Section(sections ...*SectionBuilder) *EditingBuilder {

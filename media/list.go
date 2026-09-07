@@ -17,6 +17,7 @@ const (
 func configList(b *presets.Builder, mb *Builder) {
 	mm := b.Model(&media_library.MediaLibrary{}).Label("Media Library").MenuIcon("mdi-image")
 	mb.mb = mm
+	configScopedCRUD(mb, mm)
 	oldPageFunc := mm.Listing().GetPageFunc()
 	mm.Listing().PageFunc(func(ctx *web.EventContext) (r web.PageResponse, err error) {
 		var (
@@ -42,5 +43,73 @@ func configList(b *presets.Builder, mb *Builder) {
 			),
 		)
 		return
+	})
+}
+
+// configScopedCRUD makes the model's generic CRUD event funcs respect the
+// searcher. They address rows by primary key through the DataOperator, so
+// without these guards a request could edit, delete or read back any row by id
+// regardless of what the searcher allows.
+func configScopedCRUD(mb *Builder, mm *presets.ModelBuilder) {
+	guard := func(id string, ctx *web.EventContext) error {
+		visible, err := mb.recordIsVisible(ctx, id)
+		if err != nil {
+			return err
+		}
+		if visible {
+			return nil
+		}
+		return presets.ErrRecordNotFound
+	}
+	mm.Editing().
+		WrapFetchFunc(func(in presets.FetchFunc) presets.FetchFunc {
+			return func(obj interface{}, id string, ctx *web.EventContext) (interface{}, error) {
+				if err := guard(id, ctx); err != nil {
+					return nil, err
+				}
+				return in(obj, id, ctx)
+			}
+		}).
+		WrapSaveFunc(func(in presets.SaveFunc) presets.SaveFunc {
+			return func(obj interface{}, id string, ctx *web.EventContext) error {
+				if err := guard(id, ctx); err != nil {
+					return err
+				}
+				return in(obj, id, ctx)
+			}
+		}).
+		WrapDeleteFunc(func(in presets.DeleteFunc) presets.DeleteFunc {
+			return func(obj interface{}, id string, ctx *web.EventContext) error {
+				if err := guard(id, ctx); err != nil {
+					return err
+				}
+				return in(obj, id, ctx)
+			}
+		})
+	// GetDetailing, not Detailing: the latter would enable detailing for the
+	// model, mounting a detail route and changing listing row behavior. The
+	// detailing event funcs are registered either way, so they need the guard.
+	mm.GetDetailing().WrapFetchFunc(func(in presets.FetchFunc) presets.FetchFunc {
+		return func(obj interface{}, id string, ctx *web.EventContext) (interface{}, error) {
+			if err := guard(id, ctx); err != nil {
+				return nil, err
+			}
+			return in(obj, id, ctx)
+		}
+	})
+	// The listing's generic search backs ListingCompo, whose reload / paging /
+	// search actions stay dispatchable even though the media library replaces the
+	// listing page. Restrict it to the ids the searcher exposes; passing the
+	// scoped query as a subquery keeps a Joins-based searcher intact.
+	mm.Listing().WrapSearchFunc(func(in presets.SearchFunc) presets.SearchFunc {
+		return func(ctx *web.EventContext, params *presets.SearchParams) (*presets.SearchResult, error) {
+			if mb.searcher != nil {
+				params.SQLConditions = append(params.SQLConditions, &presets.SQLCondition{
+					Query: "media_libraries.id in (?)",
+					Args:  []interface{}{mb.scopedDB(mb.db, ctx).Select("media_libraries.id")},
+				})
+			}
+			return in(ctx, params)
+		}
 	})
 }

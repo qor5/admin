@@ -21,6 +21,7 @@ import (
 const (
 	defaultConcurrency = 10
 	defaultTimeout     = 5
+	indexDocument      = "index.html"
 )
 
 type uploadFiles struct {
@@ -105,6 +106,12 @@ func (b *Builder) redirection(ctx context.Context, record *Redirection) (err err
 	target := record.Target
 	if !strings.HasPrefix(target, "http") {
 		target = path.Join("/", record.Target)
+		// path.Join drops the trailing slash of a directory-form target; restore
+		// it so the redirect goes straight to the directory URL without an extra
+		// redirect hop on the website endpoint.
+		if strings.HasSuffix(record.Target, "/") && target != "/" {
+			target += "/"
+		}
 	}
 	if b.checkObjectExists(ctx, source) {
 		_, err = client.S3.CopyObject(ctx, &s3.CopyObjectInput{
@@ -127,6 +134,16 @@ func (b *Builder) redirection(ctx context.Context, record *Redirection) (err err
 		_, err = client.S3.PutObject(ctx, params)
 	}
 	return
+}
+
+// checkTargetExists reports whether an internal redirect target resolves to an
+// existing object. A directory-form target (trailing "/") resolves to its index
+// document, matching the behavior of the S3 website endpoint.
+func (b *Builder) checkTargetExists(ctx context.Context, target string) bool {
+	if strings.HasSuffix(target, "/") {
+		target += indexDocument
+	}
+	return b.checkObjectExists(ctx, target)
 }
 
 func (b *Builder) checkObjectExists(ctx context.Context, key string) bool {

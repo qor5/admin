@@ -36,7 +36,8 @@ func TestPresetsEditingValidate(t *testing.T) {
 					AddField("Name", "").
 					BuildEventFuncRequest()
 			},
-			ExpectPortalUpdate0ContainsInOrder: []string{"timeout='2000'", "name must not be empty"},
+			// error notices are now persistent (timeout -1) so a save failure is not missed
+			ExpectPortalUpdate0ContainsInOrder: []string{"timeout='-1'", "name must not be empty"},
 		},
 	}
 

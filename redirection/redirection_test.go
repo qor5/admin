@@ -7,8 +7,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	awss3 "github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/qor5/web/v3"
 	"github.com/qor5/x/v3/gormx"
+	s3x "github.com/qor5/x/v3/oss/s3"
 	"github.com/theplant/gofixtures"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -129,5 +133,93 @@ func TestCheckObjects(t *testing.T) {
 	if !b.checkObjects(ctx, r, Messages_en_US, []Redirection{}) {
 		t.Fatalf("No Objects Is Passed")
 		return
+	}
+}
+
+func newTestS3Client(t *testing.T, handler http.Handler) *s3x.Client {
+	t.Helper()
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+	return &s3x.Client{
+		S3: awss3.New(awss3.Options{
+			BaseEndpoint: aws.String(server.URL),
+			UsePathStyle: true,
+			Region:       "us-east-1",
+			Credentials:  credentials.NewStaticCredentialsProvider("test", "test", ""),
+		}),
+		Config: &s3x.Config{Bucket: "test-bucket"},
+	}
+}
+
+func TestCheckTargetExists(t *testing.T) {
+	client := newTestS3Client(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		existing := map[string]bool{
+			"/test-bucket/index.html":     true,
+			"/test-bucket/503/index.html": true,
+		}
+		if r.Method == http.MethodHead && existing[r.URL.Path] {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	builder := &Builder{s3Client: client}
+
+	cases := []struct {
+		name   string
+		target string
+		expect bool
+	}{
+		{name: "existing object", target: "/503/index.html", expect: true},
+		{name: "directory form resolves to index document", target: "/503/", expect: true},
+		{name: "root resolves to index document", target: "/", expect: true},
+		{name: "missing object", target: "/missing.html", expect: false},
+		{name: "directory form without index document", target: "/missing/", expect: false},
+		{name: "no trailing slash is not treated as directory", target: "/503", expect: false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := builder.checkTargetExists(context.Background(), c.target); got != c.expect {
+				t.Errorf("checkTargetExists(%q) = %t, want %t", c.target, got, c.expect)
+			}
+		})
+	}
+}
+
+func TestRedirectionKeepsDirectoryTargetSlash(t *testing.T) {
+	redirectLocations := make(map[string]string)
+	client := newTestS3Client(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodHead:
+			w.WriteHeader(http.StatusNotFound)
+		case http.MethodPut:
+			redirectLocations[r.URL.Path] = r.Header.Get("x-amz-website-redirect-location")
+			w.WriteHeader(http.StatusOK)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	builder := &Builder{s3Client: client}
+
+	cases := []struct {
+		name   string
+		source string
+		target string
+		expect string
+	}{
+		{name: "directory form keeps trailing slash", source: "/old/a.html", target: "/503/", expect: "/503/"},
+		{name: "file target unchanged", source: "/old/b.html", target: "/503/index.html", expect: "/503/index.html"},
+		{name: "absolute url unchanged", source: "/old/c.html", target: "https://example.com/x/", expect: "https://example.com/x/"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if err := builder.redirection(context.Background(), &Redirection{Source: c.source, Target: c.target}); err != nil {
+				t.Fatalf("redirection() error: %v", err)
+			}
+			key := "/test-bucket" + c.source
+			if got := redirectLocations[key]; got != c.expect {
+				t.Errorf("WebsiteRedirectLocation for %s = %q, want %q", c.source, got, c.expect)
+			}
+		})
 	}
 }

@@ -118,7 +118,7 @@ func (b *Builder) checkObjects(ctx *web.EventContext, r *web.EventResponse, msgr
 	// check  target object is exist
 	for index, record := range records {
 		row := strconv.Itoa(index + 1)
-		if !strings.HasPrefix(record.Target, "http") && !b.checkObjectExists(ctx.R.Context(), record.Target) {
+		if !strings.HasPrefix(record.Target, "http") && !b.checkTargetExists(ctx.R.Context(), record.Target) {
 			errorRows = append(errorRows, row)
 		}
 	}

@@ -296,6 +296,54 @@ func TestDetailFieldBuilder(t *testing.T) {
 	}
 }
 
+// TestSectionSaveValidationErrorScrollsToFirstError verifies that saving a section
+// with validation errors returns a script that scrolls the first errored field into
+// view, mirroring the editing-form behavior (KGM-4566).
+func TestSectionSaveValidationErrorScrollsToFirstError(t *testing.T) {
+	db := TestDB
+	db.AutoMigrate(&ParameterSetting{})
+	sqlDB, _ := db.DB()
+
+	b := presets.New().URIPrefix("/ps")
+	b.DataOperator(gorm2op.DataOperator(db))
+	mb := b.Model(&ParameterSetting{})
+	detail := mb.Detailing("Detail").Drawer(true)
+	section := presets.NewSectionBuilder(mb, "Detail").
+		ViewComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			return h.Div(h.Text(obj.(*ParameterSetting).DisplayName))
+		}).
+		EditComponentFunc(func(obj interface{}, field *presets.FieldContext, ctx *web.EventContext) h.HTMLComponent {
+			ps := obj.(*ParameterSetting)
+			return h.Div(
+				v.VTextField().Attr(web.VField(fmt.Sprintf("%s.DisplayName", field.FormKey), ps.DisplayName)...),
+			)
+		}).
+		Editing("DisplayName")
+	section.WrapValidator(func(_ presets.ValidateFunc) presets.ValidateFunc {
+		return func(obj interface{}, ctx *web.EventContext) (err web.ValidationErrors) {
+			if len(obj.(*ParameterSetting).DisplayName) < 5 {
+				err.FieldError("Detail.DisplayName", "input more than 5 chars")
+			}
+			return
+		}
+	})
+	detail.Section(section)
+
+	multipartestutils.RunCase(t, multipartestutils.TestCase{
+		Name: "section save with validation error scrolls to first error",
+		ReqFunc: func() *http.Request {
+			settingData.TruncatePut(sqlDB)
+			return multipartestutils.NewMultipartBuilder().
+				PageURL("/ps/parameter-settings").
+				EventFunc("section_save_Detail").
+				Query(presets.ParamID, "1").
+				AddField("Detail.DisplayName", "abc"). // < 5 chars
+				BuildEventFuncRequest()
+		},
+		ExpectRunScriptContainsInOrder: []string{"scrollIntoView"},
+	}, b)
+}
+
 // TestWrapSaveFunc tests the WrapSaveFunc method of SectionBuilder
 func TestWrapSaveFunc(t *testing.T) {
 	db := TestDB
@@ -305,12 +353,12 @@ func TestWrapSaveFunc(t *testing.T) {
 		t.Fatalf("Failed to create tables: %v", err)
 	}
 
-	// Get sql.DB from gorm.DB for test fixtures
+	// Get sql.DB from gorm.DB for test fixtures. Do NOT close it: db is the shared
+	// TestDB pool, and closing it here would break any test that runs afterwards.
 	sqlDB, err := db.DB()
 	if err != nil {
 		t.Fatalf("Failed to get sql.DB: %v", err)
 	}
-	defer sqlDB.Close()
 
 	// Create test data
 	settingData := gofixtures.Data(gofixtures.Sql(`

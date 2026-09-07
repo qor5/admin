@@ -143,9 +143,18 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 
 	if b.value != nil {
 		form = b.fieldContext.NestedFieldsBuilder.ToComponentForEach(b.fieldContext, b.value, ctx, func(obj interface{}, formKey string, content h.HTMLComponent, ctx *web.EventContext) h.HTMLComponent {
+			showDelete := !b.fieldContext.Disabled && hasUpdatePermission
+			contentWrap := h.Div(content)
+			if showDelete {
+				// Keep the content clear of the absolutely positioned button.
+				contentWrap.Class("pe-14")
+			}
 			return VCard(
-				h.If(!b.fieldContext.Disabled && hasUpdatePermission,
-					VBtn("").Icon("mdi-delete").Class("float-right ma-2").
+				h.If(showDelete,
+					// Anchor to the card's vertical center so the button stays
+					// centered whatever the row content's height is.
+					VBtn("").Icon("mdi-delete").Class("position-absolute").
+						Attr("style", "top:50%;right:16px;transform:translateY(-50%)").
 						Attr("@click", web.Plaid().
 							URL(b.fieldContext.ModelInfo.ListingHref()).
 							EventFunc(b.removeListItemRowEvent).
@@ -156,7 +165,7 @@ func (b *ListEditorBuilder) MarshalHTML(c context.Context) (r []byte, err error)
 							Query(ParamRemoveRowFormKey, formKey).
 							Go()),
 				),
-				content,
+				contentWrap,
 			).Class("mx-0 mb-2 px-4 pb-0 pt-4").Variant(VariantOutlined)
 		})
 	}

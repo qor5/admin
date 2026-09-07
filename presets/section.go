@@ -1110,11 +1110,12 @@ func (b *SectionBuilder) SaveDetailField(ctx *web.EventContext) (r web.EventResp
 		}
 	}
 
-	if _, ok := ctx.Flash.(*web.ValidationErrors); ok {
+	if vErr, ok := ctx.Flash.(*web.ValidationErrors); ok && vErr.HaveErrors() {
 		r.UpdatePortals = append(r.UpdatePortals, &web.PortalUpdate{
 			Name: b.FieldPortalName(),
 			Body: b.editComponent(obj, field, ctx),
 		})
+		web.AppendRunScripts(&r, ScrollToFirstErrorScript(b.FieldPortalName()))
 		return
 	}
 

@@ -77,6 +77,14 @@ func (mb *ModelBuilder) HasDetailing() bool {
 	return mb.hasDetailing
 }
 
+// GetDetailing returns the detailing builder without enabling detailing for the
+// model. Detailing event funcs are registered whether or not detailing is
+// enabled, so use this to configure them — Detailing() sets hasDetailing, which
+// mounts a detail route and changes how listing rows behave.
+func (mb *ModelBuilder) GetDetailing() *DetailingBuilder {
+	return mb.detailing
+}
+
 func (mb *ModelBuilder) GetSingleton() bool {
 	return mb.singleton
 }
