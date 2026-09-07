@@ -572,7 +572,11 @@ function(e){
 			id := ctx.R.FormValue(presets.ParamID)
 			var fromPage Page
 			eb.Fetcher(&fromPage, id, ctx)
+			// Duplicate builds the new version from the editing form fields only
+			// (Title/CategoryID/Slug), so columns that live outside that form have
+			// to be carried over by hand or they silently reset to their zero value.
 			p.SEO = fromPage.SEO
+			p.ExcludeFromSitemap = fromPage.ExcludeFromSitemap
 		}
 
 		err = db.Transaction(func(tx *gorm.DB) (inerr error) {
