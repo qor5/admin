@@ -5,7 +5,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/qor5/web/multipartestutils"
 	. "github.com/qor5/web/v3/multipartestutils"
 	"github.com/theplant/gofixtures"
 
@@ -40,7 +39,7 @@ func TestLinkageSelectFilter(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				linkageSelectFilterData.TruncatePut(dbr)
-				req := multipartestutils.NewMultipartBuilder().
+				req := NewMultipartBuilder().
 					PageURL("/addresses").
 					EventFunc(actions.Edit).
 					Query(presets.ParamID, "1").
@@ -54,7 +53,7 @@ func TestLinkageSelectFilter(t *testing.T) {
 			Debug: true,
 			ReqFunc: func() *http.Request {
 				linkageSelectFilterData.TruncatePut(dbr)
-				req := multipartestutils.NewMultipartBuilder().
+				req := NewMultipartBuilder().
 					PageURL("/addresses").
 					EventFunc(actions.Update).
 					AddField("ProvinceCityDistrict[0].Name", "浙江").
