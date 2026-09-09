@@ -116,7 +116,7 @@ func (b *Builder) eventActionJobCreate(ctx *web.EventContext) (r web.EventRespon
 		return r, fmt.Errorf("job %s not found", jobName)
 	}
 
-	job, err := b.createJob(ctx, qorJob)
+	job, err := b.CreateJob(ctx, qorJob)
 	if err != nil {
 		return
 	}
@@ -177,7 +177,7 @@ func (b *Builder) eventActionJobInputParams(ctx *web.EventContext) (r web.EventR
 				)).
 				Attr("v-model", "vars.presetsDialog").
 				Width("600").Persistent(true),
-		).VSlot("{ form }"),
+		).VSlot("{ form, dash }").DashInit("{errorMessages:{},disabled:{}}"),
 	})
 	r.RunScript = "setTimeout(function(){vars.presetsDialog = true; }, 100)"
 	return
@@ -278,15 +278,18 @@ func (b *Builder) eventActionJobProgressing(ctx *web.EventContext) (er web.Event
 		).ModelValue(int(inst.Progress)).Height(20)).Class("mb-5"),
 		h.If(config.displayLog, actionJobLog(*config.b, inst)),
 		h.If(inst.ProgressText != "",
-			h.Div().Class("mb-3").Children(
+			h.Div().Class("mb-3").Attr("v-pre", true).Children(
 				h.RawHTML(inst.ProgressText),
 			),
 		),
 	)
 
-	if inst.Status == JobStatusDone || inst.Status == JobStatusException {
+	switch inst.Status {
+	case JobStatusDone:
+		er.RunScript = "vars.actionJobProgressingInterval = 0; setTimeout(function(){ vars.presetsDialog = false; location.reload(); }, 1000);"
+	case JobStatusException:
 		er.RunScript = "vars.actionJobProgressingInterval = 0;"
-	} else {
+	default:
 		er.RunScript = fmt.Sprintf("vars.actionJobProgressingInterval = %d;", config.progressingInterval)
 	}
 	return er, nil

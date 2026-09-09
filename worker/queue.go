@@ -5,8 +5,9 @@ import "context"
 //go:generate moq -pkg mock -out mock/queue.go . Queue
 
 type QorJobDefinition struct {
-	Name    string
-	Handler JobHandler
+	Name        string
+	Handler     JobHandler
+	Concurrency int
 }
 
 type Queue interface {
