@@ -159,6 +159,11 @@ func (b *FieldBuilder) Label(v string) (r *FieldBuilder) {
 	return b
 }
 
+// GetLabel returns the configured label for this field.
+func (b *FieldBuilder) GetLabel() string {
+	return b.label
+}
+
 func (b *FieldBuilder) Clone() (r *FieldBuilder) {
 	r = &FieldBuilder{}
 	r.name = b.name
