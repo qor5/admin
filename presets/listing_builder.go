@@ -36,7 +36,6 @@ type (
 
 type OrderableField struct {
 	FieldName string
-	DBColumn  string // Deprecated
 }
 
 type ListingBuilder struct {

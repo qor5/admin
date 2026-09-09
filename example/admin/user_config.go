@@ -405,11 +405,9 @@ func configureFavorPostSelectDialog(db *gorm.DB, pb *presets.Builder, publisher 
 		OrderableFields([]*presets.OrderableField{
 			{
 				FieldName: "ID",
-				DBColumn:  "id",
 			},
 			{
 				FieldName: "Title",
-				DBColumn:  "title",
 			},
 		}).
 		SelectableColumns(true)

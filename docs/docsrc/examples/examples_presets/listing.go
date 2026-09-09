@@ -128,11 +128,9 @@ func PresetsListingCustomizationFields(b *presets.Builder, db *gorm.DB) (
 		OrderableFields([]*presets.OrderableField{
 			{
 				FieldName: "ID",
-				DBColumn:  "id",
 			},
 			{
 				FieldName: "Name",
-				DBColumn:  "name",
 			},
 		})
 

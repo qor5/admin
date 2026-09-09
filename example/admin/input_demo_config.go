@@ -28,15 +28,12 @@ func configInputDemo(b *presets.Builder, db *gorm.DB) {
 	inputDemo.Listing().OrderableFields([]*presets.OrderableField{
 		{
 			FieldName: "ID",
-			DBColumn:  "id",
 		},
 		{
 			FieldName: "TextField1",
-			DBColumn:  "text_field1",
 		},
 		{
 			FieldName: "Switch1",
-			DBColumn:  "switch1",
 		},
 	})
 
