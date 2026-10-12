@@ -209,7 +209,8 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 		_, needCrop := mergeNewSizes(f, cfg)
 		croppingVar := fileCroppingVarName(f.ID)
 		initCroppingVars = append(initCroppingVars, fmt.Sprintf("%s: false", croppingVar))
-		imgClickVars := fmt.Sprintf("vars.mediaShow = '%s'; vars.mediaName = '%s'; vars.isImage = %s", f.File.URL(), f.File.FileName, strconv.FormatBool(media.IsImageFormat(f.File.FileName)))
+		// JSON-encode user-controlled values so a quote in a file name can't break the Vue expression.
+		imgClickVars := fmt.Sprintf("vars.mediaShow = %s; vars.mediaName = %s; vars.isImage = %s", h.JSONString(f.File.URL()), h.JSONString(f.File.FileName), strconv.FormatBool(media.IsImageFormat(f.File.FileName)))
 
 		// Precompute to avoid nil dereference inside h.If arguments,
 		// which are always evaluated regardless of the condition.
