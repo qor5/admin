@@ -416,6 +416,9 @@ func uploadFile(db *gorm.DB, shortURLCfg *shorturl.Config) web.EventFunc {
 		var uf uploadFiles
 		ctx.MustUnmarshalForm(&uf)
 		for _, fh := range uf.NewFiles {
+			if fileNameSanitizer != nil {
+				fh.Filename = fileNameSanitizer(fh.Filename)
+			}
 			m := media_library.MediaLibrary{}
 
 			if media.IsImageFormat(fh.Filename) {
