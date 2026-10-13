@@ -404,6 +404,20 @@ type uploadFiles struct {
 	NewFiles []*multipart.FileHeader
 }
 
+// sanitizeUploadFileName applies the registered file name sanitizer to fh in place.
+// It returns the original name when the sanitizer changed it, or "" otherwise.
+func sanitizeUploadFileName(fh *multipart.FileHeader) string {
+	if fileNameSanitizer == nil {
+		return ""
+	}
+	original := fh.Filename
+	fh.Filename = fileNameSanitizer(original)
+	if fh.Filename == original {
+		return ""
+	}
+	return original
+}
+
 func uploadFile(db *gorm.DB, shortURLCfg *shorturl.Config) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		field := ctx.R.FormValue("field")
@@ -416,9 +430,7 @@ func uploadFile(db *gorm.DB, shortURLCfg *shorturl.Config) web.EventFunc {
 		var uf uploadFiles
 		ctx.MustUnmarshalForm(&uf)
 		for _, fh := range uf.NewFiles {
-			if fileNameSanitizer != nil {
-				fh.Filename = fileNameSanitizer(fh.Filename)
-			}
+			originalFileName := sanitizeUploadFileName(fh)
 			m := media_library.MediaLibrary{}
 
 			if media.IsImageFormat(fh.Filename) {
@@ -432,6 +444,7 @@ func uploadFile(db *gorm.DB, shortURLCfg *shorturl.Config) web.EventFunc {
 			if err != nil {
 				panic(err)
 			}
+			m.File.OriginalFileName = originalFileName
 
 			err = media.SaveUploadAndCropImage(db, &m)
 			if err != nil {
