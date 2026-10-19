@@ -53,11 +53,35 @@ func settings(db *gorm.DB, pm *presets.ModelBuilder) presets.FieldComponentFunc 
 				panic(err)
 			}
 		}
+		// Drafts get a switch that saves on toggle; online versions show the value
+		// read-only, matching how the Overview and SEO cards hide their Edit
+		// buttons once a page is published.
+		excludeState := "No"
+		if p.ExcludeFromSitemap {
+			excludeState = "Yes"
+		}
+		var excludeFromSitemap h.HTMLComponent = vx.OptionalText(excludeState)
+		if p.GetStatus() == publish.StatusDraft {
+			excludeFromSitemap = VSwitch().
+				InputValue(p.ExcludeFromSitemap).
+				Color("primary").
+				Dense(true).
+				HideDetails(true).
+				Class("mt-0 pt-0").
+				Attr("@change", web.Plaid().
+					EventFunc(updateExcludeFromSitemapEvent).
+					Query(presets.ParamID, p.PrimarySlug()).
+					FieldValue("ExcludeFromSitemap", web.Var("$event")).
+					URL(mi.PresetsPrefix()+"/pages").Go(),
+				)
+		}
+
 		pageState := vx.DetailInfo(
 			vx.DetailColumn(
 				vx.DetailField(vx.OptionalText(p.GetStatus()).ZeroLabel("No State")).Label("State"),
 				vx.DetailField(h.A(h.Text(publishURL)).Href(publishURL).Target("_blank").Class("text-truncate")).Label("URL"),
 				vx.DetailField(vx.OptionalText(se).ZeroLabel("No Set")).Label("SchedulePublishTime"),
+				vx.DetailField(excludeFromSitemap).Label("ExcludeFromSitemap"),
 			),
 		)
 		var notes []note.QorNote
