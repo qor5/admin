@@ -33,6 +33,15 @@ const I18nMediaLibraryKey i18n.ModuleKey = "I18nMediaLibraryKey"
 
 var permVerifier *perm.Verifier
 
+var fileNameSanitizer func(string) string
+
+// SetFileNameSanitizer registers a hook that rewrites the original file name
+// of every file uploaded to the media library, before it is stored.
+// The returned name is used as both the display name and the source of the URL slug.
+func SetFileNameSanitizer(f func(string) string) {
+	fileNameSanitizer = f
+}
+
 // Configure registers the media library with the presets builder.
 // Pass an optional *shorturl.Config to enable the Short URL feature.
 func Configure(b *presets.Builder, db *gorm.DB, shortURLCfgs ...*shorturl.Config) {

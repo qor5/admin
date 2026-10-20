@@ -73,6 +73,8 @@ type MediaLibraryStorage struct {
 	Video        string
 	SelectedType string
 	Description  string
+	// OriginalFileName keeps the name as uploaded when SetFileNameSanitizer changed it.
+	OriginalFileName string `json:",omitempty"`
 }
 
 func (mediaLibraryStorage MediaLibraryStorage) GetSizes() map[string]*media.Size {

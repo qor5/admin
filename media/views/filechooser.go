@@ -209,7 +209,8 @@ func fileChooserDialogContent(db *gorm.DB, field string, ctx *web.EventContext, 
 		_, needCrop := mergeNewSizes(f, cfg)
 		croppingVar := fileCroppingVarName(f.ID)
 		initCroppingVars = append(initCroppingVars, fmt.Sprintf("%s: false", croppingVar))
-		imgClickVars := fmt.Sprintf("vars.mediaShow = '%s'; vars.mediaName = '%s'; vars.isImage = %s", f.File.URL(), f.File.FileName, strconv.FormatBool(media.IsImageFormat(f.File.FileName)))
+		// JSON-encode user-controlled values so a quote in a file name can't break the Vue expression.
+		imgClickVars := fmt.Sprintf("vars.mediaShow = %s; vars.mediaName = %s; vars.isImage = %s", h.JSONString(f.File.URL()), h.JSONString(f.File.FileName), strconv.FormatBool(media.IsImageFormat(f.File.FileName)))
 
 		// Precompute to avoid nil dereference inside h.If arguments,
 		// which are always evaluated regardless of the condition.
@@ -403,6 +404,20 @@ type uploadFiles struct {
 	NewFiles []*multipart.FileHeader
 }
 
+// sanitizeUploadFileName applies the registered file name sanitizer to fh in place.
+// It returns the original name when the sanitizer changed it, or "" otherwise.
+func sanitizeUploadFileName(fh *multipart.FileHeader) string {
+	if fileNameSanitizer == nil {
+		return ""
+	}
+	original := fh.Filename
+	fh.Filename = fileNameSanitizer(original)
+	if fh.Filename == original {
+		return ""
+	}
+	return original
+}
+
 func uploadFile(db *gorm.DB, shortURLCfg *shorturl.Config) web.EventFunc {
 	return func(ctx *web.EventContext) (r web.EventResponse, err error) {
 		field := ctx.R.FormValue("field")
@@ -415,6 +430,7 @@ func uploadFile(db *gorm.DB, shortURLCfg *shorturl.Config) web.EventFunc {
 		var uf uploadFiles
 		ctx.MustUnmarshalForm(&uf)
 		for _, fh := range uf.NewFiles {
+			originalFileName := sanitizeUploadFileName(fh)
 			m := media_library.MediaLibrary{}
 
 			if media.IsImageFormat(fh.Filename) {
@@ -428,6 +444,7 @@ func uploadFile(db *gorm.DB, shortURLCfg *shorturl.Config) web.EventFunc {
 			if err != nil {
 				panic(err)
 			}
+			m.File.OriginalFileName = originalFileName
 
 			err = media.SaveUploadAndCropImage(db, &m)
 			if err != nil {
