@@ -15,7 +15,7 @@ import (
 
 // Copyright Notice: We respect MaxMind's intellectual property rights and use these files for testing purposes only.
 const (
-	TestDataURL = "https://raw.githubusercontent.com/maxmind/MaxMind-DB/main/test-data/GeoIP2-City-Test.mmdb"
+	TestDataURL = "https://raw.githubusercontent.com/maxmind/MaxMind-DB/1b0113ab55f0428c00fe30b9709742ac52f4e9cc/test-data/GeoIP2-City-Test.mmdb"
 	TestDataDir = "test-data"
 )
 
@@ -95,7 +95,7 @@ func TestGetLocation(t *testing.T) {
 		{"en(invalid)", args{lang: language.English, addr: "81x.2.69.160x"}, "", "invalid IP address"},
 
 		{"en", args{lang: language.English, addr: "81.2.69.160"}, "London, United Kingdom", ""},
-		{"zh-CN", args{lang: language.SimplifiedChinese, addr: "81.2.69.160"}, "英国，London", ""},
+		{"zh-CN", args{lang: language.SimplifiedChinese, addr: "81.2.69.160"}, "英国，伦敦", ""},
 		{"ja", args{lang: language.Japanese, addr: "81.2.69.160"}, "イギリス、ロンドン", ""},
 		{"pt-BR", args{lang: language.BrazilianPortuguese, addr: "81.2.69.160"}, "Reino Unido, Londres", ""},
 

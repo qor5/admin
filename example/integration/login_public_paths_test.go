@@ -27,7 +27,7 @@ func TestLoginPublicPaths(t *testing.T) {
 		{path: "/favicon.ico", expect: http.StatusNotFound},
 	} {
 		t.Run(c.path, func(t *testing.T) {
-			r := httptest.NewRequest(http.MethodGet, c.path, nil)
+			r := httptest.NewRequest(http.MethodGet, c.path, http.NoBody)
 			w := httptest.NewRecorder()
 			h.ServeHTTP(w, r)
 			if w.Code != c.expect {
