@@ -1139,6 +1139,17 @@ func (b *Builder) extraFullPath(ea *extraAsset) string {
 	return b.prefix + "/extra" + ea.path
 }
 
+// PublicAssetPaths returns the path prefixes of static assets which are needed before login,
+// such as by PlainLayout of the login page.
+// Only static assets are mounted under them, so they are safe to be accessed without login.
+func (b *Builder) PublicAssetPaths() []string {
+	return []string{
+		b.prefix + "/assets/",
+		b.prefix + "/vuetify/assets/",
+		b.prefix + "/extra/",
+	}
+}
+
 func (b *Builder) initMux() {
 	b.logger.Info("initializing mux for", zap.Reflect("models", modelNames(b.models)), zap.String("prefix", b.prefix))
 	mux := http.NewServeMux()
@@ -1195,6 +1206,11 @@ func (b *Builder) initMux() {
 		m.listing.setup()
 
 		pluralUri := inflection.Plural(m.uriName)
+		for _, p := range b.PublicAssetPaths() {
+			if strings.HasPrefix(p, b.prefix+"/"+pluralUri+"/") {
+				panic(fmt.Sprintf("presets: model uri %q conflicts with the public asset paths %v", pluralUri, b.PublicAssetPaths()))
+			}
+		}
 		info := m.Info()
 		routePath := info.ListingHref()
 		inPageFunc := m.listing.GetPageFunc()

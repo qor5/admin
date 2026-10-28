@@ -2,6 +2,7 @@ package presets
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -207,4 +208,27 @@ func TestServeHTTP_HandlerNilAfterOnce_Returns500(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "Internal Server Error")
 	assert.Contains(t, buf.String(), "Builder.handler is nil after Build")
 	assert.Contains(t, buf.String(), "/foo")
+}
+
+func TestPublicAssetPaths(t *testing.T) {
+	assert.Equal(t, []string{"/assets/", "/vuetify/assets/", "/extra/"}, New().PublicAssetPaths())
+	assert.Equal(t, []string{"/admin/assets/", "/admin/vuetify/assets/", "/admin/extra/"}, New().URIPrefix("/admin").PublicAssetPaths())
+}
+
+func TestBuildPanicsOnReservedURIName(t *testing.T) {
+	type Order struct {
+		ID uint
+	}
+	// uri name is pluralized when mounting, both are mounted at /assets
+	for _, name := range []string{"asset", "assets"} {
+		pb := New()
+		pb.Model(&Order{}).URIName(name)
+		assert.PanicsWithValue(t, fmt.Sprintf("presets: model uri %q conflicts with the public asset paths %v", "assets", pb.PublicAssetPaths()), func() {
+			pb.Build()
+		}, name)
+	}
+
+	pb := New()
+	pb.Model(&Order{})
+	assert.NotPanics(t, func() { pb.Build() })
 }
