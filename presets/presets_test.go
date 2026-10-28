@@ -1,6 +1,7 @@
 package presets
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -108,4 +109,27 @@ func TestHumanizeString(t *testing.T) {
 	assert.Equal(t, "Hello World", humanizeString("helloWorld"))
 	assert.Equal(t, "Order Item", humanizeString("OrderItem"))
 	assert.Equal(t, "CNN Name", humanizeString("CNNName"))
+}
+
+func TestPublicAssetPaths(t *testing.T) {
+	assert.Equal(t, []string{"/assets/", "/vuetify/assets/", "/extra/"}, New().PublicAssetPaths())
+	assert.Equal(t, []string{"/admin/assets/", "/admin/vuetify/assets/", "/admin/extra/"}, New().URIPrefix("/admin").PublicAssetPaths())
+}
+
+func TestBuildPanicsOnReservedURIName(t *testing.T) {
+	type Order struct {
+		ID uint
+	}
+	// uri name is pluralized when mounting, both are mounted at /assets
+	for _, name := range []string{"asset", "assets"} {
+		pb := New()
+		pb.Model(&Order{}).URIName(name)
+		assert.PanicsWithValue(t, fmt.Sprintf("presets: model uri %q conflicts with the public asset paths %v", "assets", pb.PublicAssetPaths()), func() {
+			pb.Build()
+		}, name)
+	}
+
+	pb := New()
+	pb.Model(&Order{})
+	assert.NotPanics(t, func() { pb.Build() })
 }
