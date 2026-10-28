@@ -20,6 +20,9 @@ var cookieSecure = osenv.GetBool("CookieSecure", "set to false for localhost", t
 func New(pb *presets.Builder) *login.Builder {
 	r := login.New().CookieSecure(cookieSecure)
 	r.I18n(pb.GetI18n())
+	// the login page needs these assets before login
+	r.PublicPathPrefixes(pb.PublicAssetPaths()...)
+	r.PublicPathPrefixes("/favicon.ico")
 
 	vh := r.ViewHelper()
 	r.LoginPageFunc(defaultLoginPage(vh, pb))
