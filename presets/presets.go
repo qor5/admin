@@ -94,7 +94,7 @@ const (
 	OpenConfirmDialog = "presets_ConfirmDialog"
 )
 
-var staticFileRe = regexp.MustCompile(`\.(css|js|gif|jpg|jpeg|png|ico|svg|ttf|eot|woff|woff2|js\.map)$`)
+var staticFileRe = regexp.MustCompile(`\.(css|js|gif|jpg|jpeg|png|ico|svg|ttf|eot|woff|woff2|js\.map|webp)$`)
 
 func New() *Builder {
 	l, _ := zap.NewDevelopment()
