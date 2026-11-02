@@ -1,6 +1,6 @@
 module github.com/qor5/admin/v3
 
-go 1.26.0
+go 1.26.10
 
 require (
 	github.com/ahmetb/go-linq/v3 v3.2.0
@@ -32,8 +32,8 @@ require (
 	github.com/pquerna/otp v1.4.0
 	github.com/qor5/confx v0.0.0-20260810031108-8d9c78bbd3fb
 	github.com/qor5/imaging v1.6.4
-	github.com/qor5/web/v3 v3.2.0
-	github.com/qor5/x/v3 v3.3.2-0.20261028090611-7ede7545d6f7
+	github.com/qor5/web/v3 v3.2.1
+	github.com/qor5/x/v3 v3.4.1
 	github.com/samber/lo v1.52.0
 	github.com/shurcooL/sanitized_anchor_name v1.0.0
 	github.com/spf13/cast v1.9.2
@@ -56,7 +56,7 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0
-	golang.org/x/text v0.42.0
+	golang.org/x/text v0.43.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa
 	google.golang.org/grpc v1.83.2
 	google.golang.org/protobuf v1.36.11
@@ -226,12 +226,12 @@ require (
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go4.org v0.0.0-20230225012048-214862532bf5 // indirect
-	golang.org/x/crypto v0.57.0 // indirect
+	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/image v0.45.0 // indirect
-	golang.org/x/net v0.60.0 // indirect
+	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sync v0.23.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/sync v0.24.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
