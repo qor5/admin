@@ -104,8 +104,8 @@ func (q *goque) Listen(jobDefs []*QorJobDefinition, getJob func(qorJobID uint) (
 			Mutex:                     q.q.Mutex(),
 			MaxLockPerSecond:          10,
 			MaxBufferJobsCount:        0,
-			MaxPerformPerSecond:       2,
-			MaxConcurrentPerformCount: 1,
+			MaxPerformPerSecond:       float64(2 * jd.Concurrency),
+			MaxConcurrentPerformCount: jd.Concurrency,
 			Perform: func(ctx context.Context, qj que.Job) (err error) {
 				var job QueJobInterface
 				{
