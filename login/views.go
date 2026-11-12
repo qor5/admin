@@ -3,6 +3,7 @@ package login
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"image/png"
 	"net/http"
@@ -469,17 +470,40 @@ func defaultResetPasswordLinkSentPage(vh *login.ViewHelper, pb *presets.Builder)
 	})
 }
 
-func ZxcvbnLogicComponent() HTMLComponent {
+// PasswordStrengthUserInputer can be implemented by the user model to feed
+// user-specific words (e.g. email, name) to zxcvbn's user_inputs, so passwords
+// containing them get a lower strength score.
+type PasswordStrengthUserInputer interface {
+	PasswordStrengthUserInputs() []string
+}
+
+func passwordStrengthUserInputs(user any) []string {
+	if u, ok := user.(PasswordStrengthUserInputer); ok {
+		return u.PasswordStrengthUserInputs()
+	}
+	return nil
+}
+
+// zxcvbnUserInputsJS returns userInputs as a JS array literal.
+func zxcvbnUserInputsJS(userInputs []string) string {
+	if userInputs == nil {
+		userInputs = []string{}
+	}
+	b, _ := json.Marshal(userInputs)
+	return string(b)
+}
+
+func ZxcvbnLogicComponent(userInputs ...string) HTMLComponent {
 	return Div().Style("display:none").Attr("v-on-mounted", fmt.Sprintf(`({window})=>{
 		var tag = window.document.createElement("script");
 		tag.src = %q;
 		tag.onload= function(){
 			vars.meter_score = function(x){
-				return x ? window.zxcvbn(x).score+1 : 0;
+				return x ? window.zxcvbn(x, %s).score+1 : 0;
 			};
 		}
 		window.document.getElementsByTagName("head")[0].appendChild(tag);
-	}`, login.ZxcvbnJSURL))
+	}`, login.ZxcvbnJSURL, zxcvbnUserInputsJS(userInputs)))
 }
 
 func defaultResetPasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
@@ -537,7 +561,7 @@ func defaultResetPasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.Pag
 					Div(
 						Label(msgr.ResetPasswordLabel).Class(DefaultViewCommon.LabelClass).For("password"),
 						DefaultViewCommon.PasswordInputWithStrengthMeter(DefaultViewCommon.PasswordInput("password", msgr.ResetPasswordLabel, wIn.Password, true), "password", wIn.Password),
-						ZxcvbnLogicComponent(),
+						ZxcvbnLogicComponent(passwordStrengthUserInputs(user)...),
 					),
 					Div(
 						Label(msgr.ResetPasswordConfirmLabel).Class(DefaultViewCommon.LabelClass).For("confirm_password"),
@@ -577,7 +601,7 @@ func defaultChangePasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.Pa
 					Div(
 						Label(msgr.ChangePasswordNewLabel).Class(DefaultViewCommon.LabelClass).For("password"),
 						DefaultViewCommon.PasswordInputWithStrengthMeter(DefaultViewCommon.PasswordInput("password", msgr.ChangePasswordNewPlaceholder, wIn.NewPassword, true), "password", wIn.NewPassword),
-						ZxcvbnLogicComponent(),
+						ZxcvbnLogicComponent(passwordStrengthUserInputs(login.GetCurrentUser(ctx.R))...),
 					).Class("mt-6"),
 					Div(
 						Label(msgr.ChangePasswordNewConfirmLabel).Class(DefaultViewCommon.LabelClass).For("confirm_password"),
