@@ -1027,6 +1027,20 @@ func (b *Builder) ContainerByName(name string) (r *ContainerBuilder) {
 	panic(fmt.Sprintf("No container: %s", name))
 }
 
+// FindContainerByName returns the container builder for the given name,
+// or nil if no container with that name is registered. Unlike
+// ContainerByName it does not panic, making it safe for public-facing
+// routes where a stale DB row may reference a container type that has
+// since been removed.
+func (b *Builder) FindContainerByName(name string) *ContainerBuilder {
+	for _, cb := range b.containerBuilders {
+		if cb.name == name {
+			return cb
+		}
+	}
+	return nil
+}
+
 type ContainerBuilder struct {
 	builder      *Builder
 	name         string
@@ -1241,6 +1255,11 @@ func (b *ContainerBuilder) warpSaver() {
 func (b *ContainerBuilder) RenderFunc(v RenderFunc) *ContainerBuilder {
 	b.renderFunc = v
 	return b
+}
+
+// GetRenderFunc returns the registered render function for this container.
+func (b *ContainerBuilder) GetRenderFunc() RenderFunc {
+	return b.renderFunc
 }
 
 func (b *ContainerBuilder) Cover(v string) *ContainerBuilder {
