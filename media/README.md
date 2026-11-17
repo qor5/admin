@@ -47,18 +47,24 @@ The cropping logic might leave some unused file copies. If we need to clean them
 
 Uploads through the media library are checked before they are stored:
 
-- Files with script-capable extensions are rejected by default
-  (`base.DeniedExtensions()`: `.svg`, `.svgz`, `.html`, `.htm`, `.xhtml`,
-  `.xht`, `.xml`, `.xsl`, `.xslt`, `.js`, `.mjs`, `.php`, `.phtml`, `.shtml`,
-  `.swf`).
+- File names ending in a dot or whitespace, or containing control characters,
+  are rejected.
+- Files with script-capable extensions are rejected by default: the static
+  list in `base.DeniedExtensions()` (`.svg`, `.svgz`, `.html`, `.htm`,
+  `.xhtml`, `.xht`, `.xml`, `.xsl`, `.xslt`, `.js`, `.mjs`, `.php`, `.phtml`,
+  `.shtml`, `.swf`, `.ehtml`, `.rdf`, `.xbl`, `.xsd`, `.rss`, `.atom`, `.xul`,
+  `.mml`, `.mht`, `.mhtml`, `.wsdl`), plus any extension whose MIME type
+  (`mime.TypeByExtension`) is HTML, XML, SVG or JavaScript.
 - The leading bytes are sniffed: files classified as images must be a raster
-  image, files classified as videos must not be text, and HTML/SVG/XML content
-  is rejected whatever the extension.
+  image and files classified as videos must not be text. Content sniffed as
+  HTML/SVG/XML is rejected for every type, and plain files (or extensions
+  without a known MIME type) must not start with `<`.
 - `AllowedExtensions(...)` restricts uploads to the listed extensions
   (case-insensitive, with or without the dot). Listing a denied extension such
   as `svg` explicitly allows it and skips the markup check for it; do that only
   when the storage serves those files safely (separate domain, or
-  `Content-Disposition: attachment`).
+  `Content-Disposition: attachment`). Allowlisting any other extension never
+  relaxes the markup check.
 
 ```go
 media.New(db).AllowedExtensions("jpg", "jpeg", "png", "gif", "mp4", "pdf")
@@ -68,22 +74,30 @@ media.New(db).AllowedExtensions("jpg", "jpeg", "png", "gif", "mp4", "pdf")
 
 Deleting media library items only deletes their rows by default, because
 `MediaBox` values elsewhere keep their own copy of the file URL. Opt in to also
-remove the file, its original copy and its size variants from `oss.Storage`:
+remove the stored files from `oss.Storage`:
 
 ```go
 media.New(db).DeleteFilesOnDelete(true)
 ```
 
-Storage errors are logged and ignored. Crop copies (`{file}_{crop_id}.ext`) are
-not tracked on the row and are not removed.
+- When the URL template gives each row its own directory — a `{{uuid}}`
+  segment, or `{{primary_key}}` right after `{{class}}` as in the default
+  `/system/{{class}}/{{primary_key}}/...` — everything under that directory is
+  removed, including crop copies.
+- Otherwise only the file, its original copy and its size variants are
+  removed; crop copies (`{file}_{crop_id}.ext`) are not tracked on the row and
+  stay.
+
+Storage errors are logged and ignored. Media library rows are soft-deleted;
+with this option a restored row has no files.
 
 ## Unguessable storage URLs
 
 Besides `{{class}}`, `{{primary_key}}`, `{{column}}`, `{{filename}}`,
 `{{basename}}`, `{{extension}}`, `{{hash}}`, `{{short_hash}}`,
 `{{filename_with_hash}}` and `{{filename_with_short_hash}}`, URL templates
-support `{{uuid}}`: a random UUID v4, generated once per rendered URL, so every
-size variant of an upload shares it. Use it instead of `{{primary_key}}` to make
+support `{{uuid}}`: a random UUID v4, generated once per upload, so every size
+variant of an upload shares it. Use it instead of `{{primary_key}}` to make
 media URLs non-enumerable:
 
 ```go
@@ -94,7 +108,11 @@ base.MediaLibraryURL = "/system/{{class}}/{{uuid}}/{{column}}.{{extension}}"
 oss.URLTemplate = "/system/{{class}}/{{uuid}}/{{column}}/{{filename_with_hash}}"
 ```
 
-Each save that re-renders the URL (e.g. cropping) gets a new UUID, so files
-from the previous rendering stay where they are, as they do with `{{hash}}`.
+Re-rendering the URL without a new upload (cropping) keeps the existing UUID,
+so crop copies stay in the same directory; a new upload gets a new UUID.
+
+Keep a per-row component (`{{uuid}}` or `{{primary_key}}`) in the path: a
+template without one, e.g. `/system/{{class}}/{{column}}.{{extension}}`, makes
+different rows write to — and overwrite — the same files.
 
 The default templates are unchanged.

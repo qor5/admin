@@ -83,15 +83,20 @@ func (b *Builder) AllowedExtensions(exts ...string) *Builder {
 }
 
 // DeleteFilesOnDelete makes deleting media library items also remove their
-// files (the file, its original copy and every size variant) from oss.Storage
-// once the database delete has committed. Storage errors are logged and do not
-// fail the request.
+// files from oss.Storage once the database delete has committed. Storage
+// errors are logged and do not fail the request.
+//
+// When the URL template gives each row its own directory — a {{uuid}}
+// segment, or {{primary_key}} right after {{class}} as in the default
+// "/system/{{class}}/{{primary_key}}/..." — everything under that directory is
+// removed (via Storage.List), including crop copies. Otherwise only the file,
+// its original copy and its size variants are removed; crop copies, whose crop
+// id is not stored on the row, are left in place.
 //
 // It is off by default: MediaBox fields store their own copy of the file URL,
-// so pages that still reference a deleted item would break, and media library
-// rows are soft-deleted while their files would not be restorable. Copies
-// written by the cropper (see README) are not tracked on the row and are left
-// in place.
+// so pages that still reference a deleted item would break. It is also
+// incompatible with restoring soft-deleted media library rows: the row can be
+// restored, its files cannot.
 func (b *Builder) DeleteFilesOnDelete(v bool) *Builder {
 	b.deleteFilesOnDelete = v
 	return b
