@@ -63,3 +63,16 @@ Uploads through the media library are checked before they are stored:
 ```go
 media.New(db).AllowedExtensions("jpg", "jpeg", "png", "gif", "mp4", "pdf")
 ```
+
+## Deleting stored files
+
+Deleting media library items only deletes their rows by default, because
+`MediaBox` values elsewhere keep their own copy of the file URL. Opt in to also
+remove the file, its original copy and its size variants from `oss.Storage`:
+
+```go
+media.New(db).DeleteFilesOnDelete(true)
+```
+
+Storage errors are logged and ignored. Crop copies (`{file}_{crop_id}.ext`) are
+not tracked on the row and are not removed.

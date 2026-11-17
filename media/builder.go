@@ -27,6 +27,7 @@ type (
 		saverFunc           SaverFunc
 		allowTypes          []string
 		allowedExtensions   map[string]struct{}
+		deleteFilesOnDelete bool
 		fileAccept          string
 		ab                  *activity.Builder
 	}
@@ -78,6 +79,21 @@ func (b *Builder) AllowedExtensions(exts ...string) *Builder {
 			b.allowedExtensions[ext] = struct{}{}
 		}
 	}
+	return b
+}
+
+// DeleteFilesOnDelete makes deleting media library items also remove their
+// files (the file, its original copy and every size variant) from oss.Storage
+// once the database delete has committed. Storage errors are logged and do not
+// fail the request.
+//
+// It is off by default: MediaBox fields store their own copy of the file URL,
+// so pages that still reference a deleted item would break, and media library
+// rows are soft-deleted while their files would not be restorable. Copies
+// written by the cropper (see README) are not tracked on the row and are left
+// in place.
+func (b *Builder) DeleteFilesOnDelete(v bool) *Builder {
+	b.deleteFilesOnDelete = v
 	return b
 }
 

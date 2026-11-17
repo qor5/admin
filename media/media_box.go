@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
+	"log"
 	"path"
 	"slices"
 	"sort"
@@ -24,6 +26,7 @@ import (
 
 	"github.com/qor5/admin/v3/media/base"
 	"github.com/qor5/admin/v3/media/media_library"
+	"github.com/qor5/admin/v3/media/oss"
 	"github.com/qor5/admin/v3/presets"
 )
 
@@ -375,8 +378,27 @@ func doDelete(mb *Builder) web.EventFunc {
 		if err != nil {
 			panic(err)
 		}
+		if mb.deleteFilesOnDelete {
+			deleteStoredFiles(ctx.R.Context(), objs)
+		}
 		mb.onDelete(ctx, objs)
 		return
+	}
+}
+
+// deleteStoredFiles removes the stored files of the non-folder items from
+// oss.Storage. Failures are logged and otherwise ignored: the rows are already
+// gone and a leftover object is no worse than before.
+func deleteStoredFiles(ctx context.Context, objs []media_library.MediaLibrary) {
+	for _, obj := range objs {
+		if obj.Folder {
+			continue
+		}
+		for _, p := range obj.File.StoredPaths() {
+			if err := oss.Storage.Delete(ctx, p); err != nil && !errors.Is(err, fs.ErrNotExist) {
+				log.Printf("media: delete stored file %q of media library %d: %v", p, obj.ID, err)
+			}
+		}
 	}
 }
 
