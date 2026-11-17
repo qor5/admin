@@ -76,3 +76,25 @@ media.New(db).DeleteFilesOnDelete(true)
 
 Storage errors are logged and ignored. Crop copies (`{file}_{crop_id}.ext`) are
 not tracked on the row and are not removed.
+
+## Unguessable storage URLs
+
+Besides `{{class}}`, `{{primary_key}}`, `{{column}}`, `{{filename}}`,
+`{{basename}}`, `{{extension}}`, `{{hash}}`, `{{short_hash}}`,
+`{{filename_with_hash}}` and `{{filename_with_short_hash}}`, URL templates
+support `{{uuid}}`: a random UUID v4, generated once per rendered URL, so every
+size variant of an upload shares it. Use it instead of `{{primary_key}}` to make
+media URLs non-enumerable:
+
+```go
+// overrides the template of every media field saved by the media library
+// saver, including the MediaLibrary.File tag template
+base.MediaLibraryURL = "/system/{{class}}/{{uuid}}/{{column}}.{{extension}}"
+// or only the fallback for media fields without a `mediaLibrary:"url:..."` tag
+oss.URLTemplate = "/system/{{class}}/{{uuid}}/{{column}}/{{filename_with_hash}}"
+```
+
+Each save that re-renders the URL (e.g. cropping) gets a new UUID, so files
+from the previous rendering stay where they are, as they do with `{{hash}}`.
+
+The default templates are unchanged.

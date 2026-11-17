@@ -17,6 +17,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gosimple/slug"
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
@@ -180,6 +181,10 @@ var urlReplacer = regexp.MustCompile(`(\s|\+)+`)
 func getFuncMap(db *gorm.DB, field *schema.Field, filename string) template.FuncMap {
 	hash := func() string { return strings.ReplaceAll(time.Now().Format("20060102150405.000000"), ".", "") }
 	shortHash := func() string { return time.Now().Format("20060102150405") }
+	// A single random UUID per URL rendering: every {{uuid}} in one template
+	// yields the same value, and size variants derive their paths from the
+	// rendered URL (see URL), so all files of one upload share the directory.
+	id := uuid.NewString()
 
 	return template.FuncMap{
 		"class": func() string { return inflection.Plural(strcase.ToSnake(field.Schema.ModelType.Name())) },
@@ -196,6 +201,7 @@ func getFuncMap(db *gorm.DB, field *schema.Field, filename string) template.Func
 		"basename":   func() string { return strings.TrimSuffix(path.Base(filename), path.Ext(filename)) },
 		"hash":       hash,
 		"short_hash": shortHash,
+		"uuid":       func() string { return id },
 		"filename_with_hash": func() string {
 			return urlReplacer.ReplaceAllString(fmt.Sprintf("%s.%v%v", slug.Make(strings.TrimSuffix(path.Base(filename), path.Ext(filename))), hash(), path.Ext(filename)), "-")
 		},
