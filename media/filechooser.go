@@ -144,6 +144,14 @@ func uploadFile(mb *Builder) web.EventFunc {
 				presets.ShowMessage(&r, msgr.UnSupportFileType, ColorError)
 				return r, nil
 			}
+			var ok bool
+			if ok, err = mb.checkUploadFile(fh, m.SelectedType); err != nil {
+				return r, err
+			}
+			if !ok {
+				presets.ShowMessage(&r, msgr.UnSupportFileType, ColorError)
+				return r, nil
+			}
 			err = m.File.Scan(fh)
 			if err != nil {
 				panic(err)

@@ -1,6 +1,7 @@
 package media
 
 import (
+	"mime/multipart"
 	"slices"
 	"strconv"
 
@@ -25,6 +26,7 @@ type (
 		searcher            SearchFunc
 		saverFunc           SaverFunc
 		allowTypes          []string
+		allowedExtensions   map[string]struct{}
 		fileAccept          string
 		ab                  *activity.Builder
 	}
@@ -54,6 +56,28 @@ func (b *Builder) CurrentUserID(v UserIDFunc) *Builder {
 
 func (b *Builder) AllowTypes(v ...string) *Builder {
 	b.allowTypes = append(b.allowTypes, v...)
+	return b
+}
+
+// AllowedExtensions restricts uploads to files with the given extensions.
+// Extensions match case-insensitively, with or without the leading dot
+// ("png", ".PNG"). Calls accumulate.
+//
+// Without an allowlist every extension is accepted except the built-in
+// denylist of script-capable formats (base.DeniedExtensions: .svg, .html,
+// .xml, .js, ...). Listing one of those here explicitly allows it, and also
+// skips the markup content check for that extension — only do so when the
+// storage serves such files safely (e.g. from a separate domain or with
+// Content-Disposition: attachment).
+func (b *Builder) AllowedExtensions(exts ...string) *Builder {
+	if b.allowedExtensions == nil {
+		b.allowedExtensions = make(map[string]struct{})
+	}
+	for _, ext := range exts {
+		if ext = base.NormalizeExtension(ext); ext != "" {
+			b.allowedExtensions[ext] = struct{}{}
+		}
+	}
 	return b
 }
 
@@ -151,6 +175,50 @@ func (b *Builder) checkAllowType(v string) bool {
 		return true
 	}
 	return slices.Contains(b.allowTypes, v)
+}
+
+// checkUploadFile reports whether an uploaded file may be stored as
+// selectedType. It enforces the extension allowlist / default denylist and
+// sniffs the leading bytes: images and videos must carry matching content,
+// and markup (HTML/SVG/XML) is rejected for every type unless its extension is
+// explicitly allowlisted.
+func (b *Builder) checkUploadFile(fh *multipart.FileHeader, selectedType string) (bool, error) {
+	ext := base.FileExtension(fh.Filename)
+	_, explicit := b.allowedExtensions[ext]
+	if len(b.allowedExtensions) > 0 && !explicit {
+		return false, nil
+	}
+	if !explicit && base.IsDeniedExtension(ext) {
+		return false, nil
+	}
+
+	f, err := fh.Open()
+	if err != nil {
+		return false, err
+	}
+	head, err := base.ReadHead(f)
+	f.Close()
+	if err != nil {
+		return false, err
+	}
+	return checkUploadContent(head, selectedType, explicit), nil
+}
+
+func checkUploadContent(head []byte, selectedType string, explicitlyAllowed bool) bool {
+	switch selectedType {
+	case media_library.ALLOW_TYPE_IMAGE:
+		if !base.IsImageContent(head) {
+			return false
+		}
+	case media_library.ALLOW_TYPE_VIDEO:
+		if !base.IsVideoContent(head) {
+			return false
+		}
+	}
+	if !explicitlyAllowed && base.IsMarkupContent(head) {
+		return false
+	}
+	return true
 }
 
 func (b *Builder) allowTypeSelectOptions(msgr *Messages) (items []selectItem) {

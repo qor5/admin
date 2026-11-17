@@ -42,3 +42,24 @@ The principles of cropping are as follows
 ## To cleanup unused file copies
 
 The cropping logic might leave some unused file copies. If we need to clean them up. We have to fetch all MediaBox records and compare it with the file names in the file system. Then remove the unused files.
+
+## Upload validation
+
+Uploads through the media library are checked before they are stored:
+
+- Files with script-capable extensions are rejected by default
+  (`base.DeniedExtensions()`: `.svg`, `.svgz`, `.html`, `.htm`, `.xhtml`,
+  `.xht`, `.xml`, `.xsl`, `.xslt`, `.js`, `.mjs`, `.php`, `.phtml`, `.shtml`,
+  `.swf`).
+- The leading bytes are sniffed: files classified as images must be a raster
+  image, files classified as videos must not be text, and HTML/SVG/XML content
+  is rejected whatever the extension.
+- `AllowedExtensions(...)` restricts uploads to the listed extensions
+  (case-insensitive, with or without the dot). Listing a denied extension such
+  as `svg` explicitly allows it and skips the markup check for it; do that only
+  when the storage serves those files safely (separate domain, or
+  `Content-Disposition: attachment`).
+
+```go
+media.New(db).AllowedExtensions("jpg", "jpeg", "png", "gif", "mp4", "pdf")
+```
