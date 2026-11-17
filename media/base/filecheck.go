@@ -4,9 +4,12 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"mime"
 	"net/http"
 	"path/filepath"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 // SniffLen is the number of leading bytes ReadHead returns, the most
@@ -33,9 +36,46 @@ var deniedExtensions = map[string]struct{}{
 	".phtml": {},
 	".shtml": {},
 	".swf":   {},
+	".ehtml": {},
+	".rdf":   {},
+	".xbl":   {},
+	".xsd":   {},
+	".rss":   {},
+	".atom":  {},
+	".xul":   {},
+	".mml":   {},
+	".mht":   {},
+	".mhtml": {},
+	".wsdl":  {},
 }
 
-// DeniedExtensions returns the extensions rejected on upload by default.
+// isScriptCapableMIMEType reports whether a browser may render a response of
+// MIME type ct as a document or run it as script: HTML, XML (text/xml,
+// application/xml, any "+xml" subtype), SVG, or JavaScript. XML is matched on
+// the subtype structure so that e.g. Office "openxmlformats" types stay
+// allowed.
+func isScriptCapableMIMEType(ct string) bool {
+	mediaType, _, err := mime.ParseMediaType(ct)
+	if err != nil {
+		mediaType = strings.ToLower(strings.TrimSpace(strings.Split(ct, ";")[0]))
+	}
+	_, subtype, _ := strings.Cut(mediaType, "/")
+	switch {
+	case strings.Contains(subtype, "html"),
+		strings.Contains(subtype, "svg"),
+		strings.Contains(subtype, "javascript"),
+		strings.Contains(subtype, "ecmascript"),
+		subtype == "xml",
+		strings.HasPrefix(subtype, "xml-"),
+		strings.HasSuffix(subtype, "+xml"):
+		return true
+	}
+	return false
+}
+
+// DeniedExtensions returns the static list of extensions rejected on upload by
+// default. IsDeniedExtension additionally denies any extension whose MIME type
+// (mime.TypeByExtension) is HTML, XML, SVG or JavaScript.
 func DeniedExtensions() []string {
 	exts := make([]string, 0, len(deniedExtensions))
 	for ext := range deniedExtensions {
@@ -44,11 +84,36 @@ func DeniedExtensions() []string {
 	return exts
 }
 
-// IsDeniedExtension reports whether ext (normalized with NormalizeExtension)
-// is in the default upload denylist.
+// IsDeniedExtension reports whether files with ext are rejected on upload by
+// default: ext is in the static denylist, or the MIME type a server would
+// serve it with is HTML, XML, SVG or JavaScript.
 func IsDeniedExtension(ext string) bool {
-	_, ok := deniedExtensions[NormalizeExtension(ext)]
-	return ok
+	ext = NormalizeExtension(ext)
+	if _, ok := deniedExtensions[ext]; ok {
+		return true
+	}
+	if ext == "" {
+		return false
+	}
+	ct := mime.TypeByExtension(ext)
+	return ct != "" && isScriptCapableMIMEType(ct)
+}
+
+// IsSafeUploadFileName reports whether name is acceptable as an upload file
+// name: non-empty, without control characters, and not ending in a dot or
+// whitespace — trailing characters that some storages and servers strip, which
+// would make the served extension differ from the checked one.
+func IsSafeUploadFileName(name string) bool {
+	if name == "" {
+		return false
+	}
+	for _, r := range name {
+		if unicode.IsControl(r) {
+			return false
+		}
+	}
+	last, _ := utf8.DecodeLastRuneInString(name)
+	return last != '.' && !unicode.IsSpace(last)
 }
 
 // NormalizeExtension lowercases ext and makes sure it has a leading dot, so
@@ -66,7 +131,8 @@ func NormalizeExtension(ext string) string {
 
 // FileExtension returns the normalized extension of a file name. Trailing dots
 // and spaces are ignored, so "a.svg." and "a.svg " both yield ".svg" instead of
-// slipping past an extension check.
+// slipping past an extension check (uploads with such names are rejected
+// anyway, see IsSafeUploadFileName).
 func FileExtension(name string) string {
 	name = strings.TrimRight(strings.TrimSpace(name), ". ")
 	return NormalizeExtension(filepath.Ext(name))
@@ -109,6 +175,35 @@ func IsMarkupContent(head []byte) bool {
 		}
 	}
 	return false
+}
+
+// StartsWithMarkup reports whether the first significant byte of head — after
+// any byte order mark, whitespace and NUL padding (UTF-16) — is '<'. That is
+// the structural signature of HTML/XML/SVG, whatever the elements are named or
+// namespaced, and it is what browsers key on when they sniff an untyped
+// response.
+func StartsWithMarkup(head []byte) bool {
+	for _, bom := range [][]byte{{0xef, 0xbb, 0xbf}, {0xfe, 0xff}, {0xff, 0xfe}} {
+		if bytes.HasPrefix(head, bom) {
+			head = head[len(bom):]
+			break
+		}
+	}
+	for _, c := range head {
+		switch c {
+		case ' ', '\t', '\r', '\n', '\f', 0:
+			continue
+		}
+		return c == '<'
+	}
+	return false
+}
+
+// HasKnownMIMEType reports whether a server would serve ext with an explicit
+// MIME type (mime.TypeByExtension), rather than sniffing the content.
+func HasKnownMIMEType(ext string) bool {
+	ext = NormalizeExtension(ext)
+	return ext != "" && mime.TypeByExtension(ext) != ""
 }
 
 // IsImageContent reports whether head is the start of a raster image of a

@@ -193,18 +193,35 @@ func (b *Builder) checkAllowType(v string) bool {
 	return slices.Contains(b.allowTypes, v)
 }
 
+// uploadSelectedType classifies an upload by its normalized extension (see
+// base.FileExtension), the same extension checkUploadFile validates.
+func uploadSelectedType(ext string) string {
+	switch {
+	case base.IsImageFormat("f" + ext):
+		return media_library.ALLOW_TYPE_IMAGE
+	case base.IsVideoFormat("f" + ext):
+		return media_library.ALLOW_TYPE_VIDEO
+	default:
+		return media_library.ALLOW_TYPE_FILE
+	}
+}
+
 // checkUploadFile reports whether an uploaded file may be stored as
-// selectedType. It enforces the extension allowlist / default denylist and
-// sniffs the leading bytes: images and videos must carry matching content,
-// and markup (HTML/SVG/XML) is rejected for every type unless its extension is
-// explicitly allowlisted.
+// selectedType (which callers derive with uploadSelectedType). It rejects
+// unsafe file names, enforces the extension allowlist / default denylist and
+// sniffs the leading bytes: images and videos must carry matching content, and
+// markup is rejected (see checkUploadContent).
 func (b *Builder) checkUploadFile(fh *multipart.FileHeader, selectedType string) (bool, error) {
-	ext := base.FileExtension(fh.Filename)
-	_, explicit := b.allowedExtensions[ext]
-	if len(b.allowedExtensions) > 0 && !explicit {
+	if !base.IsSafeUploadFileName(fh.Filename) {
 		return false, nil
 	}
-	if !explicit && base.IsDeniedExtension(ext) {
+	ext := base.FileExtension(fh.Filename)
+	_, allowlisted := b.allowedExtensions[ext]
+	if len(b.allowedExtensions) > 0 && !allowlisted {
+		return false, nil
+	}
+	denied := base.IsDeniedExtension(ext)
+	if denied && !allowlisted {
 		return false, nil
 	}
 
@@ -217,10 +234,18 @@ func (b *Builder) checkUploadFile(fh *multipart.FileHeader, selectedType string)
 	if err != nil {
 		return false, err
 	}
-	return checkUploadContent(head, selectedType, explicit), nil
+	// Markup is only accepted for a denylisted extension the builder
+	// explicitly allowlisted (e.g. a deliberate "svg"); allowlisting an
+	// ordinary extension such as "txt" never lets HTML through.
+	return checkUploadContent(head, ext, selectedType, allowlisted && denied), nil
 }
 
-func checkUploadContent(head []byte, selectedType string, explicitlyAllowed bool) bool {
+// checkUploadContent validates the leading bytes of an upload with extension
+// ext. Images and videos must match their class by magic bytes. Unless
+// markupAllowed, markup is rejected: content sniffed as HTML/XML/SVG for any
+// class, and — for plain files, or extensions served without a known MIME type
+// (which servers and browsers sniff) — any content starting with '<'.
+func checkUploadContent(head []byte, ext, selectedType string, markupAllowed bool) bool {
 	switch selectedType {
 	case media_library.ALLOW_TYPE_IMAGE:
 		if !base.IsImageContent(head) {
@@ -231,7 +256,13 @@ func checkUploadContent(head []byte, selectedType string, explicitlyAllowed bool
 			return false
 		}
 	}
-	if !explicitlyAllowed && base.IsMarkupContent(head) {
+	if markupAllowed {
+		return true
+	}
+	if base.IsMarkupContent(head) {
+		return false
+	}
+	if (selectedType == media_library.ALLOW_TYPE_FILE || !base.HasKnownMIMEType(ext)) && base.StartsWithMarkup(head) {
 		return false
 	}
 	return true

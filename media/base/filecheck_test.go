@@ -45,12 +45,15 @@ func TestFileExtension(t *testing.T) {
 }
 
 func TestIsDeniedExtension(t *testing.T) {
-	for _, ext := range []string{".svg", "SVG", ".svgz", ".html", ".htm", ".xhtml", ".xml", ".js", ".php", ".swf"} {
+	for _, ext := range []string{
+		".svg", "SVG", ".svgz", ".html", ".htm", ".xhtml", ".xml", ".js", ".php", ".swf",
+		".ehtml", ".rdf", ".xbl", ".xsd", ".rss", ".atom", ".xul", ".mml", ".mht", ".mhtml", ".wsdl",
+	} {
 		if !IsDeniedExtension(ext) {
 			t.Errorf("%q should be denied", ext)
 		}
 	}
-	for _, ext := range []string{".png", ".jpg", ".pdf", ".mp4", ".txt", ""} {
+	for _, ext := range []string{".png", ".jpg", ".pdf", ".mp4", ".txt", ".csv", ".docx", ".xlsx", ".zip", ""} {
 		if IsDeniedExtension(ext) {
 			t.Errorf("%q should not be denied", ext)
 		}
@@ -130,6 +133,63 @@ func TestIsVideoContent(t *testing.T) {
 	for _, s := range []string{svgXSS, "<html></html>", "plain text"} {
 		if IsVideoContent([]byte(s)) {
 			t.Errorf("unexpected video: %q", s)
+		}
+	}
+}
+
+func TestIsSafeUploadFileName(t *testing.T) {
+	for _, name := range []string{"a.png", "report #3.pdf", "写真.jpg", "noext"} {
+		if !IsSafeUploadFileName(name) {
+			t.Errorf("%q should be safe", name)
+		}
+	}
+	for _, name := range []string{"", "a.png.", "a.png ", "a.png\t", "a.png\u00a0", "a\x00.png", "a\x1b.txt", "a\u0085.txt"} {
+		if IsSafeUploadFileName(name) {
+			t.Errorf("%q should be unsafe", name)
+		}
+	}
+}
+
+func TestStartsWithMarkup(t *testing.T) {
+	for _, s := range []string{
+		"<a>", "  \n<x:script>", "\xef\xbb\xbf<svg>", "\xff\xfe<\x00s\x00", "\xfe\xff\x00<\x00s",
+	} {
+		if !StartsWithMarkup([]byte(s)) {
+			t.Errorf("expected markup start: %q", s)
+		}
+	}
+	for _, s := range []string{"", "   ", "a,b\n<1>", "hello <b>", "%PDF-1.4"} {
+		if StartsWithMarkup([]byte(s)) {
+			t.Errorf("unexpected markup start: %q", s)
+		}
+	}
+}
+
+func TestHasKnownMIMEType(t *testing.T) {
+	if !HasKnownMIMEType(".png") || !HasKnownMIMEType("txt") {
+		t.Error("png and txt have known MIME types")
+	}
+	if HasKnownMIMEType(".xyz-unknown") || HasKnownMIMEType("") {
+		t.Error("unknown and empty extensions have no MIME type")
+	}
+}
+
+func TestIsScriptCapableMIMEType(t *testing.T) {
+	for _, ct := range []string{
+		"text/html; charset=utf-8", "application/xhtml+xml", "text/xml", "application/xml",
+		"application/rdf+xml", "image/svg+xml", "text/javascript", "application/ecmascript",
+		"application/xml-dtd",
+	} {
+		if !isScriptCapableMIMEType(ct) {
+			t.Errorf("%q should be script-capable", ct)
+		}
+	}
+	for _, ct := range []string{
+		"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+		"text/plain; charset=utf-8", "application/pdf", "image/png", "application/json",
+	} {
+		if isScriptCapableMIMEType(ct) {
+			t.Errorf("%q should not be script-capable", ct)
 		}
 	}
 }
