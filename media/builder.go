@@ -1,6 +1,7 @@
 package media
 
 import (
+	"mime/multipart"
 	"slices"
 	"strconv"
 
@@ -25,6 +26,8 @@ type (
 		searcher            SearchFunc
 		saverFunc           SaverFunc
 		allowTypes          []string
+		allowedExtensions   map[string]struct{}
+		deleteFilesOnDelete bool
 		fileAccept          string
 		ab                  *activity.Builder
 	}
@@ -54,6 +57,48 @@ func (b *Builder) CurrentUserID(v UserIDFunc) *Builder {
 
 func (b *Builder) AllowTypes(v ...string) *Builder {
 	b.allowTypes = append(b.allowTypes, v...)
+	return b
+}
+
+// AllowedExtensions restricts uploads to files with the given extensions.
+// Extensions match case-insensitively, with or without the leading dot
+// ("png", ".PNG"). Calls accumulate.
+//
+// Without an allowlist every extension is accepted except the built-in
+// denylist of script-capable formats (base.DeniedExtensions: .svg, .html,
+// .xml, .js, ...). Listing one of those here explicitly allows it, and also
+// skips the markup content check for that extension — only do so when the
+// storage serves such files safely (e.g. from a separate domain or with
+// Content-Disposition: attachment).
+func (b *Builder) AllowedExtensions(exts ...string) *Builder {
+	if b.allowedExtensions == nil {
+		b.allowedExtensions = make(map[string]struct{})
+	}
+	for _, ext := range exts {
+		if ext = base.NormalizeExtension(ext); ext != "" {
+			b.allowedExtensions[ext] = struct{}{}
+		}
+	}
+	return b
+}
+
+// DeleteFilesOnDelete makes deleting media library items also remove their
+// files from oss.Storage once the database delete has committed. Storage
+// errors are logged and do not fail the request.
+//
+// When the URL template gives each row its own directory — a {{uuid}}
+// segment, or {{primary_key}} right after {{class}} as in the default
+// "/system/{{class}}/{{primary_key}}/..." — everything under that directory is
+// removed (via Storage.List), including crop copies. Otherwise only the file,
+// its original copy and its size variants are removed; crop copies, whose crop
+// id is not stored on the row, are left in place.
+//
+// It is off by default: MediaBox fields store their own copy of the file URL,
+// so pages that still reference a deleted item would break. It is also
+// incompatible with restoring soft-deleted media library rows: the row can be
+// restored, its files cannot.
+func (b *Builder) DeleteFilesOnDelete(v bool) *Builder {
+	b.deleteFilesOnDelete = v
 	return b
 }
 
@@ -151,6 +196,81 @@ func (b *Builder) checkAllowType(v string) bool {
 		return true
 	}
 	return slices.Contains(b.allowTypes, v)
+}
+
+// uploadSelectedType classifies an upload by its normalized extension (see
+// base.FileExtension), the same extension checkUploadFile validates.
+func uploadSelectedType(ext string) string {
+	switch {
+	case base.IsImageFormat("f" + ext):
+		return media_library.ALLOW_TYPE_IMAGE
+	case base.IsVideoFormat("f" + ext):
+		return media_library.ALLOW_TYPE_VIDEO
+	default:
+		return media_library.ALLOW_TYPE_FILE
+	}
+}
+
+// checkUploadFile reports whether an uploaded file may be stored as
+// selectedType (which callers derive with uploadSelectedType). It rejects
+// unsafe file names, enforces the extension allowlist / default denylist and
+// sniffs the leading bytes: images and videos must carry matching content, and
+// markup is rejected (see checkUploadContent).
+func (b *Builder) checkUploadFile(fh *multipart.FileHeader, selectedType string) (bool, error) {
+	if !base.IsSafeUploadFileName(fh.Filename) {
+		return false, nil
+	}
+	ext := base.FileExtension(fh.Filename)
+	_, allowlisted := b.allowedExtensions[ext]
+	if len(b.allowedExtensions) > 0 && !allowlisted {
+		return false, nil
+	}
+	denied := base.IsDeniedExtension(ext)
+	if denied && !allowlisted {
+		return false, nil
+	}
+
+	f, err := fh.Open()
+	if err != nil {
+		return false, err
+	}
+	head, err := base.ReadHead(f)
+	f.Close()
+	if err != nil {
+		return false, err
+	}
+	// Markup is only accepted for a denylisted extension the builder
+	// explicitly allowlisted (e.g. a deliberate "svg"); allowlisting an
+	// ordinary extension such as "txt" never lets HTML through.
+	return checkUploadContent(head, ext, selectedType, allowlisted && denied), nil
+}
+
+// checkUploadContent validates the leading bytes of an upload with extension
+// ext. Images and videos must match their class by magic bytes. Unless
+// markupAllowed, markup is rejected: content sniffed as HTML/XML/SVG for any
+// class, and — for plain files, or extensions served without a known MIME type
+// (which servers and browsers sniff) — any content starting with '<'.
+func checkUploadContent(head []byte, ext, selectedType string, markupAllowed bool) bool {
+	switch selectedType {
+	case media_library.ALLOW_TYPE_IMAGE:
+		if !base.IsImageContent(head) {
+			return false
+		}
+	case media_library.ALLOW_TYPE_VIDEO:
+		if !base.IsVideoContent(head) {
+			return false
+		}
+	}
+	if markupAllowed {
+		return true
+	}
+	if base.IsMarkupContent(head) {
+		return false
+	}
+	if (selectedType == media_library.ALLOW_TYPE_FILE || !base.HasKnownMIMEType(ext)) && base.StartsWithMarkup(head) {
+		return false
+	}
+	return true
 }
 
 func (b *Builder) allowTypeSelectOptions(msgr *Messages) (items []selectItem) {

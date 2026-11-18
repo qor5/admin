@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
+	"log"
+	neturl "net/url"
 	"path"
 	"slices"
 	"sort"
@@ -24,6 +27,7 @@ import (
 
 	"github.com/qor5/admin/v3/media/base"
 	"github.com/qor5/admin/v3/media/media_library"
+	"github.com/qor5/admin/v3/media/oss"
 	"github.com/qor5/admin/v3/presets"
 )
 
@@ -375,8 +379,86 @@ func doDelete(mb *Builder) web.EventFunc {
 		if err != nil {
 			panic(err)
 		}
+		if mb.deleteFilesOnDelete {
+			deleteStoredFiles(context.WithoutCancel(ctx.R.Context()), objs)
+		}
 		mb.onDelete(ctx, objs)
 		return
+	}
+}
+
+// mediaLibrariesClass is what the {{class}} URL placeholder renders for
+// media_library.MediaLibrary.
+const mediaLibrariesClass = "media_libraries"
+
+// rowStorageDir returns the storage directory that holds only the files of the
+// media library row id, or "" when the URL template gives no such directory.
+// A directory is per-row when the stored URL's directory contains either a
+// {{uuid}} segment, or the row id directly under the "media_libraries" class
+// segment (the default "/system/{{class}}/{{primary_key}}/..." layout); the
+// result is the path up to and including that segment. Templates without such
+// a segment may put several rows' files in one directory, which must never be
+// list-deleted.
+func rowStorageDir(fileURL string, id uint) string {
+	p := fileURL
+	if strings.HasPrefix(p, "//") || strings.Contains(p, "://") {
+		u, err := neturl.Parse(p)
+		if err != nil {
+			return ""
+		}
+		p = u.Path
+	}
+	if !strings.HasPrefix(p, "/") {
+		return ""
+	}
+	rowUUID := base.URLDirUUID(p)
+	idSeg := strconv.FormatUint(uint64(id), 10)
+	segs := strings.Split(path.Dir(p), "/")
+	for i := 1; i < len(segs); i++ {
+		if (rowUUID != "" && segs[i] == rowUUID) ||
+			(id != 0 && segs[i] == idSeg && segs[i-1] == mediaLibrariesClass) {
+			return strings.Join(segs[:i+1], "/")
+		}
+	}
+	return ""
+}
+
+// deleteStoredFiles removes the stored files of the non-folder items from
+// oss.Storage: everything under the row's own directory when the URL template
+// gives one (see rowStorageDir), which also covers crop copies and files left
+// from earlier renders, plus the paths from StoredPaths. Failures are logged
+// and otherwise ignored: the rows are already gone and a leftover object is no
+// worse than before.
+func deleteStoredFiles(ctx context.Context, objs []media_library.MediaLibrary) {
+	for _, obj := range objs {
+		if obj.Folder {
+			continue
+		}
+		deleted := map[string]struct{}{}
+		del := func(p string) {
+			if _, ok := deleted[p]; ok {
+				return
+			}
+			deleted[p] = struct{}{}
+			if err := oss.Storage.Delete(ctx, p); err != nil && !errors.Is(err, fs.ErrNotExist) {
+				log.Printf("media: delete stored file %q of media library %d: %v", p, obj.ID, err)
+			}
+		}
+		if dir := rowStorageDir(obj.File.Url, obj.ID); dir != "" {
+			objects, err := oss.Storage.List(ctx, dir)
+			if err != nil {
+				log.Printf("media: list stored files under %q of media library %d: %v", dir, obj.ID, err)
+			}
+			for _, o := range objects {
+				// Guard against storages whose List is a plain prefix match.
+				if o != nil && strings.HasPrefix(o.Path, dir+"/") {
+					del(o.Path)
+				}
+			}
+		}
+		for _, p := range obj.File.StoredPaths() {
+			del(p)
+		}
 	}
 }
 

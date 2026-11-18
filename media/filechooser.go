@@ -133,14 +133,16 @@ func uploadFile(mb *Builder) web.EventFunc {
 		for _, fh := range uf.NewFiles {
 			m := media_library.MediaLibrary{ParentId: uint(parentID)}
 
-			if base.IsImageFormat(fh.Filename) {
-				m.SelectedType = media_library.ALLOW_TYPE_IMAGE
-			} else if base.IsVideoFormat(fh.Filename) {
-				m.SelectedType = media_library.ALLOW_TYPE_VIDEO
-			} else {
-				m.SelectedType = media_library.ALLOW_TYPE_FILE
-			}
+			m.SelectedType = uploadSelectedType(base.FileExtension(fh.Filename))
 			if !mb.checkAllowType(m.SelectedType) {
+				presets.ShowMessage(&r, msgr.UnSupportFileType, ColorError)
+				return r, nil
+			}
+			var ok bool
+			if ok, err = mb.checkUploadFile(fh, m.SelectedType); err != nil {
+				return r, err
+			}
+			if !ok {
 				presets.ShowMessage(&r, msgr.UnSupportFileType, ColorError)
 				return r, nil
 			}

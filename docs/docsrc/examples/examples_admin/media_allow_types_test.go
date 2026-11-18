@@ -2,6 +2,8 @@ package examples_admin
 
 import (
 	"bytes"
+	"image"
+	"image/png"
 	"net/http"
 	"testing"
 
@@ -64,7 +66,7 @@ func TestMediaAllowTypesExample(t *testing.T) {
 					PageURL("/media-libraries").
 					Query(web.EventFuncIDName, media.UploadFileEvent).
 					Query(media.ParamField, "media").
-					AddReader("NewFiles", "test2.png", bytes.NewReader([]byte("test upload file"))).
+					AddReader("NewFiles", "test2.png", bytes.NewReader(testPNGBytes())).
 					BuildEventFuncRequest()
 				return req
 			},
@@ -108,4 +110,14 @@ func TestMediaAllowTypesExample(t *testing.T) {
 			RunCase(t, c, pb)
 		})
 	}
+}
+
+// testPNGBytes returns a real PNG: uploads are content-sniffed, so an image
+// upload must carry image bytes.
+func testPNGBytes() []byte {
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, image.NewRGBA(image.Rect(0, 0, 2, 2))); err != nil {
+		panic(err)
+	}
+	return buf.Bytes()
 }

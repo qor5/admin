@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"path"
+	"sort"
 	"strings"
 
 	"gorm.io/gorm"
@@ -190,4 +191,64 @@ func GetQorPreviewSize(width, height int) map[string]*base.Size {
 		},
 	}
 	return sizes
+}
+
+// StoredPaths returns the storage paths written for this file on upload:
+// the file itself and, for images, the "original" copy, every size variant
+// (including the preview size) and their .webp siblings (written by the vips
+// handler when webp generation is on). Paths that were never written are
+// harmless to include; deleting them is expected to fail or no-op.
+//
+// Copies written by the cropper carry a random crop id that is not persisted
+// on the media library row, so they are not included.
+func (mediaLibraryStorage *MediaLibraryStorage) StoredPaths() []string {
+	if mediaLibraryStorage.Url == "" {
+		return nil
+	}
+	// URL() appends crop ids from CropID, which is only set transiently while
+	// cropping; resolve paths without it.
+	s := *mediaLibraryStorage
+	s.CropID = nil
+
+	var (
+		paths []string
+		seen  = map[string]struct{}{}
+	)
+	add := func(p string) {
+		if p == "" {
+			return
+		}
+		if _, ok := seen[p]; ok {
+			return
+		}
+		seen[p] = struct{}{}
+		paths = append(paths, p)
+	}
+
+	add(s.URL())
+	if !s.IsImage() {
+		return paths
+	}
+
+	keys := []string{base.OriginalSizeKey, QorPreviewSizeName}
+	for key := range s.Sizes {
+		keys = append(keys, key)
+	}
+	for key := range s.FileSizes {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		if key == base.DefaultSizeKey {
+			continue
+		}
+		add(s.URL(key))
+	}
+
+	for _, p := range append([]string(nil), paths...) {
+		if ext := path.Ext(p); ext != "" && !strings.EqualFold(ext, ".webp") {
+			add(strings.TrimSuffix(p, ext) + ".webp")
+		}
+	}
+	return paths
 }
