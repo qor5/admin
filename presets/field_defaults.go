@@ -171,7 +171,7 @@ func (b *FieldDefaults) fieldTypeByTypeOrCreate(tv reflect.Type) (r *FieldDefaul
 }
 
 func cfTextTd(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
-	return h.Td(h.Text(field.StringValue(obj)))
+	return h.Td(safeText(field.StringValue(obj)))
 }
 
 func cfCheckbox(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
@@ -271,9 +271,8 @@ func SelectField(obj interface{}, field *FieldContext, ctx *web.EventContext) *v
 }
 
 func ReadonlyText(obj interface{}, field *FieldContext, ctx *web.EventContext) *vuetifyx.VXReadonlyFieldBuilder {
-	return vuetifyx.VXReadonlyField().
-		Label(field.Label).
-		Value(field.StringValue(obj))
+	return vuetifyx.VXReadonlyField(safeText(field.StringValue(obj))).
+		Label(field.Label)
 }
 
 func cfReadonlyText(obj interface{}, field *FieldContext, ctx *web.EventContext) h.HTMLComponent {
