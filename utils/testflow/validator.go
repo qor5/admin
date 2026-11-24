@@ -76,7 +76,8 @@ func ParseOpenRightDrawerParams(body []byte) ([]any, error) {
 	if resp.UpdatePortals[0].Name != "presets_RightDrawerPortalName" {
 		return nil, errors.Errorf("invalid portal name %q", resp.UpdatePortals[0].Name)
 	}
-	const pattern = `<v-navigation-drawer v-model='vars.presetsRightDrawer'[\s\S]+?(<v-app-bar-title[^>]+>\s*<div[^>]+>(?P<title>.*?)\s*<\/div>\s*<\/v-app-bar-title>|<v-toolbar-title[^>]+>(?P<title>.*?)<\/v-toolbar-title>)[\s\S]+?<\/v-navigation-drawer>`
+	// Titles rendered from object data are wrapped in <span v-pre> (see presets.safeText).
+	const pattern = `<v-navigation-drawer v-model='vars.presetsRightDrawer'[\s\S]+?(<v-app-bar-title[^>]+>\s*<div[^>]+>\s*(?:<span v-pre>)?(?P<title>.*?)(?:<\/span>)?\s*<\/div>\s*<\/v-app-bar-title>|<v-toolbar-title[^>]+>\s*(?:<span v-pre>)?(?P<title>.*?)(?:<\/span>)?\s*<\/v-toolbar-title>)[\s\S]+?<\/v-navigation-drawer>`
 	groups, err := pregexp.MatchOne(pattern, resp.UpdatePortals[0].Body)
 	if err != nil {
 		return nil, err

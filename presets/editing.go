@@ -289,7 +289,7 @@ func (b *EditingBuilder) editFormFor(obj interface{}, ctx *web.EventContext) h.H
 		if b.editingTitleFunc != nil {
 			title = b.editingTitleFunc(obj, editingTitleText, ctx)
 		} else {
-			title = h.Text(editingTitleText)
+			title = safeText(editingTitleText)
 		}
 	} else {
 		noPerm = b.mb.Info().Verifier().Do(PermCreate).ObjectOn(obj).WithReq(ctx.R).IsAllowed() != nil

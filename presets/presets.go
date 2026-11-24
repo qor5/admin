@@ -961,7 +961,7 @@ func (b *Builder) defaultLayout(in web.PageFunc, cfg *LayoutConfig) (out web.Pag
 		var pageTitleComp h.HTMLComponent
 		innerPageTitleCompo, ok := ctx.ContextValue(CtxPageTitleComponent).(h.HTMLComponent)
 		if !ok {
-			innerPageTitleCompo = VToolbarTitle(innerPr.PageTitle) // Class("text-h6 font-weight-regular"),
+			innerPageTitleCompo = VToolbarTitle("").Children(safeText(innerPr.PageTitle)) // Class("text-h6 font-weight-regular"),
 			breadcrumbFunc, ok := ctx.ContextValue(BreadcrumbItemsFuncKey{}).(BreadcrumbItemsFunc)
 			if ok {
 				innerPageTitleCompo = CreateVXBreadcrumbs(ctx, breadcrumbFunc)
