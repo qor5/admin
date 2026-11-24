@@ -343,7 +343,7 @@ func TestFields(t *testing.T) {
 			expect: `
 <div v-show='!dash.visible || dash.visible["Time1"]===undefined || dash.visible["Time1"]'>
 <div class='mb-4'>
-<label class='v-label theme--light text-caption'>Time1</label>
+<label v-pre class='v-label theme--light text-caption'>Time1</label>
 
 <div class='pt-1'>
 <span v-pre></span>
@@ -353,7 +353,7 @@ func TestFields(t *testing.T) {
 
 <div v-show='!dash.visible || dash.visible["Time2"]===undefined || dash.visible["Time2"]'>
 <div class='mb-4'>
-<label class='v-label theme--light text-caption'>Time2</label>
+<label v-pre class='v-label theme--light text-caption'>Time2</label>
 
 <div class='pt-1'>
 <span v-pre></span>
@@ -383,7 +383,7 @@ func TestFields(t *testing.T) {
 			expect: `
 <div v-show='!dash.visible || dash.visible["Time1"]===undefined || dash.visible["Time1"]'>
 <div class='mb-4'>
-<label class='v-label theme--light text-caption'>Time1</label>
+<label v-pre class='v-label theme--light text-caption'>Time1</label>
 
 <div class='pt-1'>
 <span v-pre></span>
@@ -393,7 +393,7 @@ func TestFields(t *testing.T) {
 
 <div v-show='!dash.visible || dash.visible["Time2"]===undefined || dash.visible["Time2"]'>
 <div class='mb-4'>
-<label class='v-label theme--light text-caption'>Time2</label>
+<label v-pre class='v-label theme--light text-caption'>Time2</label>
 
 <div class='pt-1'>
 <span v-pre>&lt;nil&gt;</span>
