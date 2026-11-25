@@ -28,32 +28,45 @@ type languageItem struct {
 	Value string
 }
 
+// languageSelect lets the visitor switch the page's language. It reloads the
+// page with the language in the query, which the i18n middleware keeps in a
+// cookie. It is nil when there is only one language to choose from.
+func languageSelect(vh *login.ViewHelper, r *http.Request) HTMLComponent {
+	i18nBuilder := vh.I18n()
+	ls := i18nBuilder.GetSupportLanguages()
+	if len(ls) <= 1 {
+		return nil
+	}
+	qn := i18nBuilder.GetQueryName()
+	lang := r.FormValue(qn)
+	if lang == "" {
+		lang = i18nBuilder.GetCurrentLangFromCookie(r)
+	}
+	_, mi := language.MatchStrings(language.NewMatcher(ls), lang, r.Header.Get("Accept-Language"))
+	var langs []languageItem
+	for _, l := range ls {
+		langs = append(langs, languageItem{
+			Label: display.Self.Name(l),
+			Value: l.String(),
+		})
+	}
+	return web.Scope(
+		VSelect().
+			Items(langs).
+			ItemTitle("Label").
+			ItemValue("Value").
+			Attr("v-model", `selectLocals.currLangVal`).
+			Attr("@update:model-value", web.Plaid().MergeQuery(true).Query(qn, web.Var("selectLocals.currLangVal")).PushState(true).Go()).
+			Variant(VariantOutlined).
+			Density(DensityCompact).
+			Class("mt-12").
+			HideDetails(true),
+	).VSlot(" { locals : selectLocals } ").Init(fmt.Sprintf(`{currLangVal: '%s'}`, ls[mi].String()))
+}
+
 func defaultLoginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 	return pb.PlainLayout(func(ctx *web.EventContext) (r web.PageResponse, err error) {
-		// i18n start
 		msgr := i18n.MustGetModuleMessages(ctx.R, login.I18nLoginKey, login.Messages_en_US).(*login.Messages)
-		i18nBuilder := vh.I18n()
-		var langs []languageItem
-		var currLangVal string
-		qn := i18nBuilder.GetQueryName()
-		if ls := i18nBuilder.GetSupportLanguages(); len(ls) > 1 {
-			lang := ctx.R.FormValue(qn)
-			if lang == "" {
-				lang = i18nBuilder.GetCurrentLangFromCookie(ctx.R)
-			}
-			accept := ctx.R.Header.Get("Accept-Language")
-			_, mi := language.MatchStrings(language.NewMatcher(ls), lang, accept)
-			for i, l := range ls {
-				if i == mi {
-					currLangVal = l.String()
-				}
-				langs = append(langs, languageItem{
-					Label: display.Self.Name(l),
-					Value: l.String(),
-				})
-			}
-		}
-		// i18n end
 
 		var oauthHTML HTMLComponent
 		if vh.OAuthEnabled() {
@@ -120,20 +133,7 @@ func defaultLoginPage(vh *login.ViewHelper, pb *presets.Builder) web.PageFunc {
 		bodyForm := Div(
 			userPassHTML,
 			oauthHTML,
-			If(len(langs) > 0,
-				web.Scope(
-					VSelect().
-						Items(langs).
-						ItemTitle("Label").
-						ItemValue("Value").
-						Attr("v-model", `selectLocals.currLangVal`).
-						Attr("@update:model-value", web.Plaid().MergeQuery(true).Query(qn, web.Var("selectLocals.currLangVal")).PushState(true).Go()).
-						Variant(VariantOutlined).
-						Density(DensityCompact).
-						Class("mt-12").
-						HideDetails(true),
-				).VSlot(" { locals : selectLocals } ").Init(fmt.Sprintf(`{currLangVal: '%s'}`, currLangVal)),
-			),
+			languageSelect(vh, ctx.R),
 		).Class(DefaultViewCommon.WrapperClass).Style(DefaultViewCommon.WrapperStyle)
 
 		r.Body = Div(
@@ -575,6 +575,7 @@ func defaultResetPasswordPage(vh *login.ViewHelper, pb *presets.Builder) web.Pag
 					),
 					DefaultViewCommon.FormSubmitBtn(msgr.Confirm),
 				).Method(http.MethodPost).Action(actionURL),
+				languageSelect(vh, ctx.R),
 			).Class(DefaultViewCommon.WrapperClass).Style(DefaultViewCommon.WrapperStyle),
 		)
 		return
