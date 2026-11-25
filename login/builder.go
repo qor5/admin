@@ -73,7 +73,7 @@ document.getElementsByTagName("head")[0].appendChild(tag);
 			msg := msgr.ErrorSystemError
 			var color string
 			if ne, ok := err.(*login.NoticeError); ok {
-				msg = ne.Message
+				msg = NoticeText(ctx.R, ne.Message)
 				switch ne.Level {
 				case login.NoticeLevel_Info:
 					color = "info"
