@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/qor5/admin/v3/presets"
 	"github.com/qor5/web/v3"
+	"github.com/qor5/x/v3/i18n"
 	"github.com/qor5/x/v3/login"
 	. "github.com/qor5/x/v3/ui/vuetify"
 	vx "github.com/qor5/x/v3/ui/vuetifyx"
@@ -25,16 +27,42 @@ type ViewCommon struct {
 	LabelClass   string
 }
 
+// I18nNoticePrefix prefixes the keys NoticeText looks a notice up by.
+const I18nNoticePrefix = "LoginNotice"
+
+// NoticeText returns the text to show for the message of a login.NoticeError
+// that a hook returned.
+//
+// A hook that wants its notice in the visitor's language returns a key as the
+// message, and the application registers the texts in its
+// presets.ModelsI18nModuleKey messages under I18nNoticePrefix: the message
+// "PasswordTooShort" is shown as the field LoginNoticePasswordTooShort. The
+// hook cannot translate the message itself: the handlers a login form posts
+// to do not resolve the language, and the notice reaches the page in a cookie,
+// which holds ASCII only.
+//
+// A message with no text registered for it is shown as it is.
+func NoticeText(r *http.Request, message string) string {
+	if message == "" {
+		return ""
+	}
+	if text := i18n.PT(r, presets.ModelsI18nModuleKey, I18nNoticePrefix, message); text != "" {
+		return text
+	}
+	return message
+}
+
 func (vc *ViewCommon) Notice(vh *login.ViewHelper, msgr *login.Messages, w http.ResponseWriter, r *http.Request) HTMLComponent {
 	var nn HTMLComponent
 	if n := vh.GetNoticeFlash(w, r); n != nil && n.Message != "" {
+		text := NoticeText(r, n.Message)
 		switch n.Level {
 		case login.NoticeLevel_Info:
-			nn = vc.InfoNotice(n.Message)
+			nn = vc.InfoNotice(text)
 		case login.NoticeLevel_Warn:
-			nn = vc.WarnNotice(n.Message)
+			nn = vc.WarnNotice(text)
 		case login.NoticeLevel_Error:
-			nn = vc.ErrNotice(n.Message)
+			nn = vc.ErrNotice(text)
 		}
 	}
 	return Components(
