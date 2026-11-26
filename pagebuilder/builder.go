@@ -360,6 +360,7 @@ func (b *Builder) Model(mb *presets.ModelBuilder) (r *ModelBuilder) {
 	r.registerFuncs()
 	r.configDuplicate(r.mb)
 	r.configListing()
+	r.configDuplicateAsNew()
 	return r
 }
 

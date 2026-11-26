@@ -47,6 +47,9 @@ type Messages struct {
 	ViewPage                  string
 	EditPage                  string
 	EditLastDraft             string
+	DuplicateAsNew            string
+	ConfirmDuplicateAsNew     string
+	DuplicatedAsNew           string
 	ScheduledAt               string
 	OnlineHit                 string
 	NoContentHit              string
@@ -147,6 +150,9 @@ var Messages_en_US = &Messages{
 	ViewPage:                  "View Page",
 	EditPage:                  "Edit Page",
 	EditLastDraft:             "Edit Last Draft",
+	DuplicateAsNew:            "Duplicate as New",
+	ConfirmDuplicateAsNew:     "Duplicate this item as a new item? The copy will be saved as a draft.",
+	DuplicatedAsNew:           "Duplicated as a new item",
 	ScheduledAt:               "Scheduled at",
 	OnlineHit:                 "This version cannot be edited once published. To make changes, please duplicate the current version",
 	NoContentHit:              "This page has no content yet, start to edit in page builder",
@@ -244,6 +250,9 @@ var Messages_zh_CN = &Messages{
 	ViewPage:                  "查看页面",
 	EditPage:                  "编辑页面",
 	EditLastDraft:             "编辑最后草稿",
+	DuplicateAsNew:            "复制为新条目",
+	ConfirmDuplicateAsNew:     "确定要将此条目复制为一个新条目吗？复制出的条目为草稿状态。",
+	DuplicatedAsNew:           "已复制为新条目",
 	ScheduledAt:               "安排在",
 	OnlineHit:                 "这个版本发布后不能再编辑。要进行更改，请复制当前版本",
 	NoContentHit:              "这个页面没有内容，在page builder中开始编辑",
@@ -346,6 +355,9 @@ var Messages_ja_JP = &Messages{
 	ViewPage:                  "ページを表示",
 	EditPage:                  "ページの編集",
 	EditLastDraft:             "最後の下書きを編集",
+	DuplicateAsNew:            "新規として複製",
+	ConfirmDuplicateAsNew:     "このコンテンツを新規として複製してもよろしいですか？複製されたコンテンツは下書きとして保存されます。",
+	DuplicatedAsNew:           "新規として複製しました",
 	ScheduledAt:               "公開開始日時",
 	OnlineHit:                 "このバージョンは一度公開されると編集できなくなります。変更を加えるには、現在のバージョンを複製してください",
 	NoContentHit:              "このページにはまだコンテンツがありません。ページビルダーで編集を開始してください",
