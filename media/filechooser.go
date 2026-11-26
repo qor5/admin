@@ -561,9 +561,7 @@ func (mb *Builder) mediaLibraryFilter(tab, selectedType, keyword, orderByVal str
 	} else if mb.currentUserID != nil {
 		wh = wh.Where("user_id = ? ", mb.currentUserID(ctx))
 	}
-	// The folders tab pages folders and files together, so folders have to sort
-	// first or newer files push them onto later pages.
-	if tab != tabFiles {
+	if mb.foldersFirst && tab != tabFiles {
 		wh = wh.Order("media_libraries.folder DESC")
 	}
 	switch orderByVal {

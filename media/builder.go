@@ -22,6 +22,7 @@ type (
 		db                  *gorm.DB
 		mb                  *presets.ModelBuilder
 		mediaLibraryPerPage int
+		foldersFirst        bool
 		currentUserID       UserIDFunc
 		searcher            SearchFunc
 		saverFunc           SaverFunc
@@ -47,6 +48,15 @@ func (b *Builder) GetPresetsModelBuilder() *presets.ModelBuilder {
 
 func (b *Builder) MediaLibraryPerPage(v int) *Builder {
 	b.mediaLibraryPerPage = v
+	return b
+}
+
+// FoldersFirst lists folders ahead of files on the folders tab. That tab pages
+// the folders and files of a level together, so without it they are sorted by
+// upload time alone and newer files push older folders onto later pages.
+// Off by default.
+func (b *Builder) FoldersFirst(v bool) *Builder {
+	b.foldersFirst = v
 	return b
 }
 

@@ -10,9 +10,9 @@ import (
 	"github.com/qor5/admin/v3/media/media_library"
 )
 
-// A page of the folders tab mixes folders and files, so the query has to put
-// folders ahead of files itself: sorting by upload time alone lets newer files
-// push older folders onto later pages.
+// A page of the folders tab mixes folders and files, so with FoldersFirst the
+// query has to put folders ahead of files itself: sorting by upload time alone
+// lets newer files push older folders onto later pages.
 func TestFoldersTabListsFoldersFirst(t *testing.T) {
 	b, pb := scopeTestBuilder(t)
 	require.NoError(t, testDB.Exec("DELETE FROM media_libraries").Error)
@@ -39,6 +39,10 @@ func TestFoldersTabListsFoldersFirst(t *testing.T) {
 		return ids
 	}
 
+	require.Equal(t, []uint{newFile, newFolder, oldFile, oldFolder}, list(tabFolders, orderByCreatedAtDESC),
+		"off by default: upload time only")
+
+	b.FoldersFirst(true)
 	require.Equal(t, []uint{newFolder, oldFolder, newFile, oldFile}, list(tabFolders, orderByCreatedAtDESC))
 	require.Equal(t, []uint{oldFolder, newFolder, oldFile, newFile}, list(tabFolders, orderByCreatedAt))
 	require.Equal(t, []uint{newFile, oldFile}, list(tabFiles, orderByCreatedAtDESC))
