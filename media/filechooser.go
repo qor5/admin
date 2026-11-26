@@ -561,6 +561,9 @@ func (mb *Builder) mediaLibraryFilter(tab, selectedType, keyword, orderByVal str
 	} else if mb.currentUserID != nil {
 		wh = wh.Where("user_id = ? ", mb.currentUserID(ctx))
 	}
+	if mb.foldersFirst && tab != tabFiles {
+		wh = wh.Order("media_libraries.folder DESC")
+	}
 	switch orderByVal {
 	case orderByCreatedAt:
 		wh = wh.Order("created_at")
