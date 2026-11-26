@@ -33,7 +33,14 @@ func overview(m *ModelBuilder) presets.FieldComponentFunc {
 			updatedSharedCount int64
 		)
 		msgr := i18n.MustGetModuleMessages(ctx.R, I18nPageBuilderKey, Messages_en_US).(*Messages)
-		versionComponent := publish.DefaultVersionComponentFunc(pm)(obj, field, ctx)
+		versionComponent := publish.DefaultVersionComponentFunc(pm, publish.VersionComponentConfig{
+			WrapActionButtons: func(ctx *web.EventContext, obj interface{}, actionButtons []h.HTMLComponent, phraseHasPresetsDataChanged string) []h.HTMLComponent {
+				if btn := m.duplicateAsNewButton(ctx, obj, phraseHasPresetsDataChanged); btn != nil {
+					return append([]h.HTMLComponent{btn}, actionButtons...)
+				}
+				return actionButtons
+			},
+		})(obj, field, ctx)
 		if v, ok := obj.(presets.SlugEncoder); ok {
 			ps = v.PrimarySlug()
 		}
