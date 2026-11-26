@@ -318,7 +318,7 @@ func (b *DetailingBuilder) showInDrawer(ctx *web.EventContext) (r web.EventRespo
 	}
 	titleCompo, ok := ctx.ContextValue(CtxPageTitleComponent).(h.HTMLComponent)
 	if !ok {
-		titleCompo = h.Text(pr.PageTitle)
+		titleCompo = safeText(pr.PageTitle)
 	} else {
 		ctx.WithContextValue(CtxPageTitleComponent, nil)
 	}
@@ -499,7 +499,7 @@ func (b *DetailingBuilder) defaultBreadcrumbFunc(ctx *web.EventContext, obj any,
 		}
 	}
 	if titleComp == nil {
-		titleComp = h.Text(title)
+		titleComp = safeText(title)
 	}
 	return func(ctx *web.EventContext, disableLast bool) (r []h.HTMLComponent) {
 		listingHref := b.mb.Info().ListingHref()

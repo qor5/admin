@@ -176,23 +176,33 @@ func TestFields(t *testing.T) {
 			},
 			expect: fmt.Sprintf(`
 <div v-show='!dash.visible || dash.visible["ID"]===undefined || dash.visible["ID"]'>
-<td>1</td>
+<td>
+<span v-pre>1</span>
+</td>
 </div>
 
 <div v-show='!dash.visible || dash.visible["Int1"]===undefined || dash.visible["Int1"]'>
-<td>2</td>
+<td>
+<span v-pre>2</span>
+</td>
 </div>
 
 <div v-show='!dash.visible || dash.visible["String1"]===undefined || dash.visible["String1"]'>
-<td>hello</td>
+<td>
+<span v-pre>hello</span>
+</td>
 </div>
 
 <div v-show='!dash.visible || dash.visible["Bool1"]===undefined || dash.visible["Bool1"]'>
-<td>true</td>
+<td>
+<span v-pre>true</span>
+</td>
 </div>
 
 <div v-show='!dash.visible || dash.visible["Time1"]===undefined || dash.visible["Time1"]'>
-<td>%s</td>
+<td>
+<span v-pre>%s</span>
+</td>
 </div>
 `, time1LocalFormat),
 		},
@@ -205,11 +215,15 @@ func TestFields(t *testing.T) {
 			},
 			expect: fmt.Sprintf(`
 <div v-show='!dash.visible || dash.visible["Time1"]===undefined || dash.visible["Time1"]'>
-<td>%s</td>
+<td>
+<span v-pre>%s</span>
+</td>
 </div>
 
 <div v-show='!dash.visible || dash.visible["Int1"]===undefined || dash.visible["Int1"]'>
-<td>2</td>
+<td>
+<span v-pre>2</span>
+</td>
 </div>
 `, time1LocalFormat),
 		},
@@ -331,7 +345,9 @@ func TestFields(t *testing.T) {
 <div class='mb-4'>
 <label class='v-label theme--light text-caption'>Time1</label>
 
-<div class='pt-1'></div>
+<div class='pt-1'>
+<span v-pre></span>
+</div>
 </div>
 </div>
 
@@ -339,7 +355,9 @@ func TestFields(t *testing.T) {
 <div class='mb-4'>
 <label class='v-label theme--light text-caption'>Time2</label>
 
-<div class='pt-1'></div>
+<div class='pt-1'>
+<span v-pre></span>
+</div>
 </div>
 </div>
 `,
@@ -367,7 +385,9 @@ func TestFields(t *testing.T) {
 <div class='mb-4'>
 <label class='v-label theme--light text-caption'>Time1</label>
 
-<div class='pt-1'></div>
+<div class='pt-1'>
+<span v-pre></span>
+</div>
 </div>
 </div>
 
@@ -375,7 +395,9 @@ func TestFields(t *testing.T) {
 <div class='mb-4'>
 <label class='v-label theme--light text-caption'>Time2</label>
 
-<div class='pt-1'>&lt;nil&gt;</div>
+<div class='pt-1'>
+<span v-pre>&lt;nil&gt;</span>
+</div>
 </div>
 </div>
 `,
