@@ -30,6 +30,7 @@ type JobBuilder struct {
 	h              JobHandler
 	contextHandler func(*web.EventContext) map[string]interface{} // optional
 	global         bool
+	concurrency    int // max concurrent instances (0 = unlimited)
 }
 
 func newJob(b *Builder, name string) *JobBuilder {
@@ -41,13 +42,21 @@ func newJob(b *Builder, name string) *JobBuilder {
 	}
 
 	return &JobBuilder{
-		b:      b,
-		name:   name,
-		global: true,
+		b:           b,
+		name:        name,
+		global:      true,
+		concurrency: 1,
 	}
 }
 
 type JobHandler func(context.Context, QorJobInterface) error
+
+// Concurrency sets the maximum number of concurrent instances for this job.
+// A value of 0 means unlimited (default).
+func (jb *JobBuilder) Concurrency(n int) *JobBuilder {
+	jb.concurrency = n
+	return jb
+}
 
 // r should be ptr to struct
 func (jb *JobBuilder) Resource(r interface{}) *JobBuilder {
@@ -92,6 +101,11 @@ func (jb *JobBuilder) Resource(r interface{}) *JobBuilder {
 
 func (jb *JobBuilder) GetResourceBuilder() *presets.ModelBuilder {
 	return jb.rmb
+}
+
+// GetResource returns the resource prototype for this job.
+func (jb *JobBuilder) GetResource() interface{} {
+	return jb.r
 }
 
 func (jb *JobBuilder) Handler(h JobHandler) *JobBuilder {
@@ -197,7 +211,7 @@ func (jb *JobBuilder) newJobInstance(
 		Job:      qorJobName,
 		Status:   JobStatusNew,
 	}
-	if jb.b.getCurrentUserIDFunc != nil {
+	if r != nil && jb.b.getCurrentUserIDFunc != nil {
 		inst.Operator = jb.b.getCurrentUserIDFunc(r)
 	}
 	err := jb.b.db.Create(&inst).Error
@@ -258,6 +272,10 @@ func (job *QorJobInstance) GetJobInfo() (ji *JobInfo, err error) {
 		Argument: arg,
 		Context:  context,
 	}, nil
+}
+
+func (job *QorJobInstance) SetJobBuilder(jb *JobBuilder) {
+	job.jb = jb
 }
 
 func (job *QorJobInstance) GetStatus() string {
